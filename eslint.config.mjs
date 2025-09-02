@@ -22,6 +22,10 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
     ],
+    rules: {
+      'unicorn/prevent-abbreviations': 'off',
+      'unicorn/import-style': 'off',
+    },
   },
 ]
 

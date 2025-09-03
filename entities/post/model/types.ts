@@ -10,11 +10,14 @@ export const PostMetaDataSchema = z.object({
   series: z.string().nullable(),
   thumbnail: z.string().nullable(),
   draft: z.boolean().default(true),
+  blurDataURL: z.string().optional(),
 })
 
 export const PostSchema = z.object({
   ...PostMetaDataSchema.shape,
   content: z.string(),
+  width: z.number(),
+  height: z.number(),
 })
 
 export type Post = z.infer<typeof PostSchema>

@@ -4,9 +4,9 @@ import { RightSidebar } from '@/widgets/layout/ui/right-siderbar'
 
 export function Container({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex justify-center">
+    <div className="grid grid-cols-1 justify-center sm:grid-cols-4">
       <LeftSidebar />
-      <section>
+      <section className="col-span-2 p-4">
         <Header />
         {children}
       </section>

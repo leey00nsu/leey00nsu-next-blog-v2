@@ -7,6 +7,8 @@ import rehypeSlug from 'rehype-slug'
 import rehypePrettyCode from 'rehype-pretty-code'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
 import remarkRemovePublic from '@/lib/remark-remove-public'
+import CustomImage from '@/features/post/ui/custom-image'
+import imageMetadata from '@/lib/image-metadata'
 
 interface PostDetailProps {
   post: Post
@@ -24,6 +26,7 @@ export function PostDetail({ post }: PostDetailProps) {
         source={post.content}
         components={{
           figcaption: CustomFigcaption,
+          img: CustomImage,
         }}
         options={{
           mdxOptions: {
@@ -36,6 +39,7 @@ export function PostDetail({ post }: PostDetailProps) {
                 },
               ],
               rehypeSlug,
+              imageMetadata,
             ],
           },
         }}

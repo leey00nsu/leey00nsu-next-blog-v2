@@ -3,6 +3,7 @@ import path from 'node:path'
 import matter from 'gray-matter'
 import { cache } from 'react'
 import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
+import lqipModern from 'lqip-modern'
 
 const POSTS_PATH = path.join(process.cwd(), 'public/posts')
 
@@ -16,6 +17,8 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   const fileContents = fs.readFileSync(fullPath, 'utf8')
   const { data, content } = matter(fileContents)
 
+  const { width, height, base64 } = await getImageMetadata(data.thumbnail)
+
   try {
     const frontmatter = PostMetaDataSchema.parse({
       ...data,
@@ -26,6 +29,9 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
       ...frontmatter,
       slug,
       content,
+      width,
+      height,
+      blurDataURL: base64,
     }
   } catch (error) {
     console.error(`Error parsing frontmatter for ${slug}:`, error)
@@ -55,3 +61,23 @@ export const getAllPosts = cache(async (): Promise<Post[]> => {
     .filter((post): post is Post => post !== null)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 })
+
+const getImageMetadata = async (thumbnailPath?: string) => {
+  if (!thumbnailPath) {
+    return {
+      width: 0,
+      height: 0,
+      base64: '',
+    }
+  }
+
+  const imagePath = path.join(process.cwd(), thumbnailPath)
+  const imageBuffer = fs.readFileSync(imagePath)
+
+  const { metadata } = await lqipModern(imageBuffer)
+  return {
+    width: metadata.originalWidth,
+    height: metadata.originalHeight,
+    base64: metadata.dataURIBase64,
+  }
+}

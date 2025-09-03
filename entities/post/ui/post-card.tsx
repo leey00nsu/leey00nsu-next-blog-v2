@@ -16,11 +16,11 @@ export function PostCard({ post }: PostCardProps) {
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{post.title}</span>
           <span className="text-muted-foreground text-xs font-light">
-            {post.date}
+            {post.date.toLocaleDateString('ko-KR')}
           </span>
         </div>
         <span className="text-muted-foreground line-clamp-3 text-xs">
-          {post.content}
+          {post.description}
         </span>
       </div>
     </div>

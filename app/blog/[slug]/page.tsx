@@ -1,12 +1,6 @@
 import { notFound } from 'next/navigation'
-import { getAllPosts, getPostBySlug } from '@/lib/post'
-import { MDXRemote } from 'next-mdx-remote/rsc'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
-import remarkRemovePublic from '@/lib/remark-remove-public'
-import rehypeSlug from 'rehype-slug'
-import rehypePrettyCode from 'rehype-pretty-code'
-import CustomSnipet from '@/entities/post/ui/custom-snippet'
+import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
+import { PostDetail } from '@/widgets/post/ui/post-detail'
 
 interface PostPageProps {
   params: {
@@ -29,34 +23,5 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
-  return (
-    <article className="prose prose-lg dark:prose-invert mx-auto py-8">
-      <time dateTime={post.date.toISOString()}>
-        {post.date.toLocaleDateString('ko-KR')}
-      </time>
-      <h1 className="mt-2">{post.title}</h1>
-      <p className="lead">{post.description}</p>
-      <hr />
-      <MDXRemote
-        source={post.content}
-        components={{
-          figcaption: CustomSnipet,
-        }}
-        options={{
-          mdxOptions: {
-            remarkPlugins: [remarkGfm, remarkBreaks, remarkRemovePublic],
-            rehypePlugins: [
-              [
-                rehypePrettyCode,
-                {
-                  theme: 'github-dark',
-                },
-              ],
-              rehypeSlug,
-            ],
-          },
-        }}
-      />
-    </article>
-  )
+  return <PostDetail post={post} />
 }

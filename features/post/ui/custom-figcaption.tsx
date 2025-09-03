@@ -4,7 +4,10 @@ import { Button } from '@/shared/ui/button'
 import { Check, Clipboard } from 'lucide-react'
 import { HTMLAttributes, useEffect, useRef, useState } from 'react'
 
-const CustomSnipet = ({ children, ...props }: HTMLAttributes<HTMLElement>) => {
+export function CustomFigcaption({
+  children,
+  ...props
+}: HTMLAttributes<HTMLElement>) {
   const [isCopied, setIsCopied] = useState(false)
   const copyButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -47,5 +50,3 @@ const CustomSnipet = ({ children, ...props }: HTMLAttributes<HTMLElement>) => {
     </figcaption>
   )
 }
-
-export default CustomSnipet

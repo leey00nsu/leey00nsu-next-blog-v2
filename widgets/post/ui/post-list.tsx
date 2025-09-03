@@ -12,11 +12,7 @@ export function PostList({ posts }: PostListProps) {
     <div className="flex flex-col divide-y">
       {posts.map((post) => {
         return (
-          <Link
-            key={post.slug}
-            href={`/blog/${post.slug}`}
-            className="hover:bg-muted/50 -mx-2 block rounded-lg transition-colors"
-          >
+          <Link key={post.slug} href={`/blog/${post.slug}`}>
             <PostCard post={post} />
           </Link>
         )

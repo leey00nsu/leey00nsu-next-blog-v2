@@ -6,6 +6,10 @@ tags:
   - indexedDB
 description: zustand persist를 입맛에 맞게 커스터마이징 해봅시다.
 date: '2023-12-15'
+section: blog
+series:
+thumbnail:
+draft: false
 ---
 
 ## Zustand persist 커스텀하기
@@ -33,7 +37,7 @@ export const useBearStore = create(
       }),
     },
   ),
-);
+)
 ```
 
 만든 `store`를 `persist`로 감싼 후, 어떤 스토리지를 사용할 지 설정합니다.

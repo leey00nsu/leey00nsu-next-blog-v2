@@ -1,12 +1,17 @@
 ---
 slug: dockerize-nest
 title: NestJS 도커라이징 하기
-tags: 
+tags:
   - NestJS
   - docker
 description: NestJS를 도커에 올리기위한 방법에 대해 설명합니다.
 date: 2024-02-25
+section: blog
+series:
+thumbnail:
+draft: false
 ---
+
 ## NestJS 도커라이징 하기
 
 기존에 만든 nest 프로젝트를 `도커`로 띄우기 위해 `도커 이미지`로 만들어야 합니다.
@@ -41,7 +46,7 @@ CMD ["npm","start"]
 2. /var/app 이라는 폴더를 만든 후 , 그 안에 현재 루트폴더의 내용을 복사합니다.
 3. 그 후 npm install을 하여 명시된 디펜던시를 설치하고 빌드합니다.
 4. 도커 컨테이너가 사용할 포트를 3000으로 설정합니다.
-5. 서버를 실행합니다. 
+5. 서버를 실행합니다.
 
 이제 도커 이미지를 빌드해봅시다.
 

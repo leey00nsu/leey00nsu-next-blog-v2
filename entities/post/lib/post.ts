@@ -46,7 +46,7 @@ export const getAllPosts = cache(async (): Promise<Post[]> => {
   const posts = await Promise.all(
     slugs.map(async (slug) => {
       const post = await getPostBySlug(slug)
-      if (!post) return null
+      if (!post || post.draft) return null
       return post
     }),
   )

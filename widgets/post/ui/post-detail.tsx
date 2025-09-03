@@ -19,7 +19,6 @@ export function PostDetail({ post }: PostDetailProps) {
         {post.date.toLocaleDateString('ko-KR')}
       </time>
       <h1 className="mt-2">{post.title}</h1>
-      <p className="lead">{post.description}</p>
       <hr />
       <MDXRemote
         source={post.content}

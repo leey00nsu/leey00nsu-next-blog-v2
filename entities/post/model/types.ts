@@ -11,6 +11,7 @@ export const PostMetaDataSchema = z.object({
   thumbnail: z.string().nullable(),
   draft: z.boolean().default(true),
   blurDataURL: z.string().optional(),
+  writer: z.string(),
 })
 
 export const PostSchema = z.object({

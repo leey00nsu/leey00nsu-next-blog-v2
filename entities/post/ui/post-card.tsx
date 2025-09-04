@@ -17,9 +17,15 @@ export function PostCard({ post }: PostCardProps) {
         <span className="text-muted-foreground line-clamp-3 text-sm">
           {post.description}
         </span>
-        <span className="text-muted-foreground text-xs font-light">
-          {post.date.toLocaleDateString('ko-KR')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-xs font-light">
+            {post.date.toLocaleDateString('ko-KR')}
+          </span>
+          <span>{'·'}</span>
+          <span className="text-muted-foreground text-xs font-light">
+            {post.writer}
+          </span>
+        </div>
       </div>
 
       <div className="relative h-40 w-40 justify-self-end overflow-hidden rounded-2xl">

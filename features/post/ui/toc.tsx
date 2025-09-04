@@ -71,7 +71,7 @@ export function Toc({ headings, className }: TocProps) {
 
   return (
     <nav className={className}>
-      <h2 className="mb-2 font-semibold">Table of Contents</h2>
+      <h2 className="mb-2 font-semibold">목차</h2>
       <ul className="space-y-2">
         {headings.map((heading) => (
           <li

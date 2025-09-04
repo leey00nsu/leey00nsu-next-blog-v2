@@ -23,10 +23,12 @@ export function PostDetail({ post }: PostDetailProps) {
 
   return (
     <div className="relative">
-      <article className="prose prose-lg dark:prose-invert mx-auto py-8">
-        <time dateTime={post.date.toISOString()}>
-          {post.date.toLocaleDateString('ko-KR')}
-        </time>
+      <article className="prose prose-lg dark:prose-invert mx-auto">
+        <div className="flex items-center gap-2">
+          <span>{post.date.toLocaleDateString('ko-KR')}</span>
+          <span>{'·'}</span>
+          <span>{post.writer}</span>
+        </div>
         <h1>{post.title}</h1>
         <TagList
           tags={post.tags}

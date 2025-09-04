@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import matter from 'gray-matter'
 import { cache } from 'react'
 import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
 import lqipModern from 'lqip-modern'
+import { readMdxFile } from '@/shared/lib/mdx/reader'
 
 const POSTS_PATH = path.join(process.cwd(), 'public/posts')
 
@@ -14,21 +14,23 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
     return null
   }
 
-  const fileContents = fs.readFileSync(fullPath, 'utf8')
-  const { data, content } = matter(fileContents)
+  const result = readMdxFile(fullPath)
+  if (!result) {
+    return null
+  }
 
-  const { width, height, base64 } = await getImageMetadata(data.thumbnail)
+  const rawData = result.data as Post
+
+  const { width, height, base64 } = await getImageMetadata(rawData.thumbnail)
 
   try {
     const frontmatter = PostMetaDataSchema.parse({
-      ...data,
-      date: new Date(data.date),
+      ...rawData,
     })
 
     return {
       ...frontmatter,
-      slug,
-      content,
+      content: result.content,
       width,
       height,
       blurDataURL: base64,
@@ -62,7 +64,7 @@ export const getAllPosts = cache(async (): Promise<Post[]> => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 })
 
-const getImageMetadata = async (thumbnailPath?: string) => {
+const getImageMetadata = async (thumbnailPath: string | null) => {
   if (!thumbnailPath) {
     return {
       width: 0,

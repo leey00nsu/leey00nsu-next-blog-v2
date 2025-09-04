@@ -1,14 +1,6 @@
 import { Post } from '@/entities/post/model/types'
 
-import { MDXRemote } from 'next-mdx-remote/rsc'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
-import rehypeSlug from 'rehype-slug'
-import rehypePrettyCode from 'rehype-pretty-code'
-import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
-import remarkRemovePublic from '@/lib/remark-remove-public'
-import CustomImage from '@/features/post/ui/custom-image'
-import imageMetadata from '@/lib/image-metadata'
+import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { getTableOfContents } from '@/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
 import GiscusComments from '@/features/post/ui/giscus-comments'
@@ -36,28 +28,7 @@ export function PostDetail({ post }: PostDetailProps) {
         />
         <hr />
         <Toc headings={headings} className="md:hidden" />
-        <MDXRemote
-          source={post.content}
-          components={{
-            figcaption: CustomFigcaption,
-            img: CustomImage,
-          }}
-          options={{
-            mdxOptions: {
-              remarkPlugins: [remarkGfm, remarkBreaks, remarkRemovePublic],
-              rehypePlugins: [
-                [
-                  rehypePrettyCode,
-                  {
-                    theme: 'github-dark',
-                  },
-                ],
-                rehypeSlug,
-                imageMetadata,
-              ],
-            },
-          }}
-        />
+        <MdxRenderer content={post.content} />
       </article>
 
       <section className="mx-auto py-8">

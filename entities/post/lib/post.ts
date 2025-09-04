@@ -59,7 +59,7 @@ export const getAllPosts = cache(async (): Promise<Post[]> => {
 
   return posts
     .filter((post): post is Post => post !== null)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 })
 
 const getImageMetadata = async (thumbnailPath?: string) => {

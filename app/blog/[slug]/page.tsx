@@ -3,9 +3,7 @@ import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
 
 interface PostPageProps {
-  params: {
-    slug: string
-  }
+  params: Promise<{ slug: string }>
 }
 
 // 빌드 시점에 모든 포스트의 경로를 미리 생성합니다.

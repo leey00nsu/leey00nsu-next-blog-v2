@@ -12,6 +12,7 @@ import imageMetadata from '@/lib/image-metadata'
 import { getTableOfContents } from '@/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
 import GiscusComments from '@/features/post/ui/giscus-comments'
+import TagList from '@/features/post/ui/tag-list'
 
 interface PostDetailProps {
   post: Post
@@ -26,7 +27,11 @@ export function PostDetail({ post }: PostDetailProps) {
         <time dateTime={post.date.toISOString()}>
           {post.date.toLocaleDateString('ko-KR')}
         </time>
-        <h1 className="mt-2">{post.title}</h1>
+        <h1>{post.title}</h1>
+        <TagList
+          tags={post.tags}
+          hrefBuilder={(t) => `/blog?tag=${encodeURIComponent(t)}`}
+        />
         <hr />
         <Toc headings={headings} className="md:hidden" />
         <MDXRemote

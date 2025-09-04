@@ -121,6 +121,10 @@
     @apply bg-background text-foreground;
   }
 
+  a {
+    text-decoration: none !important;
+  }
+
   .prose :where(code):not(:where([class~='not-prose'] *)) {
     background-color: var(--muted);
     color: var(--muted-foreground);

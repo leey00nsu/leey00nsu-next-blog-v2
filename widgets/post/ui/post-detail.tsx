@@ -11,6 +11,7 @@ import CustomImage from '@/features/post/ui/custom-image'
 import imageMetadata from '@/lib/image-metadata'
 import { getTableOfContents } from '@/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
+import GiscusComments from '@/features/post/ui/giscus-comments'
 
 interface PostDetailProps {
   post: Post
@@ -51,6 +52,10 @@ export function PostDetail({ post }: PostDetailProps) {
           }}
         />
       </article>
+
+      <section className="mx-auto py-8">
+        <GiscusComments />
+      </section>
 
       <div className="absolute top-0 left-full z-10 hidden h-full pl-8 md:block">
         <aside className="sticky top-40 w-64">

@@ -61,7 +61,6 @@ export function FrontmatterForm({
 
   // 값 변경시 상위로 전달
   useEffect(() => {
-    console.log(values, errors)
     onChange?.(values as Frontmatter, errors)
   }, [
     values.slug,

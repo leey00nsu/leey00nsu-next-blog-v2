@@ -11,7 +11,7 @@ export const formatFrontmatter = (fm: Frontmatter) => {
     `date: ${fm.date}`,
     `section: ${fm.section}`,
     `series: ${fm.series ?? ''}`,
-    `thumbnail: ${fm.thumbnail}`,
+    `thumbnail: ${fm.thumbnail ?? ''}`,
     `draft: ${fm.draft}`,
     `writer: ${fm.writer}`,
     '---',

@@ -21,6 +21,8 @@ interface FrontmatterFormProps {
   onChange?: (fm: Frontmatter, errors: FieldErrors<Frontmatter>) => void
   existingSlugs?: string[]
   suggestionTags?: string[]
+  // 마크다운 본문에서 사용 중인 pending 이미지들 (썸네일 후보)
+  thumbnailChoices?: { path: string; previewUrl: string }[]
 }
 
 export function FrontmatterForm({
@@ -30,6 +32,7 @@ export function FrontmatterForm({
   onChange,
   existingSlugs = [],
   suggestionTags = [],
+  thumbnailChoices = [],
 }: FrontmatterFormProps) {
   const defaultValues: Frontmatter = {
     slug: initial?.slug ?? value?.slug ?? '',
@@ -39,17 +42,21 @@ export function FrontmatterForm({
     section: initial?.section ?? value?.section ?? 'blog',
     series: initial?.series ?? value?.series ?? '',
     date: initial?.date ?? value?.date ?? new Date().toISOString().slice(0, 10),
-    thumbnail: initial?.thumbnail ?? value?.thumbnail ?? '/public/posts/...',
+    thumbnail: initial?.thumbnail ?? value?.thumbnail ?? null,
     draft: initial?.draft ?? value?.draft ?? false,
     tags: initial?.tags ?? value?.tags ?? [],
   }
 
-  const schema = makeFrontmatterSchema({ existingSlugs })
+  const schema = makeFrontmatterSchema({
+    existingSlugs,
+    allowedThumbnailPaths: thumbnailChoices.map((c) => c.path),
+  })
 
   const {
     register,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<z.input<typeof schema>>({
     resolver: zodResolver(schema),
@@ -58,6 +65,20 @@ export function FrontmatterForm({
   })
 
   const values = watch()
+
+  // slug 입력 실시간 정규화: 소문자, 숫자, 하이픈만 허용
+  const sanitizeSlug = (raw: string) => {
+    let v = raw.toLowerCase()
+    v = v.replaceAll(/[^a-z0-9-]/g, '') // 허용 외 문자 제거
+    v = v.replaceAll(/-+/g, '-') // 연속 하이픈 축약
+    return v
+  }
+
+  const finalizeSlug = (raw: string) => {
+    let v = sanitizeSlug(raw)
+    v = v.replace(/^-+/, '').replace(/-+$/, '') // 앞/뒤 하이픈 제거
+    return v
+  }
 
   // 값 변경시 상위로 전달
   useEffect(() => {
@@ -77,12 +98,59 @@ export function FrontmatterForm({
 
   const draft = watch('draft')
 
+  // 외부 value.thumbnail이 변경되면 폼의 thumbnail 값 동기화
+  useEffect(() => {
+    if (typeof value?.thumbnail === 'string' || value?.thumbnail === null) {
+      setValue('thumbnail', value.thumbnail, { shouldValidate: true })
+    }
+  }, [value?.thumbnail, setValue])
+
+  // 썸네일 후보(thumbnailChoices)가 바뀌어 현재 선택이 유효하지 않으면 null로 리셋
+  useEffect(() => {
+    const cur = watch('thumbnail') as string | null | undefined
+    if (!cur) return
+    const exists = thumbnailChoices.some((c) => c.path === cur)
+    if (!exists) {
+      setValue('thumbnail', null, { shouldValidate: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thumbnailChoices])
+
   return (
     <form className="border-border mb-6 space-y-4 rounded-lg border p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="slug">슬러그</Label>
-          <Input id="slug" placeholder="my-post-slug" {...register('slug')} />
+          {(() => {
+            const slugReg = register('slug')
+            const slugVal = watch('slug') ?? ''
+            return (
+              <Input
+                id="slug"
+                placeholder="my-post-slug"
+                value={slugVal}
+                onChange={(e) =>
+                  setValue('slug', sanitizeSlug(e.target.value), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                onBlur={(e) => {
+                  setValue('slug', finalizeSlug(e.target.value), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                  slugReg.onBlur(e)
+                }}
+                ref={slugReg.ref}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="text"
+                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              />
+            )
+          })()}
           {errors.slug && (
             <p className="text-destructive mt-1 text-xs">
               {errors.slug.message as string}
@@ -161,17 +229,45 @@ export function FrontmatterForm({
           <input id="tagsText" type="hidden" {...register('tags')} />
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="thumbnail">썸네일 경로</Label>
-          <Input
-            id="thumbnail"
-            placeholder="/public/posts/.."
-            {...register('thumbnail')}
-          />
-          {errors.thumbnail && (
-            <p className="text-destructive mt-1 text-xs">
-              {errors.thumbnail.message as string}
-            </p>
-          )}
+          <Label htmlFor="thumbnailSelect">썸네일 선택(선택 사항)</Label>
+          <div className="space-y-2">
+            <select
+              id="thumbnailSelect"
+              className="bg-background w-full rounded-md border px-3 py-2 text-sm"
+              value={watch('thumbnail') ?? ''}
+              onChange={(e) =>
+                setValue(
+                  'thumbnail',
+                  e.target.value ? (e.target.value as string) : null,
+                  { shouldDirty: true, shouldValidate: true },
+                )
+              }
+            >
+              <option value="">없음</option>
+              {thumbnailChoices.map((c) => (
+                <option key={c.path} value={c.path}>
+                  {c.path}
+                </option>
+              ))}
+            </select>
+            {/* thumbnail 필드를 폼에 등록하여 밸리데이션 및 제출 시 포함 */}
+            <input type="hidden" {...register('thumbnail')} />
+            {errors.thumbnail && (
+              <p className="text-destructive mt-1 text-xs">
+                {errors.thumbnail.message as string}
+              </p>
+            )}
+            {watch('thumbnail') && (
+              <img
+                alt="thumbnail preview"
+                className="mt-2 h-24 w-auto rounded border"
+                src={
+                  thumbnailChoices.find((c) => c.path === watch('thumbnail'))
+                    ?.previewUrl
+                }
+              />
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Switch

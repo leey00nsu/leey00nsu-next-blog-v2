@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
-export const makeFrontmatterSchema = (params: { existingSlugs: string[] }) => {
-  const { existingSlugs } = params
+export const makeFrontmatterSchema = (params: {
+  existingSlugs: string[]
+  // 썸네일로 선택 가능한 경로 목록(마크다운에서 사용 중인 pending 이미지)
+  allowedThumbnailPaths?: string[]
+}) => {
+  const { existingSlugs, allowedThumbnailPaths = [] } = params
 
   return z
     .object({
@@ -19,12 +23,16 @@ export const makeFrontmatterSchema = (params: { existingSlugs: string[] }) => {
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/i, '날짜 형식은 YYYY-MM-DD 입니다.'),
       thumbnail: z
-        .string()
-        .min(1, '썸네일 경로는 필수입니다.')
-        .regex(
-          /^\/(?:public\/)?posts\/[\w\-\/\.]+$/,
-          '경로는 /public/posts/... 또는 /posts/... 형식이어야 합니다.',
-        ),
+        .union([
+          z
+            .string()
+            .regex(
+              /^\/(?:public\/)?posts\/[\w\-\/\.]+$/,
+              '경로는 /public/posts/... 또는 /posts/... 형식이어야 합니다.',
+            ),
+          z.null(),
+        ])
+        .nullable(),
       draft: z.boolean().default(false),
       tags: z.string().array(),
     })
@@ -41,6 +49,22 @@ export const makeFrontmatterSchema = (params: { existingSlugs: string[] }) => {
           path: ['slug'],
           message: '이미 존재하는 slug입니다.',
         })
+      }
+
+      // 썸네일이 문자열이라면 허용된 경로(마크다운에서 사용 중인 pending 이미지) 중 하나여야 함
+      if (
+        typeof data.thumbnail === 'string' &&
+        data.thumbnail.length > 0 &&
+        allowedThumbnailPaths.length > 0
+      ) {
+        const ok = allowedThumbnailPaths.includes(data.thumbnail)
+        if (!ok) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['thumbnail'],
+            message: '본문에 사용 중인 이미지 중에서만 선택할 수 있습니다.',
+          })
+        }
       }
     })
 }

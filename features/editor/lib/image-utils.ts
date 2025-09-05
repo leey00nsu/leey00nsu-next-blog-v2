@@ -51,8 +51,6 @@ export function rewriteMarkdownImagePaths(
   oldSlug: string | null | undefined,
   nextSlug: string,
 ) {
-  if (!nextSlug) return markdown
-
   const placeholders = [
     `${PUBLIC_POSTS_BASE}/.../`,
     oldSlug ? `${PUBLIC_POSTS_BASE}/${oldSlug}/` : '',
@@ -63,17 +61,14 @@ export function rewriteMarkdownImagePaths(
     const pattern = escapeForRegExp(from)
     const re = new RegExp(`(!\\[[^\\]]*\\]\\()${pattern}`, 'g')
     // 마크다운 이미지 문법(![alt](src))만 우선 안전하게 치환
-    next = next.replace(
-      re,
-      (_m, prefix) => `${prefix}${PUBLIC_POSTS_BASE}/${nextSlug}/`,
-    )
+    const target = nextSlug
+      ? `${PUBLIC_POSTS_BASE}/${nextSlug}/`
+      : `${PUBLIC_POSTS_BASE}/.../`
+    next = next.replace(re, (_m, prefix) => `${prefix}${target}`)
 
     // HTML img 태그에 대해서도 기본적인 src 치환 수행
     const htmlRe = new RegExp(`(src=["'])${pattern}`, 'g')
-    next = next.replace(
-      htmlRe,
-      (_m, prefix) => `${prefix}${PUBLIC_POSTS_BASE}/${nextSlug}/`,
-    )
+    next = next.replace(htmlRe, (_m, prefix) => `${prefix}${target}`)
   }
   return next
 }
@@ -84,7 +79,6 @@ export function remapPendingImagesSlug(
   oldSlug: string | null | undefined,
   nextSlug: string,
 ) {
-  if (!nextSlug) return pending
   const fromPrefixes = [
     `${PUBLIC_POSTS_BASE}/.../`,
     oldSlug ? `${PUBLIC_POSTS_BASE}/${oldSlug}/` : '',
@@ -92,17 +86,43 @@ export function remapPendingImagesSlug(
 
   const entries = Object.entries(pending)
   const out: PendingImageMap = {}
+  const target = nextSlug
+    ? `${PUBLIC_POSTS_BASE}/${nextSlug}/`
+    : `${PUBLIC_POSTS_BASE}/.../`
   for (const [key, val] of entries) {
     let newKey = key
     for (const prefix of fromPrefixes) {
       if (key.startsWith(prefix)) {
-        newKey = key.replace(prefix, `${PUBLIC_POSTS_BASE}/${nextSlug}/`)
+        newKey = key.replace(prefix, target)
         break
       }
     }
     out[newKey] = val
   }
   return out
+}
+
+// 단일 이미지 경로의 슬러그를 변경합니다.
+// - '/public/posts/{old}/...' 또는 '/public/posts/.../...' 접두부를 '/public/posts/{next}/'로 바꿉니다.
+export function rewriteImagePathSlug(
+  path: string,
+  oldSlug: string | null | undefined,
+  nextSlug: string,
+) {
+  const fromPrefixes = [
+    `${PUBLIC_POSTS_BASE}/.../`,
+    oldSlug ? `${PUBLIC_POSTS_BASE}/${oldSlug}/` : '',
+  ].filter(Boolean) as string[]
+
+  const target = nextSlug
+    ? `${PUBLIC_POSTS_BASE}/${nextSlug}/`
+    : `${PUBLIC_POSTS_BASE}/.../`
+  for (const prefix of fromPrefixes) {
+    if (path.startsWith(prefix)) {
+      return path.replace(prefix, target)
+    }
+  }
+  return path
 }
 
 // 마크다운(본문)에서 사용 중인 이미지 경로를 모두 수집합니다.

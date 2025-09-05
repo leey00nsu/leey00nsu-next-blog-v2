@@ -69,7 +69,6 @@ export function CustomImageDialog() {
 
   const fileList = watch('file')
   const hasFileSelected = Boolean(fileList && fileList.length > 0)
-  const requireSlug = Boolean(imageUploadHandler) && !slug && hasFileSelected
 
   return (
     <Dialog.Root
@@ -108,9 +107,10 @@ export function CustomImageDialog() {
                   accept="image/*"
                   {...register('file')}
                 />
-                {Boolean(imageUploadHandler) && !slug && hasFileSelected && (
-                  <p className="text-xs text-red-600">
-                    먼저 슬러그를 입력한 뒤 이미지를 업로드하세요.
+                {!slug && hasFileSelected && (
+                  <p className="text-xs text-muted-foreground">
+                    슬러그가 비어 있으므로 경로는 <code>/public/posts/.../</code> 에 삽입됩니다.
+                    슬러그 설정 후 자동으로 새 경로로 매핑됩니다.
                   </p>
                 )}
               </div>
@@ -206,7 +206,7 @@ export function CustomImageDialog() {
             <Separator />
 
             <div className="flex justify-end gap-2">
-              <Button type="submit" disabled={requireSlug}>
+              <Button type="submit">
                 {t('dialogControls.save', 'Save')}
               </Button>
               <Dialog.Close asChild>

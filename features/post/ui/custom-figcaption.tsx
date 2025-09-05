@@ -22,9 +22,17 @@ export function CustomFigcaption({
   const copyToClipboardHandler = async () => {
     if (!copyButtonRef.current) return
 
-    const figure = copyButtonRef.current?.parentNode?.parentNode
-    const code = figure?.querySelector('code')
-    const text = code?.textContent
+    const figure = (copyButtonRef.current.closest(
+      'figure'
+    ) || copyButtonRef.current.parentNode?.parentNode) as ParentNode | null
+    const code = (figure as Element | null)?.querySelector('code')
+    let text = code?.textContent ?? null
+
+    // Fallback: support CodeMirror editor inside the editor (no <code> tag)
+    if (!text) {
+      const cm = (figure as Element | null)?.querySelector('.cm-content')
+      text = cm?.textContent ?? null
+    }
 
     if (!text) return
 

@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { FieldErrors, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   frontmatterSchema,
+  makeFrontmatterSchema,
   type Frontmatter,
   type FrontmatterInput,
 } from '@/entities/studio/model/frontmatter-schema'
@@ -12,12 +13,15 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { Switch } from '@/shared/ui/switch'
+import { TagInput } from '@/shared/ui/tag-input'
 
 interface FrontmatterFormProps {
   value?: Frontmatter
   initial?: Partial<Frontmatter>
   onSubmit?: (fm: Frontmatter) => void
-  onChange?: (fm: Frontmatter) => void
+  onChange?: (fm: Frontmatter, errors: FieldErrors) => void
+  existingSlugs?: string[]
+  suggestionTags?: string[]
 }
 
 type FrontmatterFormValues = Omit<FrontmatterInput, 'draft' | 'tagsText'> & {
@@ -30,6 +34,8 @@ export function FrontmatterForm({
   initial,
   onSubmit,
   onChange,
+  existingSlugs = [],
+  suggestionTags = [],
 }: FrontmatterFormProps) {
   const defaultValues: FrontmatterFormValues = {
     slug: initial?.slug ?? value?.slug ?? '',
@@ -46,25 +52,24 @@ export function FrontmatterForm({
 
   const {
     register,
-    handleSubmit,
     watch,
     setValue,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(frontmatterSchema),
+    resolver: zodResolver(makeFrontmatterSchema({ existingSlugs })),
     defaultValues,
-    mode: 'onBlur',
+    mode: 'onChange',
   })
 
-  const submit = handleSubmit((data) => {
-    const parsed = frontmatterSchema.parse(data)
-    const tags = (parsed.tagsText ?? '')
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean)
-    const result: Frontmatter = { ...parsed, tags }
-    onSubmit?.(result)
-  })
+  // const submit = handleSubmit((data) => {
+  //   const parsed = frontmatterSchema.parse(data)
+  //   const tags = (parsed.tagsText ?? '')
+  //     .split(',')
+  //     .map((t) => t.trim())
+  //     .filter(Boolean)
+  //   const result: Frontmatter = { ...parsed, tags }
+  //   onSubmit?.(result)
+  // })
 
   const values = watch()
 
@@ -77,7 +82,8 @@ export function FrontmatterForm({
         .map((t) => t.trim())
         .filter(Boolean)
       const result: Frontmatter = { ...parsed, tags }
-      onChange?.(result)
+
+      onChange?.(result, errors)
     } catch {}
   }, [
     values.slug,
@@ -168,13 +174,19 @@ export function FrontmatterForm({
             </p>
           )}
         </div>
-        <div>
-          <Label htmlFor="tagsText">태그(쉼표 구분)</Label>
-          <Input
-            id="tagsText"
-            placeholder="tag1, tag2"
-            {...register('tagsText')}
+        <div className="md:col-span-2">
+          <Label htmlFor="tagsText">태그</Label>
+          <TagInput
+            value={(values.tagsText ?? '')
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)}
+            onChange={(next) =>
+              setValue('tagsText', next.join(', '), { shouldDirty: true })
+            }
+            suggestions={suggestionTags}
           />
+          <input id="tagsText" type="hidden" {...register('tagsText')} />
         </div>
         <div className="md:col-span-2">
           <Label htmlFor="thumbnail">썸네일 경로</Label>

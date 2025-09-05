@@ -26,6 +26,7 @@ const eslintConfig = [
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/import-style': 'off',
       'unicorn/no-null': 'off',
+      'unicorn/consistent-function-scoping': 'off',
     },
   },
 ]

@@ -16,6 +16,7 @@ import {
 
 const Editor = dynamic(() => import('@/features/editor/ui/editor'), {
   ssr: false,
+  loading: () => <p>loading...</p>,
 })
 
 type StudioProps = {

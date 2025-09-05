@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MDXEditorMethods } from '@mdxeditor/editor'
 import { FrontmatterForm } from '@/features/studio/ui/frontmatter-form'
 import { Frontmatter } from '@/entities/studio/model/frontmatter-schema'
@@ -41,18 +41,20 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
     // 최종 마크다운과 보류중 이미지 로그 출력 (업로드 연동 지점)
     console.log('[FINAL MARKDOWN]', finalMarkdown)
     console.log('[PENDING IMAGES]', Object.keys(pendingImages))
+
+    console.log(pendingImages)
     // TODO: API 연동하여 pendingImages[path].file 업로드 후 파일 저장
     // 업로드 성공 시 URL.revokeObjectURL 호출 및 pendingImages 정리
   }
 
-  const handleAddPendingImage = (path: string, file: File) => {
+  const handleAddPendingImage = useCallback((path: string, file: File) => {
     setPendingImages((prev) => {
       const prevEntry = prev[path]
       if (prevEntry) URL.revokeObjectURL(prevEntry.objectURL)
       const objectURL = URL.createObjectURL(file)
       return { ...prev, [path]: { file, objectURL } }
     })
-  }
+  }, [])
 
   // 슬러그 변경 시: 마크다운 내 이미지 경로와 pendingImages 키를 모두 새 슬러그로 갱신
   // - '/public/posts/{old}/...' -> '/public/posts/{next}/...'
@@ -90,12 +92,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         value={markdown}
         fieldChange={setMarkdown}
         slug={frontMatter?.slug}
-        pendingImages={Object.fromEntries(
-          Object.entries(pendingImages).map(([k, v]) => [
-            k,
-            { objectURL: v.objectURL },
-          ]),
-        )}
+        pendingImages={pendingImages}
         onAddPendingImage={handleAddPendingImage}
       />
       <Button disabled={!frontMatter || !markdown} onClick={save}>

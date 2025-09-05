@@ -31,7 +31,7 @@ import {
   type CodeBlockEditorDescriptor,
 } from '@mdxeditor/editor'
 
-import { Ref, createContext, useContext, useMemo } from 'react'
+import { Ref, createContext, useContext, useMemo, memo } from 'react'
 import '@mdxeditor/editor/style.css'
 import { CodeBlockWithFigcaption } from '@/features/editor/ui/codeblock-with-figcaption'
 import { CustomImageDialog } from '@/features/editor/ui/custom-image-dialog'
@@ -53,7 +53,7 @@ interface Props {
   pendingImages?: PendingImageMap
   onAddPendingImage?: (path: string, file: File) => void
 }
-const Editor = ({
+const EditorBase = ({
   value,
   editorRef,
   fieldChange,
@@ -67,6 +67,88 @@ const Editor = ({
     [slug, pendingImages, onAddPendingImage],
   )
 
+  const plugins = useMemo(
+    () => [
+      headingsPlugin(),
+      listsPlugin(),
+      linkPlugin(),
+      linkDialogPlugin(),
+      quotePlugin(),
+      markdownShortcutPlugin(),
+      tablePlugin(),
+      imagePlugin({
+        imageUploadHandler,
+        imagePreviewHandler,
+        ImageDialog: CustomImageDialog,
+        allowSetImageDimensions: true,
+      }),
+      codeBlockPlugin({
+        defaultCodeBlockLanguage: '',
+        codeBlockEditorDescriptors: [
+          {
+            priority: 100,
+            match: () => true,
+            Editor: CodeBlockWithFigcaption,
+          } satisfies CodeBlockEditorDescriptor,
+        ],
+      }),
+      codeMirrorPlugin({
+        codeBlockLanguages: {
+          css: 'css',
+          txt: 'txt',
+          sql: 'sql',
+          html: 'html',
+          sass: 'sass',
+          scss: 'scss',
+          bash: 'bash',
+          json: 'json',
+          js: 'javascript',
+          ts: 'typescript',
+          '': 'unspecified',
+          tsx: 'TypeScript (React)',
+          jsx: 'JavaScript (React)',
+        },
+        autoLoadLanguageSupport: true,
+      }),
+      diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: '' }),
+      toolbarPlugin({
+        toolbarContents: () => (
+          <DiffSourceToggleWrapper options={['rich-text', 'source']}>
+            <ConditionalContents
+              options={[
+                {
+                  when: (editor) => editor?.editorType === 'codeblock',
+                  contents: () => <ChangeCodeMirrorLanguage />,
+                },
+                {
+                  fallback: () => (
+                    <>
+                      <UndoRedo />
+                      <Separator />
+                      <BoldItalicUnderlineToggles />
+                      <CodeToggle />
+                      <Separator />
+                      <ListsToggle />
+                      <Separator />
+                      <CreateLink />
+                      <InsertImage />
+                      <Separator />
+                      <InsertTable />
+                      <InsertThematicBreak />
+                      <Separator />
+                      <InsertCodeBlock />
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </DiffSourceToggleWrapper>
+        ),
+      }),
+    ],
+    [imageUploadHandler, imagePreviewHandler],
+  )
+
   return (
     <StudioEditorContext.Provider value={{ slug }}>
       <MDXEditor
@@ -74,86 +156,15 @@ const Editor = ({
         ref={editorRef}
         onChange={fieldChange}
         className="prose prose-lg dark:prose-invert mx-auto border border-gray-200 dark:border-gray-800"
-        plugins={[
-          headingsPlugin(),
-          listsPlugin(),
-          linkPlugin(),
-          linkDialogPlugin(),
-          quotePlugin(),
-          markdownShortcutPlugin(),
-          tablePlugin(),
-          imagePlugin({
-            imageUploadHandler,
-            imagePreviewHandler,
-            ImageDialog: CustomImageDialog,
-            allowSetImageDimensions: true,
-          }),
-          codeBlockPlugin({
-            defaultCodeBlockLanguage: '',
-            codeBlockEditorDescriptors: [
-              {
-                priority: 100,
-                match: () => true,
-                Editor: CodeBlockWithFigcaption,
-              } satisfies CodeBlockEditorDescriptor,
-            ],
-          }),
-          codeMirrorPlugin({
-            codeBlockLanguages: {
-              css: 'css',
-              txt: 'txt',
-              sql: 'sql',
-              html: 'html',
-              sass: 'sass',
-              scss: 'scss',
-              bash: 'bash',
-              json: 'json',
-              js: 'javascript',
-              ts: 'typescript',
-              '': 'unspecified',
-              tsx: 'TypeScript (React)',
-              jsx: 'JavaScript (React)',
-            },
-            autoLoadLanguageSupport: true,
-          }),
-          diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: '' }),
-          toolbarPlugin({
-            toolbarContents: () => (
-              <DiffSourceToggleWrapper options={['rich-text', 'source']}>
-                <ConditionalContents
-                  options={[
-                    {
-                      when: (editor) => editor?.editorType === 'codeblock',
-                      contents: () => <ChangeCodeMirrorLanguage />,
-                    },
-                    {
-                      fallback: () => (
-                        <>
-                          <UndoRedo />
-                          <Separator />
-                          <BoldItalicUnderlineToggles />
-                          <CodeToggle />
-                          <Separator />
-                          <ListsToggle />
-                          <Separator />
-                          <CreateLink />
-                          <InsertImage />
-                          <Separator />
-                          <InsertTable />
-                          <InsertThematicBreak />
-                          <Separator />
-                          <InsertCodeBlock />
-                        </>
-                      ),
-                    },
-                  ]}
-                />
-              </DiffSourceToggleWrapper>
-            ),
-          }),
-        ]}
+        plugins={plugins}
       />
     </StudioEditorContext.Provider>
   )
 }
+const areEqual = (prev: Readonly<Props>, next: Readonly<Props>) => {
+  // markdown(value) 변경은 무시하여 Editor 리렌더를 피함
+  return prev.slug === next.slug && prev.pendingImages === next.pendingImages
+}
+
+const Editor = memo(EditorBase, areEqual)
 export default Editor

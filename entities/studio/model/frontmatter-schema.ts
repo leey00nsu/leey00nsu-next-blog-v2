@@ -26,8 +26,7 @@ export const makeFrontmatterSchema = (params: { existingSlugs: string[] }) => {
           '경로는 /public/posts/... 또는 /posts/... 형식이어야 합니다.',
         ),
       draft: z.boolean().default(false),
-      // UI에서는 쉼표 구분 문자열로 받는다
-      tagsText: z.string().optional().default(''),
+      tags: z.string().array(),
     })
     .superRefine((data, ctx) => {
       const cur = (data.slug ?? '').trim().toLowerCase()
@@ -48,7 +47,4 @@ export const makeFrontmatterSchema = (params: { existingSlugs: string[] }) => {
 
 export const frontmatterSchema = makeFrontmatterSchema({ existingSlugs: [] })
 
-export type FrontmatterInput = z.infer<typeof frontmatterSchema>
-export type Frontmatter = Omit<FrontmatterInput, 'tagsText'> & {
-  tags: string[]
-}
+export type Frontmatter = z.infer<typeof frontmatterSchema>

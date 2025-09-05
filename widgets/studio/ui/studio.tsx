@@ -11,6 +11,7 @@ import type { PendingImageMap } from '@/features/editor/model/types'
 import {
   remapPendingImagesSlug,
   rewriteMarkdownImagePaths,
+  collectUsedImageSrcs,
 } from '@/features/editor/lib/image-utils'
 
 const Editor = dynamic(() => import('@/features/editor/ui/editor'), {
@@ -38,13 +39,25 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   }, [frontMatter, bodyMarkdown])
 
   const save = () => {
-    // 최종 마크다운과 보류중 이미지 로그 출력 (업로드 연동 지점)
-    console.log('[FINAL MARKDOWN]', finalMarkdown)
-    console.log('[PENDING IMAGES]', Object.keys(pendingImages))
+    // 본문에서 사용 중인 이미지 경로만 추출 (frontmatter 제외)
+    const usedSrcs = collectUsedImageSrcs(bodyMarkdown)
 
-    console.log(pendingImages)
-    // TODO: API 연동하여 pendingImages[path].file 업로드 후 파일 저장
-    // 업로드 성공 시 URL.revokeObjectURL 호출 및 pendingImages 정리
+    // pendingImages 중 실제 사용되는 항목만 남기고, 사용되지 않는 항목은 objectURL 해제 후 제거
+    const filtered: PendingImageMap = {}
+    for (const [path, entry] of Object.entries(pendingImages)) {
+      if (usedSrcs.has(path)) {
+        filtered[path] = entry
+      } else {
+        URL.revokeObjectURL(entry.objectURL)
+      }
+    }
+    setPendingImages(filtered)
+
+    // 최종 로그 및 업로드 연동 지점
+    console.log('[FINAL MARKDOWN]', finalMarkdown)
+    console.log('[PENDING IMAGES USED]', Object.keys(filtered))
+
+    // TODO: API 연동하여 filtered[path].file 업로드 후 파일 저장
   }
 
   const handleAddPendingImage = useCallback((path: string, file: File) => {

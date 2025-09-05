@@ -171,11 +171,14 @@ export function CustomImageDialog() {
                     min={0}
                     {...register('width', {
                       // 빈 문자열은 undefined로 변환하여 optional 동작 보장
-                      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
+                      setValueAs: (v) =>
+                        v === '' || v === null ? undefined : Number(v),
                     })}
                   />
                   {formState.errors.width && (
-                    <p className="text-xs text-red-600">{String(formState.errors.width.message)}</p>
+                    <p className="text-xs text-red-600">
+                      {String(formState.errors.width.message)}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -187,11 +190,14 @@ export function CustomImageDialog() {
                     type="number"
                     min={0}
                     {...register('height', {
-                      setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
+                      setValueAs: (v) =>
+                        v === '' || v === null ? undefined : Number(v),
                     })}
                   />
                   {formState.errors.height && (
-                    <p className="text-xs text-red-600">{String(formState.errors.height.message)}</p>
+                    <p className="text-xs text-red-600">
+                      {String(formState.errors.height.message)}
+                    </p>
                   )}
                 </div>
               </div>

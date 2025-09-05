@@ -104,3 +104,28 @@ export function remapPendingImagesSlug(
   }
   return out
 }
+
+// 마크다운(본문)에서 사용 중인 이미지 경로를 모두 수집합니다.
+// - 마크다운 이미지 문법: ![alt](src "title")
+// - HTML img 태그: <img src="..."> 또는 src='...'
+export function collectUsedImageSrcs(markdown: string): Set<string> {
+  const result = new Set<string>()
+
+  // 1) Markdown 이미지 패턴
+  const mdImgRe = /!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
+  let m: RegExpExecArray | null
+  while ((m = mdImgRe.exec(markdown)) !== null) {
+    const src = m[1]
+    if (src) result.add(src)
+  }
+
+  // 2) HTML img 태그 패턴
+  const htmlImgRe = /<img[^>]*\s+src\s*=\s*("([^"]+)"|'([^']+)')[^>]*>/gi
+  let h: RegExpExecArray | null
+  while ((h = htmlImgRe.exec(markdown)) !== null) {
+    const src = h[2] ?? h[3]
+    if (src) result.add(src)
+  }
+
+  return result
+}

@@ -1,6 +1,6 @@
 import { getAllPosts } from '@/entities/post/lib/post'
 import { PostList } from '@/widgets/post/ui/post-list'
-import TagFilterBar from '@/features/post/ui/tag-filter-bar'
+import { TagFilterBar } from '@/features/post/ui/tag-filter-bar'
 import {
   filterPostsByTags,
   parseSelectedTags,

@@ -2,7 +2,7 @@
 
 import Giscus, { Repo } from '@giscus/react'
 
-export default function GiscusComments() {
+export function GiscusComments() {
   const repo = process.env.NEXT_PUBLIC_GISCUS_REPO
   const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID
   const category = process.env.NEXT_PUBLIC_GISCUS_CATEGORY

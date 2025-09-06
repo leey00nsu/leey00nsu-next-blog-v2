@@ -4,7 +4,7 @@ import {
   defaultRehypePlugins,
 } from '@/features/mdx/lib/mdx-options'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
-import CustomImage from '@/features/post/ui/custom-image'
+import { CustomImage } from '@/features/post/ui/custom-image'
 import type React from 'react'
 
 type MDXRemoteProps = React.ComponentProps<typeof MDXRemote>

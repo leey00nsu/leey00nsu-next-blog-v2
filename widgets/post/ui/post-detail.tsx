@@ -3,8 +3,8 @@ import { Post } from '@/entities/post/model/types'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { getTableOfContents } from '@/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
-import GiscusComments from '@/features/post/ui/giscus-comments'
-import TagList from '@/features/post/ui/tag-list'
+import { GiscusComments } from '@/features/post/ui/giscus-comments'
+import { TagList } from '@/features/post/ui/tag-list'
 
 interface PostDetailProps {
   post: Post

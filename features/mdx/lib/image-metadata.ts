@@ -64,7 +64,7 @@ export async function addMetadata(node: ImageNode): Promise<void> {
  * This is a Rehype plugin that finds image `<img>` elements and adds the height and width to the properties.
  * Read more about Next.js image: https://nextjs.org/docs/api-reference/next/image#layout
  */
-export default function imageMetadata() {
+export function imageMetadata() {
   return async function transformer(tree: Node): Promise<Node> {
     const imgNodes: ImageNode[] = []
 
@@ -81,4 +81,3 @@ export default function imageMetadata() {
     return tree
   }
 }
-

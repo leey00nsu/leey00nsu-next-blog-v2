@@ -16,10 +16,13 @@ import {
   rewriteImagePathSlug,
 } from '@/features/editor/lib/image-utils'
 
-const Editor = dynamic(() => import('@/features/editor/ui/editor'), {
-  ssr: false,
-  loading: () => <p>loading...</p>,
-})
+const Editor = dynamic(
+  () => import('@/features/editor/ui/editor').then((m) => m.Editor),
+  {
+    ssr: false,
+    loading: () => <p>loading...</p>,
+  },
+)
 
 type StudioProps = {
   existingSlugs: string[]

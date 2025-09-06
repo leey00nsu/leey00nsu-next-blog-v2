@@ -1,3 +1,3 @@
-export default function removePublic(url: string) {
+export function removePublic(url: string) {
   return url.replace('/public', '')
 }

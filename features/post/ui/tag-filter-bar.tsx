@@ -1,5 +1,5 @@
 import { Post } from '@/entities/post/model/types'
-import TagList from '@/features/post/ui/tag-list'
+import { TagList } from '@/features/post/ui/tag-list'
 import { getTagCounts, makeToggleHref } from '@/features/post/lib/tag-utils'
 
 interface TagFilterBarProps {
@@ -9,7 +9,7 @@ interface TagFilterBarProps {
   className?: string
 }
 
-export default function TagFilterBar({
+export function TagFilterBar({
   posts,
   selectedTags,
   basePath = '/blog',
@@ -29,4 +29,3 @@ export default function TagFilterBar({
     />
   )
 }
-

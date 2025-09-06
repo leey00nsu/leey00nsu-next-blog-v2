@@ -166,5 +166,4 @@ const areEqual = (prev: Readonly<Props>, next: Readonly<Props>) => {
   return prev.slug === next.slug && prev.pendingImages === next.pendingImages
 }
 
-const Editor = memo(EditorBase, areEqual)
-export default Editor
+export const Editor = memo(EditorBase, areEqual)

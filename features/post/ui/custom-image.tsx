@@ -6,7 +6,11 @@ import { useState } from 'react'
 
 const MAX_HEIGHT = 600
 
-const CustomImage = ({
+export interface CustomImageProps extends ImageProps {
+  base64?: string
+}
+
+export function CustomImage({
   alt,
   src,
   width,
@@ -14,7 +18,7 @@ const CustomImage = ({
   base64,
   className,
   ...props
-}: ImageProps & { base64?: string }) => {
+}: CustomImageProps) {
   const [isMounted, setIsMounted] = useState(false)
 
   let numberWidth = Number(width)
@@ -69,5 +73,3 @@ const CustomImage = ({
     </span>
   )
 }
-
-export default CustomImage

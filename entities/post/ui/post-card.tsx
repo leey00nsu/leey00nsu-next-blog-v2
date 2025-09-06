@@ -1,7 +1,7 @@
 import { Post } from '@/entities/post/model/types'
 import { DefaultThumbnail } from '@/entities/post/ui/default-thumbnail'
-import CustomImage from '@/features/post/ui/custom-image'
-import removePublic from '@/lib/remove-public'
+import { CustomImage } from '@/features/post/ui/custom-image'
+import { removePublic } from '@/lib/remove-public'
 
 interface PostCardProps {
   post: Post

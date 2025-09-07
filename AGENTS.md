@@ -1,12 +1,13 @@
 Agents Guide — FSD + React Conventions (for Codex IDE)
 
-본 문서는 Codex(코드 어시스턴트/에이전트)가 일관된 코드 생성·리팩토링을 수행하도록 돕는 운영 규칙입니다. Next.js + TypeScript + React + FSD 구조를 전제로 합니다. 배럴 파일 사용을 금지합니다.
-
-Answer In Korean
+해당 문서는 Codex(코드 어시스턴트/에이전트)가 일관된 코드 생성·리팩토링을 수행하도록 돕는 운영 규칙입니다.
+해당 프로젝트는 Next.js + TypeScript + React + FSD 구조를 전제로 합니다.
+답변은 한국어로 작성합니다.
+package.json을 참고하여 프로젝트의 의존성과 버전을 확인하여 답변을 작성합니다.
 
 ⸻
 
-0. 핵심 원칙 요약
+1. 핵심 원칙 요약
    • Export 규칙: 기본은 named export (export function A() {} / export const fn = () => {}), default export는 금지.
    • Props 타입: 기본은 interface. 단, 유니온/판별식/유틸리티 타입 조합이 핵심인 경우 type 허용.
    • 폴더 구조(FSD): app/(라우팅) · widgets/ · features/ · entities/ · shared/.
@@ -30,8 +31,8 @@ const Button = () => { /_ ... _/ }
 export default Button
 
 1.2 파일당 1 컴포넌트 원칙(예외 최소화)
-• UI 컴포넌트는 파일명 = 컴포넌트명(PascalCase). 예: Card.tsx, PostList.tsx.
-• 동반 타입/훅/스타일은 같은 디렉터리에 _.types.ts, _.hooks.ts, \*.css 등으로 분리.
+• 컴포넌트명은 (PascalCase), 파일명은 kebab-case (ex: like-button.tsx)
+• 동반 타입/훅/스타일은 같은 디렉터리에 types.ts, hooks.ts, \*.css 등으로 분리.
 
 1.3 명시적 Import 경로
 • ✅ import { Button } from "@/shared/ui/button/Button"
@@ -74,33 +75,48 @@ Codex 작업지시: 유니온 중심이면 type, 그 외 객체 props는 interfa
 
 3. FSD 디렉터리 역할
 
-app/ // Next.js 라우팅/레이아웃/서버액션 진입점만
+app/ // Next.js 라우팅/레이아웃/서버 컴포넌트 조립 (App Router 전용)
 widgets/ // 페이지 구역 단위 컴포지션(여러 features/entities 조립)
-features/ // 사용자 시나리오 단위(업로드, 좋아요, 코멘트 작성 등) + UI/모델/액션
-entities/ // 핵심 도메인 개체(Post, User, Image 등) + UI/모델/리포지토리
+features/ // 사용자 시나리오 단위(쓰기/상호작용, 업로드, 좋아요 등) + UI/모델/액션/뮤테이션
+entities/ // 핵심 도메인 개체(Post, User, Image 등) + 타입/조회 API/읽기 쿼리
 shared/ // 크로스컷팅(설정, ui primitives, libs, api 클라이언트, hooks, config)
 
-3.1 파일 배치 규칙(예)
+3.1 세부 분리 기준
 
-entities/post/ui/PostCard.tsx
-entities/post/model/post.types.ts
-entities/post/api/post.repo.ts
-features/like/ui/LikeButton.tsx
-features/like/model/like.mutations.ts
-widgets/post-list/ui/PostListSection.tsx
-shared/ui/button/Button.tsx
+- **shared**: 순수 프리미티브(UI kit, 유틸, fetcher, config). 도메인 지식 금지.
+- **entities**: 도메인 모델 단위. 타입/스키마, 조회 API, 읽기 전용 useQuery.
+- **features**: 사용자 행위 단위. UI + 비즈니스 규칙 + Server Action + useMutation.
+- **widgets**: 여러 feature/entity를 섞어 조립하는 “섹션” 단위. 2곳 이상 재사용되면 여기 배치.
+- **app/**: 라우트·레이아웃·Server Components 조립 전용. 코로케이션(`_data`, `_actions`, `_components`) 허용하되, 재사용되면 상위 레이어로 승격.
+
+  3.2 파일 배치 예
+
+entities/post/ui/post-card.tsx
+entities/post/model/types.ts
+entities/post/api/get-posts.ts
+features/like-post/ui/like-button.tsx
+features/like-post/model/mutations.ts
+features/like-post/actions/like-post.ts (Server Action)
+widgets/post-feed/ui/post-feed.tsx
+shared/ui/button/button.tsx
 shared/api/client.ts
+app/(dashboard)/posts/page.tsx
+app/(dashboard)/posts/\_actions/toggle-like.ts (임시: 이후 features로 승격)
 
-Codex 작업지시: 새 코드 생성 시 계층을 features/entities/shared 중 가장 구체적인 레이어로 우선 배치. 상위 레이어에서 하위 레이어를 참조하되 반대는 금지(순환 참조 금지 검사).
+Codex 작업지시: 새 코드 생성 시 가장 구체적이고 하위 레이어에 우선 배치.
+
+- shared → entities → features → widgets → app 방향으로만 참조 허용.
+- 반대 의존성/순환 참조 발생 시 자동 경고 및 수정.
 
 ⸻
 
-4. 상태/데이터 접근 규칙
-   • TanStack Query: 서버 상태만. 키/캐시/invalidates를 model/_.queries.ts/_.mutations.ts로 분리.
-   • 로컬 상태: 컴포넌트 내부 혹은 useXxx 커스텀 훅. 전역 스토어는 신중히(명확한 공유 필요성 있을 때만).
-   • 서버 액션/REST/gRPC: shared/api 또는 각 entity/.../api에 클라이언트 배치.
-
-Codex 작업지시: 네트워크 호출 하드코딩 발견 시 API 레이어로 추출, 쿼리/뮤테이션 훅 생성 및 사용처 교체.
+1. 상태/데이터 접근 규칙
+   • TanStack Query:
+   - 읽기(useQuery) → entities
+   - 쓰기(useMutation) → features
+     • 서버 액션: features 내부에 배치. 단, 라우트 한정 액션은 app/\_actions 폴더에 임시 배치 후 재사용되면 승격.
+     • RSC(Server Components): app/ 경계에서 조립만 수행. 데이터 로직은 entities/features에서 import.
+     • 로컬 상태: 컴포넌트 내부 또는 useXxx 훅. 전역 스토어는 최소화.
 
 ⸻
 
@@ -114,7 +130,7 @@ Codex 작업지시: 클릭 가능한 요소는 <button>/<a>를 사용. div+onCli
 ⸻
 
 6. 파일 네이밍 & 코드 스타일
-   • 파일명: PascalCase 컴포넌트, kebab-case 유틸/스타일(format-date.ts).
+   • 파일명: kebab-case.
    • use client는 필요한 파일 최상단에만.
    • ESLint/Prettier 규칙 준수.
 
@@ -157,14 +173,14 @@ Codex 작업지시: 신규 UI 생성 시 스토리/테스트 스캐폴딩 동시
 
 [Deliver]
 
-- entities/post/ui/PostCard.tsx (export function PostCard)
-- entities/post/ui/PostCard.stories.tsx
-- entities/post/ui/PostCard.test.tsx
-- entities/post/model/post.types.ts (필요 시)
+- entities/post/ui/post-card.tsx (export function PostCard)
+- entities/post/ui/post-card.stories.tsx
+- entities/post/ui/post-card.test.tsx
+- entities/post/model/types.ts (필요 시)
 
 ⸻
 
-10. 예시 스캐폴딩(요약)
+1.  예시 스캐폴딩(요약)
 
 // entities/post/ui/PostCard.tsx
 'use client'

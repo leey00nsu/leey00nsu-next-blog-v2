@@ -155,7 +155,7 @@ const EditorBase = ({
         markdown={value}
         ref={editorRef}
         onChange={fieldChange}
-        className="prose prose-lg dark:prose-invert mx-auto border border-gray-200 dark:border-gray-800"
+        className="prose prose-lg dark:prose-invert mx-auto w-full border border-gray-200 dark:border-gray-800"
         plugins={plugins}
       />
     </StudioEditorContext.Provider>

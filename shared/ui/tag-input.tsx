@@ -57,7 +57,7 @@ export function TagInput({ value, onChange, suggestions, placeholder }: Props) {
               className="text-muted-foreground hover:bg-accent hover:text-accent-foreground ml-1 rounded px-1"
               aria-label={`${tag} 제거`}
             >
-              ×
+              x
             </button>
           </Badge>
         ))}

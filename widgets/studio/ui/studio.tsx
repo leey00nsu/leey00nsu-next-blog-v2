@@ -15,6 +15,7 @@ import {
   collectUsedImageSrcs,
   rewriteImagePathSlug,
 } from '@/features/editor/lib/image-utils'
+import { signOut } from 'next-auth/react'
 
 const Editor = dynamic(
   () => import('@/features/editor/ui/editor').then((m) => m.Editor),
@@ -45,7 +46,10 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   }, [frontMatter, bodyMarkdown])
 
   // 본문에서 사용 중인 pending 이미지들을 썸네일 후보로 표시
-  const usedSrcs = useMemo(() => collectUsedImageSrcs(bodyMarkdown), [bodyMarkdown])
+  const usedSrcs = useMemo(
+    () => collectUsedImageSrcs(bodyMarkdown),
+    [bodyMarkdown],
+  )
   const thumbnailChoices = useMemo(
     () =>
       Object.entries(pendingImages)
@@ -89,7 +93,9 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   // - '/public/posts/{old}/...' -> '/public/posts/{next}/...'
   // - '/public/posts/.../...'   -> '/public/posts/{next}/...'
   const currentSlug = frontMatter?.slug
-  const [debouncedSlug, setDebouncedSlug] = useState<string | undefined>(currentSlug)
+  const [debouncedSlug, setDebouncedSlug] = useState<string | undefined>(
+    currentSlug,
+  )
   const prevSlugRef = useRef<string | undefined>(undefined)
 
   // slug 변경 전파를 디바운스하여 무거운 리매핑 작업 빈도 감소
@@ -104,7 +110,11 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
     const s = debouncedSlug
     if ((s && s !== prevSlug) || (!s && prevSlug)) {
       // 미리 새 pending 맵을 계산 (썸네일 유효성 판단에도 활용)
-      const nextPending = remapPendingImagesSlug(pendingImages, prevSlug, s ?? '')
+      const nextPending = remapPendingImagesSlug(
+        pendingImages,
+        prevSlug,
+        s ?? '',
+      )
 
       setMarkdown((prev) => {
         const next = rewriteMarkdownImagePaths(prev, prevSlug, s ?? '')
@@ -119,7 +129,11 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         setFrontMatter((fm) => {
           if (!fm) return fm
           if (typeof fm.thumbnail === 'string') {
-            const remapped = rewriteImagePathSlug(fm.thumbnail, prevSlug, s ?? '')
+            const remapped = rewriteImagePathSlug(
+              fm.thumbnail,
+              prevSlug,
+              s ?? '',
+            )
             const valid = usedAfter.has(remapped) && !!nextPending[remapped]
             return { ...fm, thumbnail: valid ? remapped : null }
           }
@@ -129,13 +143,15 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         return next
       })
 
-      setPendingImages((prev) => remapPendingImagesSlug(prev, prevSlug, s ?? ''))
+      setPendingImages((prev) =>
+        remapPendingImagesSlug(prev, prevSlug, s ?? ''),
+      )
     }
     prevSlugRef.current = s
   }, [debouncedSlug])
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <FrontmatterForm
         value={frontMatter}
         onChange={setFrontMatter}
@@ -154,6 +170,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
       <Button disabled={!frontMatter || !markdown} onClick={save}>
         저장
       </Button>
+      <Button onClick={() => signOut()}>로그아웃</Button>
     </div>
   )
 }

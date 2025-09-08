@@ -29,6 +29,7 @@
     "lqip-modern": "^2.2.1",
     "lucide-react": "^0.542.0",
     "next": "15.5.2",
+    "next-auth": "5.0.0-beta.29",
     "next-mdx-remote": "^5.0.0",
     "optional": "^0.1.4",
     "plaiceholder": "^3.0.0",

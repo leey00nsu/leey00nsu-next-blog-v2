@@ -1,6 +1,6 @@
 'use client'
 
-import { TocHeading } from '@/lib/toc'
+import { TocHeading } from '@/shared/lib/toc'
 import { useEffect, useState, useRef } from 'react'
 
 interface TocProps {

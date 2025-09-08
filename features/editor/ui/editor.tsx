@@ -1,42 +1,12 @@
 'use client'
 
-import {
-  MDXEditor,
-  UndoRedo,
-  BoldItalicUnderlineToggles,
-  toolbarPlugin,
-  CodeToggle,
-  InsertCodeBlock,
-  codeBlockPlugin,
-  headingsPlugin,
-  listsPlugin,
-  linkPlugin,
-  quotePlugin,
-  markdownShortcutPlugin,
-  ListsToggle,
-  linkDialogPlugin,
-  CreateLink,
-  InsertImage,
-  InsertTable,
-  tablePlugin,
-  imagePlugin,
-  codeMirrorPlugin,
-  ConditionalContents,
-  ChangeCodeMirrorLanguage,
-  Separator,
-  InsertThematicBreak,
-  diffSourcePlugin,
-  MDXEditorMethods,
-  DiffSourceToggleWrapper,
-  type CodeBlockEditorDescriptor,
-} from '@mdxeditor/editor'
+import { MDXEditor, MDXEditorMethods } from '@mdxeditor/editor'
 
 import { Ref, createContext, useContext, useMemo, memo } from 'react'
 import '@mdxeditor/editor/style.css'
-import { CodeBlockWithFigcaption } from '@/features/editor/ui/codeblock-with-figcaption'
-import { CustomImageDialog } from '@/features/editor/ui/custom-image-dialog'
 import type { PendingImageMap } from '@/features/editor/model/types'
 import { makeImageHandlers } from '@/features/editor/lib/image-handlers'
+import { buildPlugins } from '@/features/editor/lib/build-plugins'
 
 type StudioEditorContextValue = {
   slug?: string
@@ -68,84 +38,7 @@ const EditorBase = ({
   )
 
   const plugins = useMemo(
-    () => [
-      headingsPlugin(),
-      listsPlugin(),
-      linkPlugin(),
-      linkDialogPlugin(),
-      quotePlugin(),
-      markdownShortcutPlugin(),
-      tablePlugin(),
-      imagePlugin({
-        imageUploadHandler,
-        imagePreviewHandler,
-        ImageDialog: CustomImageDialog,
-        allowSetImageDimensions: true,
-      }),
-      codeBlockPlugin({
-        defaultCodeBlockLanguage: '',
-        codeBlockEditorDescriptors: [
-          {
-            priority: 100,
-            match: () => true,
-            Editor: CodeBlockWithFigcaption,
-          } satisfies CodeBlockEditorDescriptor,
-        ],
-      }),
-      codeMirrorPlugin({
-        codeBlockLanguages: {
-          css: 'css',
-          txt: 'txt',
-          sql: 'sql',
-          html: 'html',
-          sass: 'sass',
-          scss: 'scss',
-          bash: 'bash',
-          json: 'json',
-          js: 'javascript',
-          ts: 'typescript',
-          '': 'unspecified',
-          tsx: 'TypeScript (React)',
-          jsx: 'JavaScript (React)',
-        },
-        autoLoadLanguageSupport: true,
-      }),
-      diffSourcePlugin({ viewMode: 'rich-text', diffMarkdown: '' }),
-      toolbarPlugin({
-        toolbarContents: () => (
-          <DiffSourceToggleWrapper options={['rich-text', 'source']}>
-            <ConditionalContents
-              options={[
-                {
-                  when: (editor) => editor?.editorType === 'codeblock',
-                  contents: () => <ChangeCodeMirrorLanguage />,
-                },
-                {
-                  fallback: () => (
-                    <>
-                      <UndoRedo />
-                      <Separator />
-                      <BoldItalicUnderlineToggles />
-                      <CodeToggle />
-                      <Separator />
-                      <ListsToggle />
-                      <Separator />
-                      <CreateLink />
-                      <InsertImage />
-                      <Separator />
-                      <InsertTable />
-                      <InsertThematicBreak />
-                      <Separator />
-                      <InsertCodeBlock />
-                    </>
-                  ),
-                },
-              ]}
-            />
-          </DiffSourceToggleWrapper>
-        ),
-      }),
-    ],
+    () => buildPlugins({ imageUploadHandler, imagePreviewHandler }),
     [imageUploadHandler, imagePreviewHandler],
   )
 

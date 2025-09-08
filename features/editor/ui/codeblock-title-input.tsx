@@ -2,23 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useCodeBlockEditorContext } from '@mdxeditor/editor'
-
-function getTitleFromMeta(meta: string) {
-  const m = meta?.match(/(?:^|\s)title=\"([^\"]*)\"/)
-  return m?.[1] ?? ''
-}
-
-function setTitleInMeta(meta: string, title: string) {
-  const hasTitle = /(?:^|\s)title=\"([^\"]*)\"/.test(meta)
-  if (hasTitle) {
-    return meta.replace(/(?:^|\s)title=\"([^\"]*)\"/, (m) =>
-      m.replace(/title=\"([^\"]*)\"/, `title="${title}"`),
-    )
-  }
-  const trimmed = meta?.trim()
-  const prefix = trimmed ? trimmed + ' ' : ''
-  return `${prefix}title="${title}"`
-}
+import { getTitleFromMeta, setTitleInMeta } from '@/features/editor/lib/codeblock-meta'
 
 export function CodeBlockTitleInput() {
   const { lexicalNode, setMeta } = useCodeBlockEditorContext()

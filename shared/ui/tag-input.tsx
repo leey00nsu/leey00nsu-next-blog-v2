@@ -3,37 +3,40 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { addTag, availableSuggestions, removeTag } from '@/shared/lib/tag'
 
-type Props = {
+interface TagInputProps {
   value: string[]
   onChange: (next: string[]) => void
   suggestions?: string[]
   placeholder?: string
 }
 
-export function TagInput({ value, onChange, suggestions, placeholder }: Props) {
+export function TagInput({
+  value,
+  onChange,
+  suggestions,
+  placeholder,
+}: TagInputProps) {
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const available = useMemo(() => {
-    const set = new Set(value.map((v) => v.toLowerCase()))
-    return (suggestions ?? [])
-      .filter(Boolean)
-      .filter((s) => !set.has(s.toLowerCase()))
-      .slice(0, 20)
-  }, [suggestions, value])
+  const available = useMemo(
+    () => availableSuggestions(value, suggestions ?? [], 20),
+    [suggestions, value],
+  )
 
   function add(tag: string) {
-    const t = tag.trim()
-    if (!t) return
-    if (value.some((v) => v.toLowerCase() === t.toLowerCase())) return
-    onChange([...value, t])
-    setInput('')
-    inputRef.current?.focus()
+    const next = addTag(value, tag)
+    if (next !== value) {
+      onChange(next)
+      setInput('')
+      inputRef.current?.focus()
+    }
   }
 
   function remove(tag: string) {
-    onChange(value.filter((v) => v !== tag))
+    onChange(removeTag(value, tag))
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

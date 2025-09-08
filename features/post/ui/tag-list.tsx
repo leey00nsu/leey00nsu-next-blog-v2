@@ -1,6 +1,6 @@
 import { Badge, badgeVariants } from '@/shared/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant']
 
@@ -52,4 +52,3 @@ export function TagList({
     </div>
   )
 }
-

@@ -1,5 +1,5 @@
 import { Post } from '@/entities/post/model/types'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 interface DefaultThumbnailProps {
   post: Post

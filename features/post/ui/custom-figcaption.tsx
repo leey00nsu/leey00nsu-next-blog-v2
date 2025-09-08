@@ -3,6 +3,7 @@
 import { Button } from '@/shared/ui/button'
 import { Check, Clipboard } from 'lucide-react'
 import { HTMLAttributes, useEffect, useRef, useState } from 'react'
+import { getFigureCodeText } from '@/features/post/lib/get-figure-code-text'
 
 export function CustomFigcaption({
   children,
@@ -21,21 +22,10 @@ export function CustomFigcaption({
 
   const copyToClipboardHandler = async () => {
     if (!copyButtonRef.current) return
-
-    const figure = (copyButtonRef.current.closest(
-      'figure'
-    ) || copyButtonRef.current.parentNode?.parentNode) as ParentNode | null
-    const code = (figure as Element | null)?.querySelector('code')
-    let text = code?.textContent ?? null
-
-    // Fallback: support CodeMirror editor inside the editor (no <code> tag)
-    if (!text) {
-      const cm = (figure as Element | null)?.querySelector('.cm-content')
-      text = cm?.textContent ?? null
-    }
-
+    const figure = (copyButtonRef.current.closest('figure') ||
+      copyButtonRef.current.parentNode?.parentNode) as ParentNode | null
+    const text = getFigureCodeText(figure)
     if (!text) return
-
     await navigator.clipboard.writeText(text)
     setIsCopied(true)
   }

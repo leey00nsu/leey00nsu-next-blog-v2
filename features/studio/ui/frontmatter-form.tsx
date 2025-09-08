@@ -13,12 +13,14 @@ import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { Switch } from '@/shared/ui/switch'
 import { TagInput } from '@/shared/ui/tag-input'
+import { finalizeSlug, sanitizeSlug } from '@/features/studio/lib/slug'
 
 interface FrontmatterFormProps {
   value?: Frontmatter
   initial?: Partial<Frontmatter>
   onSubmit?: (fm: Frontmatter) => void
   onChange?: (fm: Frontmatter, errors: FieldErrors<Frontmatter>) => void
+  onValidityChange?: (ok: boolean) => void
   existingSlugs?: string[]
   suggestionTags?: string[]
   // 마크다운 본문에서 사용 중인 pending 이미지들 (썸네일 후보)
@@ -30,6 +32,7 @@ export function FrontmatterForm({
   initial,
   onSubmit,
   onChange,
+  onValidityChange,
   existingSlugs = [],
   suggestionTags = [],
   thumbnailChoices = [],
@@ -57,7 +60,7 @@ export function FrontmatterForm({
     watch,
     setValue,
     reset,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<z.input<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues,
@@ -66,23 +69,10 @@ export function FrontmatterForm({
 
   const values = watch()
 
-  // slug 입력 실시간 정규화: 소문자, 숫자, 하이픈만 허용
-  const sanitizeSlug = (raw: string) => {
-    let v = raw.toLowerCase()
-    v = v.replaceAll(/[^a-z0-9-]/g, '') // 허용 외 문자 제거
-    v = v.replaceAll(/-+/g, '-') // 연속 하이픈 축약
-    return v
-  }
-
-  const finalizeSlug = (raw: string) => {
-    let v = sanitizeSlug(raw)
-    v = v.replace(/^-+/, '').replace(/-+$/, '') // 앞/뒤 하이픈 제거
-    return v
-  }
-
   // 값 변경시 상위로 전달
   useEffect(() => {
     onChange?.(values as Frontmatter, errors)
+    onValidityChange?.(isValid)
   }, [
     values.slug,
     values.title,
@@ -94,6 +84,7 @@ export function FrontmatterForm({
     values.thumbnail,
     values.draft,
     values.tags,
+    isValid,
   ])
 
   const draft = watch('draft')

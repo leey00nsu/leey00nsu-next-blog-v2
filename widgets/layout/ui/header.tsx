@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export async function Header() {
   return (
-    <header className="bg-background sticky top-0 z-50">
+    <nav className="bg-background sticky top-0 z-50">
       <div className="flex h-16 items-center justify-center gap-8">
         <Link href="/blog" className="hover:text-primary">
           Blog
@@ -15,6 +15,6 @@ export async function Header() {
           Studio
         </Link>
       </div>
-    </header>
+    </nav>
   )
 }

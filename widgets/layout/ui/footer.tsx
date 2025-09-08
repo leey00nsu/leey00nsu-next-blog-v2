@@ -8,7 +8,7 @@ export function Footer() {
   const hasGithub = Boolean(githubId)
 
   return (
-    <footer className="text-muted-foreground border-t p-4 text-sm">
+    <footer className="text-muted-foreground z-50 border-t p-4 text-sm">
       <div className="flex items-center justify-center gap-4">
         <p className="line-clamp-2 break-words">{description}</p>
         <div className="flex items-center gap-3">

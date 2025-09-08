@@ -80,7 +80,7 @@ export function CustomImageDialog() {
         }
       }}
     >
-      <Dialog.Portal container={editorRootElementRef?.current ?? undefined}>
+      <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/40" />
         <Dialog.Content
           className="bg-background fixed top-1/2 left-1/2 z-[101] w-[92vw] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border p-5 shadow-xl outline-none"

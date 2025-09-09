@@ -5,6 +5,7 @@ import { getTableOfContents } from '@/shared/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
 import { GiscusComments } from '@/features/post/ui/giscus-comments'
 import { TagList } from '@/features/post/ui/tag-list'
+import { ShareButton } from '@/features/post/ui/share-button'
 
 interface PostDetailProps {
   post: Post
@@ -22,6 +23,9 @@ export function PostDetail({ post }: PostDetailProps) {
           <span>{post.writer}</span>
         </div>
         <h1>{post.title}</h1>
+        <div className="my-4 flex justify-center gap-2">
+          <ShareButton />
+        </div>
         <TagList
           tags={post.tags}
           hrefBuilder={(t) => `/blog?tag=${encodeURIComponent(t)}`}

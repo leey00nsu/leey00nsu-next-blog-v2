@@ -27,7 +27,7 @@ export function SignInForm({ allowedUsername, callbackUrl }: SignInFormProps) {
           </AvatarFallback>
         </Avatar>
         <div className="text-left">
-          <p className="text-muted-foreground text-sm">현재 인가된 사용자</p>
+          <p className="text-muted-foreground text-sm">어드민</p>
           <p className="font-medium">{allowedUsername || '—'}</p>
         </div>
       </div>

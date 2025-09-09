@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { Logo } from '@/shared/ui/logo'
 
 export async function Header() {
   return (
-    <nav className="bg-background sticky top-0 z-50">
+    <nav className="bg-background sticky top-0 z-50 grid grid-cols-3 md:grid-cols-1">
+      <Logo className="block md:hidden" />
       <div className="flex h-16 items-center justify-center gap-8">
         <Link href="/blog" className="hover:text-primary">
           Blog

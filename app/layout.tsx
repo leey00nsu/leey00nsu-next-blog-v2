@@ -12,8 +12,24 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'leey00nsu Blog',
-  description: 'leey00nsu Blog',
+  title: {
+    default: 'leey00nsu 블로그',
+    template: '%s | leey00nsu 블로그',
+  },
+  description: 'leey00nsu 블로그',
+  openGraph: {
+    type: 'website',
+    siteName: 'leey00nsu 블로그',
+    title: 'leey00nsu 블로그',
+    description: 'leey00nsu 블로그',
+    images: ['/opengraph-image'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'leey00nsu 블로그',
+    description: 'leey00nsu 블로그',
+    images: ['/opengraph-image'],
+  },
 }
 
 export default function RootLayout({

@@ -11,9 +11,6 @@ const compat = new FlatCompat({
 })
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
-  unicorn.configs.recommended,
-  ...compat.extends('prettier'),
   {
     ignores: [
       'node_modules/**',
@@ -22,6 +19,11 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
     ],
+  },
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  unicorn.configs.recommended,
+  ...compat.extends('prettier'),
+  {
     rules: {
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/import-style': 'off',

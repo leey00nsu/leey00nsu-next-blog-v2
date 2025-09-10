@@ -1,1 +1,5 @@
+#!/usr/bin/env sh
+set -e
+
+echo "[husky] Linting before commit..."
 pnpm exec lint-staged

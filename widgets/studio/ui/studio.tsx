@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { FieldErrors } from 'react-hook-form'
 import type { MDXEditorMethods } from '@mdxeditor/editor'
 import { FrontmatterForm } from '@/features/studio/ui/frontmatter-form'
 import { Frontmatter } from '@/entities/studio/model/frontmatter-schema'
@@ -14,6 +13,7 @@ import { signOut } from 'next-auth/react'
 import { useCommitPost } from '@/features/studio/model/use-commit-post'
 import { Loader2 } from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
+import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 
 const Editor = dynamic(
   () => import('@/features/editor/ui/editor').then((m) => m.Editor),
@@ -41,7 +41,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   const editorRef = useRef<MDXEditorMethods | null>(null)
 
   const bodyMarkdown = useMemo(
-    () => markdown.replace(/^---[\s\S]*?---\n?/, ''),
+    () => markdown.replace(FRONTMATTER_BLOCK_REGEX, ''),
     [markdown],
   )
   const finalMarkdown = useMemo(() => {
@@ -62,12 +62,9 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
     [pendingImages, usedSrcs],
   )
 
-  const handleFrontmatterChange = useCallback(
-    (fm: Frontmatter) => {
-      setFrontMatter(fm)
-    },
-    [],
-  )
+  const handleFrontmatterChange = useCallback((fm: Frontmatter) => {
+    setFrontMatter(fm)
+  }, [])
 
   const save = async () => {
     const { filteredPending } = await commitPost({

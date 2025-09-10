@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { Frontmatter } from '@/entities/studio/model/frontmatter-schema'
 import type { PendingImageMap } from '@/features/editor/model/types'
 import { collectUsedImageSrcs } from '@/features/editor/lib/image-utils'
+import { commitPost as commitPostApi } from '@/features/studio/api/commit-post'
+import { STUDIO } from '@/features/studio/config/constants'
 
 interface CommitArgs {
   frontMatter?: Frontmatter
@@ -49,21 +51,20 @@ export function useCommitPost() {
       }
 
       const form = new FormData()
-      form.append('slug', frontMatter.slug)
-      form.append('mdx', finalMarkdown)
+      form.append(STUDIO.COMMIT_FIELDS.SLUG, frontMatter.slug)
+      form.append(STUDIO.COMMIT_FIELDS.MDX, finalMarkdown)
 
       for (const [path, entry] of Object.entries(filtered)) {
         const file = entry.file as File | undefined
         if (!file) continue
-        form.append('paths', path)
-        form.append('images', file, file.name)
+        form.append(STUDIO.COMMIT_FIELDS.IMAGE_PATHS, path)
+        form.append(STUDIO.COMMIT_FIELDS.IMAGES, file, file.name)
       }
 
-      const res = await fetch('/api/studio/commit', { method: 'POST', body: form })
-      const json = await res.json()
-      if (!res.ok || !json.ok) {
+      const json = await commitPostApi(form)
+      if (!json.ok) {
         console.error('Commit failed', json)
-        toast.error(`커밋 실패: ${json.error ?? res.statusText}`)
+        toast.error(`커밋 실패: ${json.error ?? 'Unknown error'}`)
         return { ok: false, filteredPending: filtered }
       }
 
@@ -80,4 +81,3 @@ export function useCommitPost() {
 
   return { isSaving, commitPost }
 }
-

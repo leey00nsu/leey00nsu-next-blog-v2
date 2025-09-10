@@ -6,6 +6,7 @@ import {
   filterPostsByTags,
   parseSelectedTags,
 } from '@/features/post/lib/tag-utils'
+import { SITE } from '@/shared/config/constants'
 
 interface BlogPageProps {
   // Next may pass searchParams as a Promise
@@ -33,16 +34,16 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
 }
 
 export const metadata: Metadata = {
-  title: '블로그',
-  description: 'leey00nsu 블로그',
+  title: SITE.NAME,
+  description: SITE.DEFAULT_DESCRIPTION,
   openGraph: {
-    title: '블로그',
-    siteName: 'leey00nsu 블로그',
-    images: ['/blog/opengraph-image'],
+    title: SITE.NAME,
+    siteName: SITE.NAME,
+    images: ['/opengraph-image'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '블로그',
-    images: ['/blog/opengraph-image'],
+    title: SITE.NAME,
+    images: ['/opengraph-image'],
   },
 }

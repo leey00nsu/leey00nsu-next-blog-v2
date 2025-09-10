@@ -1,18 +1,20 @@
 import { Post } from '@/entities/post/model/types'
 import { TagList } from '@/features/post/ui/tag-list'
 import { getTagCounts, makeToggleHref } from '@/features/post/lib/tag-utils'
+import { ROUTES } from '@/shared/config/constants'
+import { Route } from 'next'
 
 interface TagFilterBarProps {
   posts: Post[]
   selectedTags: string[]
-  basePath?: string
+  basePath?: Route
   className?: string
 }
 
 export function TagFilterBar({
   posts,
   selectedTags,
-  basePath = '/blog',
+  basePath = ROUTES.BLOG,
   className,
 }: TagFilterBarProps) {
   const counts = getTagCounts(posts)

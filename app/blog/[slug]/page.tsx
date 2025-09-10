@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
+import { buildBlogOgImagePath, SITE } from '@/shared/config/constants'
 
 interface PostPageProps {
   params: Promise<{ slug: string }>
@@ -25,22 +26,22 @@ export async function generateMetadata({
     }
   }
 
-  const ogImage = `/blog/${slug}/opengraph-image`
+  const ogImage = buildBlogOgImagePath(slug)
 
   return {
     title: post.title,
-    description: post.description ?? 'leey00nsu 블로그',
+    description: post.description ?? SITE.DEFAULT_DESCRIPTION,
     openGraph: {
       type: 'article',
-      siteName: 'leey00nsu 블로그',
+      siteName: SITE.NAME,
       title: post.title,
-      description: post.description ?? 'leey00nsu 블로그',
+      description: post.description ?? SITE.DEFAULT_DESCRIPTION,
       images: [ogImage],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.description ?? 'leey00nsu 블로그',
+      description: post.description ?? SITE.DEFAULT_DESCRIPTION,
       images: [ogImage],
     },
   }

@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
+import { SITE } from '@/shared/config/constants'
 
 export default async function OpenGraphImage() {
   const logoData = await readFile(
@@ -35,7 +36,7 @@ export default async function OpenGraphImage() {
             color: '#0f172a',
           }}
         >
-          leey00nsu 블로그
+          {SITE.NAME}
         </div>
       </div>
     ),

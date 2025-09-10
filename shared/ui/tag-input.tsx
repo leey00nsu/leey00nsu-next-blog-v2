@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { addTag, availableSuggestions, removeTag } from '@/shared/lib/tag'
+import { TAG } from '@/shared/config/constants'
 
 interface TagInputProps {
   value: string[]
@@ -22,7 +23,7 @@ export function TagInput({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const available = useMemo(
-    () => availableSuggestions(value, suggestions ?? [], 20),
+    () => availableSuggestions(value, suggestions ?? [], TAG.SUGGESTION_LIMIT),
     [suggestions, value],
   )
 

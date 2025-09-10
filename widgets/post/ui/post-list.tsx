@@ -1,5 +1,6 @@
 import { Post } from '@/entities/post/model/types'
 import { PostCard } from '@/entities/post/ui/post-card'
+import { buildBlogPostHref } from '@/shared/config/constants'
 
 import Link from 'next/link'
 
@@ -12,7 +13,7 @@ export function PostList({ posts }: PostListProps) {
     <div className="flex flex-col divide-y">
       {posts.map((post) => {
         return (
-          <Link key={post.slug} href={`/blog/${post.slug}`}>
+          <Link key={post.slug} href={buildBlogPostHref(post.slug)}>
             <PostCard post={post} />
           </Link>
         )

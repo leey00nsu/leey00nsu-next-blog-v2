@@ -2,9 +2,10 @@
 // - 파일명 정제, 고유 경로 생성, 슬러그 변경 시 경로 일괄 치환 등을 제공합니다.
 
 import type { PendingImageMap } from '@/features/editor/model/types'
+import { PATHS } from '@/shared/config/constants'
 
 // 모든 이미지가 위치하는 퍼블릭 루트
-export const PUBLIC_POSTS_BASE = '/public/posts'
+export const PUBLIC_POSTS_BASE = PATHS.URL.PUBLIC_POSTS_BASE
 
 // 파일명 정제: 공백 -> 하이픈, 소문자, 허용되지 않는 문자는 제거
 export function sanitizeFilename(name: string) {

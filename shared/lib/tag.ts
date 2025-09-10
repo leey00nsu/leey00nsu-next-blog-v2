@@ -1,5 +1,7 @@
 /** 태그 처리 유틸 (순수 함수) */
 
+import { TAG } from '@/shared/config/constants'
+
 export function normalizeTag(tag: string): string {
   return tag.trim()
 }
@@ -23,7 +25,7 @@ export function removeTag(list: string[], tag: string): string[] {
 export function availableSuggestions(
   current: string[],
   suggestions: string[] = [],
-  limit = 20,
+  limit = TAG.SUGGESTION_LIMIT,
 ): string[] {
   const set = new Set(current.map((v) => v.toLowerCase()))
   return suggestions
@@ -31,4 +33,3 @@ export function availableSuggestions(
     .filter((s) => !set.has(s.toLowerCase()))
     .slice(0, limit)
 }
-

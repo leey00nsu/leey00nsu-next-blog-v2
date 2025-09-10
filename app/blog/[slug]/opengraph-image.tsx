@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og'
 import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { getPostBySlug } from '@/entities/post/lib/post'
+import { SITE } from '@/shared/config/constants'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,7 @@ export default async function OpenGraphImage({
 
   // 슬러그로 포스트 조회 후 제목 도출
   const post = await getPostBySlug(slug)
-  const title = post?.title ?? 'leey00nsu 블로그'
+  const title = post?.title ?? SITE.NAME
 
   // 로고를 파일 시스템에서 읽어 data URL로 변환
   const logoData = await readFile(

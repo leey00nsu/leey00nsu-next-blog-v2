@@ -1,6 +1,6 @@
-# Agents Guide — FSD + React Conventions (for Codex IDE)
+# Agents Guide — FSD + React Conventions
 
-Codex(코드 어시스턴트/에이전트)가 일관된 코드 생성·리팩토링을 수행하도록 돕는 운영 규칙입니다.  
+코드 어시스턴트/에이전트가 일관된 코드 생성·리팩토링을 수행하도록 돕는 운영 규칙입니다.  
 Next.js + TypeScript + React + FSD 구조를 전제로 합니다.  
 답변은 한국어로 작성합니다.  
 package.json을 참고하여 프로젝트의 의존성과 버전을 확인하여 답변을 작성합니다.
@@ -15,6 +15,7 @@ package.json을 참고하여 프로젝트의 의존성과 버전을 확인하여
 - **배럴 파일 금지**: `index.ts` 같은 re-export 불허.
 - **불필요한 매직 금지**: 전역 상태/유틸 남발 금지. 도메인 가까이 배치.
 - **축약어 금지**: 변수,함수,타입,인터페이스 이름을 축약하지 않고 용어 그대로 사용.
+- **매직 넘버/리터럴 금지**: 숫자/문자 리터럴 사용 대신 의미 있는 이름 있는 상수로 분리한다.
 
 ---
 
@@ -87,16 +88,30 @@ package.json을 참고하여 프로젝트의 의존성과 버전을 확인하여
 
 ---
 
-## 9. model vs lib 구분
+## 9. model / lib / api 함수 구분 규칙
 
-- **lib**: 순수 유틸, 부작용 없음. 입력 → 출력.
+- **lib**: 순수 유틸, 사이드 이펙트 없음. 입력 → 출력.
   - 예: `formatDate`, `parseSlug`, `buildUniquePath`.
-- **model**: 도메인 규칙·오케스트레이션. 상태/스토어/액션 의존 가능.
-  - 예: `useSavePost`, `createImagePluginHandlers`, `validateFrontmatter`.
+- **model**: 도메인 규칙·오케스트레이션. 단순 비즈니스 로직(remapXxx 등)부터 TanStack Query 훅(useQuery/useMutation), 폼 상태, 플러그인 콜백 팩토리까지 포함. 외부 상태/스토어/액션에 의존 가능.
+  - 예: `entities/.../model/useGetPost`, `features/.../model/useCommitPost`, `features/.../model/validateFrontmatter`.
+- **api**: 네트워크 호출 함수 (fetch/axios).
+  - 예: `entities/.../api/getPost`, `features/.../api/commitPost`.
 
 ---
 
-## 10. 리팩토링 가이드 (Codex 자동 체크리스트)
+## 10. 매직 넘버/리터럴 금지
+
+- 의미가 불명확한 숫자/문자 리터럴을 직접 사용하지 않음. 의미 있는 상수로 분리.
+- 언어 관습, 자명한 값, 형식/문법 토큰, 일회성 값은 허용.
+- 공용 상수: `shared/config/constants.ts`.
+- 도메인 한정 상수: 해당 세그먼트 `.../config/constants.ts`.
+- 상수는 UPPER_SNAKE_CASE , 네임스페이스 객체(as const)로 선언.
+- 재사용 함수는 상수를 **인자로 주입**, 기본값은 config에서 import.
+- 파일 내 동일한 성격의 상수는 객체로 정의하여 묶어서 관리.
+
+---
+
+## 11. 리팩토링 가이드 (Codex 자동 체크리스트)
 
 1. **Export**: default export 제거 → named로 변환 후 import 수정.
 2. **배럴 제거**: 직접 import로 교체.
@@ -107,7 +122,9 @@ package.json을 참고하여 프로젝트의 의존성과 버전을 확인하여
 7. **접근성 점검**: 시맨틱 태그, aria, 포커스 확인.
 8. **테스트/스토리**: 생성·보강 .
 9. **함수 네이밍**: 규칙에 맞게 handle/commit/use/… 접두사 일관성 검사.
-10. **model vs lib 분리**: 부작용 있으면 model, 순수 계산이면 lib.
-11. **축약어 금지**: 의미를 명확히 전달할 수 있는 용어를 사용.
+10. **model vs lib 분리**: 사이드 이펙트 있으면 model, 순수 계산이면 lib.
+11. **api vs model 분리**: 네트워크 호출 함수 (fetch/axios).
+12. **축약어 금지**: 의미를 명확히 전달할 수 있는 용어를 사용.
+13. **매직 넘버/리터럴**: 의미 있는 상수로 분리.
 
 ---

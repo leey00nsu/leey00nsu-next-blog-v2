@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/rest'
+import { buildPostMdxRelativePath } from '@/shared/config/constants'
 
 export interface CommitImageItem {
   // 리포지토리 기준 경로 (선두 슬래시 금지): e.g. 'public/posts/slug/image.png'
@@ -49,7 +50,7 @@ export async function commitToGithub({
 
   // 3) 블롭 생성 (MDX + 이미지)
   // MDX 파일 경로
-  const mdxPath = `public/posts/${slug}/${slug}.mdx`
+  const mdxPath = buildPostMdxRelativePath(slug)
 
   const mdxBlob = await octokit.git.createBlob({
     owner,

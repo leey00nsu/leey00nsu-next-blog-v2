@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
+import { ROUTES } from '@/shared/config/constants'
 
 export default function Home() {
-  redirect('/blog')
+  redirect(ROUTES.BLOG)
 }

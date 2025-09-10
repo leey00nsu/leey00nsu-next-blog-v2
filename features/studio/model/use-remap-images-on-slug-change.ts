@@ -8,6 +8,8 @@ import {
   rewriteImagePathSlug,
   rewriteMarkdownImagePaths,
 } from '@/features/editor/lib/image-utils'
+import { STUDIO } from '@/features/studio/config/constants'
+import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 
 interface UseRemapImagesOnSlugChangeParams {
   slug?: string
@@ -34,13 +36,13 @@ export function useRemapImagesOnSlugChange({
 
   // 슬러그 디바운싱: 빈번한 입력 시 과도한 리매핑 방지
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSlug(slug), 200)
+    const t = setTimeout(() => setDebouncedSlug(slug), STUDIO.SLUG_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [slug])
 
   // 본문 부분만 분리하는 헬퍼
   const bodyOnly = useMemo(
-    () => markdown.replace(/^---[\s\S]*?---\n?/, ''),
+    () => markdown.replace(FRONTMATTER_BLOCK_REGEX, ''),
     [markdown],
   )
 
@@ -62,7 +64,7 @@ export function useRemapImagesOnSlugChange({
       }
 
       // 본문 기준 사용 이미지 재계산 후 썸네일 경로도 함께 갱신
-      const nextBody = next.replace(/^---[\s\S]*?---\n?/, '')
+      const nextBody = next.replace(FRONTMATTER_BLOCK_REGEX, '')
       const usedAfter = collectUsedImageSrcs(nextBody)
       setFrontMatter((fm) => {
         if (!fm) return fm

@@ -4,8 +4,9 @@ import { cache } from 'react'
 import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
 import lqipModern from 'lqip-modern'
 import { readMdxFile } from '@/shared/lib/mdx/reader'
+import { PATHS } from '@/shared/config/constants'
 
-const POSTS_PATH = path.join(process.cwd(), 'public/posts')
+const POSTS_PATH = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
 
 export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   const fullPath = path.join(POSTS_PATH, slug, `${slug}.mdx`)

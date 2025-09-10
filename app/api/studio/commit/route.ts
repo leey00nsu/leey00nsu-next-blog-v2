@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { commitToGithub } from '@/features/studio/actions/commit-to-github'
+import { STUDIO } from '@/features/studio/config/constants'
 
 export const runtime = 'nodejs'
 
@@ -7,8 +8,8 @@ export async function POST(req: Request) {
   try {
     const form = await req.formData()
 
-    const slug = String(form.get('slug') || '')
-    const mdx = String(form.get('mdx') || '')
+    const slug = String(form.get(STUDIO.COMMIT_FIELDS.SLUG) || '')
+    const mdx = String(form.get(STUDIO.COMMIT_FIELDS.MDX) || '')
     if (!slug || !mdx) {
       return NextResponse.json(
         { ok: false, error: 'Missing slug or mdx' },
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
       )
     }
 
-    const paths = form.getAll('paths') as string[]
-    const files = form.getAll('images') as File[]
+    const paths = form.getAll(STUDIO.COMMIT_FIELDS.IMAGE_PATHS) as string[]
+    const files = form.getAll(STUDIO.COMMIT_FIELDS.IMAGES) as File[]
 
     if (paths.length !== files.length) {
       return NextResponse.json(

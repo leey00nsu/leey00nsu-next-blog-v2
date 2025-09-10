@@ -2,9 +2,10 @@ import { Button } from '@/shared/ui/button'
 import Image from 'next/image'
 import { cn } from '@/shared/lib/utils'
 import Link from 'next/link'
+import { Route } from 'next'
 
 interface LogoProps {
-  href?: string
+  href?: Route
   className?: string
 }
 

@@ -14,5 +14,5 @@ export const middleware = auth((req) => {
 })
 
 export const config = {
-  matcher: [`${ROUTES.STUDIO}/:path*`],
+  matcher: ['/studio/:path*'],
 }

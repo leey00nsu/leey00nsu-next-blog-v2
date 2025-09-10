@@ -55,6 +55,14 @@ export const TAG = {
   SUGGESTION_LIMIT: 20,
 } as const
 
+// 이미지 최적화 관련 상수
+export const IMAGE = {
+  // webp 품질(0-100)
+  DEFAULT_QUALITY: 75,
+  // 캐시: TTL 우선 immutable
+  CACHE_CONTROL: 'public, max-age=31536000, immutable',
+} as const
+
 // MDX / Frontmatter 관련 정규식
 // 문서 선두의 frontmatter 블록을 제거하기 위한 패턴
 export const FRONTMATTER_BLOCK_REGEX = /^---[\s\S]*?---\n?/

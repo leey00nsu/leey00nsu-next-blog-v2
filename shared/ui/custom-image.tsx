@@ -2,6 +2,7 @@
 
 import { cn } from '@/shared/lib/utils'
 import Image, { ImageProps } from 'next/image'
+import { gifImageLoader } from '@/shared/lib/gif-image-loader'
 import { useEffect, useMemo, useState } from 'react'
 
 const MAX_HEIGHT = 600
@@ -37,6 +38,13 @@ export function CustomImage({
     if (typeof src !== 'string') return false
     const beforeQuery = src.split('?')[0]
     return beforeQuery.toLowerCase().endsWith('.svg')
+  }, [src])
+
+  const isGif = useMemo(() => {
+    if (!src) return false
+    if (typeof src !== 'string') return false
+    const beforeQuery = src.split('?')[0]
+    return beforeQuery.toLowerCase().endsWith('.gif')
   }, [src])
 
   // src 변경 시 초기화, svg는 즉시 표시
@@ -83,6 +91,7 @@ export function CustomImage({
         width={numberWidth}
         height={numberHeight}
         src={src}
+        loader={isGif ? gifImageLoader : undefined}
         onLoad={() => setIsMounted(true)}
         className={cn(
           'm-0 block',

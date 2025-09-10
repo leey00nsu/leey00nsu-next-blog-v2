@@ -6,6 +6,7 @@ export const PATHS = {
     PUBLIC_DIR: 'public',
     PUBLIC_POSTS_DIR: 'public/posts',
     ABOUT_MDX_PATH: 'public/about/about.mdx',
+    IMAGE_CACHE_DIR: '.next/cache/gif-webp',
   },
   URL: {
     // URL 기준(마크다운/이미지 경로에 쓰이는 접두사)
@@ -60,7 +61,7 @@ export const IMAGE = {
   // webp 품질(0-100)
   DEFAULT_QUALITY: 75,
   // 캐시: TTL 우선 immutable
-  CACHE_CONTROL: 'public, max-age=31536000, immutable',
+  CACHE_CONTROL: 'public, max-age=60, must-revalidate',
 } as const
 
 // MDX / Frontmatter 관련 정규식

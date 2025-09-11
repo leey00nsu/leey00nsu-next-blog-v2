@@ -21,7 +21,6 @@ export function PostCard({ post }: PostCardProps) {
           <span className="text-muted-foreground text-xs font-light">
             {post.date.toLocaleDateString('ko-KR')}
           </span>
-          <span>{'·'}</span>
           <span className="text-muted-foreground text-xs font-light">
             {post.writer}
           </span>

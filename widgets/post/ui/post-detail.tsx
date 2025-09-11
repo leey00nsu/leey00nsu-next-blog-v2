@@ -3,6 +3,7 @@ import { Post } from '@/entities/post/model/types'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { getTableOfContents } from '@/shared/lib/toc'
 import { Toc } from '@/features/post/ui/toc'
+import { TocRegister } from '@/features/post/ui/toc-register'
 import { GiscusComments } from '@/features/post/ui/giscus-comments'
 import { TagList } from '@/features/post/ui/tag-list'
 import { ShareButton } from '@/features/post/ui/share-button'
@@ -17,10 +18,10 @@ export function PostDetail({ post }: PostDetailProps) {
 
   return (
     <div className="relative">
+      <TocRegister headings={headings} />
       <article className="prose prose-lg dark:prose-invert mx-auto">
         <div className="flex items-center gap-2">
           <span>{post.date.toLocaleDateString('ko-KR')}</span>
-          <span>{'·'}</span>
           <span>{post.writer}</span>
         </div>
         <h1>{post.title}</h1>
@@ -36,12 +37,6 @@ export function PostDetail({ post }: PostDetailProps) {
       <section className="mx-auto py-8">
         <GiscusComments />
       </section>
-
-      <div className="absolute top-0 left-full z-10 hidden h-full pl-8 md:block">
-        <aside className="sticky top-40 w-64">
-          <Toc headings={headings} />
-        </aside>
-      </div>
     </div>
   )
 }

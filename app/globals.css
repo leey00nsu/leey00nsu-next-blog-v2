@@ -148,4 +148,19 @@
     pre {
     @apply !rounded-t-none;
   }
+
+  /* MDX 테이블의 컬럼 너비를 고정시켜서 일관된 너비를 유지 */
+  .prose :where(table):not(:where([class~='not-prose'] *)) {
+    table-layout: fixed !important;
+    width: 100%;
+  }
+  .prose :where(table):not(:where([class~='not-prose'] *)) th,
+  .prose :where(table):not(:where([class~='not-prose'] *)) td {
+    vertical-align: top;
+  }
+  .prose :where(table):not(:where([class~='not-prose'] *)) img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
 }

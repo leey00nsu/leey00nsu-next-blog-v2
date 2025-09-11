@@ -1,8 +1,8 @@
 'use client'
 
+import { gifImageLoader } from '@/shared/lib/gif-image-loader'
 import { cn } from '@/shared/lib/utils'
 import Image, { ImageProps } from 'next/image'
-import { gifImageLoader } from '@/shared/lib/gif-image-loader'
 import { useEffect, useMemo, useState } from 'react'
 
 const MAX_HEIGHT = 600
@@ -59,12 +59,16 @@ export function CustomImage({
     Number.isFinite(numberHeight) &&
     numberWidth > 0 &&
     numberHeight > 0
-      ? ({ aspectRatio: `${numberWidth} / ${numberHeight}` } as const)
+      ? ({
+          // width: numberWidth,
+          // height: numberHeight,
+          aspectRatio: `${numberWidth} / ${numberHeight}`,
+        } as const)
       : undefined
 
   return (
     <span
-      className={cn('relative inline-block', className)}
+      className={cn('relative block h-full w-full overflow-hidden', className)}
       style={aspectRatioStyle}
     >
       {/* blur image */}
@@ -76,7 +80,7 @@ export function CustomImage({
           width={numberWidth}
           height={numberHeight}
           className={cn(
-            'absolute inset-0 -z-10 m-0 opacity-100 blur-md dark:blur-none',
+            'absolute inset-0 !m-0 h-full w-full opacity-100',
             isMounted && 'opacity-0 transition-opacity',
           )}
           src={base64}
@@ -94,7 +98,7 @@ export function CustomImage({
         loader={isGif ? gifImageLoader : undefined}
         onLoad={() => setIsMounted(true)}
         className={cn(
-          'm-0 block',
+          'absolute inset-0 !m-0 h-full w-full',
           isMounted ? 'opacity-100 transition-opacity' : 'opacity-0',
           className,
         )}

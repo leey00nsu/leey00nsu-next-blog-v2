@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { Container } from '@/widgets/layout/ui/container'
 import { SonnerToaster } from '@/shared/ui/sonner-toaster'
+import { ThemeProvider } from '@/shared/ui/theme-provider'
 import './globals.css'
 
 const pretendard = localFont({
@@ -38,10 +39,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={pretendard.variable}>
+    <html lang="ko" className={pretendard.variable} suppressHydrationWarning>
       <body className={`${pretendard.className} antialiased`}>
-        <Container>{children}</Container>
-        <SonnerToaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Container>{children}</Container>
+          <SonnerToaster />
+        </ThemeProvider>
       </body>
     </html>
   )

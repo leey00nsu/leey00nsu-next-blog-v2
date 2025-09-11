@@ -35,12 +35,12 @@ export function CustomFigcaption({
       className="flex items-center justify-between px-4 py-2"
       {...props}
     >
-      <div className="text-muted">{children}</div>
+      <div className="text-amber-50">{children}</div>
       <Button
         ref={copyButtonRef}
         onClick={copyToClipboardHandler}
         size="icon"
-        className="size-8"
+        className="size-8 bg-transparent text-amber-50 hover:bg-transparent"
       >
         {isCopied && <Check className="text-green-400" />}
         {!isCopied && <Clipboard />}

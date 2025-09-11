@@ -1,8 +1,13 @@
 'use client'
 
-import Giscus, { Repo } from '@giscus/react'
+import Giscus, { Repo, Theme } from '@giscus/react'
+import { useTheme } from 'next-themes'
 
 export function GiscusComments() {
+  const { resolvedTheme } = useTheme()
+
+  const giscussTheme = resolvedTheme === 'dark' ? 'dark' : ('light' as Theme)
+
   const repo = process.env.NEXT_PUBLIC_GISCUS_REPO
   const repoId = process.env.NEXT_PUBLIC_GISCUS_REPO_ID
   const category = process.env.NEXT_PUBLIC_GISCUS_CATEGORY
@@ -33,9 +38,8 @@ export function GiscusComments() {
         reactionsEnabled="1"
         emitMetadata="0"
         inputPosition="bottom"
-        theme="preferred_color_scheme"
         lang="ko"
-        loading="lazy"
+        theme={giscussTheme}
       />
     </div>
   )

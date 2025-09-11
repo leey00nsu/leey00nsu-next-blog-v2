@@ -140,8 +140,8 @@
   }
 
   [data-rehype-pretty-code-title] {
-    color: var(--primary-foreground);
-    @apply bg-primary rounded-t-lg px-3 py-2 text-sm font-semibold;
+    background-color: oklch(0.205 0 0);
+    @apply rounded-t-lg px-3 py-2 text-sm font-semibold;
   }
 
   figure[data-rehype-pretty-code-figure]:has(> [data-rehype-pretty-code-title])

@@ -12,10 +12,9 @@ interface LogoProps {
 export function Logo({ href = '/blog', className }: LogoProps) {
   return (
     <Button
-      variant="ghost"
       asChild
       className={cn(
-        'hover:bg-background bg-background relative h-16 w-16 cursor-pointer transition-all duration-200 hover:scale-110',
+        'relative h-16 w-16 cursor-pointer bg-transparent transition-all duration-200 hover:scale-110 hover:bg-transparent',
         className,
       )}
     >

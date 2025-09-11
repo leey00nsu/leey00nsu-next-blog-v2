@@ -56,6 +56,7 @@ export const TAG = {
   SUGGESTION_LIMIT: 20,
 } as const
 
+// 테마 관련 상수
 // 이미지 최적화 관련 상수
 export const IMAGE = {
   // webp 품질(0-100)

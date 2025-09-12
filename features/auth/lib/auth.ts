@@ -1,10 +1,14 @@
 import NextAuth from 'next-auth'
 import GitHub from 'next-auth/providers/github'
+import { ROUTES } from '@/shared/config/constants'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: { strategy: 'jwt' },
   providers: [GitHub],
+  pages: {
+    signIn: ROUTES.AUTH_SIGNIN,
+  },
   callbacks: {
     // 허용된 GitHub 사용자만 로그인 허용
     async signIn({ profile, account }) {

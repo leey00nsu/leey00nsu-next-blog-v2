@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/shared/ui/logo'
 import { ROUTES } from '@/shared/config/constants'
 import { ThemeToggle } from '@/shared/ui/theme-toggle'
+import { LocaleSelect } from '@/shared/ui/locale-select'
 
 export async function Header() {
   return (
@@ -18,7 +19,8 @@ export async function Header() {
           Studio
         </Link>
       </div>
-      <div className="flex items-center justify-end p-2 md:hidden">
+      <div className="flex items-center justify-end gap-2 p-2 md:hidden">
+        <LocaleSelect />
         <ThemeToggle />
       </div>
     </nav>

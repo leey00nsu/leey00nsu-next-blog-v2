@@ -1,0 +1,73 @@
+{
+  "common": {
+    "siteName": "leey00nsu 블로그",
+    "siteDescription": "leey00nsu 블로그"
+  },
+  "about": {
+    "comingSoon": "준비 중입니다."
+  },
+  "auth": {
+    "signIn": {
+      "title": "스튜디오에 접근하려면 로그인 해주세요",
+      "allowedUserAvatar": "허용 사용자 아바타",
+      "roleAdmin": "어드민",
+      "signInWithGitHub": "GitHub로 로그인"
+    }
+  },
+  "studio": {
+    "actions": {
+      "save": "저장",
+      "saving": "저장 중",
+      "logout": "로그아웃"
+    },
+    "form": {
+      "slug": "슬러그",
+      "slugPlaceholder": "my-post-slug",
+      "date": "작성일",
+      "title": "제목",
+      "titlePlaceholder": "포스트 제목",
+      "description": "설명",
+      "descriptionPlaceholder": "간단한 설명",
+      "writer": "작성자",
+      "writerPlaceholder": "작성자",
+      "section": "섹션",
+      "sectionPlaceholder": "blog",
+      "series": "시리즈",
+      "seriesPlaceholder": "없으면 비워두세요",
+      "tags": "태그",
+      "thumbnail": "썸네일 선택(선택 사항)",
+      "none": "없음",
+      "draft": "임시글(draft)"
+    },
+    "toasts": {
+      "missingSlug": "슬러그가 없습니다.",
+      "commitFailed": "커밋 실패: {reason}",
+      "commitSuccess": "커밋이 완료되었습니다.",
+      "commitError": "커밋 중 오류가 발생했습니다."
+    }
+  },
+  "tagInput": {
+    "placeholder": "태그 입력 후 Enter",
+    "remove": "{tag} 제거"
+  },
+  "post": {
+    "toc": {
+      "title": "목차"
+    },
+    "share": {
+      "copied": "URL이 복사되었습니다."
+    },
+    "giscus": {
+      "notConfigured": "Giscus가 설정되지 않았습니다. NEXT_PUBLIC_GISCUS_REPO, NEXT_PUBLIC_GISCUS_REPO_ID, NEXT_PUBLIC_GISCUS_CATEGORY, NEXT_PUBLIC_GISCUS_CATEGORY_ID를 설정하세요."
+    }
+  },
+  "editor": {
+    "imageDialog": {
+      "slugInfo": "슬러그가 비어 있으므로 경로는 <code>/public/posts/.../</code> 에 삽입됩니다. 슬러그 설정 후 자동으로 새 경로로 매핑됩니다."
+    },
+    "codeblock": {
+      "titlePlaceholder": "제목(title) 입력",
+      "titleAria": "코드블럭 제목 입력"
+    }
+  }
+}

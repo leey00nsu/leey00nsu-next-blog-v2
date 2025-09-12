@@ -14,6 +14,7 @@ import { useCommitPost } from '@/features/studio/model/use-commit-post'
 import { Loader2 } from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
 import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
+import { useTranslations } from 'next-intl'
 
 const Editor = dynamic(
   () => import('@/features/editor/ui/editor').then((m) => m.Editor),
@@ -33,6 +34,7 @@ export interface StudioProps {
 }
 
 export function Studio({ existingSlugs, existingTags }: StudioProps) {
+  const t = useTranslations('studio')
   const [markdown, setMarkdown] = useState('')
   const [frontMatter, setFrontMatter] = useState<Frontmatter | undefined>()
   const [pendingImages, setPendingImages] = useState<PendingImageMap>({})
@@ -124,13 +126,13 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
       >
         {isSaving ? (
           <>
-            <Loader2 className="animate-spin" /> 저장 중
+            <Loader2 className="animate-spin" /> {t('actions.saving')}
           </>
         ) : (
-          '저장'
+          t('actions.save')
         )}
       </Button>
-      <Button onClick={() => signOut()}>로그아웃</Button>
+      <Button onClick={() => signOut()}>{t('actions.logout')}</Button>
     </div>
   )
 }

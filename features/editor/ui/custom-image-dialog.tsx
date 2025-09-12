@@ -18,6 +18,7 @@ import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { useStudioEditorContext } from './editor'
+import { useTranslations as useAppTranslations } from 'next-intl'
 import {
   ImageDialogFormSchema,
   type ImageDialogFormValues,
@@ -40,6 +41,9 @@ export function CustomImageDialog() {
   const closeImageDialog = usePublisher(closeImageDialog$)
   const t = useTranslation()
   const { slug } = useStudioEditorContext() ?? {}
+  // next-intl for local messages
+  // Note: This dialog already uses mdxeditor's own t() for their strings.
+  const appT = useAppTranslations('editor.imageDialog')
 
   const { register, handleSubmit, reset, setValue, watch, formState } =
     useForm<ImageDialogFormValues>({
@@ -109,8 +113,9 @@ export function CustomImageDialog() {
                 />
                 {!slug && hasFileSelected && (
                   <p className="text-xs text-muted-foreground">
-                    슬러그가 비어 있으므로 경로는 <code>/public/posts/.../</code> 에 삽입됩니다.
-                    슬러그 설정 후 자동으로 새 경로로 매핑됩니다.
+                    {appT.rich('slugInfo', {
+                      code: (chunks: React.ReactNode) => <code>{chunks}</code>,
+                    })}
                   </p>
                 )}
               </div>

@@ -1,0 +1,73 @@
+{
+  "common": {
+    "siteName": "leey00nsu Blog",
+    "siteDescription": "leey00nsu Blog"
+  },
+  "about": {
+    "comingSoon": "Coming soon."
+  },
+  "auth": {
+    "signIn": {
+      "title": "Please sign in to access Studio",
+      "allowedUserAvatar": "Allowed user avatar",
+      "roleAdmin": "Admin",
+      "signInWithGitHub": "Sign in with GitHub"
+    }
+  },
+  "studio": {
+    "actions": {
+      "save": "Save",
+      "saving": "Saving",
+      "logout": "Sign out"
+    },
+    "form": {
+      "slug": "Slug",
+      "slugPlaceholder": "my-post-slug",
+      "date": "Date",
+      "title": "Title",
+      "titlePlaceholder": "Post title",
+      "description": "Description",
+      "descriptionPlaceholder": "Short description",
+      "writer": "Author",
+      "writerPlaceholder": "Author",
+      "section": "Section",
+      "sectionPlaceholder": "blog",
+      "series": "Series",
+      "seriesPlaceholder": "Leave empty if none",
+      "tags": "Tags",
+      "thumbnail": "Thumbnail (optional)",
+      "none": "None",
+      "draft": "Draft"
+    },
+    "toasts": {
+      "missingSlug": "Slug is missing.",
+      "commitFailed": "Commit failed: {reason}",
+      "commitSuccess": "Commit completed.",
+      "commitError": "An error occurred while committing."
+    }
+  },
+  "tagInput": {
+    "placeholder": "Type a tag then Enter",
+    "remove": "Remove {tag}"
+  },
+  "post": {
+    "toc": {
+      "title": "Table of contents"
+    },
+    "share": {
+      "copied": "URL copied."
+    },
+    "giscus": {
+      "notConfigured": "Giscus is not configured. Please set NEXT_PUBLIC_GISCUS_REPO, NEXT_PUBLIC_GISCUS_REPO_ID, NEXT_PUBLIC_GISCUS_CATEGORY, NEXT_PUBLIC_GISCUS_CATEGORY_ID."
+    }
+  },
+  "editor": {
+    "imageDialog": {
+      "slugInfo": "Slug is empty, so the image will be placed under <code>/public/posts/.../</code>. It will be automatically remapped after setting the slug."
+    },
+    "codeblock": {
+      "titlePlaceholder": "Enter title",
+      "titleAria": "Code block title input"
+    }
+  }
+}

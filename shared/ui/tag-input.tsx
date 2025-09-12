@@ -5,6 +5,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { addTag, availableSuggestions, removeTag } from '@/shared/lib/tag'
 import { TAG } from '@/shared/config/constants'
+import { useTranslations } from 'next-intl'
 
 interface TagInputProps {
   value: string[]
@@ -19,6 +20,7 @@ export function TagInput({
   suggestions,
   placeholder,
 }: TagInputProps) {
+  const t = useTranslations('tagInput')
   const [input, setInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -59,7 +61,7 @@ export function TagInput({
               type="button"
               onClick={() => remove(tag)}
               className="text-muted-foreground hover:bg-accent hover:text-accent-foreground ml-1 rounded px-1"
-              aria-label={`${tag} 제거`}
+              aria-label={t('remove', { tag })}
             >
               x
             </button>
@@ -70,7 +72,7 @@ export function TagInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder ?? '태그 입력 후 Enter'}
+          placeholder={placeholder ?? t('placeholder')}
           className="min-w-40 flex-1 bg-transparent px-2 py-1 text-sm outline-none"
         />
       </div>

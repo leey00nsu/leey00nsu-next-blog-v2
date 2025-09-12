@@ -5,6 +5,7 @@ import type { PendingImageMap } from '@/features/editor/model/types'
 import { collectUsedImageSrcs } from '@/features/editor/lib/image-utils'
 import { commitPost as commitPostApi } from '@/features/studio/api/commit-post'
 import { STUDIO } from '@/features/studio/config/constants'
+import { useTranslations } from 'next-intl'
 
 interface CommitArgs {
   frontMatter?: Frontmatter
@@ -20,6 +21,7 @@ interface CommitResult {
 
 export function useCommitPost() {
   const [isSaving, setIsSaving] = useState(false)
+  const t = useTranslations('studio.toasts')
 
   const commitPost = async ({
     frontMatter,
@@ -46,7 +48,7 @@ export function useCommitPost() {
 
     try {
       if (!frontMatter?.slug) {
-        toast.error('슬러그가 없습니다.')
+        toast.error(t('missingSlug'))
         return { ok: false, filteredPending: filtered }
       }
 
@@ -64,15 +66,15 @@ export function useCommitPost() {
       const json = await commitPostApi(form)
       if (!json.ok) {
         console.error('Commit failed', json)
-        toast.error(`커밋 실패: ${json.error ?? 'Unknown error'}`)
+        toast.error(t('commitFailed', { reason: json.error ?? 'Unknown error' }))
         return { ok: false, filteredPending: filtered }
       }
 
-      toast.success('커밋이 완료되었습니다.')
+      toast.success(t('commitSuccess'))
       return { ok: true, filteredPending: filtered }
     } catch (error) {
       console.error(error)
-      toast.error('커밋 중 오류가 발생했습니다.')
+      toast.error(t('commitError'))
       return { ok: false, filteredPending: filtered }
     } finally {
       setIsSaving(false)

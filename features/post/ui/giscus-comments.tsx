@@ -2,9 +2,12 @@
 
 import Giscus, { Repo, Theme } from '@giscus/react'
 import { useTheme } from 'next-themes'
+import { useLocale, useTranslations } from 'next-intl'
 
 export function GiscusComments() {
   const { resolvedTheme } = useTheme()
+  const locale = useLocale()
+  const t = useTranslations('post.giscus')
 
   const giscussTheme = resolvedTheme === 'dark' ? 'dark' : ('light' as Theme)
 
@@ -16,11 +19,7 @@ export function GiscusComments() {
   if (!repo || !repoId || !category || !categoryId) {
     return (
       <div>
-        <p className="text-sm text-red-500">
-          Giscus가 설정되지 않았습니다. NEXT_PUBLIC_GISCUS_REPO,
-          NEXT_PUBLIC_GISCUS_REPO_ID, NEXT_PUBLIC_GISCUS_CATEGORY,
-          NEXT_PUBLIC_GISCUS_CATEGORY_ID를 설정하세요.
-        </p>
+        <p className="text-sm text-red-500">{t('notConfigured')}</p>
       </div>
     )
   }
@@ -38,7 +37,7 @@ export function GiscusComments() {
         reactionsEnabled="1"
         emitMetadata="0"
         inputPosition="bottom"
-        lang="ko"
+        lang={locale as 'ko' | 'en'}
         theme={giscussTheme}
       />
     </div>

@@ -2,6 +2,7 @@
 
 import { TocHeading } from '@/shared/lib/toc'
 import { useEffect, useState, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface TocProps {
   headings: TocHeading[]
@@ -9,6 +10,7 @@ interface TocProps {
 }
 
 export function Toc({ headings, className }: TocProps) {
+  const t = useTranslations('post.toc')
   const [activeId, setActiveId] = useState<string | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -71,7 +73,7 @@ export function Toc({ headings, className }: TocProps) {
 
   return (
     <nav className={className}>
-      <h2 className="mb-2 font-semibold">목차</h2>
+      <h2 className="mb-2 font-semibold">{t('title')}</h2>
       <ul className="space-y-2">
         {headings.map((heading) => (
           <li

@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next'
 import createMDX from '@next/mdx'
+import createNextIntlPlugin from 'next-intl/plugin'
 
 const nextConfig: NextConfig = {
   // Configure `pageExtensions` to include MDX files
@@ -12,5 +13,7 @@ const withMDX = createMDX({
   // Add MDX options here, if needed
 })
 
+const withNextIntl = createNextIntlPlugin()
+
 // Merge MDX config with Next.js config
-export default withMDX(nextConfig)
+export default withNextIntl(withMDX(nextConfig))

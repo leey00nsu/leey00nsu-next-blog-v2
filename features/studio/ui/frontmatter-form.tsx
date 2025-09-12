@@ -14,6 +14,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Switch } from '@/shared/ui/switch'
 import { TagInput } from '@/shared/ui/tag-input'
 import { finalizeSlug, sanitizeSlug } from '@/features/studio/lib/slug'
+import { useTranslations } from 'next-intl'
 
 interface FrontmatterFormProps {
   value?: Frontmatter
@@ -37,6 +38,7 @@ export function FrontmatterForm({
   suggestionTags = [],
   thumbnailChoices = [],
 }: FrontmatterFormProps) {
+  const t = useTranslations('studio.form')
   const defaultValues: Frontmatter = {
     slug: initial?.slug ?? value?.slug ?? '',
     title: initial?.title ?? value?.title ?? '',
@@ -111,14 +113,14 @@ export function FrontmatterForm({
     <form className="border-border mb-6 space-y-4 rounded-lg border p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <Label htmlFor="slug">슬러그</Label>
+          <Label htmlFor="slug">{t('slug')}</Label>
           {(() => {
             const slugReg = register('slug')
             const slugVal = watch('slug') ?? ''
             return (
               <Input
                 id="slug"
-                placeholder="my-post-slug"
+                placeholder={t('slugPlaceholder')}
                 value={slugVal}
                 onChange={(e) =>
                   setValue('slug', sanitizeSlug(e.target.value), {
@@ -149,7 +151,7 @@ export function FrontmatterForm({
           )}
         </div>
         <div>
-          <Label htmlFor="date">작성일</Label>
+          <Label htmlFor="date">{t('date')}</Label>
           <Input id="date" type="date" {...register('date')} />
           {errors.date && (
             <p className="text-destructive mt-1 text-xs">
@@ -158,8 +160,8 @@ export function FrontmatterForm({
           )}
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="title">제목</Label>
-          <Input id="title" placeholder="포스트 제목" {...register('title')} />
+          <Label htmlFor="title">{t('title')}</Label>
+          <Input id="title" placeholder={t('titlePlaceholder')} {...register('title')} />
           {errors.title && (
             <p className="text-destructive mt-1 text-xs">
               {errors.title.message as string}
@@ -167,10 +169,10 @@ export function FrontmatterForm({
           )}
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="description">설명</Label>
+          <Label htmlFor="description">{t('description')}</Label>
           <Textarea
             id="description"
-            placeholder="간단한 설명"
+            placeholder={t('descriptionPlaceholder')}
             {...register('description')}
           />
           {errors.description && (
@@ -180,8 +182,8 @@ export function FrontmatterForm({
           )}
         </div>
         <div>
-          <Label htmlFor="writer">작성자</Label>
-          <Input id="writer" placeholder="작성자" {...register('writer')} />
+          <Label htmlFor="writer">{t('writer')}</Label>
+          <Input id="writer" placeholder={t('writerPlaceholder')} {...register('writer')} />
           {errors.writer && (
             <p className="text-destructive mt-1 text-xs">
               {errors.writer.message as string}
@@ -189,8 +191,8 @@ export function FrontmatterForm({
           )}
         </div>
         <div>
-          <Label htmlFor="section">섹션</Label>
-          <Input id="section" placeholder="blog" {...register('section')} />
+          <Label htmlFor="section">{t('section')}</Label>
+          <Input id="section" placeholder={t('sectionPlaceholder')} {...register('section')} />
           {errors.section && (
             <p className="text-destructive mt-1 text-xs">
               {errors.section.message as string}
@@ -198,10 +200,10 @@ export function FrontmatterForm({
           )}
         </div>
         <div>
-          <Label htmlFor="series">시리즈</Label>
+          <Label htmlFor="series">{t('series')}</Label>
           <Input
             id="series"
-            placeholder="없으면 비워두세요"
+            placeholder={t('seriesPlaceholder')}
             {...register('series')}
           />
           {errors.series && (
@@ -211,7 +213,7 @@ export function FrontmatterForm({
           )}
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="tagsText">태그</Label>
+          <Label htmlFor="tagsText">{t('tags')}</Label>
           <TagInput
             value={values.tags}
             onChange={(next) => setValue('tags', next, { shouldDirty: true })}
@@ -220,7 +222,7 @@ export function FrontmatterForm({
           <input id="tagsText" type="hidden" {...register('tags')} />
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="thumbnailSelect">썸네일 선택(선택 사항)</Label>
+          <Label htmlFor="thumbnailSelect">{t('thumbnail')}</Label>
           <div className="space-y-2">
             <select
               id="thumbnailSelect"
@@ -234,7 +236,7 @@ export function FrontmatterForm({
                 )
               }
             >
-              <option value="">없음</option>
+              <option value="">{t('none')}</option>
               {thumbnailChoices.map((c) => (
                 <option key={c.path} value={c.path}>
                   {c.path}
@@ -268,7 +270,7 @@ export function FrontmatterForm({
               setValue('draft', Boolean(v), { shouldDirty: true })
             }
           />
-          <Label htmlFor="draft">임시글(draft)</Label>
+          <Label htmlFor="draft">{t('draft')}</Label>
         </div>
       </div>
     </form>

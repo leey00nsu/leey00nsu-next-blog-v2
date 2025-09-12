@@ -80,7 +80,7 @@ export function CustomImage({
           width={numberWidth}
           height={numberHeight}
           className={cn(
-            'absolute inset-0 !m-0 h-full w-full opacity-100',
+            'absolute inset-0 !m-0 h-full w-full object-cover opacity-100',
             isMounted && 'opacity-0 transition-opacity',
           )}
           src={base64}
@@ -98,7 +98,7 @@ export function CustomImage({
         loader={isGif ? gifImageLoader : undefined}
         onLoad={() => setIsMounted(true)}
         className={cn(
-          'absolute inset-0 !m-0 h-full w-full',
+          'absolute inset-0 !m-0 h-full w-full object-cover',
           isMounted ? 'opacity-100 transition-opacity' : 'opacity-0',
           className,
         )}

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { commitToGithub } from '@/features/studio/actions/commit-to-github'
 import { STUDIO } from '@/features/studio/config/constants'
+import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
+import { translateMdxWithOpenAI } from '@/features/studio/api/translate-mdx'
 
 export const runtime = 'nodejs'
 
@@ -38,7 +41,33 @@ export async function POST(req: Request) {
       }),
     )
 
-    const result = await commitToGithub({ slug, mdx, images })
+    // 요청한 로케일(에디터에서 작성한 로케일) 추정: 쿠키 또는 기본값
+    const store = await cookies()
+    const sourceLocale = (store.get('locale')?.value ||
+      LOCALES.DEFAULT) as SupportedLocale
+
+    // 대상 로케일 전체에 대해 MDX 생성
+    const mdxFiles: { locale?: SupportedLocale; content: string }[] = []
+    for (const target of LOCALES.SUPPORTED) {
+      if (target === sourceLocale) {
+        mdxFiles.push({ locale: target, content: mdx })
+      } else {
+        const res = await translateMdxWithOpenAI({
+          sourceMdx: mdx,
+          sourceLocale,
+          targetLocale: target,
+        })
+        if (!res.ok || !res.mdx) {
+          return NextResponse.json(
+            { ok: false, error: res.error ?? 'Translate failed' },
+            { status: 500 },
+          )
+        }
+        mdxFiles.push({ locale: target, content: res.mdx })
+      }
+    }
+
+    const result = await commitToGithub({ slug, mdxFiles, images })
     return NextResponse.json({ ok: true, commitSha: result.commitSha })
   } catch (error) {
     console.error('Commit API error', error)

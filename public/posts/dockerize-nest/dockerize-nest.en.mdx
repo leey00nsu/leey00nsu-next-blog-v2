@@ -1,0 +1,72 @@
+---
+slug: dockerize-nest
+title: Dockerizing NestJS
+tags:
+  - NestJS
+  - docker
+description: This post explains how to deploy NestJS on Docker.
+date: 2024-02-25
+section: blog
+series:
+thumbnail:
+draft: false
+writer: leey00nsu
+---
+
+## Dockerizing NestJS
+
+To run an existing Nest project on `Docker`, you need to create a `Docker image`.
+
+First, you need to install Docker. On Linux-based systems, installing the [Docker Engine](https://docs.docker.com/engine/) includes Docker.
+
+If you are on Windows or Mac, you can install `Docker Desktop` to easily manage Docker in a GUI environment.
+
+After installing Docker, navigate to the root folder of the project you want to dockerize and create the Docker configuration files.
+
+- `DockerFile`: Configuration file for the Docker image
+- `.dockerignore`: List of files to exclude from the image
+
+In the .dockerignore file, exclude git-related files, environment variable files, node_modules, and the Dockerfile itself.
+
+I configured my Dockerfile as follows:
+
+```docker title="DockerFile"
+FROM node:20-alpine
+RUN mkdir -p /var/app
+WORKDIR /var/app
+COPY . .
+RUN npm install
+RUN npm run build
+EXPOSE 3000
+CMD ["npm","start"]
+```
+
+To briefly explain the process:
+
+1. Use the node-20-alpine (minimized version).
+2. Create a folder named /var/app and copy the contents of the current root folder into it.
+3. Then run npm install to install the specified dependencies and build the project.
+4. Set the port that the Docker container will use to 3000.
+5. Start the server.
+
+Now, let's build the Docker image.
+
+```bash title="Build Docker Image"
+docker build -t (image-name) .
+```
+
+Once the build is complete, you can check the Docker images stored locally with the following command:
+
+```bash title="Check Docker Images"
+docker images
+```
+
+To run this Docker image in a container, you can execute the following command.
+
+(Here, we connected port 3000 of the host to port 3000 of the container.)
+
+```bash title="Run Docker Container"
+docker run -p 3000:3000 (docker-image-ID)
+```
+
+There are various [other commands](https://docs.docker.com/engine/reference/commandline/run/) available, so feel free to apply them as needed.

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
 import { buildBlogOgImagePath, SITE } from '@/shared/config/constants'
+import { getLocale } from 'next-intl/server'
 
 interface PostPageProps {
   params: Promise<{ slug: string }>
@@ -18,7 +19,8 @@ export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
   const { slug } = await params
-  const post = await getPostBySlug(slug)
+  const locale = (await getLocale()) as SupportedLocale
+  const post = await getPostBySlug(slug, locale)
 
   if (!post) {
     return {
@@ -50,7 +52,8 @@ export async function generateMetadata({
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params
 
-  const post = await getPostBySlug(slug)
+  const locale = (await getLocale()) as SupportedLocale
+  const post = await getPostBySlug(slug, locale)
 
   if (!post) {
     notFound()

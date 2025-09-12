@@ -1,0 +1,87 @@
+---
+slug: react-infinite-scroll
+title: Implementing Infinite Scroll in React
+tags:
+  - react
+  - 무한 스크롤
+description: This post explains how to implement infinite scroll in React.
+date: 2023-05-09
+section: blog
+series:
+thumbnail: /public/posts/react-infinite-scroll/demo.gif
+draft: false
+writer: leey00nsu
+---
+
+## Infinite Scroll
+
+We want to implement a feature that adds to the list when it reaches the end by calling an API.
+
+This method is commonly referred to as `Infinite Scroll`.
+
+There are two ways to implement this functionality: **by monitoring the scroll event** and **by checking when the list enters the viewport**.
+
+However, the scroll event method can lead to performance issues and can be difficult to handle when there are many elements, so we will implement it using the viewport.
+
+### Implementation Using Intersection Observer API
+
+The `Intersection Observer API` is one of the JavaScript APIs provided by the browser that **calls a callback function when an element appears or disappears from the viewport.**
+
+Here, we will implement a custom hook called `useIntersectionObserver`, but you can also use a custom hook library like `react-intersection-observer`.
+
+```jsx title="useIntersectionObserver"
+import { useRef } from "react";
+export default function useIntersectionObserver(callback: () => void) {
+  const observer = useRef(
+    new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            callback();
+          }
+        });
+      },
+      { threshold: 1 }
+    )
+  );
+
+  const observe = (element: any) => {
+    observer.current.observe(element);
+  };
+
+  const unObserve = (element: any) => {
+    observer.current.unobserve(element);
+  };
+
+  return [observe, unObserve];
+}
+```
+
+By using `useRef`, we assign a ref property to the element that will serve as the reference point, and by registering this ref in the custom hook, the callback function will be executed every time this element appears in the viewport.
+
+Here, we will register a function that fetches the next page in the callback.
+
+```jsx title="useRef"
+...
+const infScroll = useRef(null);
+
+const [observe, unObserve] = useIntersectionObserver(() => {
+  fetchNextPage(); // This function fetches the next page.
+});
+
+useEffect(() => {
+    observe(infScroll.current);
+}, []);
+
+...
+
+<div ref={infScroll} >
+  ...
+</div>
+```
+
+### Result
+
+![infinite-scroll-demo](/public/posts/react-infinite-scroll/demo.gif)
+
+As expected, when the end of the scroll is detected, we can see that the list continues to load.

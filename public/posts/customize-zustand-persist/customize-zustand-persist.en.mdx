@@ -1,0 +1,112 @@
+---
+slug: customize-zustand-persist
+title: Customizing Zustand Persist
+tags:
+  - zustand
+  - indexedDB
+description: Let's customize Zustand persist to suit our needs.
+date: 2023-12-15
+section: blog
+series:
+thumbnail:
+draft: false
+writer: leey00nsu
+---
+
+## Customizing Zustand Persist
+
+When using `zustand` for global state management, **there are times when you want to store that state in the browser's storage.**
+
+Zustand provides `persist` through zustand/middleware for this purpose.
+
+The Zustand [official documentation](https://docs.pmnd.rs/zustand/integrations/persisting-store-data) explains this in detail with examples.
+
+### Saving to Local or Session Storage
+
+```jsx title="useBearStore"
+export const useBearStore = create(
+  persist(
+    (set, get) => ({
+      bears: 0,
+      addABear: () => set({ bears: get().bears + 1 }),
+    }),
+    {
+      name: 'food-storage', // Name of the storage
+      storage: createJSONStorage(() => sessionStorage), // Storage to use
+      partialize: (state) => ({
+        canvasName: state.bears,
+      }),
+    },
+  ),
+)
+```
+
+After wrapping the created `store` with `persist`, you set which storage to use.
+
+By default, `localStorage` is used, but it can be changed to `sessionStorage`.
+
+At this point, you can use the `partialize` property to persist only the desired state.
+
+### Saving to Custom Storage
+
+By default, local storage and session storage have size limitations.
+
+**If you want to store a larger amount of data, you can save it to `IndexedDB`, one of the browser storage options.**
+
+In this case, you can implement it using the indexedDB library [idb-keyval](https://github.com/jakearchibald/idb-keyval).
+
+```jsx title="useBoundStore"
+import { get, set, del } from "idb-keyval";
+
+const storage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await get(name)) || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await set(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await del(name);
+  },
+};
+
+export const useBoundStore = create(
+  persist(
+    (set, get) => ({
+      bears: 0,
+      addABear: () => set({ bears: get().bears + 1 }),
+    }),
+    {
+      name: "food-storage",
+      storage: createJSONStorage(() => storage),
+    }
+  )
+);
+```
+
+The usage is not significantly different; you declare the custom storage and then use it.
+
+### Adding Debounce to Persist
+
+In the project "Creating My Own Suya Guardian," we saved the history of the canvas.
+
+At this time, every time the user interacts with the canvas, `persist`'s `set` is triggered, resulting in **too many requests.**
+
+Therefore, by adding `debounce`, you can save the state of the canvas after the interaction is finished, reducing the number of requests.
+
+The debounce function used can be implemented directly or you can use utility libraries like lodash.
+
+```jsx title="storage debounce"
+// Custom IndexedDB storage
+const IDBstorage: StateStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await get(name)) || null;
+  },
+  setItem: debounce(async (name: string, value: string): Promise<void> => {
+    await set(name, value);
+  }, 1000),
+  removeItem: async (name: string): Promise<void> => {
+    await del(name);
+  },
+};
+```

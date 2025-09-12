@@ -1,0 +1,123 @@
+---
+slug: contribute-open-source
+title: Trying to Contribute to Open Source
+tags:
+  - octokit
+  - github
+  - open source
+description: This post describes my experience contributing to open source.
+date: 2024-02-16
+section: blog
+series: ''
+thumbnail: /public/posts/contribute-open-source/editor.png
+draft: false
+writer: leey00nsu
+---
+
+## Trying to Contribute to Open Source
+
+### Committing with Octokit
+
+While creating a `blog service`, I needed to import files from GitHub and commit them to add CMS functionality.
+
+GitHub supports access to its REST API through a library called [Octokit](https://github.com/octokit/rest.js).
+
+Importing files was straightforward, but **a significant issue arose during the process of committing files.**
+
+In the current implementation of the CMS functionality, users can write markdown documents through an editor.
+
+![editor](/public/posts/contribute-open-source/editor.png)
+
+When uploading images in the editor, the images are stored as `File` objects on the client side, and upon clicking upload, they are uploaded using Octokit.
+
+However, the function `octokit.rest.repos.createOrUpdateFile` for committing to the repository can only handle **one file per commit.**
+
+Since I did not want commits to occur for each image, I searched for a solution and discovered that commits could be made using a `tree` in the document.
+
+> 1. Get a reference to the end of the branch's tree.
+> 2. For each file to be committed, create a blob and store references to the sha identifier, path, and mode in an array.
+> 3. Create a new tree containing all the blobs, add it to the reference of the existing tree, and save a new sha pointer for this new tree.
+> 4. Create a commit pointing to this new tree and push it to the branch.
+
+The process does not seem easy.
+
+### Solution through a Plugin
+
+Fortunately, the [octokit-commit-multiple-files](https://github.com/mheap/octokit-commit-multiple-files) plugin allows adding a `createOrUpdateFiles` function to Octokit, enabling the storage of multiple files in a single commit.
+
+However, I found that **sometimes image uploads did not work correctly when using this library.**
+
+This error only occurred when uploading images larger than `5MB`, and I discovered the following error log.
+
+```markdown title="Error log"
+Error creating commit: RangeError: Maximum call stack size exceeded
+at RegExp.test (<anonymous>)
+at isBase64 (webpack-internal:///(action-browser)/./node_modules/is-base64/is-base64.js:24:52)
+at createBlob (webpack-internal:///(action-browser)/./node_modules/octokit-commit-multiple-files/create-or-update-files.js:181:14)
+at eval (webpack-internal:///(action-browser)/./node_modules/octokit-commit-multiple-files/create-or-update-files.js:95:47)
+at Array.map (<anonymous>)
+at eval (webpack-internal:///(action-browser)/./node_modules/octokit-commit-multiple-files/create-or-update-files.js:87:45)
+at processTicksAndRejections (node:internal/process/task_queues:95:5)
+Error creating commit: Maximum call stack size exceeded
+```
+
+The octokit-commit-multiple-files library checks for base64 using an external library called `isBase64`.
+
+However, isBase64 is no longer maintained, with the last commit being 4 years ago, and many people have reported [this issue](https://github.com/miguelmota/is-base64/issues/10).
+
+To resolve this, I cloned the library and replaced the base64 check with [this implemented function](https://github.com/webdriverio/webdriverio/issues/5208#issuecomment-613029075) to see if it would fix the error.
+
+```js title="isBase64"
+function isBase64(str) {
+  var notBase64 = /[^A-Z0-9+\/=]/i
+  const isString = typeof str === 'string' || str instanceof String
+
+  if (!isString) {
+    let invalidType
+    if (str === null) {
+      invalidType = 'null'
+    } else {
+      invalidType = typeof str
+      if (
+        invalidType === 'object' &&
+        str.constructor &&
+        str.constructor.hasOwnProperty('name')
+      ) {
+        invalidType = str.constructor.name
+      } else {
+        invalidType = `a ${invalidType}`
+      }
+    }
+    throw new TypeError(`Expected string but received ${invalidType}.`)
+  }
+
+  const len = str.length
+  if (!len || len % 4 !== 0 || notBase64.test(str)) {
+    return false
+  }
+  const firstPaddingChar = str.indexOf('=')
+  return (
+    firstPaddingChar === -1 ||
+    firstPaddingChar === len - 1 ||
+    (firstPaddingChar === len - 2 && str[len - 1] === '=')
+  )
+}
+```
+
+After this change, I confirmed that uploads were working correctly, and I wrote a `PR` to inform the library maintainer.
+
+![pr](/public/posts/contribute-open-source/pr.png)
+
+About two weeks later, I saw that it was merged with the following comment.
+
+![pr-accepted](/public/posts/contribute-open-source/pr-accepted.png)
+
+### Conclusion
+
+Unexpectedly, I had the opportunity to contribute to open source.
+
+While I did not discover a major issue or write code to solve a problem directly, **I learned a lot through the process of identifying a problem and suggesting a solution.**
+
+![contributors](/public/posts/contribute-open-source/contributors.png)
+
+Additionally, being included as a contributor feels quite rewarding.

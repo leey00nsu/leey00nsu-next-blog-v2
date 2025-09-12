@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts"
   },
   "dependencies": {
     "@fec/remark-a11y-emoji": "^4.0.2",
@@ -36,6 +37,7 @@
     "next-intl": "^3",
     "next-mdx-remote": "^5.0.0",
     "next-themes": "^0.3",
+    "openai": "^4",
     "optional": "^0.1.4",
     "plaiceholder": "^3.0.0",
     "react": "19.1.0",
@@ -73,6 +75,8 @@
     "lint-staged": "^16.1.6",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",
+    "dotenv": "^16",
+    "tsx": "^4",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5"
   }

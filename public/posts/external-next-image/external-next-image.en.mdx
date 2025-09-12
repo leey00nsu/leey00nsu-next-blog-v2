@@ -1,0 +1,193 @@
+---
+slug: external-next-image
+title: Applying next/image to External Images
+tags:
+  - Next.js
+  - plaiceholder
+description: This post explains the process of applying next/image to external images using plaiceholder.
+date: 2024-01-23
+section: blog
+series:
+thumbnail: /public/posts/external-next-image/result.webp
+draft: false
+writer: leey00nsu
+---
+
+## Applying next/image to External Images
+
+### next/image
+
+In `Next.js`, you may see a warning suggesting the use of the `next/image` component instead of the `img` tag for image optimization.
+
+Using next/image provides the following advantages:
+
+- Serving images in **smaller formats** like `webp`
+- Serving appropriate images for **different devices** using `srcset`
+- Providing a **placeholder** to prevent CLS (Cumulative Layout Shift)
+
+In this post, we will focus on the placeholder feature.
+
+With next/image, you can see that it automatically extracts metadata such as `width` and `height` for images and also generates a `blurDataUrl`.
+
+```jsx title="next/image"
+import Image from 'next/image'
+
+import profilePic from './me.png'
+
+export default function Page() {
+  return (
+    <Image
+      src={profilePic}
+      alt="Picture of the author"
+      // width={500} automatically provided
+      // height={500} automatically provided
+      // blurDataURL="data:..." automatically provided
+      // placeholder="blur" // Optional blur-up while loading
+    />
+  )
+}
+```
+
+However, according to the [official documentation](https://nextjs.org/docs/app/building-your-application/optimizing/images), metadata is generated at build time based on **statically imported image files**, so you need to manually provide metadata for `external images`.
+
+Therefore, let's explore how to handle metadata for external images.
+
+### Plaiceholder
+
+> "Plaiceholder" is a suite of **server-side** functions for creating low-quality image placeholders (LQIP).
+
+[plaiceholder](https://plaiceholder.co/docs) is a library designed to **generate low-quality placeholder images on the server side**.
+
+It supports solid colors, CSS, SVG, and Base64.
+
+To install the library, you need to install the image processing library `sharp`.
+
+```jsx title="Installing sharp"
+npm install sharp
+npm install plaiceholder
+```
+
+To use plaiceholder for external images, you can fetch the image URL and convert it to a `buffer` to pass it along.
+
+In JavaScript, you can create an `arrayBuffer` and then convert it to a buffer for passing.
+
+You can also pass various properties such as the size of the `lqip` image to the function.
+
+```jsx title="getMetadata.ts"
+import { getPlaiceholder } from 'plaiceholder';
+
+export default async function getMetadata(imageUrl: string) {
+  const res = await fetch(imageUrl);
+
+  const buffer = await res.arrayBuffer();
+
+  const { base64, metadata } = await getPlaiceholder(Buffer.from(buffer), {
+    size: 8,
+  });
+
+  return { base64, metadata };
+}
+```
+
+next/image receives the `base64` as `blurDataUrl`, so let's look at the return value for base64.
+
+plaiceholder returns the base64 and metadata as follows:
+
+```jsx title="plaiceholder return value"
+base64: string;
+metadata: {
+    orientation?: number;
+    format?: keyof sharp.FormatEnum;
+    size?: number;
+    space?: keyof sharp.ColourspaceEnum;
+    channels?: sharp.Channels;
+    depth?: string;
+    density?: number;
+    chromaSubsampling: string;
+    isProgressive?: boolean;
+    pages?: number;
+    pageHeight?: number;
+    loop?: number;
+    delay?: number[];
+    pagePrimary?: number;
+    hasProfile?: boolean;
+    hasAlpha?: boolean;
+    exif?: Buffer;
+    icc?: Buffer;
+    iptc?: Buffer;
+    xmp?: Buffer;
+    tifftagPhotoshop?: Buffer;
+    compression?: "av1" | "hevc";
+    background?: number | {
+        r: number;
+        g: number;
+        b: number;
+    };
+    levels?: sharp.LevelMetadata[];
+    subifds?: number;
+    resolutionUnit?: "inch" | "cm";
+    formatMagick?: string;
+    width: number;
+    height: number;
+};
+```
+
+Additionally, to apply the `optimized` option when serving external images, you need to register the image domain in `remotePatterns`.
+
+```jsx title="next.config.js"
+module.exports = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'example.com',
+        port: '',
+        pathname: '/account123/**',
+      },
+    ],
+  },
+}
+```
+
+Now you can call this function and pass it to the Image component.
+
+```jsx title="GithubChart.tsx"
+const GithubChart = async () => {
+  const url =
+    'https://cdn.pixabay.com/photo/2023/07/22/04/15/motorbike-8142649_1280.jpg'
+  const { base64, metadata } = await getMetadata(url)
+
+  return (
+    <Image
+      alt="motorcycle"
+      width={metadata.width}
+      height={metadata.height}
+      src={url}
+      blurDataURL={base64}
+      placeholder="blur"
+    />
+  )
+}
+```
+
+### Results
+
+![result.webp](/public/posts/external-next-image/result.webp)
+
+The results for plaiceholder X and plaiceholder O are shown in order.
+
+I tested the results in a `Fast 3G` environment.
+
+As you can see, the side without the placeholder does not show the image until it is fully loaded, causing a `Layout Shift`.
+
+Therefore, to effectively use next/image, you might consider using this library.
+
+Also, when applying the `optimized` option, it showed a **size difference of more than double**.
+
+![diff](/public/posts/external-next-image/diff.png)
+
+### Use Case
+
+In my [blog](https://blog.leey00nsu.com/), I use this library to initially show a blurred image and then transition smoothly.
+
+![demo](/public/posts/external-next-image/demo.gif)

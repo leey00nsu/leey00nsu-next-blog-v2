@@ -1,0 +1,40 @@
+---
+slug: taking-meal-retrospect
+title: Reflection on Taking a Meal
+tags:
+  - react-native
+  - 회고
+description: A review of my experience after completing my first team project, Taking a Meal
+date: 2023-01-28
+section: blog
+series:
+thumbnail: /public/posts/taking-meal-retrospect/taking-meal-banner.png
+draft: false
+writer: leey00nsu
+---
+
+## Taking a Meal
+
+![taking-meal-banner](/public/posts/taking-meal-retrospect/taking-meal-banner.png)
+
+[Taking a Meal](https://github.com/leey00nsu/TakingMeal) is a project created to participate in the Sookmyung Women's University SW competition.
+
+At that time, I received a proposal from the GDSC lead and core members, along with a member from another club, and I accepted it.
+
+I had just transferred and was taking classes for one semester, spending my third-year summer vacation. It was not easy to solidify my programming basics in just one semester, and I was in need of additional study, so I was both happy and surprised to receive such a proposal. However, I believed that **project experience is the most important thing for a developer**, so I decided to participate in the project.
+
+### Role in the Team
+
+The team consisted of 2 front-end developers, 2 back-end developers, and 1 designer, which could be considered ideal, but in reality, I was not much help on the front end (because I knew nothing). Therefore, the other front-end member took the lead while I followed along. The best part was that I could learn how to progress with the project. **It was my first time collaborating with the back end, and I realized that writing documentation, such as API specifications, was quite helpful for collaboration.**
+
+Initially, the project's goal was concretized into an app, and the lead front-end developer suggested developing it with React Native since he knew how to use React. At that time, I didn't know React, and naturally, I didn't know React Native either, so it didn't matter much to me. The lead front-end developer took charge of the map and store search features, while I was responsible for the nutrient chart, food search, and addition. Although I didn't fully understand React Native, I could make it work, so I focused on **development that prioritized functionality.**
+
+### Challenges Faced
+
+The most challenging part of my role was drawing charts in React Native. I found a library called `victory-chart` that I liked and decided to use it, and there were no issues during testing, so I proceeded with development. However, during development, I noticed that rendering took too long on a specific screen, and upon checking, I found that there was a bottleneck in the chart section. Unable to find the cause, I gave up on the library and **decided to implement the chart myself.** Looking back, since it was just a simple bar graph, I could have made it quickly without using a library at all. When I attached the chart I created, it rendered quickly and worked well.
+
+Another issue was the life cycle problem. At that time, I used a library called `react-native-tab-view` to implement screen swiping. Due to the way this library worked, all components were active when swiping between screens, so I had to be careful with `useEffect`. However, since I didn't know React well, I **overlooked dependencies and wrote numerous useEffects in one component, resulting in unexpected side effects and bugs.** At that time, I couldn't resolve these issues, so I finished the project by only fixing serious errors.
+
+### Reflection
+
+For me, this was a significant first team project with a proper structure. Even as I write this reflection, I can't say that I handle React well, but I believe I have improved a lot since then. I have a desire to develop cross-platform applications, so I want to study more and take on a proper `react-native` project.

@@ -7,6 +7,8 @@ import {
   parseSelectedTags,
 } from '@/features/post/lib/tag-utils'
 import { SITE } from '@/shared/config/constants'
+import { getLocale } from 'next-intl/server'
+import { SupportedLocale } from '@/shared/config/constants'
 
 interface BlogPageProps {
   // Next may pass searchParams as a Promise
@@ -17,7 +19,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   const params = (await searchParams) ?? {}
   const selectedTags = parseSelectedTags(params)
 
-  const allPosts = await getAllPosts()
+  const locale = (await getLocale()) as SupportedLocale
+  const allPosts = await getAllPosts(locale)
 
   const posts = filterPostsByTags(allPosts, selectedTags)
 

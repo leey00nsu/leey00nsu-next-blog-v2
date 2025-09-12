@@ -1,0 +1,65 @@
+---
+slug: prettier-import-order
+title: Setting Up Prettier Import Order
+tags:
+  - prettier
+description: This post explains how to sort import orders using Prettier.
+date: 2023-11-05
+section: blog
+series:
+thumbnail: /public/posts/prettier-import-order/messy-order.png
+draft: false
+writer: leey00nsu
+---
+
+## Sorting Import Order in Prettier
+
+As you work on a project, imports can often pile up without any organization.
+
+![messy-order](/public/posts/prettier-import-order/messy-order.png)
+
+**By using Prettier to sort imports in a specific order, your code will be easier to read later on.**
+
+So let's install the library that helps with this sorting, [prettier-plugin-sort-imports](https://github.com/trivago/prettier-plugin-sort-imports).
+
+```jsx title="@trivago/prettier-plugin-sort-imports"
+npm i @trivago/prettier-plugin-sort-imports
+```
+
+After installation, you need to add it to your existing Prettier configuration.
+
+In my case, the configuration file is `.prettierrc`, so I added it there.
+
+```jsx title=".prettierrc"
+{
+	...
+  "importOrder": [
+    "<THIRD_PARTY_MODULES>",
+    "^@/constants/(.*)$",
+    "^@/apis/(.*)$",
+    "^@/store/(.*)$",
+    "^@/hooks/(.*)$",
+    "^@/pages/(.*)$",
+    "^@/features/(.*)$",
+    "^@/components/(.*)$",
+    "^@/ui/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "plugins": [
+    "@trivago/prettier-plugin-sort-imports",
+		...
+  ]
+}
+```
+
+You specify the sorting order in `importOrder` using regular expressions.
+
+Here, `THIRD_PARTY_MODULES` refers to external libraries.
+
+Setting `importOrderSeparation` to true will add a blank line after each specified order.
+
+![ordered-order](/public/posts/prettier-import-order/ordered-order.png)
+
+Now, when you run Prettier again, you will see that the import order has been sorted.

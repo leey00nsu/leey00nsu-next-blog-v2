@@ -1,0 +1,143 @@
+---
+slug: migration-supabase
+title: Migrating Supabase
+tags:
+  - supabase
+description: Let's migrate data from Supabase Cloud to self-hosting.
+date: 2024-09-18
+section: blog
+series:
+thumbnail: /public/posts/migration-supabase/supabase.png
+draft: false
+writer: leey00nsu
+---
+
+# Migrating Supabase
+
+## Supabase
+
+![supabase](/public/posts/migration-supabase/supabase.png)
+
+`Supabase` is an open-source backend service that helps developers easily build a complete backend. It is essentially a `BaaS` (Backend as a Service). Supabase is based on a `PostgreSQL` database and provides features such as real-time databases, authentication, storage, and automatic generation of RESTful APIs.
+
+The main features are as follows:
+
+1. **Database**: A scalable relational database based on PostgreSQL.
+2. **Real-time Features**: The ability to synchronize and update data in real-time from the database.
+3. **Authentication**: A user authentication and authorization management system (can integrate with external login services like GitHub, Google, Facebook, etc.).
+4. **Storage**: The ability to store and manage files such as images and videos.
+5. **Automatically Generated APIs**: Automatically generates RESTful APIs and GraphQL based on the PostgreSQL schema.
+
+Supabase offers similar functionalities to Firebase and is widely used by developers who need integration with PostgreSQL.
+
+## Why Self-Hosting?
+
+Currently, we are using Supabase when we need simple CRUD functionalities without requiring a full-fledged backend application.
+
+We also utilized Supabase for handling blog view counts. While it is great for quickly setting up a backend, there are **a few drawbacks.**
+
+1. **Only two projects are free.**
+2. **If the dashboard is not visited for a week (not managed), the project will be paused.**
+
+It is challenging to manage all projects weekly, and if forgotten, the project gets paused, requiring reactivation, which can be cumbersome.
+
+Thus, we decided to self-host using Docker.
+
+## Self-Hosting
+
+The [official documentation](https://supabase.com/docs/guides/self-hosting/docker) explains how to self-host using Docker.
+
+This post will not cover the process in detail. (It is a simple process of modifying the env through a `docker-compose` file and running it.)
+
+## Migrating PostgreSQL
+
+### Backing Up with pg_dump
+
+Once the basic self-hosted Supabase is set up, it's time to replace the contents.
+
+Since Supabase uses `PostgreSQL` internally, we can proceed with the migration using `pg_dump` and `psql`.
+
+![table-old](/public/posts/migration-supabase/table-old.png)
+
+The current blog view count table looks like this.
+
+To back up this data from the existing Supabase database, we will use pg_dump. The PostgreSQL information used here can be found in Supabase's project settings > database.
+
+```bash title="pg_dump"
+sudo apt-get install postgresql-15
+pg_dump postgresql://[YOUR_USER]:[YOUR-PASSWORD]@[YOUR_HOST]:[YOUR_PORT]/postgres > database-dump.sql
+```
+
+If everything goes smoothly, you can proceed to the next step. However, **if you cannot install PostgreSQL 15 due to Ubuntu version 20.04**, you can follow these steps to install it and then proceed.
+
+1. Add the PostgreSQL official repository
+   The latest version of PostgreSQL is not included in Ubuntu's default repository, so you need to add the PostgreSQL official repository.
+
+```bash title="Add PostgreSQL Official Repository Command"
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+```
+
+2. Add the GPG key for the PostgreSQL repository
+   Add the GPG key to verify the integrity of the PostgreSQL packages.
+
+```bash title="Add GPG Key for PostgreSQL Repository"
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+```
+
+3. Update the package list
+   After adding the PostgreSQL official repository, update the package list.
+
+```bash title="Update Package List"
+sudo apt-get update
+```
+
+4. Install PostgreSQL 15
+   Now you can install PostgreSQL 15.
+
+```bash title="Install PostgreSQL 15"
+sudo apt-get install postgresql-15
+```
+
+### Applying Backup with psql
+
+If the backup data has been successfully created, a file named `database-dump.sql` should have been generated.
+
+To apply this backup, you need to **run psql inside the Docker container of the self-hosted PostgreSQL.**
+
+Use a command like `docker ps` to find the ID of the container, then transfer the backup file to the Docker container.
+
+```bash title="Transfer File to Docker Container"
+docker cp /path/to/database-dump.sql [CONTAINER_ID]:/path/in/container/
+```
+
+Next, access the container.
+
+```bash title="Access Docker Container"
+docker exec -it [CONTAINER_ID] bash
+```
+
+Now, execute the psql command at the location of the transferred backup file.
+
+```bash title="psql"
+psql -U [YOUR_USER] -d postgres -f database-dump.sql
+```
+
+If everything was processed correctly, you can check the self-hosted Supabase GUI to see that it has been applied successfully.
+
+![table-new](/public/posts/migration-supabase/table-new.png)
+
+## Conclusion
+
+Due to the two drawbacks mentioned earlier, we opted for self-hosting, but self-hosting also has the **disadvantage of not being able to manage multiple projects** (there is no organization).
+
+If you only need to use a database, it might be better to host just PostgreSQL and use an ORM like Prisma.
+
+However, the other powerful features and the built-in GUI provided by Supabase are still available in self-hosting, so I believe I will continue to use it for convenience.
+
+## References
+
+[https://supabase.com/docs/guides/self-hosting/docker](https://supabase.com/docs/guides/self-hosting/docker)
+
+[https://ironeko.com/posts/creating-a-local-backup-of-a-supabase-database](https://ironeko.com/posts/creating-a-local-backup-of-a-supabase-database)
+
+[https://medium.com/devops-technical-notes-and-manuals/how-to-install-and-configure-postgresql-on-ubuntu-20-04-4fd3cf072d6f](https://medium.com/devops-technical-notes-and-manuals/how-to-install-and-configure-postgresql-on-ubuntu-20-04-4fd3cf072d6f)

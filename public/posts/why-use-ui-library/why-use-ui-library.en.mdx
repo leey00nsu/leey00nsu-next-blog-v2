@@ -1,0 +1,74 @@
+---
+slug: why-use-ui-library
+title: Reasons to Use a Frontend UI Library
+tags:
+  - design
+  - mantine
+description: This post explains the reasons for using a frontend UI library.
+date: 2024-05-19
+section: blog
+series:
+thumbnail: /public/posts/why-use-ui-library/mantine.png
+draft: false
+writer: leey00nsu
+---
+
+## Reasons to Use a Frontend UI Library
+
+![mantine](/public/posts/why-use-ui-library/mantine.png)
+
+In the recent [noveloper](https://github.com/leey00nsu/noveloper) project, I used the UI library Mantine.
+
+Additionally, I have used various frontend UI libraries such as `bootstrap`, `shadcn`, `daisyUI`, and `NextUI` in most of the projects I have worked on.
+
+So, why did I use these **libraries**?
+
+### There's No Need to Reinvent the Wheel
+
+**Building all components from scratch and styling them from the ground up is not an easy task.**
+
+Even if you create visually appealing components using `CSS`, you still need to consider aspects such as `browser compatibility`, `accessibility`, `responsive design`, and `performance`.
+
+UI libraries take these factors into account, **testing and developing components, and maintaining them through the community, which allows for a more efficient solution than handling everything alone.**
+
+![mantine-issue](/public/posts/why-use-ui-library/mantine-issue.png)
+(With 24.7k stars, Mantine has only 24 issues, indicating how well it is maintained.)
+
+Moreover, using pre-built components allows for rapid prototyping of projects.
+
+### Frontend Developers and Designers
+
+**I am not good at design.**
+
+However, as a frontend developer, providing users with a **clean UI** has always been a concern for me.
+
+Ensuring that different UI components maintain consistency is not an easy task.
+
+UI libraries generally have a consistent design and present a clean and organized appearance, making them excellent as a **base design**.
+
+### Design Systems and Customization
+
+That said, not all projects using a UI library will have the same design.
+
+Most libraries offer **customization options for individual components, as well as the ability to modify themes for overall project customization, allowing you to build a `design system` tailored to each project.**
+
+For example, you can find out why Inflab developed its design system based on the open-source Mantine in their article on [building a design system](https://tech.inflab.com/20240224-design-system/).
+
+### Drawbacks
+
+So, is using a UI library **always the right choice?**
+
+It's important to consider the following drawbacks as well:
+
+- `Open Source`: Open-source projects always carry the risk of maintenance being halted. Additionally, the development direction of the open-source library may differ from what the project desires.
+- `Bundle Size`: Including all components of the library in the code can lead to performance issues.
+- `Dependencies`: If the UI library depends on other libraries, issues may arise during version updates.
+- `Learning Curve`: The team will need time to learn the library.
+
+Therefore, it seems wise to choose a UI library based on project requirements through discussions among team members.
+
+### Conclusion
+
+While I have used various UI libraries throughout my projects, I initially thought of it simply as a matter of convenience.
+
+By posting this article, I feel that I can clearly articulate the reasons I had in mind while also exploring the thoughts of other developers regarding the use of UI libraries.

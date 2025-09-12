@@ -1,5 +1,9 @@
 import { Octokit } from '@octokit/rest'
-import { buildPostMdxRelativePath } from '@/shared/config/constants'
+import {
+  buildPostMdxRelativePath,
+  buildPostMdxRelativePathLocalized,
+  type SupportedLocale,
+} from '@/shared/config/constants'
 
 export interface CommitImageItem {
   // 리포지토리 기준 경로 (선두 슬래시 금지): e.g. 'public/posts/slug/image.png'
@@ -10,13 +14,14 @@ export interface CommitImageItem {
 
 export interface CommitToGithubParams {
   slug: string
-  mdx: string
+  // locale별 MDX 파일 목록. (단일 파일 커밋을 위해서는 1개만 전달)
+  mdxFiles: { locale?: SupportedLocale; content: string }[]
   images: CommitImageItem[]
 }
 
 export async function commitToGithub({
   slug,
-  mdx,
+  mdxFiles,
   images,
 }: CommitToGithubParams) {
   const owner = process.env.GITHUB_OWNER
@@ -49,15 +54,21 @@ export async function commitToGithub({
   const baseTreeSha = latestCommit.data.tree.sha
 
   // 3) 블롭 생성 (MDX + 이미지)
-  // MDX 파일 경로
-  const mdxPath = buildPostMdxRelativePath(slug)
-
-  const mdxBlob = await octokit.git.createBlob({
-    owner,
-    repo,
-    content: mdx,
-    encoding: 'utf8',
-  })
+  // MDX 파일 경로 (locale 지정 시 suffix, 미지정 시 레거시 경로)
+  const mdxBlobs = await Promise.all(
+    mdxFiles.map(async (file) => {
+      const path = file.locale
+        ? buildPostMdxRelativePathLocalized(slug, file.locale)
+        : buildPostMdxRelativePath(slug)
+      const blob = await octokit.git.createBlob({
+        owner,
+        repo,
+        content: file.content,
+        encoding: 'utf8',
+      })
+      return { path, sha: blob.data.sha }
+    }),
+  )
 
   const imageBlobs = await Promise.all(
     images.map(async (it) => {
@@ -74,12 +85,12 @@ export async function commitToGithub({
 
   // 4) 새 트리 생성
   const tree = [
-    {
-      path: mdxPath,
+    ...mdxBlobs.map((b) => ({
+      path: b.path,
       mode: '100644' as const,
       type: 'blob' as const,
-      sha: mdxBlob.data.sha,
-    },
+      sha: b.sha,
+    })),
     ...imageBlobs.map((b) => ({
       path: b.path,
       mode: '100644' as const,

@@ -5,7 +5,7 @@ export const PATHS = {
   FS: {
     PUBLIC_DIR: 'public',
     PUBLIC_POSTS_DIR: 'public/posts',
-    ABOUT_MDX_PATH: 'public/about/about.mdx',
+    ABOUT_MDX_BASENAME: 'public/about/about',
     IMAGE_CACHE_DIR: '.next/cache/gif-webp',
   },
   URL: {
@@ -14,9 +14,34 @@ export const PATHS = {
   },
 } as const
 
+// Locale 설정
+export const LOCALES = {
+  SUPPORTED: ['ko', 'en'] as const,
+  DEFAULT: 'ko' as const,
+}
+
+export type SupportedLocale = (typeof LOCALES.SUPPORTED)[number]
+
 // 경로 빌더
 export function buildPostMdxRelativePath(slug: string): string {
   return `${PATHS.FS.PUBLIC_POSTS_DIR}/${slug}/${slug}.mdx`
+}
+
+export function buildPostMdxRelativePathLocalized(
+  slug: string,
+  locale: SupportedLocale,
+): string {
+  return `${PATHS.FS.PUBLIC_POSTS_DIR}/${slug}/${slug}.${locale}.mdx`
+}
+
+export function buildAboutMdxAbsolutePath(): string {
+  return `${PATHS.FS.ABOUT_MDX_BASENAME}.mdx`
+}
+
+export function buildAboutMdxAbsolutePathLocalized(
+  locale: SupportedLocale,
+): string {
+  return `${PATHS.FS.ABOUT_MDX_BASENAME}.${locale}.mdx`
 }
 
 // 라우트/URL 관련 상수

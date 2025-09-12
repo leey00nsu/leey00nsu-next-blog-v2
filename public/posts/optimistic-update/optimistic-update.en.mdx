@@ -1,0 +1,146 @@
+---
+slug: optimistic-update
+title: Optimistic Updates Using React Query
+tags:
+  - react-query
+  - optimistic update
+description: This post explains the process of implementing optimistic updates using React Query.
+date: 2023-12-19
+section: blog
+series:
+thumbnail: /public/posts/optimistic-update/optimistic-X.gif
+draft: false
+writer: leey00nsu
+---
+
+## Performing Optimistic Updates with React Query
+
+We are going to add a `like` feature to our project.
+
+When a user clicks the like button, we will call the API using `useMutation`.
+
+```jsx title="useMutation"
+const { mutate: toggleListLikeMutate } = useMutation({
+    mutationKey: ['toggleListLikeArticle'],
+    retry: false,
+    mutationFn: toggleLikeArticle,
+		...
+})
+```
+
+To display the result of the call on the screen, we can invalidate the corresponding `query key` through the `onSuccess` callback to refresh the data.
+
+```jsx title="onSuccess"
+onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['getArticleList'] });
+},
+```
+
+However, depending on the network environment, **the UI will not change until the server responds.**
+
+To improve the UX, we can use `Optimistic Updates`.
+
+### Optimistic Updates
+
+`Optimistic Updates` allow us to **immediately change the query data** to reflect the expected result when the `mutate` is successful.
+
+According to the [official documentation](https://tanstack.com/query/latest/docs/react/guides/optimistic-updates), the difference when using likes as an example is as follows:
+
+```markdown {5} title="Without Optimistic Updates"
+-> Click like
+-> Request to the server
+-> Server response
+-> Refresh query with server data
+-> Client UI changes (Likes: 1, Like X → Likes: 2, Like O)
+```
+
+```markdown {3} title="With Optimistic Updates"
+-> Click like
+-> Request to the server
+-> Client UI changes (Likes: 1, Like X → Likes: 2, Like O)
+-> Server response
+-> Refresh query with actual server data
+```
+
+Let's take a look at the actual implementation code.
+
+```jsx title="useToggleLike"
+const { mutateAsync: toggleLikeMutate } = useMutation({
+    mutationKey: ['toggleLikeArticle'],
+    retry: false,
+    mutationFn: toggleLikeArticle,
+    onMutate: async id => {
+			// Cancel the detailed query. (to prevent optimistic update from overwriting)
+      await queryClient.cancelQueries({ queryKey: ['getArticle', id] });
+
+      const previousArticle = queryClient.getQueryData<
+        ApiResponse<ListArticle>
+      >(['getArticle', id]);
+
+      // Update the like status in the query data.
+      const uploadArticle = produce(previousArticle, draft => {
+        const article = draft?.data;
+        if (article) {
+          article.isLiked = !article?.isLiked;
+          article.likeCount += article?.isLiked ? 1 : -1;
+        }
+      });
+
+      // Apply the optimistic update to the query data.
+      queryClient.setQueryData(['getArticle', id], uploadArticle);
+
+      return { previousArticle, id };
+    },
+    onError: (err, _, context) => {
+			// Rollback to the previous data in case of an error
+			queryClient.setQueryData(
+		        ['getArticle', context?.id],
+		        context?.previousArticle,
+		      );
+    },
+    onSuccess: (err, _, context) => {
+			// Re-fetch the query on success
+			queryClient.invalidateQueries({ queryKey: ['getArticle', context?.id] });
+    },
+  });
+```
+
+First, in the `onMutate` callback, we cancel the query using `cancelQueries`.
+
+Through this process, **if an update occurs for that query key during the mutate, it will not be reflected.**
+
+Then, we modify the existing data to create the expected result.
+
+In the example code, we used the immutability management library `immer` to modify the object.
+
+Now, when we apply the modified result to the corresponding query key, it will be updated as if **the server had responded.**
+
+Additionally, if an error occurs, we can roll back to the previous query data, and on success, we can overwrite the data with the actual response.
+
+Alternatively, there is also a method to re-fetch regardless of the outcome using `onSettled`.
+
+```jsx title="onSettled"
+onSettled: () => {
+      // Re-fetch the query on response
+      queryClient.invalidateQueries({
+        queryKey: [
+          'getArticleList',
+          currentOrderBy,
+          currentOrder,
+          filter.author,
+        ],
+      });
+    },
+```
+
+### Results
+
+Let's check the results of applying optimistic updates under `slow network conditions` in the browser.
+
+|                      Without Optimistic Updates                       |                      With Optimistic Updates                       |
+| :---------------------------------------------------------------: | :---------------------------------------------------------------: |
+| ![optimistic-X](/public/posts/optimistic-update/optimistic-X.gif) | ![optimistic-O](/public/posts/optimistic-update/optimistic-O.gif) |
+
+It is clear at a glance that **the UI reflecting the optimistic update is faster.**
+
+Since it is not feasible to apply optimistic updates to all requests, considering where it can be applied can lead to **a better UX**.

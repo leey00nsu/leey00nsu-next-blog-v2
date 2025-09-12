@@ -1,0 +1,173 @@
+---
+slug: framer-motion-page-transition
+title: Implementing Page Transitions with framer-motion
+tags:
+  - react
+  - framer-motion
+  - AnimatePresence
+description: This post explains how to implement page transitions using framer-motion.
+date: 2023-09-11
+section: blog
+series:
+thumbnail: /public/posts/framer-motion-page-transition/result.gif
+draft: true
+writer: leey00nsu
+---
+
+## Implementing Page Transitions with framer-motion
+
+When implementing `animations` in a `react`-based project, we use `framer-motion`. Based on this, we aim to implement page transitions that show different pages each time we navigate.
+
+### What is framer-motion?
+
+[framer-motion](https://www.framer.com/motion/) introduces itself as follows:
+
+> Complete documentation of the Framer Motion animation library. A production-ready motion library for React.
+
+It is a **motion library** provided by `framer` for React.
+
+The library can be installed as follows:
+
+```shell title="framer-motion"
+npm install framer-motion
+```
+
+### How it Works
+
+Basically, React components are wrapped in a component called `motion`, so we import and use it.
+
+You can assign starting style values to the `initial` property.
+
+You can assign target style values to the `animate` option, and `framer-motion` will automatically animate to these values.
+
+```jsx title="motion.div"
+<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
+```
+
+For example, this component starts with `initial` as `opacity: 0`, so it begins in a transparent state and becomes visible due to `opacity: 1` in `animate`.
+
+Additionally, you can specify delays or animation types (Tween, Spring, etc.) in the `transition` property, allowing you to **customize the animation as desired.**
+
+### AnimatePresence and exit
+
+`framer-motion` offers various options, and the [official documentation](https://www.framer.com/motion/) provides detailed examples.
+
+The parts needed for this article are the `initial`, `animate`, and `exit` options described above.
+
+The `exit` option is mainly used with `AnimatePresence`.
+
+`AnimatePresence` **delays the unmounting of components in the React DOM tree until the exit animation is complete.**
+
+The official documentation provides the following example.
+
+```jsx title="AnimatePresence"
+import { AnimatePresence, motion } from 'framer-motion'
+
+export const MyComponent = ({ isVisible }) => (
+  <AnimatePresence>
+    {isVisible && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+    )}
+  </AnimatePresence>
+)
+```
+
+### react-router and framer-motion
+
+Since React is a `SPA`, we primarily use `react-router` for the **routing system**.
+
+The goal of this article is also to **show page transitions each time we navigate to a different page.**
+
+I will skip the setup of react-router and explain the additional configurations.
+
+```jsx title="routes.tsx"
+const location = useLocation();
+const { pageHistory } = useTransitionStore();
+
+...
+<AnimatePresence>
+	<Routes location={location} key={pageHistory + location.pathname}>
+    <Route path="/" element={<MainPage />} />
+    <Route path="/a" element={<Page1 />} />
+    <Route path="/b" element={<Page2 />} />
+	  <Route path="/c" element={<Page3 />} />
+	  <Route path="/d" element={<Page4 />} />
+	</Routes>
+</AnimatePresence>
+```
+
+The `motion component` must exist directly below `AnimatePresence`, so we wrapped `Routes` with `AnimatePresence` as shown in the code above.
+
+We also pass `pageHistory + location.pathname` as the key for Routes.
+
+**The motion component requires a `key` to distinguish the object that will execute the animation.**
+
+If this key does not change, the animation will not run again.
+
+By using the key to distinguish the animated object, if we do not include the previous path, when going from a to b to a, a will appear twice, causing **animations to overlap.**
+
+Thus, we assign **the current location + all paths as the key**.
+
+<br />
+
+Now, let's set up the page components.
+
+The page components are wrapped in a component called Layout.
+
+```jsx title="Layout"
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout = (props: LayoutProps) => {
+  const { currentDirection } = useTransitionStore();
+
+  let initialX = 0;
+  if (currentDirection === "left") initialX = 500;
+  if (currentDirection === "right") initialX = -500;
+
+  const exitX = currentDirection === "left" ? -500 : 500;
+
+  return (
+    <motion.div
+      initial={{ x: initialX }}
+      animate={{ x: 0 }}
+      exit={{ x: exitX }}
+      transition={{ duration: 0.5 }}
+      className="layout"
+    >
+      {props.children}
+    </motion.div>
+  );
+};
+```
+
+`currentDirection` holds the direction in which the current slide is moving.
+
+If the back button is pressed, it is set to `left`, moving from right to left.
+
+If another page is clicked, it is set to `right`, moving from left to right.
+
+The current page width is set to 500px, hence the value of 500.
+
+![structure](/public/posts/framer-motion-page-transition/structure.png)
+
+The code will animate in the order shown in the image due to `framer-motion`.
+
+(Note: To use x for transitions, the layout's CSS must have position:absolute.)
+
+The final result is as follows.
+
+![result](/public/posts/framer-motion-page-transition/result.gif)
+
+### Conclusion
+
+From simple animations to complex ones, `framer-motion` allows for relatively easy creation, making it a frequent choice for me.
+
+This time, I implemented page transitions, and while integrating with `react-router` was complex, the animation itself was simple and easily accessible.
+
+**I believe that adding transitions when displaying in mobile view can give an app-like feel, making it a technique worth considering.**

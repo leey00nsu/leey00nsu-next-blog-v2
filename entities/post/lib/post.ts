@@ -3,22 +3,23 @@ import path from 'node:path'
 import { cache } from 'react'
 import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
 import lqipModern from 'lqip-modern'
-import { readMdxFile } from '@/shared/lib/mdx/reader'
-import { PATHS } from '@/shared/config/constants'
+import { readLocalizedMdxFromDir } from '@/shared/lib/mdx/reader'
+import { LOCALES, PATHS, type SupportedLocale } from '@/shared/config/constants'
 
 const POSTS_PATH = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
 
-export const getPostBySlug = async (slug: string): Promise<Post | null> => {
-  const fullPath = path.join(POSTS_PATH, slug, `${slug}.mdx`)
-
-  if (!fs.existsSync(fullPath)) {
-    return null
-  }
-
-  const result = readMdxFile(fullPath)
-  if (!result) {
-    return null
-  }
+export const getPostBySlug = async (
+  slug: string,
+  locale: SupportedLocale = LOCALES.DEFAULT,
+): Promise<Post | null> => {
+  const result = readLocalizedMdxFromDir(
+    POSTS_PATH,
+    slug,
+    slug,
+    locale,
+    LOCALES.DEFAULT,
+  )
+  if (!result) return null
 
   const rawData = result.data as Post
 
@@ -42,7 +43,9 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   }
 }
 
-export const getAllPosts = cache(async (): Promise<Post[]> => {
+export const getAllPosts = cache(async (
+  locale: SupportedLocale = LOCALES.DEFAULT,
+): Promise<Post[]> => {
   if (!fs.existsSync(POSTS_PATH)) {
     return []
   }
@@ -54,7 +57,7 @@ export const getAllPosts = cache(async (): Promise<Post[]> => {
 
   const posts = await Promise.all(
     slugs.map(async (slug) => {
-      const post = await getPostBySlug(slug)
+      const post = await getPostBySlug(slug, locale)
       if (!post || post.draft) return null
       return post
     }),

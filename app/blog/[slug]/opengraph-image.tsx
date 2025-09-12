@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { getPostBySlug } from '@/entities/post/lib/post'
 import { SITE } from '@/shared/config/constants'
+import { getLocale } from 'next-intl/server'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,8 @@ export default async function OpenGraphImage({
   const { slug } = await params
 
   // 슬러그로 포스트 조회 후 제목 도출
-  const post = await getPostBySlug(slug)
+  const locale = (await getLocale()) as SupportedLocale
+  const post = await getPostBySlug(slug, locale)
   const title = post?.title ?? SITE.NAME
 
   // 로고를 파일 시스템에서 읽어 data URL로 변환

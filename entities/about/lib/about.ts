@@ -1,19 +1,40 @@
 import path from 'node:path'
 import { About, AboutMetaSchema } from '@/entities/about/model/types'
 import { readMdxFile } from '@/shared/lib/mdx/reader'
-import { PATHS } from '@/shared/config/constants'
+import {
+  buildAboutMdxAbsolutePath,
+  buildAboutMdxAbsolutePathLocalized,
+  LOCALES,
+  type SupportedLocale,
+} from '@/shared/config/constants'
 
-const ABOUT_PATH = path.join(process.cwd(), PATHS.FS.ABOUT_MDX_PATH)
+export function getAbout(
+  locale: SupportedLocale = LOCALES.DEFAULT,
+): About | null {
+  const localizedPath = path.join(
+    process.cwd(),
+    buildAboutMdxAbsolutePathLocalized(locale),
+  )
+  const result = readMdxFile(localizedPath)
 
-export function getAbout(): About | null {
-  const result = readMdxFile(ABOUT_PATH)
-  if (!result) return null
+  // fallback: 과거 단일 파일 또는 기본 로케일 파일
+  const fallback =
+    result ??
+    readMdxFile(path.join(process.cwd(), buildAboutMdxAbsolutePath())) ??
+    readMdxFile(
+      path.join(
+        process.cwd(),
+        buildAboutMdxAbsolutePathLocalized(LOCALES.DEFAULT),
+      ),
+    )
 
-  const meta = AboutMetaSchema.parse(result.data)
+  if (!fallback) return null
+
+  const meta = AboutMetaSchema.parse(fallback.data)
 
   return {
     title: meta.title,
     description: meta.description,
-    content: result.content,
+    content: fallback.content,
   }
 }

@@ -7,7 +7,7 @@ export const middleware = auth((req) => {
   if (!nextUrl.pathname.startsWith(ROUTES.STUDIO)) return NextResponse.next()
   if (!req.auth) {
     const signInUrl = new URL(ROUTES.AUTH_SIGNIN, nextUrl.origin)
-    signInUrl.searchParams.set('callbackUrl', nextUrl.href)
+    signInUrl.searchParams.set('callbackUrl', nextUrl.pathname + nextUrl.search)
     return NextResponse.redirect(signInUrl)
   }
   return NextResponse.next()

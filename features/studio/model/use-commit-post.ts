@@ -12,6 +12,8 @@ interface CommitArgs {
   bodyMarkdown: string
   finalMarkdown: string
   pendingImages: PendingImageMap
+  sourceLocale?: string
+  targetLocales?: string[]
 }
 
 interface CommitResult {
@@ -28,6 +30,8 @@ export function useCommitPost() {
     bodyMarkdown,
     finalMarkdown,
     pendingImages,
+    sourceLocale,
+    targetLocales,
   }: CommitArgs): Promise<CommitResult> => {
     if (isSaving) return { ok: false, filteredPending: pendingImages }
 
@@ -55,6 +59,15 @@ export function useCommitPost() {
       const form = new FormData()
       form.append(STUDIO.COMMIT_FIELDS.SLUG, frontMatter.slug)
       form.append(STUDIO.COMMIT_FIELDS.MDX, finalMarkdown)
+
+      if (sourceLocale) {
+        form.append(STUDIO.COMMIT_FIELDS.SOURCE_LOCALE, sourceLocale)
+      }
+      if (Array.isArray(targetLocales)) {
+        for (const t of targetLocales) {
+          form.append(STUDIO.COMMIT_FIELDS.TARGET_LOCALES, t)
+        }
+      }
 
       for (const [path, entry] of Object.entries(filtered)) {
         const file = entry.file as File | undefined

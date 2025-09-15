@@ -44,6 +44,15 @@
       "commitFailed": "커밋 실패: {reason}",
       "commitSuccess": "커밋이 완료되었습니다.",
       "commitError": "커밋 중 오류가 발생했습니다."
+    },
+    "language": {
+      "source": "작성 언어(Source)",
+      "targets": "대상 언어(Targets)",
+      "selectPlaceholder": "언어 선택",
+      "labels": {
+        "ko": "한국어",
+        "en": "영어"
+      }
     }
   },
   "tagInput": {

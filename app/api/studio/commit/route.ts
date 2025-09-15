@@ -41,14 +41,43 @@ export async function POST(req: Request) {
       }),
     )
 
-    // 요청한 로케일(에디터에서 작성한 로케일) 추정: 쿠키 또는 기본값
+    // 요청 로케일: 폼 > 쿠키 > 기본값
     const store = await cookies()
-    const sourceLocale = (store.get('locale')?.value ||
-      LOCALES.DEFAULT) as SupportedLocale
+    const supported = new Set(LOCALES.SUPPORTED as readonly string[])
+    const sourceFromForm = String(
+      form.get(STUDIO.COMMIT_FIELDS.SOURCE_LOCALE) || '',
+    ).trim()
+    const targetsFromForm = form.getAll(
+      STUDIO.COMMIT_FIELDS.TARGET_LOCALES,
+    ) as string[]
+    const expandedTargets = targetsFromForm.flatMap((t) =>
+      String(t)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+
+    const sourceLocale = supported.has(sourceFromForm)
+      ? (sourceFromForm as SupportedLocale)
+      : ((store.get('locale')?.value || LOCALES.DEFAULT) as SupportedLocale)
+
+    const rawTargets =
+      expandedTargets.length > 0
+        ? expandedTargets
+        : (LOCALES.SUPPORTED as unknown as string[])
+    const targetLocales = [
+      ...new Set(rawTargets.filter((t) => supported.has(t))),
+    ] as SupportedLocale[]
+    if (targetLocales.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: 'No valid target locales' },
+        { status: 400 },
+      )
+    }
 
     // 대상 로케일 전체에 대해 MDX 생성
     const mdxFiles: { locale?: SupportedLocale; content: string }[] = []
-    for (const target of LOCALES.SUPPORTED) {
+    for (const target of targetLocales) {
       if (target === sourceLocale) {
         mdxFiles.push({ locale: target, content: mdx })
       } else {

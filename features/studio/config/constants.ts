@@ -9,5 +9,7 @@ export const STUDIO = {
     MDX: 'mdx',
     IMAGE_PATHS: 'paths',
     IMAGES: 'images',
+    SOURCE_LOCALE: 'sourceLocale',
+    TARGET_LOCALES: 'targetLocales',
   } as const,
 } as const

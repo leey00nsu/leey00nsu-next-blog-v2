@@ -15,6 +15,9 @@ import { Loader2 } from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
 import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 import { useTranslations } from 'next-intl'
+import { useLocale } from 'next-intl'
+import { LOCALES } from '@/shared/config/constants'
+import { LanguageSelector } from '@/features/studio/ui/language-selector'
 
 const Editor = dynamic(
   () => import('@/features/editor/ui/editor').then((m) => m.Editor),
@@ -35,12 +38,19 @@ export interface StudioProps {
 
 export function Studio({ existingSlugs, existingTags }: StudioProps) {
   const t = useTranslations('studio')
+  const currentLocale = useLocale()
   const [markdown, setMarkdown] = useState('')
   const [frontMatter, setFrontMatter] = useState<Frontmatter | undefined>()
   const [pendingImages, setPendingImages] = useState<PendingImageMap>({})
   const [isFrontmatterValid, setIsFrontmatterValid] = useState(false)
   const { isSaving, commitPost } = useCommitPost()
   const editorRef = useRef<MDXEditorMethods | null>(null)
+
+  // 언어 선택 상태
+  const [sourceLocale, setSourceLocale] = useState<string>(currentLocale)
+  const [targetLocales, setTargetLocales] = useState<string[]>([
+    ...LOCALES.SUPPORTED,
+  ])
 
   const bodyMarkdown = useMemo(
     () => markdown.replace(FRONTMATTER_BLOCK_REGEX, ''),
@@ -74,6 +84,8 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
       bodyMarkdown,
       finalMarkdown,
       pendingImages,
+      sourceLocale,
+      targetLocales,
     })
     setPendingImages(filteredPending)
   }
@@ -102,6 +114,13 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
+      <LanguageSelector
+        className="border-border rounded-lg border p-4"
+        sourceLocale={sourceLocale}
+        onSourceChange={setSourceLocale}
+        targetLocales={targetLocales}
+        onTargetsChange={(next) => setTargetLocales(next)}
+      />
       <FrontmatterForm
         value={frontMatter}
         onChange={handleFrontmatterChange}

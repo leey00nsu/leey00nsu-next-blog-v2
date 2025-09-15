@@ -44,6 +44,15 @@
       "commitFailed": "Commit failed: {reason}",
       "commitSuccess": "Commit completed.",
       "commitError": "An error occurred while committing."
+    },
+    "language": {
+      "source": "Source language",
+      "targets": "Target languages",
+      "selectPlaceholder": "Select language",
+      "labels": {
+        "ko": "Korean",
+        "en": "English"
+      }
     }
   },
   "tagInput": {

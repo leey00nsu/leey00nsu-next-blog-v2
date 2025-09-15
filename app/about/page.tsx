@@ -2,6 +2,7 @@ import { getAbout } from '@/entities/about/lib/about'
 import { AboutDetail } from '@/widgets/about/ui/about-detail'
 import { ComingSoon } from '@/shared/ui/coming-soon'
 import { getLocale } from 'next-intl/server'
+import { SupportedLocale } from '@/shared/config/constants'
 
 export default async function AboutPage() {
   const locale = (await getLocale()) as SupportedLocale

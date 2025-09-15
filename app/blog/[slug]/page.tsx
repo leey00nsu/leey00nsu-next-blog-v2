@@ -2,7 +2,11 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
-import { buildBlogOgImagePath, SITE } from '@/shared/config/constants'
+import {
+  buildBlogOgImagePath,
+  SITE,
+  SupportedLocale,
+} from '@/shared/config/constants'
 import { getLocale } from 'next-intl/server'
 
 interface PostPageProps {

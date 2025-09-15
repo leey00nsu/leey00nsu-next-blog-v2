@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { getPostBySlug } from '@/entities/post/lib/post'
-import { SITE } from '@/shared/config/constants'
+import { SITE, SupportedLocale } from '@/shared/config/constants'
 import { getLocale } from 'next-intl/server'
 
 export const runtime = 'nodejs'

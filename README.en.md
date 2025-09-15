@@ -84,9 +84,6 @@ NEXT_PUBLIC_GISCUS_CATEGORY_ID=<category_id>
 # App URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Footer text
-NEXT_PUBLIC_FOOTER_DESCRIPTION=2025. leey00nsu All Rights Reserved.
-
 # GitHub OAuth (NextAuth)
 AUTH_GITHUB_ID=<github_oauth_client_id>
 AUTH_GITHUB_SECRET=<github_oauth_client_secret>
@@ -99,7 +96,6 @@ ALLOWED_GITHUB_USERNAME=<your_github_username>
 GITHUB_OWNER=<owner>
 GITHUB_REPO=<repo>
 GITHUB_BRANCH=<branch>
-GITHUB_COMMIT_MESSAGE="docs: add new post"
 GITHUB_TOKEN=<github_pat>
 
 # OpenAI (translation)

@@ -18,6 +18,7 @@ export default async function OpenGraphImage({
   const locale = (await getLocale()) as SupportedLocale
   const post = await getPostBySlug(slug, locale)
   const title = post?.title ?? SITE.NAME
+  const description = post?.description ?? SITE.DEFAULT_DESCRIPTION
 
   // 로고를 파일 시스템에서 읽어 data URL로 변환
   const logoData = await readFile(
@@ -57,6 +58,18 @@ export default async function OpenGraphImage({
           }}
         >
           {title}
+        </div>
+        <div
+          style={{
+            marginTop: 24,
+            fontSize: 24,
+            fontWeight: 500,
+            color: '#0f172a',
+            textAlign: 'center',
+            lineHeight: 1.2,
+          }}
+        >
+          {description}
         </div>
       </div>
     ),

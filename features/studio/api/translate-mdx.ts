@@ -49,12 +49,12 @@ ${sourceMdx}`
 
   try {
     const response = await client.chat.completions.create({
-      model: process.env.OPENAI_MDX_MODEL ?? 'gpt-4o-mini',
+      model: process.env.OPENAI_MDX_MODEL ?? 'gpt-5-mini',
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
       ],
-      temperature: 0.2,
+      // temperature: 0.2,
     })
 
     const content = response.choices?.[0]?.message?.content

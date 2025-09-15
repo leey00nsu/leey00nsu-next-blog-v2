@@ -8,6 +8,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [GitHub],
   pages: {
     signIn: ROUTES.AUTH_SIGNIN,
+    error: ROUTES.AUTH_UNAUTHORIZED,
   },
   callbacks: {
     // 허용된 GitHub 사용자만 로그인 허용

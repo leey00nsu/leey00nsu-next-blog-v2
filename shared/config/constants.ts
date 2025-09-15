@@ -50,6 +50,7 @@ export const ROUTES = {
   ABOUT: '/about' as Route,
   STUDIO: '/studio' as Route,
   AUTH_SIGNIN: '/auth/signin' as Route,
+  AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
   API: {
     STUDIO_COMMIT: '/api/studio/commit' as Route,
   },

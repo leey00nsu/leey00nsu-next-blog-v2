@@ -12,6 +12,10 @@
       "allowedUserAvatar": "허용 사용자 아바타",
       "roleAdmin": "어드민",
       "signInWithGitHub": "GitHub로 로그인"
+    },
+    "unauthorized": {
+      "message": "어드민 계정이 아닙니다.",
+      "backToHome": "홈으로 돌아가기"
     }
   },
   "studio": {

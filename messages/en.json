@@ -12,6 +12,10 @@
       "allowedUserAvatar": "Allowed user avatar",
       "roleAdmin": "Admin",
       "signInWithGitHub": "Sign in with GitHub"
+    },
+    "unauthorized": {
+      "message": "You are not an admin account.",
+      "backToHome": "Back to home"
     }
   },
   "studio": {

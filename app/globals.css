@@ -126,6 +126,11 @@
     text-decoration: none !important;
   }
 
+  button:not([disabled]),
+  [role='button']:not([disabled]) {
+    cursor: pointer;
+  }
+
   .prose :where(code):not(:where([class~='not-prose'] *)) {
     background-color: var(--muted);
     color: var(--muted-foreground);

@@ -94,6 +94,8 @@ export const IMAGE = {
   DEFAULT_QUALITY: 75,
   // 캐시: TTL 우선 immutable
   CACHE_CONTROL: 'public, max-age=60, must-revalidate',
+  // 렌더링 시 이미지 최대 높이(px)
+  MAX_RENDER_HEIGHT: 600,
 } as const
 
 // MDX / Frontmatter 관련 정규식

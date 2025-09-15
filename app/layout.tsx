@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/shared/ui/theme-provider'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
+import { SITE } from '@/shared/config/constants'
 
 const pretendard = localFont({
   src: './PretendardVariable.woff2',
@@ -15,22 +16,23 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.AUTH_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'leey00nsu 블로그',
-    template: '%s | leey00nsu 블로그',
+    default: SITE.NAME,
+    template: '%s | ' + SITE.NAME,
   },
-  description: 'leey00nsu 블로그',
+  description: SITE.DEFAULT_DESCRIPTION,
   openGraph: {
     type: 'website',
-    siteName: 'leey00nsu 블로그',
-    title: 'leey00nsu 블로그',
-    description: 'leey00nsu 블로그',
+    siteName: SITE.NAME,
+    title: SITE.NAME,
+    description: SITE.DEFAULT_DESCRIPTION,
     images: ['/opengraph-image'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'leey00nsu 블로그',
-    description: 'leey00nsu 블로그',
+    title: SITE.NAME,
+    description: SITE.DEFAULT_DESCRIPTION,
     images: ['/opengraph-image'],
   },
 }

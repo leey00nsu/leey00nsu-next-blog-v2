@@ -77,6 +77,11 @@ export const SITE = {
   DEFAULT_DESCRIPTION: 'leey00nsu 블로그',
 } as const
 
+// 푸터 관련 상수
+export const FOOTER = {
+  DEFAULT_DESCRIPTION: '2025. leey00nsu All Rights Reserved.',
+} as const
+
 export const TAG = {
   SUGGESTION_LIMIT: 20,
 } as const

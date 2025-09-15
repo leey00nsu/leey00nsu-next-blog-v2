@@ -4,6 +4,7 @@ import {
   buildPostMdxRelativePathLocalized,
   type SupportedLocale,
 } from '@/shared/config/constants'
+import { COMMIT } from '@/features/studio/config/constants'
 
 export interface CommitImageItem {
   // 리포지토리 기준 경로 (선두 슬래시 금지): e.g. 'public/posts/slug/image.png'
@@ -27,12 +28,13 @@ export async function commitToGithub({
   const owner = process.env.GITHUB_OWNER
   const repo = process.env.GITHUB_REPO
   const branch = process.env.GITHUB_BRANCH
-  const commitMessage = process.env.GITHUB_COMMIT_MESSAGE
+  const commitMessage =
+    process.env.GITHUB_COMMIT_MESSAGE ?? COMMIT.DEFAULT_MESSAGE
   const token = process.env.GITHUB_TOKEN
 
-  if (!owner || !repo || !branch || !commitMessage) {
+  if (!owner || !repo || !branch) {
     throw new Error(
-      'Missing required env: GITHUB_OWNER/GITHUB_REPO/GITHUB_BRANCH/GITHUB_COMMIT_MESSAGE',
+      'Missing required env: GITHUB_OWNER/GITHUB_REPO/GITHUB_BRANCH',
     )
   }
   if (!token) {

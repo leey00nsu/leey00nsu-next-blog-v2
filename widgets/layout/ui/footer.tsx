@@ -1,8 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { FOOTER } from '@/shared/config/constants'
 
 export function Footer() {
-  const description = process.env.NEXT_PUBLIC_FOOTER_DESCRIPTION || ''
+  const description =
+    process.env.NEXT_PUBLIC_FOOTER_DESCRIPTION ?? FOOTER.DEFAULT_DESCRIPTION
   const githubId = process.env.NEXT_PUBLIC_GITHUB_ID || ''
 
   const hasGithub = Boolean(githubId)
@@ -26,6 +28,7 @@ export function Footer() {
                 alt="GitHub"
                 width={24}
                 height={24}
+                className="dark:invert"
               />
             </Link>
           )}

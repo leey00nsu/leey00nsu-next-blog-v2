@@ -13,3 +13,8 @@ export const STUDIO = {
     TARGET_LOCALES: 'targetLocales',
   } as const,
 } as const
+
+// Studio 커밋 관련 기본 상수
+export const COMMIT = {
+  DEFAULT_MESSAGE: 'docs: 새 글 추가',
+} as const

@@ -1,4 +1,5 @@
 import z from 'zod'
+import type { SupportedLocale } from '@/shared/config/constants'
 
 export const PostMetaDataSchema = z.object({
   slug: z.string(),
@@ -22,3 +23,33 @@ export const PostSchema = z.object({
 })
 
 export type Post = z.infer<typeof PostSchema>
+
+export interface GeneratedPostSerialized {
+  slug: string
+  date: string
+  title: string
+  description: string
+  tags: string[]
+  section: string
+  series: string | null
+  thumbnail: string | null
+  draft: boolean
+  blurDataURL?: string
+  writer: string
+  content: string
+  width: number
+  height: number
+}
+
+export type GeneratedPostsMap = Record<
+  SupportedLocale,
+  Record<string, GeneratedPostSerialized>
+>
+
+export interface ThumbnailMetadata {
+  width: number
+  height: number
+  base64: string
+}
+
+export type ThumbnailMetadataMap = Record<string, ThumbnailMetadata>

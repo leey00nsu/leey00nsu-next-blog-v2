@@ -4,11 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts",
     "build": "next build",
+    "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts",
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
-    "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts"
+    "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts",
+    "gen:post-thumbnails": "tsx scripts/generate-thumbnail-metadata.ts",
+    "gen:posts": "tsx scripts/generate-posts-data.ts"
   },
   "dependencies": {
     "@fec/remark-a11y-emoji": "^4.0.2",

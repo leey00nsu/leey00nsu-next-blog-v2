@@ -1,89 +1,83 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { cache } from 'react'
 import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
-import lqipModern from 'lqip-modern'
-import { readLocalizedMdxFromDir } from '@/shared/lib/mdx/reader'
-import { LOCALES, PATHS, type SupportedLocale } from '@/shared/config/constants'
+import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
+import { GENERATED_POSTS } from '@/entities/post/config/posts.generated'
+import type {
+  GeneratedPostSerialized,
+  GeneratedPostsMap,
+} from '@/entities/post/model/types'
 
-const POSTS_PATH = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
+const DEFAULT_LOCALE = LOCALES.DEFAULT
 
-export const getPostBySlug = async (
+const GENERATED_POSTS_MAP: GeneratedPostsMap = GENERATED_POSTS
+
+function resolveGeneratedPost(
   slug: string,
-  locale: SupportedLocale = LOCALES.DEFAULT,
-): Promise<Post | null> => {
-  const result = readLocalizedMdxFromDir(
-    POSTS_PATH,
-    slug,
-    slug,
-    locale,
-    LOCALES.DEFAULT,
-  )
-  if (!result) return null
+  locale: SupportedLocale,
+): GeneratedPostSerialized | undefined {
+  const localeEntries = GENERATED_POSTS_MAP[locale]
+  const fallbackEntries = GENERATED_POSTS_MAP[DEFAULT_LOCALE]
+  return localeEntries?.[slug] ?? fallbackEntries?.[slug]
+}
 
-  const rawData = result.data as Post
+function hydratePost(record: GeneratedPostSerialized | undefined): Post | null {
+  if (!record) return null
 
-  const { width, height, base64 } = await getImageMetadata(rawData.thumbnail)
+  const { date, content, width, height, blurDataURL, ...rest } = record
 
   try {
     const frontmatter = PostMetaDataSchema.parse({
-      ...rawData,
+      ...rest,
+      date: new Date(date),
+      blurDataURL: blurDataURL || undefined,
     })
 
     return {
       ...frontmatter,
-      content: result.content,
+      content,
       width,
       height,
-      blurDataURL: base64,
+      blurDataURL: blurDataURL || undefined,
     }
   } catch (error) {
-    console.error(`Error parsing frontmatter for ${slug}:`, error)
+    console.error(`Error hydrating post for slug ${rest.slug}:`, error)
     return null
   }
 }
 
-export const getAllPosts = cache(async (
-  locale: SupportedLocale = LOCALES.DEFAULT,
-): Promise<Post[]> => {
-  if (!fs.existsSync(POSTS_PATH)) {
-    return []
-  }
-
-  const slugs = fs
-    .readdirSync(POSTS_PATH, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => dirent.name)
-
-  const posts = await Promise.all(
-    slugs.map(async (slug) => {
-      const post = await getPostBySlug(slug, locale)
-      if (!post || post.draft) return null
-      return post
-    }),
-  )
-
-  return posts
-    .filter((post): post is Post => post !== null)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-})
-
-const getImageMetadata = async (thumbnailPath: string | null) => {
-  if (!thumbnailPath) {
-    return {
-      width: 0,
-      height: 0,
-      base64: '',
-    }
-  }
-
-  const imagePath = path.join(process.cwd(), thumbnailPath)
-  const imageBuffer = fs.readFileSync(imagePath)
-
-  const { metadata } = await lqipModern(imageBuffer)
-  return {
-    width: metadata.originalWidth,
-    height: metadata.originalHeight,
-    base64: metadata.dataURIBase64,
-  }
+export const getPostBySlug = async (
+  slug: string,
+  locale: SupportedLocale = DEFAULT_LOCALE,
+): Promise<Post | null> => {
+  const record = resolveGeneratedPost(slug, locale)
+  return hydratePost(record)
 }
+
+export const getAllPosts = cache(
+  async (locale: SupportedLocale = DEFAULT_LOCALE): Promise<Post[]> => {
+    const localeEntries = GENERATED_POSTS_MAP[locale]
+    const fallbackEntries = GENERATED_POSTS_MAP[DEFAULT_LOCALE]
+
+    if (!localeEntries && !fallbackEntries) {
+      return []
+    }
+
+    const mergedSlugs = new Set<string>([
+      ...Object.keys(localeEntries ?? {}),
+      ...Object.keys(fallbackEntries ?? {}),
+    ])
+
+    const posts: Post[] = []
+
+    for (const slug of mergedSlugs) {
+      const record = resolveGeneratedPost(slug, locale)
+      const post = hydratePost(record)
+      if (!post || post.draft) continue
+      posts.push(post)
+    }
+
+    return posts.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )
+  },
+)

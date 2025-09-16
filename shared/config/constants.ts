@@ -81,6 +81,7 @@ export function buildBlogTagHref(tag: string): Route {
 export const SITE = {
   NAME: 'leey00nsu 블로그',
   DEFAULT_DESCRIPTION: 'leey00nsu 블로그',
+  GOOGLE_SITE_VERIFICATION: '3Y8976WxiphMh7V_jkcVQyibJ3qFuF3fDQ6GAj9iF-Q',
 } as const
 
 // 푸터 관련 상수

@@ -17,6 +17,7 @@ const pretendard = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL ?? 'http://localhost:3000'),
+
   title: {
     default: SITE.NAME,
     template: '%s | ' + SITE.NAME,
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
     title: SITE.NAME,
     description: SITE.DEFAULT_DESCRIPTION,
     images: ['/opengraph-image'],
+  },
+  verification: {
+    google: SITE.GOOGLE_SITE_VERIFICATION,
   },
 }
 

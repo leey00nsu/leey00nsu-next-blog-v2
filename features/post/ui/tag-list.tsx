@@ -26,29 +26,46 @@ export function TagList({
   if (!tags || tags.length === 0) return null
 
   return (
-    <div className={cn('flex flex-wrap gap-2', className)} aria-label="tags">
+    <ul
+      className={cn('m-0 flex list-none flex-wrap gap-2 p-0', className)}
+      aria-label="tag list"
+    >
       {tags.map((tag) => {
         const key = `tag-${tag}`
-        const label = counts && counts[tag] ? `#${tag} (${counts[tag]})` : `#${tag}`
+        const label =
+          counts && counts[tag] ? `#${tag} (${counts[tag]})` : `#${tag}`
         const selected = selectedTags.includes(tag)
         const variant = selected ? activeVariant : badgeVariant
+        const ariaLabel = `tag: ${tag}`
 
         if (hrefBuilder) {
           return (
-            <Badge key={key} variant={variant} aria-pressed={selected} asChild>
-              <a href={hrefBuilder(tag)} aria-label={`tag: ${tag}`}>
-                {label}
-              </a>
-            </Badge>
+            <li key={key} className="list-none">
+              <Badge variant={variant} asChild>
+                <a
+                  href={hrefBuilder(tag)}
+                  aria-label={ariaLabel}
+                  aria-current={selected ? 'page' : undefined}
+                >
+                  {label}
+                </a>
+              </Badge>
+            </li>
           )
         }
 
         return (
-          <Badge key={key} variant={variant} aria-pressed={selected} aria-label={`tag: ${tag}`}>
-            {label}
-          </Badge>
+          <li key={key} className="list-none">
+            <Badge
+              variant={variant}
+              aria-label={ariaLabel}
+              data-selected={selected || undefined}
+            >
+              {label}
+            </Badge>
+          </li>
         )
       })}
-    </div>
+    </ul>
   )
 }

@@ -22,6 +22,11 @@ export const LOCALES = {
 
 export type SupportedLocale = (typeof LOCALES.SUPPORTED)[number]
 
+export const BREAKPOINTS = {
+  TABLET: 768,
+  DESKTOP: 1024,
+} as const
+
 // 경로 빌더
 export function buildPostMdxRelativePath(slug: string): string {
   return `${PATHS.FS.PUBLIC_POSTS_DIR}/${slug}/${slug}.mdx`
@@ -96,6 +101,8 @@ export const IMAGE = {
   CACHE_CONTROL: 'public, max-age=60, must-revalidate',
   // 렌더링 시 이미지 최대 높이(px)
   MAX_RENDER_HEIGHT: 600,
+  // 렌더링 시 이미지 최대 너비(px)
+  MAX_RENDER_WIDTH: 720,
 } as const
 
 // MDX / Frontmatter 관련 정규식

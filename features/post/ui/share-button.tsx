@@ -15,7 +15,12 @@ export function ShareButton() {
   }
 
   return (
-    <Button size="icon" variant="outline" onClick={copyUrlHandler}>
+    <Button
+      size="icon"
+      variant="outline"
+      onClick={copyUrlHandler}
+      aria-label="share"
+    >
       <Share2 />
     </Button>
   )

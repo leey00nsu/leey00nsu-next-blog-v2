@@ -29,7 +29,17 @@ export async function GET(request: NextRequest) {
     await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 })
     await page.goto(targetUrl.toString(), { waitUntil: 'networkidle0' })
     await page.emulateMediaType('screen')
-    await page.evaluate(() => {
+    const baseHref = (() => {
+      const envBase = process.env.AUTH_URL
+      if (!envBase) return request.nextUrl.origin
+      try {
+        return new URL(envBase).toString()
+      } catch {
+        return request.nextUrl.origin
+      }
+    })()
+
+    await page.evaluate((base) => {
       const anchors = document.querySelectorAll('a[href]')
       for (const anchor of anchors) {
         const href = anchor.getAttribute('href')
@@ -39,15 +49,12 @@ export async function GET(request: NextRequest) {
           continue
         }
         if (href.startsWith('/')) {
-          anchor.setAttribute(
-            'href',
-            new URL(href, globalThis.location.origin).toString(),
-          )
+          anchor.setAttribute('href', new URL(href, base).toString())
         }
         anchor.setAttribute('target', '_blank')
         anchor.setAttribute('rel', 'noopener noreferrer')
       }
-    })
+    }, baseHref)
     await page.addStyleTag({
       content: `
         nav, footer, aside, [data-next-route-announcer], [data-nextjs-toolbox],

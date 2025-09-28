@@ -7,13 +7,14 @@
     "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
     "build": "next build",
     "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
-    "start": "next start",
+    "start": "pnpm run puppeteer:install && next start",
     "lint": "eslint",
     "prepare": "husky",
     "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts",
     "gen:post-thumbnails": "tsx scripts/generate-thumbnail-metadata.ts",
     "gen:posts": "tsx scripts/generate-posts-data.ts",
-    "gen:projects": "tsx scripts/generate-projects-data.ts"
+    "gen:projects": "tsx scripts/generate-projects-data.ts",
+    "puppeteer:install": "pnpm exec puppeteer browsers install chrome"
   },
   "dependencies": {
     "@fec/remark-a11y-emoji": "^4.0.2",

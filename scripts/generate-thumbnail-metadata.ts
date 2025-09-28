@@ -46,22 +46,22 @@ async function readThumbnailMetadata(
   }
 }
 
-async function collectThumbnailMetadata(): Promise<ThumbnailMetadataMap> {
-  const postsDir = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
-  const entries: ThumbnailMetadataMap = {}
-
-  if (!fssync.existsSync(postsDir)) {
-    return entries
+async function collectFromDir(
+  rootDir: string,
+  entries: ThumbnailMetadataMap,
+): Promise<void> {
+  if (!fssync.existsSync(rootDir)) {
+    return
   }
 
-  const dirents = await fs.readdir(postsDir, { withFileTypes: true })
+  const dirents = await fs.readdir(rootDir, { withFileTypes: true })
 
   for (const dirent of dirents) {
     if (!dirent.isDirectory()) continue
 
     const slug = dirent.name
     const mdx = readLocalizedMdxFromDir(
-      postsDir,
+      rootDir,
       slug,
       slug,
       LOCALES.DEFAULT,
@@ -81,6 +81,16 @@ async function collectThumbnailMetadata(): Promise<ThumbnailMetadataMap> {
 
     entries[thumbnailPath] = metadata
   }
+}
+
+async function collectThumbnailMetadata(): Promise<ThumbnailMetadataMap> {
+  const entries: ThumbnailMetadataMap = {}
+
+  const postsDir = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
+  await collectFromDir(postsDir, entries)
+
+  const projectsDir = path.join(process.cwd(), PATHS.FS.PUBLIC_PROJECTS_DIR)
+  await collectFromDir(projectsDir, entries)
 
   return entries
 }

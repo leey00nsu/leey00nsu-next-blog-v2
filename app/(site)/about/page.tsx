@@ -16,5 +16,5 @@ export default async function AboutPage() {
     )
   }
 
-  return <AboutDetail about={about} />
+  return <AboutDetail about={about} locale={locale} />
 }

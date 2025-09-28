@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { Container } from '@/widgets/layout/ui/container'
 import { SonnerToaster } from '@/shared/ui/sonner-toaster'
 import { ThemeProvider } from '@/shared/ui/theme-provider'
 import { NextIntlClientProvider } from 'next-intl'
@@ -62,7 +61,7 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <Container>{children}</Container>
+            {children}
             <SonnerToaster />
           </ThemeProvider>
         </NextIntlClientProvider>

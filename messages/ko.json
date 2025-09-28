@@ -4,7 +4,15 @@
     "siteDescription": "leey00nsu 블로그"
   },
   "about": {
-    "comingSoon": "준비 중입니다."
+    "comingSoon": "준비 중입니다.",
+    "projects": {
+      "title": "프로젝트",
+      "description": "최근 진행한 프로젝트입니다.",
+      "viewDetailAria": "{project} 상세 페이지로 이동",
+      "inProgress": "진행 중",
+      "duration": "프로젝트 기간",
+      "techStack": "기술 스택"
+    }
   },
   "auth": {
     "signIn": {
@@ -82,5 +90,24 @@
       "titlePlaceholder": "제목(title) 입력",
       "titleAria": "코드블럭 제목 입력"
     }
+  },
+  "navigation": {
+    "blog": "블로그",
+    "projects": "프로젝트",
+    "about": "소개",
+    "studio": "스튜디오"
+  },
+  "project": {
+    "list": {
+      "title": "프로젝트",
+      "description": "진행한 프로젝트와 결과물을 한눈에 확인하세요.",
+      "empty": "등록된 프로젝트가 없습니다."
+    }
+  },
+  "pdf": {
+    "download": "PDF 다운로드",
+    "loading": "다운로드 중...",
+    "success": "PDF 다운로드가 시작되었습니다.",
+    "error": "PDF 생성 중 문제가 발생했습니다."
   }
 }

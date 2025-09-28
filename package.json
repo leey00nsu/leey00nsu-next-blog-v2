@@ -4,15 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts",
+    "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
     "build": "next build",
-    "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts",
+    "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
     "start": "next start",
     "lint": "eslint",
     "prepare": "husky",
     "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts",
     "gen:post-thumbnails": "tsx scripts/generate-thumbnail-metadata.ts",
-    "gen:posts": "tsx scripts/generate-posts-data.ts"
+    "gen:posts": "tsx scripts/generate-posts-data.ts",
+    "gen:projects": "tsx scripts/generate-projects-data.ts"
   },
   "dependencies": {
     "@fec/remark-a11y-emoji": "^4.0.2",
@@ -22,9 +23,9 @@
     "@next/mdx": "^15.5.2",
     "@octokit/rest": "^21",
     "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-checkbox": "^1.1.5",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-checkbox": "^1.1.5",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
@@ -45,6 +46,7 @@
     "openai": "^4",
     "optional": "^0.1.4",
     "plaiceholder": "^3.0.0",
+    "puppeteer": "^23.4.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",

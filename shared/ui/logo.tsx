@@ -13,6 +13,7 @@ export function Logo({ href = '/blog', className }: LogoProps) {
   return (
     <Button
       asChild
+      variant="link"
       className={cn(
         'relative h-16 w-16 bg-transparent transition-all duration-200 hover:scale-110 hover:bg-transparent',
         className,

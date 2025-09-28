@@ -6,14 +6,13 @@
   - 번역은 OpenAI를 사용하며 OPENAI_API_KEY 필요
 */
 
-import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import dotenv from 'dotenv'
 import { LOCALES, PATHS, type SupportedLocale } from '@/shared/config/constants'
+import { translateMdxWithOpenAI } from '@/features/studio/api/translate-mdx'
 // .env.local 자동 로드 (Node 스크립트용)
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
-import { translateMdxWithOpenAI } from '@/features/studio/api/translate-mdx'
 
 async function ensureFile(pathname: string, content: string) {
   await fsp.mkdir(path.dirname(pathname), { recursive: true })
@@ -72,11 +71,75 @@ async function processPost(
       targetLocale: target,
     })
     if (!tr.ok || !tr.mdx) {
-      console.error(`[skip] translate failed: ${slug} (${sourceLocale}→${target}): ${tr.error}`)
+      console.error(
+        `[skip] translate failed: ${slug} (${sourceLocale}→${target}): ${tr.error}`,
+      )
       continue
     }
     await ensureFile(targetPath, tr.mdx)
     console.log(`[ok] generated: ${path.relative(process.cwd(), targetPath)}`)
+  }
+}
+
+async function processProject(
+  slug: string,
+  sourceLocale: SupportedLocale,
+  targetLocales: SupportedLocale[],
+) {
+  const dir = path.join(process.cwd(), PATHS.FS.PUBLIC_PROJECTS_DIR, slug)
+  const legacy = path.join(dir, `${slug}.mdx`)
+  const sourcePath = path.join(dir, `${slug}.${sourceLocale}.mdx`)
+
+  const hasLegacy = await fileExists(legacy)
+  const hasSource = await fileExists(sourcePath)
+
+  if (!hasLegacy && !hasSource) return
+
+  const basePath = hasSource ? sourcePath : legacy
+  const base = await fsp.readFile(basePath, 'utf8')
+
+  if (!hasSource && hasLegacy) {
+    await ensureFile(sourcePath, base)
+  }
+
+  for (const target of targetLocales) {
+    const targetPath = path.join(dir, `${slug}.${target}.mdx`)
+    const hasTarget = await fileExists(targetPath)
+    if (hasTarget) continue
+
+    if (target === sourceLocale) {
+      await ensureFile(targetPath, base)
+      console.log(`[ok] copied: ${path.relative(process.cwd(), targetPath)}`)
+      continue
+    }
+
+    const tr = await translateMdxWithOpenAI({
+      sourceMdx: base,
+      sourceLocale,
+      targetLocale: target,
+    })
+    if (!tr.ok || !tr.mdx) {
+      console.error(
+        `[skip] translate failed: project/${slug} (${sourceLocale}→${target}): ${tr.error}`,
+      )
+      continue
+    }
+    await ensureFile(targetPath, tr.mdx)
+    console.log(`[ok] generated: ${path.relative(process.cwd(), targetPath)}`)
+  }
+}
+
+async function processProjects(
+  sourceLocale: SupportedLocale,
+  targetLocales: SupportedLocale[],
+) {
+  const dir = path.join(process.cwd(), PATHS.FS.PUBLIC_PROJECTS_DIR)
+  if (!(await fileExists(dir))) return
+
+  const dirents = await fsp.readdir(dir, { withFileTypes: true })
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory()) continue
+    await processProject(dirent.name, sourceLocale, targetLocales)
   }
 }
 
@@ -168,19 +231,18 @@ function parseArgs() {
 
 async function main() {
   const { sourceLocale, targetLocales } = parseArgs()
+
   const postsDir = path.join(process.cwd(), PATHS.FS.PUBLIC_POSTS_DIR)
-  if (!fs.existsSync(postsDir)) return
-
-  const entries = fs
-    .readdirSync(postsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-
-  for (const slug of entries) {
-    await processPost(slug, sourceLocale, targetLocales)
+  if (await fileExists(postsDir)) {
+    const entries = await fsp.readdir(postsDir, { withFileTypes: true })
+    for (const dirent of entries) {
+      if (!dirent.isDirectory()) continue
+      await processPost(dirent.name, sourceLocale, targetLocales)
+    }
   }
 
   await processAbout(sourceLocale, targetLocales)
+  await processProjects(sourceLocale, targetLocales)
 }
 
 // CJS 환경에서도 동작하도록 top-level await을 피합니다.

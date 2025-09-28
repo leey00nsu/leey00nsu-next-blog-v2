@@ -5,6 +5,7 @@ export const PATHS = {
   FS: {
     PUBLIC_DIR: 'public',
     PUBLIC_POSTS_DIR: 'public/posts',
+    PUBLIC_PROJECTS_DIR: 'public/projects',
     ABOUT_MDX_BASENAME: 'public/about/about',
     IMAGE_CACHE_DIR: '.next/cache/gif-webp',
   },
@@ -39,6 +40,17 @@ export function buildPostMdxRelativePathLocalized(
   return `${PATHS.FS.PUBLIC_POSTS_DIR}/${slug}/${slug}.${locale}.mdx`
 }
 
+export function buildProjectMdxRelativePath(slug: string): string {
+  return `${PATHS.FS.PUBLIC_PROJECTS_DIR}/${slug}/${slug}.mdx`
+}
+
+export function buildProjectMdxRelativePathLocalized(
+  slug: string,
+  locale: SupportedLocale,
+): string {
+  return `${PATHS.FS.PUBLIC_PROJECTS_DIR}/${slug}/${slug}.${locale}.mdx`
+}
+
 export function buildAboutMdxAbsolutePath(): string {
   return `${PATHS.FS.ABOUT_MDX_BASENAME}.mdx`
 }
@@ -53,6 +65,7 @@ export function buildAboutMdxAbsolutePathLocalized(
 export const ROUTES = {
   BLOG: '/blog' as Route,
   ABOUT: '/about' as Route,
+  PROJECTS: '/projects' as Route,
   STUDIO: '/studio' as Route,
   AUTH_SIGNIN: '/auth/signin' as Route,
   AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
@@ -71,6 +84,14 @@ export function buildBlogPostHref(slug: string): Route {
 
 export function buildBlogOgImagePath(slug: string): Route {
   return `${ROUTES.BLOG}/${slug}/opengraph-image` as Route
+}
+
+export function buildProjectHref(slug: string): Route {
+  return `${ROUTES.PROJECTS}/${slug}` as Route
+}
+
+export function buildProjectOgImagePath(slug: string): Route {
+  return `${ROUTES.PROJECTS}/${slug}/opengraph-image` as Route
 }
 
 export function buildBlogTagHref(tag: string): Route {

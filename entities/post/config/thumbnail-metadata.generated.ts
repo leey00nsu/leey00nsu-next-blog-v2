@@ -88,5 +88,25 @@ export const THUMBNAIL_METADATA_MAP = {
     "width": 2268,
     "height": 1440,
     "base64": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoQAAoABUB8JQBdgCHw+HpBwAD+1Ouizja34DlSdAPW0ALU1qFq0jqQ90JVQxQAAAA="
+  },
+  "/public/projects/artfolio/artfolio.png": {
+    "width": 2714,
+    "height": 1528,
+    "base64": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADwAQCdASoQAAkABUB8JZQAAunCKFU1MgAA/u/ERXLy0jZmvaKt5bFrhV75HjTNstQz1hKkJlL0tr3UnS82WoAA"
+  },
+  "/public/projects/blog/logo.png": {
+    "width": 2048,
+    "height": 2048,
+    "base64": "data:image/webp;base64,UklGRuIAAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSEYAAAARL6CmbSM4VzZdO313ERF4MQbb2LYSYQXASu6557SwcvsvBi0hov8TIGq6mEVHBvrIlvCYggedUJEXdPDBHXhYA+GcjBQCVlA4IHYAAABwAgCdASoQABAABUB8JbACdDiK94ZIh0eClFAAAP5UURxg+zWG5F9VxRdh2RLZjuGu8MxABFHINPqcICEBrYVSJ/hI4JSb2Fzx+IkHQi4TdDrGfIXEjXKhobt3wLHsEwv94Q4CeTfrthhaV+NFT1N/+9I78QAA"
+  },
+  "/public/projects/leemage/logo.webp": {
+    "width": 1024,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRq4AAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSFMAAAARL6AkAAI0xxwSyRoREZB3glEkSYr6QMHtCuD/0fwPDSz4F8MSIvo/Aei58oyIUyIC25OLHpOJJL5k/wNP+GOQhElQwnhYBgCvZG4GIOixSDdCTwBWUDggNAAAAPABAJ0BKhAAEAAFQHwlpAACw/lKdMmkAAD+FicWoLw2xaTwQC6hg4vaIjF4omaVJu1gAAA="
+  },
+  "/public/projects/syu-character-maker/syu-character-maker.png": {
+    "width": 2578,
+    "height": 1810,
+    "base64": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADwAQCdASoQAAsABUB8JQBdhggAJGChvAAA/u3hs56Q/iN0eCVla1amtcNwzp4GCPseBs+Hhlt5E9HfEV3MR0qXxTmtRAAA"
   }
 } as const satisfies ThumbnailMetadataMap

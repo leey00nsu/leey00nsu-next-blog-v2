@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllPosts } from '@/entities/post/lib/post'
+import { getAllProjects } from '@/entities/project/lib/project'
 import { ROUTES } from '@/shared/config/constants'
 
 const getBaseUrl = () => {
@@ -47,6 +48,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(post.date),
       changeFrequency: 'weekly',
       priority: 0.7,
+    })
+  }
+
+  const projects = await getAllProjects()
+  for (const project of projects) {
+    const periodForModified = project.period.end ?? project.period.start
+    const periodIso = periodForModified
+      ? `${periodForModified}${periodForModified.length === 7 ? '-01' : ''}`
+      : null
+    const lastModified = periodIso ? new Date(periodIso) : now
+
+    entries.push({
+      url: toAbs(`${ROUTES.PROJECTS}/${project.slug}`),
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     })
   }
 

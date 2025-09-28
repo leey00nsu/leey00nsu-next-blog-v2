@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 import { LOCALES, SupportedLocale } from '@/shared/config/constants'
@@ -13,6 +14,43 @@ function resolveLocale(searchLocale: string | null): SupportedLocale {
     : LOCALES.DEFAULT
 }
 
+function locateChromiumExecutable(): string | null {
+  const explicit = process.env.PUPPETEER_EXECUTABLE_PATH
+  if (explicit && fs.existsSync(explicit)) {
+    return explicit
+  }
+
+  const cacheRoot = process.env.PUPPETEER_CACHE_DIR ?? '/root/.cache/puppeteer'
+  const chromeDir = path.join(cacheRoot, 'chrome')
+  if (fs.existsSync(chromeDir)) {
+    const versions = fs
+      .readdirSync(chromeDir, { withFileTypes: true })
+      .filter((dirent) => dirent.isDirectory())
+      .map((dirent) => dirent.name)
+      .sort()
+      .toReversed()
+
+    for (const version of versions) {
+      const candidate = path.join(
+        chromeDir,
+        version,
+        'chrome-linux64',
+        'chrome',
+      )
+      if (fs.existsSync(candidate)) {
+        return candidate
+      }
+    }
+  }
+
+  const puppeteerPath = puppeteer.executablePath()
+  if (puppeteerPath && fs.existsSync(puppeteerPath)) {
+    return puppeteerPath
+  }
+
+  return null
+}
+
 export async function GET(request: NextRequest) {
   const localeParam = request.nextUrl.searchParams.get('locale')
   const locale = resolveLocale(localeParam)
@@ -20,25 +58,10 @@ export async function GET(request: NextRequest) {
   const targetUrl = new URL('/print/resume', request.nextUrl.origin)
   targetUrl.searchParams.set('locale', locale)
 
-  const candidatePaths = [
-    process.env.PUPPETEER_EXECUTABLE_PATH,
-    '/usr/bin/chromium-browser',
-    '/usr/bin/chromium',
-  ].filter(Boolean) as string[]
-
-  let executablePath = candidatePaths.find((candidate) =>
-    fs.existsSync(candidate),
-  )
-  if (!executablePath) {
-    const puppeteerPath = puppeteer.executablePath()
-    if (puppeteerPath && fs.existsSync(puppeteerPath)) {
-      executablePath = puppeteerPath
-    }
-  }
-
+  const executablePath = locateChromiumExecutable()
   if (!executablePath) {
     throw new Error(
-      'Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH or install Chromium.',
+      'Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH or ensure puppeteer downloaded Chromium.',
     )
   }
 

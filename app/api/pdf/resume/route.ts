@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
   const targetUrl = new URL('/print/resume', request.nextUrl.origin)
   targetUrl.searchParams.set('locale', locale)
 
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ?? undefined
   const browser = await puppeteer.launch({
+    executablePath,
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest) {
       }
     })()
 
-    await page.evaluate((base) => {
+    await page.evaluate((base: string) => {
       const anchors = document.querySelectorAll('a[href]')
       for (const anchor of anchors) {
         const href = anchor.getAttribute('href')

@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 import { LOCALES, SupportedLocale } from '@/shared/config/constants'
@@ -19,7 +20,28 @@ export async function GET(request: NextRequest) {
   const targetUrl = new URL('/print/resume', request.nextUrl.origin)
   targetUrl.searchParams.set('locale', locale)
 
-  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH ?? undefined
+  const candidatePaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    '/usr/bin/chromium-browser',
+    '/usr/bin/chromium',
+  ].filter(Boolean) as string[]
+
+  let executablePath = candidatePaths.find((candidate) =>
+    fs.existsSync(candidate),
+  )
+  if (!executablePath) {
+    const puppeteerPath = puppeteer.executablePath()
+    if (puppeteerPath && fs.existsSync(puppeteerPath)) {
+      executablePath = puppeteerPath
+    }
+  }
+
+  if (!executablePath) {
+    throw new Error(
+      'Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH or install Chromium.',
+    )
+  }
+
   const browser = await puppeteer.launch({
     executablePath,
     headless: true,

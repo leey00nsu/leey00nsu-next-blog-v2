@@ -22,13 +22,13 @@ function locateChromiumExecutable(): string | null {
 
   const cacheRoot = process.env.PUPPETEER_CACHE_DIR ?? '/root/.cache/puppeteer'
   const chromeDir = path.join(cacheRoot, 'chrome')
+
   if (fs.existsSync(chromeDir)) {
     const versions = fs
       .readdirSync(chromeDir, { withFileTypes: true })
       .filter((dirent) => dirent.isDirectory())
       .map((dirent) => dirent.name)
-      .sort()
-      .toReversed()
+      .sort((a, b) => b.localeCompare(a))
 
     for (const version of versions) {
       const candidate = path.join(

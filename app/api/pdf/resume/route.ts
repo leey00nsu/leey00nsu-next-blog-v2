@@ -84,11 +84,31 @@ function bufferToArrayBuffer(
   )
 }
 
+function resolveBaseUrl(requestOrigin: string): string {
+  const authenticationUrlFromEnvironment = process.env.AUTH_URL
+  if (!authenticationUrlFromEnvironment) {
+    return requestOrigin
+  }
+
+  try {
+    const parsedUrl = new URL(authenticationUrlFromEnvironment)
+    return parsedUrl.origin
+  } catch (error) {
+    console.warn(
+      '[pdf] invalid AUTH_URL value, falling back to request origin',
+      authenticationUrlFromEnvironment,
+      error,
+    )
+    return requestOrigin
+  }
+}
+
 export async function GET(request: NextRequest) {
   const localeParam = request.nextUrl.searchParams.get('locale')
   const locale = resolveLocale(localeParam)
 
-  const targetUrl = new URL('/print/resume', request.nextUrl.origin)
+  const baseUrl = resolveBaseUrl(request.nextUrl.origin)
+  const targetUrl = new URL('/print/resume', baseUrl)
   targetUrl.searchParams.set('locale', locale)
 
   const cacheDir =
@@ -143,15 +163,7 @@ export async function GET(request: NextRequest) {
     const page = await context.newPage()
     await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
     await page.emulateMedia({ media: 'screen' })
-    const baseHref = (() => {
-      const envBase = process.env.AUTH_URL
-      if (!envBase) return request.nextUrl.origin
-      try {
-        return new URL(envBase).toString()
-      } catch {
-        return request.nextUrl.origin
-      }
-    })()
+    const baseHref = baseUrl
 
     await page.evaluate((base: string) => {
       const anchors = document.querySelectorAll('a[href]')

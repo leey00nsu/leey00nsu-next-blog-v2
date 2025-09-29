@@ -40,7 +40,7 @@ export default async function ResumePrintPage({
           style={{ breakBefore: 'page' }}
           className="pt-10"
         >
-          <ProjectDetail project={project} />
+          <ProjectDetail locale={locale} project={project} />
         </div>
       ))}
     </div>

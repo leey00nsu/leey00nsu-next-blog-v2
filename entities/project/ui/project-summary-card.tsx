@@ -4,15 +4,18 @@ import { getTranslations } from 'next-intl/server'
 import { Project } from '@/entities/project/model/types'
 import { buildProjectHref } from '@/shared/config/constants'
 import { formatProjectPeriod } from '@/entities/project/lib/format-project-period'
+import { SupportedLocale } from '@/shared/config/constants'
 
 interface ProjectSummaryCardProps {
   project: Project
+  locale: SupportedLocale
 }
 
 export async function ProjectSummaryCard({
   project,
+  locale,
 }: ProjectSummaryCardProps) {
-  const t = await getTranslations('about.projects')
+  const t = await getTranslations({ locale, namespace: 'about.projects' })
   const inProgressLabel = t('inProgress')
   const periodLabel = t('duration')
   const techStackLabel = t('techStack')
@@ -21,15 +24,17 @@ export async function ProjectSummaryCard({
   return (
     <Link
       href={buildProjectHref(project.slug)}
-      className="group block rounded-lg border border-border bg-card p-5 transition hover:border-primary/60 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+      className="group border-border bg-card hover:border-primary/60 focus-visible:ring-primary/60 block rounded-lg border p-5 transition hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none"
       aria-label={ariaLabel}
     >
       <article className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-semibold leading-tight">{project.title}</h3>
+          <h3 className="text-lg leading-tight font-semibold">
+            {project.title}
+          </h3>
           <ArrowUpRight
             aria-hidden
-            className="h-4 w-4 text-primary transition-transform duration-200 group-hover:translate-x-1"
+            className="text-primary h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
           />
         </div>
         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -49,7 +54,7 @@ export async function ProjectSummaryCard({
                 {project.techStacks.map((stack) => (
                   <li
                     key={stack}
-                    className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium"
+                    className="border-border bg-muted rounded-full border px-2.5 py-1 text-xs font-medium"
                   >
                     {stack}
                   </li>

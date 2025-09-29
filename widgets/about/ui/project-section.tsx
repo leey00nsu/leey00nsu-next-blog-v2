@@ -10,7 +10,7 @@ interface ProjectSectionProps {
 export async function ProjectSection({ locale }: ProjectSectionProps) {
   const [projects, t] = await Promise.all([
     getAllProjects(locale),
-    getTranslations('about.projects'),
+    getTranslations({ locale, namespace: 'about.projects' }),
   ])
 
   if (projects.length === 0) {
@@ -33,7 +33,11 @@ export async function ProjectSection({ locale }: ProjectSectionProps) {
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {projects.map((project) => (
-          <ProjectSummaryCard key={project.slug} project={project} />
+          <ProjectSummaryCard
+            key={project.slug}
+            project={project}
+            locale={locale}
+          />
         ))}
       </div>
     </section>

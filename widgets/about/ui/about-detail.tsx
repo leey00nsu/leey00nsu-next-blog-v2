@@ -10,7 +10,11 @@ interface AboutDetailProps {
   showDownloadButton?: boolean
 }
 
-export function AboutDetail({ about, locale, showDownloadButton = true }: AboutDetailProps) {
+export function AboutDetail({
+  about,
+  locale,
+  showDownloadButton = true,
+}: AboutDetailProps) {
   function ProjectSectionSlot() {
     return (
       <div className="not-prose">

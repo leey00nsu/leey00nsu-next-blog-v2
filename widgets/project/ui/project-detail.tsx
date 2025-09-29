@@ -4,13 +4,18 @@ import { formatProjectPeriod } from '@/entities/project/lib/format-project-perio
 import { CustomImage } from '@/shared/ui/custom-image'
 import { removePublic } from '@/shared/lib/remove-public'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
+import { SupportedLocale } from '@/shared/config/constants'
 
 interface ProjectDetailProps {
   project: Project
+  locale: SupportedLocale
 }
 
-export async function ProjectDetail({ project }: ProjectDetailProps) {
-  const t = await getTranslations('about.projects')
+export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
+  const t = await getTranslations({
+    locale,
+    namespace: 'about.projects',
+  })
   const inProgressLabel = t('inProgress')
   const periodLabel = t('duration')
   const techStackLabel = t('techStack')
@@ -55,7 +60,7 @@ export async function ProjectDetail({ project }: ProjectDetailProps) {
       </section>
 
       {hasThumbnail ? (
-        <figure className="not-prose overflow-hidden rounded-xl border border-border">
+        <figure className="not-prose border-border overflow-hidden rounded-xl border">
           <CustomImage
             src={removePublic(project.thumbnail!)}
             alt={project.title}

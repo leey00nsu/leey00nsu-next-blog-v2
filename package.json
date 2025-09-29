@@ -7,14 +7,14 @@
     "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
     "build": "next build",
     "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
-    "start": "pnpm run puppeteer:install && next start",
+    "start": "pnpm run playwright:install && next start",
     "lint": "eslint",
     "prepare": "husky",
     "gen:mdx-i18n": "tsx scripts/generate-mdx-i18n.ts",
     "gen:post-thumbnails": "tsx scripts/generate-thumbnail-metadata.ts",
     "gen:posts": "tsx scripts/generate-posts-data.ts",
     "gen:projects": "tsx scripts/generate-projects-data.ts",
-    "puppeteer:install": "pnpm exec puppeteer browsers install chrome"
+    "playwright:install": "pnpm exec playwright install chromium"
   },
   "dependencies": {
     "@fec/remark-a11y-emoji": "^4.0.2",
@@ -47,7 +47,7 @@
     "openai": "^4",
     "optional": "^0.1.4",
     "plaiceholder": "^3.0.0",
-    "puppeteer": "^23.4.1",
+    "playwright": "^1.49.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",

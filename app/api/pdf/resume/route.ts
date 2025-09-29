@@ -1,7 +1,8 @@
 import fs from 'node:fs'
+import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import { chromium } from 'playwright'
 import { LOCALES, SupportedLocale } from '@/shared/config/constants'
 
 export const runtime = 'nodejs'
@@ -15,40 +16,72 @@ function resolveLocale(searchLocale: string | null): SupportedLocale {
 }
 
 function locateChromiumExecutable(): string | null {
-  const explicit = process.env.PUPPETEER_EXECUTABLE_PATH
+  const explicit =
+    process.env.PLAYWRIGHT_EXECUTABLE_PATH ??
+    process.env.PUPPETEER_EXECUTABLE_PATH
   if (explicit && fs.existsSync(explicit)) {
     return explicit
   }
 
-  const cacheRoot = process.env.PUPPETEER_CACHE_DIR ?? '/root/.cache/puppeteer'
-  const chromeDir = path.join(cacheRoot, 'chrome')
+  const browsersRoot =
+    process.env.PLAYWRIGHT_BROWSERS_PATH ?? process.env.PLAYWRIGHT_CACHE_DIR
 
-  if (fs.existsSync(chromeDir)) {
-    const versions = fs
-      .readdirSync(chromeDir, { withFileTypes: true })
-      .filter((dirent) => dirent.isDirectory())
-      .map((dirent) => dirent.name)
-      .sort((a, b) => b.localeCompare(a))
+  const searchRoots = [
+    // 사용자 지정 경로
+    ...(browsersRoot ? [browsersRoot] : []),
+    // 일반적인 캐시 경로
+    path.join(process.cwd(), 'node_modules', '.cache', 'playwright'),
+    '/app/.cache/playwright',
+    '/app/.cache/ms-playwright',
+    '/root/.cache/playwright',
+    '/root/.cache/ms-playwright',
+  ]
 
-    for (const version of versions) {
-      const candidate = path.join(
-        chromeDir,
-        version,
-        'chrome-linux64',
-        'chrome',
-      )
-      if (fs.existsSync(candidate)) {
-        return candidate
-      }
-    }
+  for (const root of searchRoots) {
+    if (!root || !fs.existsSync(root)) continue
+    const candidate = findLatestChromiumBinary(root)
+    if (candidate) return candidate
   }
 
-  const puppeteerPath = puppeteer.executablePath()
-  if (puppeteerPath && fs.existsSync(puppeteerPath)) {
-    return puppeteerPath
+  const builtin = chromium.executablePath()
+  if (builtin && fs.existsSync(builtin)) {
+    return builtin
   }
 
   return null
+}
+
+function findLatestChromiumBinary(root: string): string | null {
+  try {
+    const directories = fs
+      .readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((a, b) => b.localeCompare(a))
+
+    for (const dir of directories) {
+      const candidatePaths = [
+        path.join(root, dir, 'chrome-linux', 'chrome'),
+        path.join(root, dir, 'chrome-linux64', 'chrome'),
+      ]
+
+      const match = candidatePaths.find((candidate) => fs.existsSync(candidate))
+      if (match) return match
+    }
+  } catch (error) {
+    console.warn('[pdf] failed to inspect playwright cache', root, error)
+  }
+
+  return null
+}
+
+function bufferToArrayBuffer(
+  buffer: Uint8Array,
+): ArrayBuffer | SharedArrayBuffer {
+  return buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength,
+  )
 }
 
 export async function GET(request: NextRequest) {
@@ -58,24 +91,58 @@ export async function GET(request: NextRequest) {
   const targetUrl = new URL('/print/resume', request.nextUrl.origin)
   targetUrl.searchParams.set('locale', locale)
 
+  const cacheDir =
+    process.env.RESUME_PDF_CACHE_DIR ??
+    path.join(process.cwd(), '.next', 'cache', 'resume-pdf')
+  const cacheFile = path.join(cacheDir, `${locale}.pdf`)
+  const cacheTtlRaw = process.env.RESUME_PDF_CACHE_TTL
+  const cacheTtlMs = cacheTtlRaw ? Number(cacheTtlRaw) : 1000 * 60 * 60 * 24
+  const hasTtl = Number.isFinite(cacheTtlMs) && cacheTtlMs > 0
+
+  await fsp.mkdir(cacheDir, { recursive: true })
+
+  if (fs.existsSync(cacheFile)) {
+    try {
+      const stat = await fsp.stat(cacheFile)
+      const isFresh = !hasTtl || Date.now() - stat.mtimeMs <= cacheTtlMs
+      if (isFresh) {
+        const cachedBuffer = await fsp.readFile(cacheFile)
+        const cachedArrayBuffer = bufferToArrayBuffer(cachedBuffer)
+        return new NextResponse(cachedArrayBuffer as ArrayBuffer, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="portfolio-${locale}.pdf"`,
+            'Cache-Control': 'no-store',
+          },
+        })
+      }
+    } catch (error) {
+      console.warn('[pdf] failed to read cached resume pdf', cacheFile, error)
+    }
+  }
+
   const executablePath = locateChromiumExecutable()
   if (!executablePath) {
     throw new Error(
-      'Chromium executable not found. Set PUPPETEER_EXECUTABLE_PATH or ensure puppeteer downloaded Chromium.',
+      'Chromium executable not found. Set PLAYWRIGHT_EXECUTABLE_PATH or ensure playwright downloaded Chromium.',
     )
   }
 
-  const browser = await puppeteer.launch({
+  const browser = await chromium.launch({
     executablePath,
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
 
+  let context: Awaited<ReturnType<typeof browser.newContext>> | null = null
+
   try {
-    const page = await browser.newPage()
-    await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 })
-    await page.goto(targetUrl.toString(), { waitUntil: 'networkidle0' })
-    await page.emulateMediaType('screen')
+    context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+    })
+    const page = await context.newPage()
+    await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
+    await page.emulateMedia({ media: 'screen' })
     const baseHref = (() => {
       const envBase = process.env.AUTH_URL
       if (!envBase) return request.nextUrl.origin
@@ -123,11 +190,16 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const pdfArrayBuffer = pdfBuffer.buffer.slice(
-      pdfBuffer.byteOffset,
-      pdfBuffer.byteOffset + pdfBuffer.byteLength,
-    ) as ArrayBuffer
-    const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' })
+    const pdfArrayBuffer = bufferToArrayBuffer(pdfBuffer)
+
+    try {
+      await fsp.writeFile(cacheFile, pdfBuffer)
+    } catch (error) {
+      console.warn('[pdf] failed to cache resume pdf', cacheFile, error)
+    }
+    const pdfBlob = new Blob([pdfArrayBuffer as ArrayBuffer], {
+      type: 'application/pdf',
+    })
 
     return new NextResponse(pdfBlob, {
       headers: {
@@ -143,6 +215,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     )
   } finally {
+    if (context) {
+      await context.close()
+    }
     await browser.close()
   }
 }

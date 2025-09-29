@@ -17,9 +17,10 @@ export function DownloadResumeButton({ locale }: DownloadResumeButtonProps) {
   const handleDownload = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/pdf/resume?locale=${locale}`, {
+      const response = await fetch('/api/pdf/resume', {
         method: 'GET',
         cache: 'no-store',
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {

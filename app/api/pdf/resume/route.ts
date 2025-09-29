@@ -3,17 +3,9 @@ import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import { chromium } from 'playwright'
-import { LOCALES, SupportedLocale } from '@/shared/config/constants'
+import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
 export const runtime = 'nodejs'
-
-function resolveLocale(searchLocale: string | null): SupportedLocale {
-  if (!searchLocale) return LOCALES.DEFAULT
-  const normalized = searchLocale.toLowerCase()
-  return LOCALES.SUPPORTED.includes(normalized as SupportedLocale)
-    ? (normalized as SupportedLocale)
-    : LOCALES.DEFAULT
-}
 
 function locateChromiumExecutable(): string | null {
   const explicit =
@@ -104,12 +96,13 @@ function resolveBaseUrl(requestOrigin: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const localeParam = request.nextUrl.searchParams.get('locale')
-  const locale = resolveLocale(localeParam)
+  const localeCookie = request.cookies.get('locale')?.value ?? null
+  const locale = determineSupportedLocale([localeCookie])
 
   const baseUrl = resolveBaseUrl(request.nextUrl.origin)
   const targetUrl = new URL('/print/resume', baseUrl)
-  targetUrl.searchParams.set('locale', locale)
+  const targetHostname = targetUrl.hostname
+  const isSecureConnection = targetUrl.protocol === 'https:'
 
   const cacheDir =
     process.env.RESUME_PDF_CACHE_DIR ??
@@ -160,6 +153,17 @@ export async function GET(request: NextRequest) {
     context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
     })
+    await context.addCookies([
+      {
+        name: 'locale',
+        value: locale,
+        domain: targetHostname,
+        path: '/',
+        sameSite: 'Lax',
+        secure: isSecureConnection,
+        httpOnly: false,
+      },
+    ])
     const page = await context.newPage()
     await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
     await page.emulateMedia({ media: 'screen' })

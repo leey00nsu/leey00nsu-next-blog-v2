@@ -1,27 +1,15 @@
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllProjects } from '@/entities/project/lib/project'
 import { AboutDetail } from '@/widgets/about/ui/about-detail'
 import { ProjectDetail } from '@/widgets/project/ui/project-detail'
-import { LOCALES, SupportedLocale } from '@/shared/config/constants'
+import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
-interface ResumePrintPageProps {
-  searchParams: Promise<{ locale?: string }>
-}
-
-function resolveLocale(localeParam: string | undefined): SupportedLocale {
-  if (!localeParam) return LOCALES.DEFAULT
-  const normalized = localeParam.toLowerCase()
-  return LOCALES.SUPPORTED.includes(normalized as SupportedLocale)
-    ? (normalized as SupportedLocale)
-    : LOCALES.DEFAULT
-}
-
-export default async function ResumePrintPage({
-  searchParams,
-}: ResumePrintPageProps) {
-  const params = await searchParams
-  const locale = resolveLocale(params?.locale)
+export default async function ResumePrintPage() {
+  const store = await cookies()
+  const localeCookie = store.get('locale')?.value ?? null
+  const locale = determineSupportedLocale([localeCookie])
 
   const about = getAbout(locale)
   if (!about) {

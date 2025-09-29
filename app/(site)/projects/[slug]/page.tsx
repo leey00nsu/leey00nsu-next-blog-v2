@@ -68,5 +68,5 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound()
   }
 
-  return <ProjectDetail project={project} />
+  return <ProjectDetail project={project} locale={locale} />
 }

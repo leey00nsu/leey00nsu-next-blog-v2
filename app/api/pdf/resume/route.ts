@@ -109,15 +109,27 @@ export async function GET(request: NextRequest) {
     path.join(process.cwd(), '.next', 'cache', 'resume-pdf')
   const cacheFile = path.join(cacheDir, `${locale}.pdf`)
   const cacheTtlRaw = process.env.RESUME_PDF_CACHE_TTL
-  const cacheTtlMs = cacheTtlRaw ? Number(cacheTtlRaw) : 1000 * 60 * 60 * 24
-  const hasTtl = Number.isFinite(cacheTtlMs) && cacheTtlMs > 0
+  let cacheTtlMs: number | null = null
+
+  if (cacheTtlRaw !== undefined) {
+    const parsedTtl = Number(cacheTtlRaw)
+    if (Number.isFinite(parsedTtl) && parsedTtl > 0) {
+      cacheTtlMs = parsedTtl
+    } else {
+      console.warn(
+        '[pdf] invalid RESUME_PDF_CACHE_TTL value, falling back to infinite cache',
+        cacheTtlRaw,
+      )
+    }
+  }
 
   await fsp.mkdir(cacheDir, { recursive: true })
 
   if (fs.existsSync(cacheFile)) {
     try {
       const stat = await fsp.stat(cacheFile)
-      const isFresh = !hasTtl || Date.now() - stat.mtimeMs <= cacheTtlMs
+      const isFresh =
+        cacheTtlMs === null || Date.now() - stat.mtimeMs <= cacheTtlMs
       if (isFresh) {
         const cachedBuffer = await fsp.readFile(cacheFile)
         const cachedArrayBuffer = bufferToArrayBuffer(cachedBuffer)

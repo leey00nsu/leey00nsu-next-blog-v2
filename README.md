@@ -20,6 +20,7 @@
   - Studio: 브라우저에서 Frontmatter/본문 편집, 이미지 업로드·미리보기, 슬러그 변경 시 이미지 경로 일괄 리매핑, OpenAI 번역 후 다국어 파일 동시 커밋
   - 배포 파이프라인: GitHub API(Octokit)로 지정 브랜치에 MDX/이미지 커밋
   - 인증: GitHub OAuth(NextAuth v5) + 허용 사용자만 Studio 접근
+  - PDF 내보내기: Playwright로 `/print/resume` 화면을 렌더링해 About · 프로젝트 상세를 하나의 포트폴리오 PDF로 다운로드
   - 댓글: Giscus
 
 ## 2) 기술 스택 (Tech Stack)
@@ -57,6 +58,12 @@
   ```
 
 - 실행
+  - Playwright 런타임 다운로드 (최초 1회)
+
+  ```bash
+  pnpm playwright:install
+  ```
+
   - 개발 서버
 
   ```bash
@@ -97,6 +104,12 @@ GITHUB_OWNER=<owner>
 GITHUB_REPO=<repo>
 GITHUB_BRANCH=<branch>
 GITHUB_TOKEN=<github_pat>
+
+# PDF 생성 캐시 (선택)
+RESUME_PDF_CACHE_DIR=.next/cache/resume-pdf
+# RESUME_PDF_CACHE_TTL=86400000 # 밀리초 단위 TTL, 기본은 무기한 캐시
+# Playwright 실행 파일 경로를 강제 지정하고 싶을 때 (선택)
+PLAYWRIGHT_EXECUTABLE_PATH=/path/to/chromium
 
 # OpenAI (번역)
 OPENAI_API_KEY=<openai_api_key>
@@ -144,6 +157,10 @@ MDX_I18N_TARGETS=ko,en
   ```
 
   - 동작: `public/posts/{slug}`와 `public/about`를 스캔해 누락된 로케일의 MDX 파일을 생성합니다.
+
+- About · 프로젝트 PDF 다운로드
+  - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 누르면 `/api/pdf/resume`가 Playwright로 About + 프로젝트 상세 화면을 합친 포트폴리오 PDF를 생성합니다.
+  - 기본적으로 최초 생성 파일을 계속 재사용하며, 필요 시 `RESUME_PDF_CACHE_TTL`을 지정해 만료 시점을 설정할 수 있습니다. Playwright 런타임이 설치되어 있어야 합니다.
 
 ## 5) 프로젝트 구조 (Project Structure)
 

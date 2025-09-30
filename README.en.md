@@ -20,6 +20,7 @@ Next.js-based personal blog with MDX multi-language support, in-browser Studio e
   - Studio: Edit frontmatter/body in the browser, upload/preview images, remap image paths on slug changes, translate via OpenAI, and commit all locales at once
   - Deployment: Commit MDX/images to a designated GitHub branch via Octokit
   - Auth: GitHub OAuth (NextAuth v5) and allowlisted user only for Studio
+  - PDF export: Render `/print/resume` via Playwright and download a unified portfolio for About + project detail content
   - Comments: Giscus
 
 ## 2) Tech Stack
@@ -57,6 +58,12 @@ Next.js-based personal blog with MDX multi-language support, in-browser Studio e
   ```
 
 - Run
+  - Install Playwright runtime (first run only)
+
+  ```bash
+  pnpm playwright:install
+  ```
+
   - Dev server
 
   ```bash
@@ -97,6 +104,11 @@ GITHUB_OWNER=<owner>
 GITHUB_REPO=<repo>
 GITHUB_BRANCH=<branch>
 GITHUB_TOKEN=<github_pat>
+
+# PDF export cache (optional)
+RESUME_PDF_CACHE_DIR=.next/cache/resume-pdf
+# RESUME_PDF_CACHE_TTL=86400000 # TTL in milliseconds. Defaults to infinite cache when omitted.
+# PLAYWRIGHT_EXECUTABLE_PATH=/path/to/chromium
 
 # OpenAI (translation)
 OPENAI_API_KEY=<openai_api_key>
@@ -144,6 +156,10 @@ Tips
   ```
 
   - Behavior: Scans `public/posts/{slug}` and `public/about` and creates missing locale files.
+
+- Download About + project PDF
+  - Use the `Download PDF` button at the top of `/about` to hit `/api/pdf/resume`, which renders `/print/resume` via Playwright and combines About plus project detail content into a single portfolio PDF.
+  - The first generated file is reused indefinitely by default; set `RESUME_PDF_CACHE_TTL` to expire it on a schedule. Playwright runtime must be installed.
 
 ## 5) Project Structure
 

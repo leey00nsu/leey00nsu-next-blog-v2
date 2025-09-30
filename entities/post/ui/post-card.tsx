@@ -2,9 +2,6 @@ import { Post } from '@/entities/post/model/types'
 import { DefaultThumbnail } from '@/entities/post/ui/default-thumbnail'
 import { CustomImage } from '@/shared/ui/custom-image'
 import { removePublic } from '@/shared/lib/remove-public'
-import { buildPostCardThumbnailSizes } from '@/entities/post/lib/build-post-card-thumbnail-sizes'
-
-const POST_CARD_THUMBNAIL_SIZES = buildPostCardThumbnailSizes()
 
 interface PostCardProps {
   post: Post
@@ -39,7 +36,6 @@ export function PostCard({ post }: PostCardProps) {
             height={post.height}
             base64={post.blurDataURL}
             className="h-full w-full object-cover object-center transition-all duration-200 group-hover:scale-110"
-            sizes={POST_CARD_THUMBNAIL_SIZES}
           />
         ) : (
           <DefaultThumbnail

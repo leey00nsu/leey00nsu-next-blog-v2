@@ -1,7 +1,7 @@
 ---
 slug: blog
 title: Blog
-summary: A Next.js MDX-based technical blog that uses AI to provide multilingual support
+summary: Next.js + MDX-based blog with AI automatic translation and GitHub integration
 period:
   start: 2025-09
   end:
@@ -11,33 +11,25 @@ techStacks:
   - Tailwind CSS
 thumbnail: /public/projects/blog/logo.png
 draft: false
+type: solo
 ---
 
 ## Project Overview
 
-Github: [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
+GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
 
-This is a Next.js MDX-based technical blog that uses an in-house editor to create posts, leverages AI to generate Korean/English multilingual documents, and can automatically commit them to GitHub branches.
+This is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.
+**A fully automated blog pipeline from writing to deployment** is a key feature.
 
 ## Key Features
 
-- Content authoring via a web editor based on MDX files
-- Generate multilingual documents using AI
-- Automatic commits to GitHub branches
-- LCP optimization by generating image metadata
-- Applied FSD (Feature-Sliced Design) structure for project modularization
+- MDX document authoring via a web editor
+- AI automatic translation (Korean ↔ English)
+- Automatic commits via GitHub API integration
+- Image metadata extraction and LCP/CLS improvements
+- Modularization based on FSD architecture
 
 ## Tech Stack
 
-- Framework: Next.js
-- Language: TypeScript
-- Styling/UI: Tailwind CSS, shadcn/ui
-- MDX: next-mdx-remote, remark-gfm, remark-breaks, rehype-slug, rehype-pretty-code
-- Internationalization: next-intl
-- Editor: @mdxeditor/editor
-- Authentication: next-auth@5 (GitHub Provider)
-- Translation: OpenAI SDK
-- Auto-commit: Octokit (GitHub API)
-- Image processing: sharp, lqip-modern
-- Utilities: gray-matter, zod, es-toolkit, lucide-react, react-hook-form
-- Dev tools: ESLint, Prettier, Husky, lint-staged
+- Frontend: Next.js, TypeScript, Tailwind CSS
+- Infra: GitHub API (Octokit), OpenAI SDK

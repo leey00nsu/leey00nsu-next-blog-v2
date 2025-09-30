@@ -1,7 +1,7 @@
 ---
 slug: leemage
-title: leemage
-summary: Image management platform using Next.js and Oracle Cloud Infrastructure (OCI) Object Storage
+title: Leemage
+summary: OCI Object Storage–based image management platform, an alternative to Cloudinary
 period:
   start: 2025-05
   end: 2025-06
@@ -14,35 +14,25 @@ techStacks:
   - Prisma
 thumbnail: /public/projects/leemage/logo.webp
 draft: false
+type: solo
 ---
 
 ## Project Overview
 
-GitHub: [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
+GitHub : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
 
-Leemage is an image management platform built using Oracle Cloud Infrastructure (OCI) Object Storage. It provides features similar to Cloudinary and enables efficient image management on a per-project basis. Using Next.js and modern web technologies, it offers an intuitive, responsive user interface and developer-friendly APIs for easy integration with external services.
+This is a self-hosted image management platform using Oracle Cloud Infrastructure (OCI) Object Storage.  
+It implements features similar to Cloudinary, enabling efficient project-level image management and providing developer-friendly APIs.
 
 ## Key Features
 
-- Image management using Oracle Cloud Infrastructure (OCI) Object Storage
-- Project-based image organization
-- FSD (Feature-Sliced Design) structure applied for project modularization
+- Image upload and management based on OCI Object Storage
+- Project-scoped image management and APIs
+- Responsive dashboard and intuitive UI
+- Scalability through FSD (Feature-Sliced Design) architecture
 
 ## Tech Stack
 
-### Frontend
-
-- Framework: Next.js
-- Language: TypeScript
-- Styling/UI: Tailwind CSS, Shadcn
-- State management: React Query (TanStack Query)
-
-### Backend
-
-- Framework: Next.js API routes
-- Language: TypeScript
-- Database: PostgreSQL
-- ORM: Prisma
-- Authentication: iron-session
-- Image processing: sharp
-- Storage: Oracle Cloud Infrastructure (OCI) Object Storage
+- Frontend: Next.js, TypeScript, Tailwind CSS
+- Backend: PostgreSQL, Prisma, Next.js API Routes
+- Infra: Oracle Cloud Infrastructure (Object Storage)

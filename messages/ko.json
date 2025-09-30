@@ -11,7 +11,12 @@
       "viewDetailAria": "{project} 상세 페이지로 이동",
       "inProgress": "진행 중",
       "duration": "프로젝트 기간",
-      "techStack": "기술 스택"
+      "techStack": "기술 스택",
+      "type": {
+        "label": "프로젝트 유형",
+        "team": "팀 프로젝트",
+        "solo": "개인 프로젝트"
+      }
     }
   },
   "auth": {

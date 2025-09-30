@@ -1,7 +1,7 @@
 ---
 slug: syu-character-maker
 title: Create Your Own Suya and Suho
-summary: A program to customize Suya and Suho, the mascots of Sahmyook University
+summary: A web app to customize and share Sahmyook University mascots
 period:
   start: 2023-05
   end: 2023-12
@@ -13,34 +13,23 @@ techStacks:
   - React-konva
 thumbnail: /public/projects/syu-character-maker/syu-character-maker.png
 draft: false
+type: solo
 ---
 
-## Project Overview
+## Project Introduction
 
-Github : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)
+GitHub : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)
 
-Create Your Own Suya and Suho lets you customize Suya and Suho, the mascots of Sahmyook University.
-You can upload your customized Suya and Suho and share them with fellow students.
+This is a web application that lets you customize Sahmyook University mascots, Suya and Suho.  
+Students can freely decorate the characters and save the results as images or share them with classmates.
 
 ## Key Features
 
-- Use a pen tool and decoration tools on the Suya/Suho canvas to customize them.
-- Download the result as an image or upload it to share with fellow students.
+- React-konva canvas-based decorating tools (pen, stickers, etc.)
+- Download the result as an image and upload/share
+- State management and optimization using Zustand + TanStack Query
 
 ## Tech Stack
 
-### Frontend
-
-- Framework: React
-- Language: TypeScript
-- Styling/UI: Tailwind CSS
-- State management: React Query (TanStack Query), Zustand
-- Canvas: React-konva
-
-### Backend
-
-- Framework: NestJS
-- Language: TypeScript
-- Database: PostgreSQL
-- ORM: Prisma
-- Authentication: Redis
+- Frontend: React, TypeScript, Tailwind CSS, Zustand, React-konva
+- Backend: NestJS, PostgreSQL, Prisma, Redis

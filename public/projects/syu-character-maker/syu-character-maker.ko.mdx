@@ -1,7 +1,7 @@
 ---
 slug: syu-character-maker
 title: 나만의 수야,수호 만들기
-summary: 삼육대학교 마스코트인 수야, 수호를 꾸밀 수 있는 프로그램
+summary: 삼육대 마스코트 꾸미기, 공유 웹 프로그램
 period:
   start: 2023-05
   end: 2023-12
@@ -13,34 +13,23 @@ techStacks:
   - React-konva
 thumbnail: /public/projects/syu-character-maker/syu-character-maker.png
 draft: false
+type: solo
 ---
 
 ## 프로젝트 소개
 
-Github 주소 : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)
+GitHub : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)
 
-나만의 수야,수호 만들기는 삼육대학교 마스코트인 수야, 수호를 꾸밀 수 있는 프로그램입니다.
-자유롭게 꾸민 수야, 수호를 업로드하여 학우들과 공유할 수 있습니다.
+삼육대학교 마스코트 **수야/수호를 꾸밀 수 있는 웹 프로그램**입니다.  
+학생들이 자유롭게 캐릭터를 꾸미고 결과를 이미지로 저장하거나 학우들과 공유할 수 있도록 했습니다.
 
 ## 주요 기능
 
-- 수야,수호를 배경으로 펜 툴과 꾸미기 도구를 사용하여 수야, 수호를 꾸밀 수 있습니다.
-- 결과를 이미지로 다운로드 받거나, 업로드하여 학우들과 공유할 수 있습니다.
+- React-konva 캔버스 기반 꾸미기 도구(펜, 스티커 등)
+- 결과물 이미지 다운로드 및 업로드 공유
+- Zustand + TanStack Query 기반 상태 관리 및 최적화
 
 ## 기술 스택
 
-### Frontend
-
-- 프레임워크: React
-- 언어: TypeScript
-- 스타일/UI: Tailwind CSS
-- 상태 관리: React Query (TanStack Query), Zustand
-- 캔버스: React-konva
-
-### Backend
-
-- 프레임워크: NestJS
-- 언어: TypeScript
-- 데이터베이스: PostgreSQL
-- ORM: Prisma
-- 인증: Redis
+- Frontend: React, TypeScript, Tailwind CSS, Zustand, React-konva
+- Backend: NestJS, PostgreSQL, Prisma, Redis

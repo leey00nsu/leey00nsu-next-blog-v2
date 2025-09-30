@@ -1,7 +1,7 @@
 ---
 slug: blog
 title: 블로그
-summary: Next.js MDX 기반의 AI를 활용한 다국어 지원 블로그
+summary: Next.js + MDX 기반, AI 자동 번역과 GitHub 연동 블로그
 period:
   start: 2025-09
   end:
@@ -11,33 +11,25 @@ techStacks:
   - Tailwind CSS
 thumbnail: /public/projects/blog/logo.png
 draft: false
+type: solo
 ---
 
 ## 프로젝트 소개
 
-Github 주소 : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
+GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
 
-Next.js MDX 기반의 기술 블로그로 자체 에디터에서 작성한 글을 AI를 활용해 한국어/영어 다국어 문서를 생성하고, GitHub 브랜치로 자동으로 커밋할 수 있습니다.
+Next.js 기반의 기술 블로그입니다. 자체 웹 에디터에서 작성한 글을 AI가 한국어/영어로 자동 번역하고, GitHub API를 통해 브랜치에 직접 커밋하여 배포까지 자동화했습니다.
+**글쓰기부터 배포까지 완전 자동화된 블로그 파이프라인**을 구축한 것이 특징입니다.
 
 ## 주요 기능
 
-- mdx 파일을 기반으로한 웹 에디터를 통한 콘텐츠 작성
-- AI를 활용한 다국어 문서 생성
-- GitHub 브랜치로 자동 커밋
-- 이미지 메타데이터 생성을 통해 LCP 최적화
-- 프로젝트 모듈화를 위한 FSD(FEature-Sliced Design) 구조 적용
+- 웹 에디터를 통한 MDX 문서 작성
+- AI 자동 번역(한국어 ↔ 영어) 지원
+- GitHub API 연동 자동 커밋
+- 이미지 메타데이터 추출 및 LCP/CLS 개선
+- FSD 아키텍처 기반 모듈화
 
 ## 기술 스택
 
-- 프레임워크: Next.js
-- 언어: TypeScript
-- 스타일/UI: Tailwind CSS, shadcn/ui
-- MDX: next-mdx-remote, remark-gfm, remark-breaks, rehype-slug, rehype-pretty-code
-- i18n: next-intl
-- 에디터: @mdxeditor/editor
-- 인증: next-auth@5(GitHub Provider)
-- 번역: OpenAI SDK
-- 자동 커밋: Octokit(GitHub API)
-- 이미지 처리: sharp, lqip-modern
-- 유틸: gray-matter, zod, es-toolkit, lucide-react, react-hook-form
-- 개발 도구: ESLint, Prettier, Husky, lint-staged
+- Frontend: Next.js, TypeScript, Tailwind CSS
+- Infra: GitHub API (Octokit), OpenAI SDK

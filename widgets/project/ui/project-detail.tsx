@@ -19,6 +19,8 @@ export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
   const inProgressLabel = t('inProgress')
   const periodLabel = t('duration')
   const techStackLabel = t('techStack')
+  const typeLabel = t('type.label')
+  const projectTypeLabel = t(`type.${project.type}`)
 
   const formattedPeriod = formatProjectPeriod(project.period, inProgressLabel)
   const hasThumbnail = Boolean(project.thumbnail)
@@ -27,9 +29,15 @@ export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="space-y-4">
-        <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
-          {project.title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
+            {project.title}
+          </h1>
+          <span className="border-border bg-muted inline-flex rounded-full border px-3 py-1 text-xs font-semibold">
+            <span className="sr-only">{typeLabel}</span>
+            {projectTypeLabel}
+          </span>
+        </div>
         <p className="text-muted-foreground text-base leading-relaxed">
           {project.summary}
         </p>

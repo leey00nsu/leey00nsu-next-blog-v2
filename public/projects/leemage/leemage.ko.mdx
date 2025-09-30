@@ -1,7 +1,7 @@
 ---
 slug: leemage
-title: leemage
-summary: Next.js, Oracle Cloud Infrastructure (OCI) Object Storage를 활용한 이미지 관리 플랫폼
+title: Leemage
+summary: OCI Object Storage 기반, Cloudinary 대안 이미지 관리 플랫폼
 period:
   start: 2025-05
   end: 2025-06
@@ -14,37 +14,25 @@ techStacks:
   - Prisma
 thumbnail: /public/projects/leemage/logo.webp
 draft: false
+type: solo
 ---
 
 ## 프로젝트 소개
 
-Github 주소 : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
+GitHub : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
 
-Leemage는 Oracle Cloud Infrastructure (OCI) Object Storage를 활용하여 구축된 이미지 관리 플랫폼입니다.
-Cloudinary와 유사한 기능을 제공하며, 프로젝트 단위로 이미지를 효율적으로 관리할 수 있습니다.
-Next.js와 최신 웹 기술을 사용하여 직관적이고 반응형 사용자 인터페이스를 제공하며, 개발자 친화적인 API를 통해 외부 서비스와 쉽게 통합할 수 있습니다.
+Oracle Cloud Infrastructure(OCI) Object Storage를 활용한 **셀프 호스팅 이미지 관리 플랫폼**입니다.  
+Cloudinary와 유사한 기능을 직접 구현하여, 프로젝트 단위로 이미지를 효율적으로 관리하고 개발자 친화적인 API를 제공합니다.
 
 ## 주요 기능
 
-- Oracle Cloud Infrastructure (OCI) Object Storage를 활용한 이미지 관리
-- 프로젝트 단위로 이미지 관리
-- 프로젝트 모듈화를 위한 FSD(FEature-Sliced Design) 구조 적용
+- OCI Object Storage 기반 이미지 업로드 및 관리
+- 프로젝트 단위 이미지 관리 및 API 제공
+- 반응형 대시보드와 직관적 UI
+- FSD 아키텍처 기반 확장성 확보
 
 ## 기술 스택
 
-### Frontend
-
-- 프레임워크: Next.js
-- 언어: TypeScript
-- 스타일/UI: Tailwind CSS , Shadcn
-- 상태 관리: React Query (TanStack Query)
-
-### Backend
-
-- 프레임워크: Next.js API routes
-- 언어: TypeScript
-- 데이터베이스: PostgreSQL
-- ORM: Prisma
-- 인증: iron-session
-- 이미지 처리: sharp
-- 스토리지: Oracle Cloud Infrastructure (OCI) Object Storage
+- Frontend: Next.js, TypeScript, Tailwind CSS
+- Backend: PostgreSQL, Prisma, Next.js API Routes
+- Infra: Oracle Cloud Infrastructure (Object Storage)

@@ -1,7 +1,7 @@
 ---
 slug: artfolio
 title: ArtFolio
-summary: AI-based art auction service
+summary: AI-powered art auction service
 period:
   start: 2023-04
   end: 2023-09
@@ -11,31 +11,26 @@ techStacks:
   - Tailwind CSS
   - Zustand
   - Nivo
+  - Stomp.js
 thumbnail: /public/projects/artfolio/artfolio.png
 draft: false
+type: team
 ---
 
 ## Project Overview
 
-GitHub: [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)
+GitHub : [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)
 
-ArtFolio is an AI-based art auction service.
-It analyzes images uploaded by users using AI and automatically generates descriptions and voice narration tailored to the artwork.
-The project was carried out with 2 frontend developers, 2 backend developers, and 1 designer; I served as the frontend lead and team leader.
-We received an honorable mention at the Sahmyook University SW Project Competition.
+This is an AI-powered art auction service. When a user uploads a painting, the AI analyzes it and automatically generates descriptions and audio, and items can be traded through a real-time auction system.  
+The project won the Encouragement Award at the Sahmyook University SW Project Competition, and I served as the team lead and was responsible for **frontend development and team leadership**.
 
 ## Key Features
 
-- Real-time art auction listings
-- Real-time auction price charts
-- AI-powered artwork evaluation charts
+- Real-time art auctions and bidding using WebSockets (Stomp.js)
+- Real-time auction price chart visualization using Nivo
+- AI-driven artwork evaluation and automatic generation of descriptions
 
 ## Tech Stack
 
-### Frontend
-
-- Framework: React
-- Language: TypeScript
-- Styling/UI: Tailwind CSS
-- State management: React Query (TanStack Query), Zustand
-- Charts: Nivo
+- Frontend: React, TypeScript, Tailwind CSS, Zustand, Nivo, Stomp.js
+- Backend: NestJS, PostgreSQL, Prisma

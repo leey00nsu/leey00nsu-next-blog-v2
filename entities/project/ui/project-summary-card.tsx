@@ -19,6 +19,8 @@ export async function ProjectSummaryCard({
   const inProgressLabel = t('inProgress')
   const periodLabel = t('duration')
   const techStackLabel = t('techStack')
+  const typeLabel = t('type.label')
+  const projectTypeLabel = t(`type.${project.type}`)
   const ariaLabel = t('viewDetailAria', { project: project.title })
 
   return (
@@ -41,6 +43,14 @@ export async function ProjectSummaryCard({
           {project.summary}
         </p>
         <dl className="space-y-2 text-sm">
+          <div className="flex flex-col gap-1">
+            <dt className="text-muted-foreground">{typeLabel}</dt>
+            <dd>
+              <span className="border-border bg-muted inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide">
+                {projectTypeLabel}
+              </span>
+            </dd>
+          </div>
           <div className="flex flex-col gap-1">
             <dt className="text-muted-foreground">{periodLabel}</dt>
             <dd className="font-medium">

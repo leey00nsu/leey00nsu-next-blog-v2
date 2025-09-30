@@ -11,31 +11,26 @@ techStacks:
   - Tailwind CSS
   - Zustand
   - Nivo
+  - Stomp.js
 thumbnail: /public/projects/artfolio/artfolio.png
 draft: false
+type: team
 ---
 
 ## 프로젝트 소개
 
-Github 주소 : [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)
+GitHub : [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)
 
-아트폴리오는 AI 기반 예술품 경매 서비스입니다.
-사용자가 업로드한 그림을 AI를 통해 분석하고, 그림에 맞는 설명과 음성을 자동으로 생성합니다.
-프론트엔드 2명, 백엔드 2명, 디자이너 1명으로 진행되었으며 프론트엔드 및 팀장을 맡았습니다.
-삼육대학교 SW프로젝트 경진대회에서 장려상을 수상하였습니다.
+AI 기반 예술품 경매 서비스입니다. 사용자가 그림을 업로드하면 AI가 분석하여 설명과 음성을 자동 생성하고, 실시간 경매 시스템을 통해 거래할 수 있습니다.  
+삼육대학교 SW프로젝트 경진대회에서 장려상을 수상하였으며, 팀 프로젝트에서 **프론트엔드 개발과 팀장을 담당**했습니다.
 
 ## 주요 기능
 
-- 실시간 예술품 경매 리스트
-- 실시간 경매가 차트 그래프 제공
-- AI를 활용한 예술품 평가 차트 제공
+- 웹소켓(Stomp.js)을 활용한 실시간 예술품 경매 및 입찰
+- Nivo를 활용한 경매가 실시간 차트 시각화
+- AI 분석 기반 예술품 평가 및 설명 자동 생성
 
 ## 기술 스택
 
-### Frontend
-
-- 프레임워크: React
-- 언어: TypeScript
-- 스타일/UI: Tailwind CSS
-- 상태 관리: React Query (TanStack Query), Zustand
-- 차트: Nivo
+- Frontend: React, TypeScript, Tailwind CSS, Zustand, Nivo, Stomp.js
+- Backend: NestJS, PostgreSQL, Prisma

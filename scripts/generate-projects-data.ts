@@ -56,6 +56,7 @@ function mapFrontmatterToProject(
     techStacks: frontmatter.techStacks,
     thumbnail: frontmatter.thumbnail ?? null,
     draft: frontmatter.draft ?? false,
+    type: frontmatter.type,
     content,
     width: thumbnailMetadata?.width ?? 0,
     height: thumbnailMetadata?.height ?? 0,

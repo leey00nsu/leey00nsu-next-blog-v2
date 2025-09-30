@@ -11,7 +11,12 @@
       "viewDetailAria": "Open detail page for {project}",
       "inProgress": "In Progress",
       "duration": "Duration",
-      "techStack": "Tech Stack"
+      "techStack": "Tech Stack",
+      "type": {
+        "label": "Project Type",
+        "team": "Team Project",
+        "solo": "Solo Project"
+      }
     }
   },
   "auth": {

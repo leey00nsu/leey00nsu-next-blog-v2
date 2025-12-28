@@ -1,4 +1,5 @@
 {
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "javascript.preferences.importModuleSpecifier": "shortest"
+  "javascript.preferences.importModuleSpecifier": "shortest",
+  "typescript.autoClosingTags": false
 }

@@ -10,11 +10,10 @@ function isSupportedLocale(locale: string | undefined): locale is SupportedLocal
   return LOCALES.SUPPORTED.includes(locale as SupportedLocale)
 }
 
-export default getRequestConfig(async ({ requestLocale }) => {
+export default getRequestConfig(async () => {
   const store = await cookies()
   const cookieLocale = store.get('locale')?.value
-  const requestedLocale = await requestLocale
-  const localeCandidate = requestedLocale ?? cookieLocale ?? LOCALES.DEFAULT
+  const localeCandidate = cookieLocale ?? LOCALES.DEFAULT
   const locale = isSupportedLocale(localeCandidate)
     ? localeCandidate
     : LOCALES.DEFAULT

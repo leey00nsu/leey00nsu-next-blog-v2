@@ -10,7 +10,12 @@ const mockPost: Post = {
     writer: 'Author',
     tags: ['react', 'typescript'],
     section: 'blog',
-    locale: 'ko',
+    series: null,
+    thumbnail: null,
+    draft: false,
+    content: '',
+    width: 160,
+    height: 160,
 }
 
 const meta: Meta<typeof DefaultThumbnail> = {

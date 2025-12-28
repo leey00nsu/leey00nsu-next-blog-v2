@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 const PORT = process.env.PORT || 3000
 const BASE_URL = `http://localhost:${PORT}`
+const WEB_SERVER_TIMEOUT = 120_000
 
 export default defineConfig({
   testDir: './e2e',
@@ -24,6 +25,6 @@ export default defineConfig({
     command: `pnpm dev --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: true,
-    timeout: 120000,
+    timeout: WEB_SERVER_TIMEOUT,
   },
 })

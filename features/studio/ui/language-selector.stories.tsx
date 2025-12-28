@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { action } from '@storybook/addon-actions'
 import { LanguageSelector } from './language-selector'
 import { NextIntlClientProvider } from 'next-intl'
 import { useState } from 'react'
@@ -51,14 +50,16 @@ export const Default: Story = {
     render: () => <LanguageSelectorDemo />,
 }
 
+const noop = () => { }
+
 export const KoreanToEnglish: Story = {
     render: () => (
         <NextIntlClientProvider locale="en" messages={messages}>
             <LanguageSelector
                 sourceLocale="ko"
-                onSourceChange={action('onSourceChange')}
+                onSourceChange={noop}
                 targetLocales={['en']}
-                onTargetsChange={action('onTargetsChange')}
+                onTargetsChange={noop}
             />
         </NextIntlClientProvider>
     ),
@@ -69,9 +70,9 @@ export const EnglishToKorean: Story = {
         <NextIntlClientProvider locale="en" messages={messages}>
             <LanguageSelector
                 sourceLocale="en"
-                onSourceChange={action('onSourceChange')}
+                onSourceChange={noop}
                 targetLocales={['ko']}
-                onTargetsChange={action('onTargetsChange')}
+                onTargetsChange={noop}
             />
         </NextIntlClientProvider>
     ),
@@ -82,9 +83,9 @@ export const AllTargetsSelected: Story = {
         <NextIntlClientProvider locale="en" messages={messages}>
             <LanguageSelector
                 sourceLocale="ko"
-                onSourceChange={action('onSourceChange')}
+                onSourceChange={noop}
                 targetLocales={['ko', 'en']}
-                onTargetsChange={action('onTargetsChange')}
+                onTargetsChange={noop}
             />
         </NextIntlClientProvider>
     ),

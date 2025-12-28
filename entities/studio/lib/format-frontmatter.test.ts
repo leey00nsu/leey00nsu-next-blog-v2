@@ -91,6 +91,6 @@ describe('formatFrontmatter', () => {
     const lines = result.split('\n')
 
     expect(lines[0]).toBe('---')
-    expect(lines[lines.length - 2]).toBe('---')
+    expect(lines.at(-2)).toBe('---')
   })
 })

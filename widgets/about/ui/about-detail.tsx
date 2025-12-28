@@ -10,19 +10,19 @@ interface AboutDetailProps {
   showDownloadButton?: boolean
 }
 
+function ProjectSectionSlot({ locale }: { locale: SupportedLocale }) {
+  return (
+    <div className="not-prose">
+      <ProjectSection locale={locale} />
+    </div>
+  )
+}
+
 export function AboutDetail({
   about,
   locale,
   showDownloadButton = true,
 }: AboutDetailProps) {
-  function ProjectSectionSlot() {
-    return (
-      <div className="not-prose">
-        <ProjectSection locale={locale} />
-      </div>
-    )
-  }
-
   return (
     <article className="prose prose-lg dark:prose-invert mx-auto">
       {showDownloadButton ? (
@@ -33,10 +33,10 @@ export function AboutDetail({
       <MdxRenderer
         content={about.content}
         components={{
-          ProjectSection: ProjectSectionSlot,
+          ProjectSection: () => <ProjectSectionSlot locale={locale} />,
         }}
       />
-      <ProjectSectionSlot />
+      <ProjectSectionSlot locale={locale} />
     </article>
   )
 }

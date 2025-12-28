@@ -25,15 +25,16 @@
 
 ## 2) 기술 스택 (Tech Stack)
 
-- 프레임워크: Next.js 15.5.2 (App Router), React 19.1.0
+- 프레임워크: Next.js 16.1.1 (App Router), React 19.1.0
 - 스타일/UI: Tailwind CSS 4, shadcn/ui
 - MDX: `next-mdx-remote`, `remark-gfm`, `remark-breaks`, `rehype-slug`, `rehype-pretty-code`
-- i18n: `next-intl` v3
+- i18n: `next-intl` v4
 - 에디터: `@mdxeditor/editor`
 - 인증: `next-auth@5`(GitHub Provider)
 - 번역/자동화: OpenAI SDK, Octokit(GitHub API)
 - 이미지/미디어: `sharp`, `lqip-modern`
 - 유틸: `gray-matter`, `zod`, `es-toolkit`, `lucide-react`, `react-hook-form`
+- 테스트: Vitest, Playwright, Storybook 10
 - 개발 도구: ESLint 9 (unicorn 플러그인), Prettier(+tailwind 플러그인), Husky, lint-staged
 
 ## 3) 설치 및 실행 (Getting Started)

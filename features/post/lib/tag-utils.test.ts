@@ -67,7 +67,6 @@ describe('parseSelectedTags', () => {
 
   it('params가 없으면 빈 배열을 반환한다', () => {
     expect(parseSelectedTags()).toEqual([])
-    expect(parseSelectedTags(undefined)).toEqual([])
   })
 
   it('tag 키가 없으면 빈 배열을 반환한다', () => {

@@ -2,7 +2,7 @@ import { auth } from '@/features/auth/lib/auth'
 import { ROUTES } from '@/shared/config/constants'
 import { NextResponse } from 'next/server'
 
-export const middleware = auth((req) => {
+export const proxy = auth((req) => {
   const { nextUrl } = req
   if (!nextUrl.pathname.startsWith(ROUTES.STUDIO)) return NextResponse.next()
   if (!req.auth) {

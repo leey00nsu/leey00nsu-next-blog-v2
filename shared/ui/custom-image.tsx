@@ -58,15 +58,6 @@ export function CustomImage({
     return beforeQuery.toLowerCase().endsWith('.svg')
   }, [src])
 
-  /*
-  const isGif = useMemo(() => {
-    if (!src) return false
-    if (typeof src !== 'string') return false
-    const beforeQuery = src.split('?')[0]
-    return beforeQuery.toLowerCase().endsWith('.gif')
-  }, [src])
-  */
-
   // src 변경 시 초기화, svg는 즉시 표시
   useEffect(() => {
     setIsMounted(isSvg)
@@ -75,8 +66,8 @@ export function CustomImage({
   const aspectRatioStyle =
     normalizedWidth && normalizedHeight
       ? ({
-          aspectRatio: `${normalizedWidth} / ${normalizedHeight}`,
-        } as const)
+        aspectRatio: `${normalizedWidth} / ${normalizedHeight}`,
+      } as const)
       : undefined
 
   const resolvedSizes = sizes ?? buildDefaultSizes(normalizedWidth)
@@ -123,7 +114,6 @@ export function CustomImage({
         width={normalizedWidth}
         height={normalizedHeight}
         src={src}
-        // loader={isGif ? gifImageLoader : undefined} // TODO: gif 변환 cpu 문제로 미지원
         onLoad={handleLoad}
         className={cn(
           'absolute inset-0 !m-0 h-full w-full object-contain',

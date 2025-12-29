@@ -7,7 +7,8 @@
     "predev": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
     "build": "next build",
     "prebuild": "pnpm run gen:post-thumbnails && pnpm run gen:posts && pnpm run gen:projects",
-    "start": "pnpm run playwright:install && next start",
+    "postbuild": "pnpm run gen:resume-pdf",
+    "start": "next start",
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
@@ -21,6 +22,7 @@
     "gen:post-thumbnails": "tsx scripts/generate-thumbnail-metadata.ts",
     "gen:posts": "tsx scripts/generate-posts-data.ts",
     "gen:projects": "tsx scripts/generate-projects-data.ts",
+    "gen:resume-pdf": "tsx scripts/generate-resume-pdf.ts",
     "playwright:install": "pnpm exec playwright install chromium"
   },
   "dependencies": {
@@ -29,6 +31,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@next/mdx": "^16.1.1",
     "@octokit/rest": "^21",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.1.5",
     "@radix-ui/react-dialog": "^1.1.4",

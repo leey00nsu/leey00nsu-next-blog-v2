@@ -78,6 +78,15 @@
   pnpm start
   ```
 
+  - Docker/Coolify 환경 빌드 명령어
+
+  ```bash
+  pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
+  ```
+
+  > `postbuild` 단계에서 임시 서버를 띄워 PDF를 자동 생성합니다.
+  > Playwright Chromium이 필요하므로 빌드 전에 설치해야 합니다.
+
 - 환경 변수(.env.local) 예시
 
 주의: 아래 값은 예시이며 실제 Key/Secret은 절대 커밋하지 마세요.
@@ -160,8 +169,9 @@ MDX_I18N_TARGETS=ko,en
   - 동작: `public/posts/{slug}`와 `public/about`를 스캔해 누락된 로케일의 MDX 파일을 생성합니다.
 
 - About · 프로젝트 PDF 다운로드
-  - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 누르면 `/api/pdf/resume`가 Playwright로 About + 프로젝트 상세 화면을 합친 포트폴리오 PDF를 생성합니다.
-  - 기본적으로 최초 생성 파일을 계속 재사용하며, 필요 시 `RESUME_PDF_CACHE_TTL`을 지정해 만료 시점을 설정할 수 있습니다. Playwright 런타임이 설치되어 있어야 합니다.
+  - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 클릭하면 포트폴리오 PDF를 다운로드합니다.
+  - PDF는 빌드 시점(`postbuild`)에 자동 생성되어 `public/pdf/portfolio-{locale}.pdf`에 저장됩니다.
+  - 빌드 시 Playwright Chromium이 필요합니다.
 
 ## 5) 프로젝트 구조 (Project Structure)
 

@@ -1,71 +1,20 @@
+/**
+ * Resume PDF API
+ *
+ * 빌드 시점에 생성된 PDF 파일을 반환합니다.
+ * PDF는 postbuild 단계에서 `pnpm run gen:resume-pdf` 스크립트로 생성됩니다.
+ * 저장 위치: public/pdf/portfolio-{locale}.pdf
+ */
+
 import fs from 'node:fs'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
-import { chromium } from 'playwright'
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
 export const runtime = 'nodejs'
 
-function locateChromiumExecutable(): string | null {
-  const explicit =
-    process.env.PLAYWRIGHT_EXECUTABLE_PATH ??
-    process.env.PUPPETEER_EXECUTABLE_PATH
-  if (explicit && fs.existsSync(explicit)) {
-    return explicit
-  }
-
-  const browsersRoot =
-    process.env.PLAYWRIGHT_BROWSERS_PATH ?? process.env.PLAYWRIGHT_CACHE_DIR
-
-  const searchRoots = [
-    // 사용자 지정 경로
-    ...(browsersRoot ? [browsersRoot] : []),
-    // 일반적인 캐시 경로
-    path.join(process.cwd(), 'node_modules', '.cache', 'playwright'),
-    '/app/.cache/playwright',
-    '/app/.cache/ms-playwright',
-    '/root/.cache/playwright',
-    '/root/.cache/ms-playwright',
-  ]
-
-  for (const root of searchRoots) {
-    if (!root || !fs.existsSync(root)) continue
-    const candidate = findLatestChromiumBinary(root)
-    if (candidate) return candidate
-  }
-
-  const builtin = chromium.executablePath()
-  if (builtin && fs.existsSync(builtin)) {
-    return builtin
-  }
-
-  return null
-}
-
-function findLatestChromiumBinary(root: string): string | null {
-  try {
-    const directories = fs
-      .readdirSync(root, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
-      .sort((a, b) => b.localeCompare(a))
-
-    for (const dir of directories) {
-      const candidatePaths = [
-        path.join(root, dir, 'chrome-linux', 'chrome'),
-        path.join(root, dir, 'chrome-linux64', 'chrome'),
-      ]
-
-      const match = candidatePaths.find((candidate) => fs.existsSync(candidate))
-      if (match) return match
-    }
-  } catch (error) {
-    console.warn('[pdf] failed to inspect playwright cache', root, error)
-  }
-
-  return null
-}
+const PDF_DIR = path.join(process.cwd(), 'public', 'pdf')
 
 function bufferToArrayBuffer(
   buffer: Uint8Array,
@@ -76,176 +25,36 @@ function bufferToArrayBuffer(
   )
 }
 
-function resolveBaseUrl(requestOrigin: string): string {
-  const authenticationUrlFromEnvironment = process.env.AUTH_URL
-  if (!authenticationUrlFromEnvironment) {
-    return requestOrigin
-  }
-
-  try {
-    const parsedUrl = new URL(authenticationUrlFromEnvironment)
-    return parsedUrl.origin
-  } catch (error) {
-    console.warn(
-      '[pdf] invalid AUTH_URL value, falling back to request origin',
-      authenticationUrlFromEnvironment,
-      error,
-    )
-    return requestOrigin
-  }
-}
-
 export async function GET(request: NextRequest) {
   const localeCookie = request.cookies.get('locale')?.value ?? null
   const locale = determineSupportedLocale([localeCookie])
+  const pdfFile = path.join(PDF_DIR, `portfolio-${locale}.pdf`)
 
-  const baseUrl = resolveBaseUrl(request.nextUrl.origin)
-  const targetUrl = new URL('/print/resume', baseUrl)
-  const targetHostname = targetUrl.hostname
-  const isSecureConnection = targetUrl.protocol === 'https:'
-
-  const cacheDir =
-    process.env.RESUME_PDF_CACHE_DIR ??
-    path.join(process.cwd(), '.next', 'cache', 'resume-pdf')
-  const cacheFile = path.join(cacheDir, `${locale}.pdf`)
-  const cacheTtlRaw = process.env.RESUME_PDF_CACHE_TTL
-  let cacheTtlMs: number | null = null
-
-  if (cacheTtlRaw !== undefined) {
-    const parsedTtl = Number(cacheTtlRaw)
-    if (Number.isFinite(parsedTtl) && parsedTtl > 0) {
-      cacheTtlMs = parsedTtl
-    } else {
-      console.warn(
-        '[pdf] invalid RESUME_PDF_CACHE_TTL value, falling back to infinite cache',
-        cacheTtlRaw,
-      )
-    }
-  }
-
-  await fsp.mkdir(cacheDir, { recursive: true })
-
-  if (fs.existsSync(cacheFile)) {
-    try {
-      const stat = await fsp.stat(cacheFile)
-      const isFresh =
-        cacheTtlMs === null || Date.now() - stat.mtimeMs <= cacheTtlMs
-      if (isFresh) {
-        const cachedBuffer = await fsp.readFile(cacheFile)
-        const cachedArrayBuffer = bufferToArrayBuffer(cachedBuffer)
-        return new NextResponse(cachedArrayBuffer as ArrayBuffer, {
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="portfolio-${locale}.pdf"`,
-            'Cache-Control': 'no-store',
-          },
-        })
-      }
-    } catch (error) {
-      console.warn('[pdf] failed to read cached resume pdf', cacheFile, error)
-    }
-  }
-
-  const executablePath = locateChromiumExecutable()
-  if (!executablePath) {
-    throw new Error(
-      'Chromium executable not found. Set PLAYWRIGHT_EXECUTABLE_PATH or ensure playwright downloaded Chromium.',
+  if (!fs.existsSync(pdfFile)) {
+    return NextResponse.json(
+      {
+        error: `PDF not found for locale: ${locale}. Run "pnpm run build" to generate.`,
+      },
+      { status: 404 },
     )
   }
 
-  const browser = await chromium.launch({
-    executablePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
-
-  let context: Awaited<ReturnType<typeof browser.newContext>> | null = null
-
   try {
-    context = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
-    })
-    await context.addCookies([
-      {
-        name: 'locale',
-        value: locale,
-        domain: targetHostname,
-        path: '/',
-        sameSite: 'Lax',
-        secure: isSecureConnection,
-        httpOnly: false,
-      },
-    ])
-    const page = await context.newPage()
-    await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
-    await page.emulateMedia({ media: 'screen' })
-    const baseHref = baseUrl
-
-    await page.evaluate((base: string) => {
-      const anchors = document.querySelectorAll('a[href]')
-      for (const anchor of anchors) {
-        const href = anchor.getAttribute('href')
-        if (!href) continue
-        if (href.startsWith('#')) {
-          anchor.removeAttribute('href')
-          continue
-        }
-        if (href.startsWith('/')) {
-          anchor.setAttribute('href', new URL(href, base).toString())
-        }
-        anchor.setAttribute('target', '_blank')
-        anchor.setAttribute('rel', 'noopener noreferrer')
-      }
-    }, baseHref)
-    await page.addStyleTag({
-      content: `
-        nav, footer, aside, [data-next-route-announcer], [data-nextjs-toolbox],
-        #__next_devtools_container, #__next-route-announcer, #__next_devtools_panel,
-        .nextjs-toast-container { display: none !important; }
-        body { background: white !important; }
-        main { padding: 0 !important; }
-      `,
-    })
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '15mm',
-        bottom: '15mm',
-        left: '15mm',
-        right: '15mm',
-      },
-    })
-
+    const pdfBuffer = await fsp.readFile(pdfFile)
     const pdfArrayBuffer = bufferToArrayBuffer(pdfBuffer)
 
-    try {
-      await fsp.writeFile(cacheFile, pdfBuffer)
-    } catch (error) {
-      console.warn('[pdf] failed to cache resume pdf', cacheFile, error)
-    }
-    const pdfBlob = new Blob([pdfArrayBuffer as ArrayBuffer], {
-      type: 'application/pdf',
-    })
-
-    return new NextResponse(pdfBlob, {
+    return new NextResponse(pdfArrayBuffer as ArrayBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="portfolio-${locale}.pdf"`,
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'public, max-age=86400',
       },
     })
   } catch (error) {
-    console.error('Failed to generate PDF', error)
+    console.error('[pdf] Failed to read PDF file:', error)
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { error: 'Failed to read PDF file' },
       { status: 500 },
     )
-  } finally {
-    if (context) {
-      await context.close()
-    }
-    await browser.close()
   }
 }

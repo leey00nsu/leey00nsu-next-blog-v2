@@ -77,6 +77,15 @@ Next.js-based personal blog with MDX multi-language support, in-browser Studio e
   pnpm start
   ```
 
+  - Docker/Coolify build command
+
+  ```bash
+  pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
+  ```
+
+  > The `postbuild` step starts a temporary server to auto-generate PDFs.
+  > Playwright Chromium must be installed before building.
+
 - .env.local example
 
 Note: The following is an example. Never commit real keys/secrets.
@@ -158,8 +167,9 @@ Tips
   - Behavior: Scans `public/posts/{slug}` and `public/about` and creates missing locale files.
 
 - Download About + project PDF
-  - Use the `Download PDF` button at the top of `/about` to hit `/api/pdf/resume`, which renders `/print/resume` via Playwright and combines About plus project detail content into a single portfolio PDF.
-  - The first generated file is reused indefinitely by default; set `RESUME_PDF_CACHE_TTL` to expire it on a schedule. Playwright runtime must be installed.
+  - Click the `Download PDF` button at the top of `/about` to download the portfolio PDF.
+  - PDFs are auto-generated at build time (`postbuild`) and saved to `public/pdf/portfolio-{locale}.pdf`.
+  - Playwright Chromium is required at build time.
 
 ## 5) Project Structure
 

@@ -20,6 +20,17 @@ import { LOCALES } from '@/shared/config/constants'
 import { LanguageSelector } from '@/features/studio/ui/language-selector'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { MdxClientRenderer } from '@/features/mdx/ui/mdx-client-renderer'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shared/ui/alert-dialog'
 
 const TiptapEditor = dynamic(
   () => import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
@@ -142,7 +153,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         pendingImages={pendingImages}
         onAddPendingImage={handleAddPendingImage}
       />
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           onClick={() => setShowPreview(!showPreview)}
@@ -151,20 +162,54 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
           {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
           {showPreview ? '미리보기 닫기' : '미리보기'}
         </Button>
-        <Button
-          disabled={
-            !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
-          }
-          onClick={save}
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="animate-spin" /> {t('actions.saving')}
-            </>
-          ) : (
-            t('actions.save')
-          )}
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              disabled={
+                !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
+              }
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin" /> {t('actions.saving')}
+                </>
+              ) : (
+                t('actions.save')
+              )}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>게시글 저장</AlertDialogTitle>
+              <AlertDialogDescription>
+                게시글을 GitHub에 커밋합니다. 계속하시겠습니까?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={save}>저장</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline">
+              {t('actions.logout')}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>로그아웃</AlertDialogTitle>
+              <AlertDialogDescription>
+                로그아웃하시겠습니까? 저장하지 않은 내용은 사라집니다.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={() => signOut()}>로그아웃</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       {showPreview && (
         <div className="border-border rounded-lg border">
@@ -196,7 +241,6 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
           </Tabs>
         </div>
       )}
-      <Button onClick={() => signOut()}>{t('actions.logout')}</Button>
     </div>
   )
 }

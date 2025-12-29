@@ -9,8 +9,9 @@ import { formatFrontmatter } from '@/entities/studio/lib/format-frontmatter'
 import { Button } from '@/shared/ui/button'
 import type { PendingImageMap } from '@/features/editor/model/types'
 import { collectUsedImageSrcs } from '@/features/editor/lib/image-utils'
-import { Loader2, Eye, EyeOff, Code, FileText } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Code, FileText, Save } from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
+import { useSaveLocal } from '@/features/studio/model/use-save-local'
 import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 import { useLocale } from 'next-intl'
 import { LOCALES } from '@/shared/config/constants'
@@ -46,6 +47,7 @@ export function Playground({
     const [isFrontmatterValid, setIsFrontmatterValid] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
     const editorRef = useRef<TiptapEditorMethods | null>(null)
+    const { isSaving, saveLocal } = useSaveLocal()
 
     // 언어 선택 상태
     const [sourceLocale, setSourceLocale] = useState<string>(currentLocale)
@@ -94,6 +96,17 @@ export function Playground({
         })
     }, [])
 
+    const handleSaveLocal = async () => {
+        const { filteredPending } = await saveLocal({
+            frontMatter,
+            bodyMarkdown,
+            finalMarkdown,
+            pendingImages,
+            sourceLocale,
+        })
+        setPendingImages(filteredPending)
+    }
+
     // 슬러그 변경 시: 마크다운 내 이미지 경로와 pendingImages 키를 모두 새 슬러그로 갱신
     useRemapImagesOnSlugChange({
         slug: frontMatter?.slug,
@@ -109,7 +122,7 @@ export function Playground({
         <div className="mx-auto flex max-w-4xl flex-col gap-6">
             <div className="bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 rounded-lg border p-4">
                 <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
-                    🎮 Playground 모드 - 커밋 없이 에디터를 테스트할 수 있습니다.
+                    🎮 Playground 모드 - 로컬에 저장하여 게시글을 미리 확인할 수 있습니다. (개발 환경 전용)
                 </p>
             </div>
 
@@ -148,17 +161,20 @@ export function Playground({
                 </Button>
                 <Button
                     disabled={
-                        !isFrontmatterValid || bodyMarkdown.trim().length === 0
+                        !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
                     }
-                    variant="secondary"
-                    onClick={() => {
-                        console.log('=== Final Markdown ===')
-                        console.log(finalMarkdown)
-                        console.log('=== Pending Images ===')
-                        console.log(Object.keys(pendingImages))
-                    }}
+                    onClick={handleSaveLocal}
+                    className="flex items-center gap-2"
                 >
-                    콘솔에 출력 (테스트용)
+                    {isSaving ? (
+                        <>
+                            <Loader2 className="animate-spin" size={16} /> 저장 중...
+                        </>
+                    ) : (
+                        <>
+                            <Save size={16} /> 로컬에 저장
+                        </>
+                    )}
                 </Button>
             </div>
 

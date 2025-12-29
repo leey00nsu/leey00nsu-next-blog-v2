@@ -11,13 +11,15 @@ import type { PendingImageMap } from '@/features/editor/model/types'
 import { collectUsedImageSrcs } from '@/features/editor/lib/image-utils'
 import { signOut } from 'next-auth/react'
 import { useCommitPost } from '@/features/studio/model/use-commit-post'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Code, FileText } from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
 import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 import { useTranslations } from 'next-intl'
 import { useLocale } from 'next-intl'
 import { LOCALES } from '@/shared/config/constants'
 import { LanguageSelector } from '@/features/studio/ui/language-selector'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { MdxClientRenderer } from '@/features/mdx/ui/mdx-client-renderer'
 
 const TiptapEditor = dynamic(
   () => import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
@@ -43,6 +45,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   const [frontMatter, setFrontMatter] = useState<Frontmatter | undefined>()
   const [pendingImages, setPendingImages] = useState<PendingImageMap>({})
   const [isFrontmatterValid, setIsFrontmatterValid] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const { isSaving, commitPost } = useCommitPost()
   const editorRef = useRef<TiptapEditorMethods | null>(null)
 
@@ -139,20 +142,60 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         pendingImages={pendingImages}
         onAddPendingImage={handleAddPendingImage}
       />
-      <Button
-        disabled={
-          !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
-        }
-        onClick={save}
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="animate-spin" /> {t('actions.saving')}
-          </>
-        ) : (
-          t('actions.save')
-        )}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setShowPreview(!showPreview)}
+          className="flex items-center gap-2"
+        >
+          {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
+          {showPreview ? '미리보기 닫기' : '미리보기'}
+        </Button>
+        <Button
+          disabled={
+            !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
+          }
+          onClick={save}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="animate-spin" /> {t('actions.saving')}
+            </>
+          ) : (
+            t('actions.save')
+          )}
+        </Button>
+      </div>
+      {showPreview && (
+        <div className="border-border rounded-lg border">
+          <Tabs defaultValue="rendered" className="w-full">
+            <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
+              <TabsTrigger
+                value="rendered"
+                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <FileText size={16} />
+                결과 미리보기
+              </TabsTrigger>
+              <TabsTrigger
+                value="mdx"
+                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Code size={16} />
+                MDX 미리보기
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="rendered" className="p-4">
+              <MdxClientRenderer content={bodyMarkdown} pendingImages={pendingImages} />
+            </TabsContent>
+            <TabsContent value="mdx" className="p-4">
+              <pre className="bg-muted overflow-auto rounded-lg p-4 text-sm whitespace-pre-wrap">
+                {finalMarkdown || '(내용 없음)'}
+              </pre>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
       <Button onClick={() => signOut()}>{t('actions.logout')}</Button>
     </div>
   )

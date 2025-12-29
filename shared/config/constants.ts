@@ -72,6 +72,7 @@ export const ROUTES = {
   AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
   API: {
     STUDIO_COMMIT: '/api/studio/commit' as Route,
+    STUDIO_SAVE_LOCAL: '/api/studio/save-local' as Route,
   },
 } as const
 

@@ -18,6 +18,8 @@ import { LOCALES } from '@/shared/config/constants'
 import { LanguageSelector } from '@/features/studio/ui/language-selector'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { MdxClientRenderer } from '@/features/mdx/ui/mdx-client-renderer'
+import { Checkbox } from '@/shared/ui/checkbox'
+import { Label } from '@/shared/ui/label'
 
 const TiptapEditor = dynamic(
     () => import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
@@ -46,6 +48,7 @@ export function Playground({
     const [pendingImages, setPendingImages] = useState<PendingImageMap>({})
     const [isFrontmatterValid, setIsFrontmatterValid] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
+    const [enableTranslation, setEnableTranslation] = useState(false)
     const editorRef = useRef<TiptapEditorMethods | null>(null)
     const { isSaving, saveLocal } = useSaveLocal()
 
@@ -103,6 +106,8 @@ export function Playground({
             finalMarkdown,
             pendingImages,
             sourceLocale,
+            enableTranslation,
+            targetLocales: targetLocales.filter((l) => l !== sourceLocale),
         })
         setPendingImages(filteredPending)
     }
@@ -150,7 +155,7 @@ export function Playground({
                 onAddPendingImage={handleAddPendingImage}
             />
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-4">
                 <Button
                     variant="outline"
                     onClick={() => setShowPreview(!showPreview)}
@@ -159,6 +164,16 @@ export function Playground({
                     {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
                     {showPreview ? '미리보기 닫기' : '미리보기'}
                 </Button>
+                <div className="flex items-center gap-2">
+                    <Checkbox
+                        id="enableTranslation"
+                        checked={enableTranslation}
+                        onCheckedChange={(checked) => setEnableTranslation(checked === true)}
+                    />
+                    <Label htmlFor="enableTranslation" className="text-sm cursor-pointer">
+                        저장 시 번역 포함
+                    </Label>
+                </div>
                 <Button
                     disabled={
                         !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
@@ -168,11 +183,11 @@ export function Playground({
                 >
                     {isSaving ? (
                         <>
-                            <Loader2 className="animate-spin" size={16} /> 저장 중...
+                            <Loader2 className="animate-spin" size={16} /> {enableTranslation ? '저장 및 번역 중...' : '저장 중...'}
                         </>
                     ) : (
                         <>
-                            <Save size={16} /> 로컬에 저장
+                            <Save size={16} /> {enableTranslation ? '로컬에 저장 (번역 포함)' : '로컬에 저장'}
                         </>
                     )}
                 </Button>

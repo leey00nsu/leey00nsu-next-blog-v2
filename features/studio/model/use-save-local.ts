@@ -12,6 +12,8 @@ interface SaveLocalArgs {
   finalMarkdown: string
   pendingImages: PendingImageMap
   sourceLocale?: string
+  enableTranslation?: boolean
+  targetLocales?: string[]
 }
 
 interface SaveLocalResult {
@@ -28,6 +30,8 @@ export function useSaveLocal() {
     finalMarkdown,
     pendingImages,
     sourceLocale,
+    enableTranslation,
+    targetLocales,
   }: SaveLocalArgs): Promise<SaveLocalResult> => {
     if (isSaving) return { ok: false, filteredPending: pendingImages }
 
@@ -60,6 +64,15 @@ export function useSaveLocal() {
         form.append(STUDIO.COMMIT_FIELDS.SOURCE_LOCALE, sourceLocale)
       }
 
+      if (enableTranslation) {
+        form.append('enableTranslation', 'true')
+        if (targetLocales && targetLocales.length > 0) {
+          for (const locale of targetLocales) {
+            form.append(STUDIO.COMMIT_FIELDS.TARGET_LOCALES, locale)
+          }
+        }
+      }
+
       for (const [path, entry] of Object.entries(filtered)) {
         const file = entry.file as File | undefined
         if (!file) continue
@@ -74,7 +87,11 @@ export function useSaveLocal() {
         return { ok: false, filteredPending: filtered }
       }
 
-      toast.success('로컬에 저장되었습니다. 목록에서 확인하려면 서버를 재시작하세요.')
+      toast.success(
+        enableTranslation
+          ? '로컬에 저장 및 번역되었습니다. 목록에서 확인하려면 서버를 재시작하세요.'
+          : '로컬에 저장되었습니다. 목록에서 확인하려면 서버를 재시작하세요.',
+      )
       return { ok: true, filteredPending: filtered }
     } catch (error) {
       console.error(error)

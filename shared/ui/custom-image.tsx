@@ -10,6 +10,11 @@ export interface CustomImageProps extends ImageProps {
   base64?: string
 }
 
+function isExternalUrl(src: ImageProps['src']): boolean {
+  if (typeof src !== 'string') return false
+  return src.startsWith('http://') || src.startsWith('https://')
+}
+
 export function CustomImage({
   alt,
   src,
@@ -30,6 +35,24 @@ export function CustomImage({
 
   const hasWidth = Number.isFinite(numberWidth) && numberWidth > 0
   const hasHeight = Number.isFinite(numberHeight) && numberHeight > 0
+
+  // 외부 이미지이고 width/height가 없는 경우 일반 img 태그 사용
+  const isExternal = isExternalUrl(src)
+  const needsFallback = isExternal && (!hasWidth || !hasHeight)
+
+  if (needsFallback) {
+    return (
+      <span className={cn('relative block w-full overflow-hidden', className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={typeof src === 'string' ? src : ''}
+          alt={alt}
+          className={cn('max-w-full h-auto rounded-lg', className)}
+          loading="lazy"
+        />
+      </span>
+    )
+  }
 
   if (hasHeight && numberHeight > IMAGE.MAX_RENDER_HEIGHT) {
     const heightRatio = IMAGE.MAX_RENDER_HEIGHT / numberHeight

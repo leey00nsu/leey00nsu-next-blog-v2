@@ -67,6 +67,7 @@ export const ROUTES = {
   ABOUT: '/about' as Route,
   PROJECTS: '/projects' as Route,
   STUDIO: '/studio' as Route,
+  PLAYGROUND: '/playground' as Route,
   AUTH_SIGNIN: '/auth/signin' as Route,
   AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
   API: {

@@ -1,0 +1,32 @@
+/**
+ * Tiptap 에디터 스타일
+ *
+ * 에디터 기본 스타일과 다크 모드를 지원합니다.
+ * prose 클래스를 사용하여 블로그와 동일한 스타일을 적용합니다.
+ *
+ * _Requirements: 9.1, 9.2_
+ */
+
+/* 플레이스홀더 스타일 */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  height: 0;
+}
+
+/* 선택된 이미지 스타일 */
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 선택 영역 스타일 */
+.ProseMirror ::selection {
+  background-color: oklch(0.7 0.1 250 / 30%);
+}
+
+.dark .ProseMirror ::selection {
+  background-color: oklch(0.5 0.15 250 / 40%);
+}

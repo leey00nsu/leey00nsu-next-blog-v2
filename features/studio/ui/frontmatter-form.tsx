@@ -74,8 +74,9 @@ export function FrontmatterForm({
   // 값 변경시 상위로 전달
   useEffect(() => {
     onChange?.(values as Frontmatter, errors)
-    onValidityChange?.(isValid)
   }, [
+    onChange,
+    errors,
     values.slug,
     values.title,
     values.description,
@@ -86,8 +87,12 @@ export function FrontmatterForm({
     values.thumbnail,
     values.draft,
     values.tags,
-    isValid,
   ])
+
+  // 유효성 변경시 상위로 전달 (별도 effect로 분리하여 렌더링 충돌 방지)
+  useEffect(() => {
+    onValidityChange?.(isValid)
+  }, [onValidityChange, isValid])
 
   const draft = watch('draft')
 

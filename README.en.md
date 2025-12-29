@@ -29,7 +29,7 @@ Next.js-based personal blog with MDX multi-language support, in-browser Studio e
 - Styling/UI: Tailwind CSS 4, shadcn/ui
 - MDX: `next-mdx-remote`, `remark-gfm`, `remark-breaks`, `rehype-slug`, `rehype-pretty-code`
 - i18n: `next-intl` v3
-- Editor: `@mdxeditor/editor`
+- Editor: Tiptap (Notion-style)
 - Auth: `next-auth@5` (GitHub provider)
 - Translation/Automation: OpenAI SDK, Octokit (GitHub API)
 - Images/Media: `sharp`, `lqip-modern`

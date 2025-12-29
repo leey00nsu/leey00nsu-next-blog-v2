@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { MDXEditorMethods } from '@mdxeditor/editor'
+import type { TiptapEditorMethods } from '@/features/editor/ui/tiptap-editor'
 import { FrontmatterForm } from '@/features/studio/ui/frontmatter-form'
 import { Frontmatter } from '@/entities/studio/model/frontmatter-schema'
 import { formatFrontmatter } from '@/entities/studio/lib/format-frontmatter'
@@ -19,8 +19,8 @@ import { useLocale } from 'next-intl'
 import { LOCALES } from '@/shared/config/constants'
 import { LanguageSelector } from '@/features/studio/ui/language-selector'
 
-const Editor = dynamic(
-  () => import('@/features/editor/ui/editor').then((m) => m.Editor),
+const TiptapEditor = dynamic(
+  () => import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
   {
     ssr: false,
     loading: () => (
@@ -44,7 +44,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
   const [pendingImages, setPendingImages] = useState<PendingImageMap>({})
   const [isFrontmatterValid, setIsFrontmatterValid] = useState(false)
   const { isSaving, commitPost } = useCommitPost()
-  const editorRef = useRef<MDXEditorMethods | null>(null)
+  const editorRef = useRef<TiptapEditorMethods | null>(null)
 
   // 언어 선택 상태
   const [sourceLocale, setSourceLocale] = useState<string>(currentLocale)
@@ -90,11 +90,13 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
     setPendingImages(filteredPending)
   }
 
-  const handleAddPendingImage = useCallback((path: string, file: File) => {
+  const handleAddPendingImage = useCallback((path: string, file: File, objectURL: string) => {
     setPendingImages((prev) => {
       const prevEntry = prev[path]
-      if (prevEntry) URL.revokeObjectURL(prevEntry.objectURL)
-      const objectURL = URL.createObjectURL(file)
+      // 이전 objectURL이 있고 새로운 것과 다르면 해제
+      if (prevEntry && prevEntry.objectURL !== objectURL) {
+        URL.revokeObjectURL(prevEntry.objectURL)
+      }
       return { ...prev, [path]: { file, objectURL } }
     })
   }, [])
@@ -129,7 +131,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         suggestionTags={existingTags}
         thumbnailChoices={thumbnailChoices}
       />
-      <Editor
+      <TiptapEditor
         editorRef={editorRef}
         value={markdown}
         fieldChange={setMarkdown}

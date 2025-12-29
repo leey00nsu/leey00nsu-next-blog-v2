@@ -51,6 +51,8 @@ export default async function OpenGraphImage({
             color: '#0f172a',
             textAlign: 'center',
             lineHeight: 1.2,
+            wordBreak: 'keep-all',
+            overflowWrap: 'break-word',
           }}
         >
           {title}
@@ -63,6 +65,8 @@ export default async function OpenGraphImage({
             color: '#0f172a',
             textAlign: 'center',
             lineHeight: 1.2,
+            wordBreak: 'keep-all',
+            overflowWrap: 'break-word',
           }}
         >
           {description}

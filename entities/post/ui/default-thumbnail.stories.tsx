@@ -46,6 +46,21 @@ export const LongTitle: Story = {
         post: {
             ...mockPost,
             title: 'This is a very long post title that should wrap nicely',
+            description: 'This is a longer description that demonstrates how the text wraps when there is more content to display',
+        },
+    },
+    render: (args) => (
+        <div className="h-40 w-40">
+            <DefaultThumbnail {...args} />
+        </div>
+    ),
+}
+
+export const NoDescription: Story = {
+    args: {
+        post: {
+            ...mockPost,
+            description: '',
         },
     },
     render: (args) => (

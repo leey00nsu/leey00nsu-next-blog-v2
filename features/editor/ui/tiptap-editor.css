@@ -30,3 +30,23 @@
 .dark .ProseMirror ::selection {
   background-color: oklch(0.5 0.15 250 / 40%);
 }
+
+/* 구분선 스타일 재정의 (핸들 위치 보정용) */
+.ProseMirror hr {
+  height: 1.5rem !important;
+  margin: 1rem 0 !important;
+  border: none !important;
+  position: relative;
+  opacity: 1 !important; /* prose 기본 스타일 덮어쓰기 */
+}
+
+.ProseMirror hr::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--border);
+  transform: translateY(-50%);
+}

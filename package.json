@@ -43,6 +43,7 @@
     "@tiptap/core": "^3.14.0",
     "@tiptap/extension-bubble-menu": "^3.14.0",
     "@tiptap/extension-code-block-lowlight": "^3.14.0",
+    "@tiptap/extension-drag-handle-react": "^3.14.0",
     "@tiptap/extension-image": "^3.14.0",
     "@tiptap/extension-link": "^3.14.0",
     "@tiptap/extension-placeholder": "^3.14.0",

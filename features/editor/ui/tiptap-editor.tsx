@@ -15,6 +15,7 @@ import {
   type Editor,
   type Extensions,
 } from '@tiptap/react'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
@@ -49,6 +50,14 @@ import { EditorBubbleMenu } from '@/features/editor/ui/bubble-menu'
 import { SlashCommandMenu } from '@/features/editor/ui/slash-command-menu'
 import { ImageDialog } from '@/features/editor/ui/image-dialog'
 import { buildUniquePath } from '@/features/editor/lib/image-utils'
+import { DragHandle } from '@tiptap/extension-drag-handle-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
+import { GripVertical, Trash2 } from 'lucide-react'
 
 const PLACEHOLDER_TEXT = "'/'를 입력하여 블록 추가..."
 
@@ -181,6 +190,15 @@ export function TiptapEditor({
     width?: number
     height?: number
   } | null>(null)
+
+  // 드래그 핸들 컨텍스트 메뉴 상태
+  const [dragHandleMenuOpen, setDragHandleMenuOpen] = useState(false)
+  const [dragHandleMenuPosition, setDragHandleMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  })
+  // 현재 호버된 노드의 위치 (공식 DragHandle의 onNodeChange에서 연동)
+  const [hoveredNodePos, setHoveredNodePos] = useState<number | null>(null)
 
   // 이미지 다이얼로그 열기 이벤트 리스너
   useEffect(() => {
@@ -517,9 +535,53 @@ export function TiptapEditor({
     [editor],
   )
 
+  // 블록 삭제 핸들러 (hoveredNodePos 기반)
+  const handleDeleteBlock = useCallback(() => {
+    if (!editor) return
+
+    // hoveredNodePos가 없으면 fallback으로 현재 selection 삭제
+    if (hoveredNodePos === null) {
+      console.warn('hoveredNodePos is null, trying fallback')
+      editor.chain().focus().selectParentNode().deleteSelection().run()
+      setDragHandleMenuOpen(false)
+      return
+    }
+
+    try {
+      const node = editor.state.doc.nodeAt(hoveredNodePos)
+      if (node) {
+        editor
+          .chain()
+          .focus()
+          .deleteRange({
+            from: hoveredNodePos,
+            to: hoveredNodePos + node.nodeSize,
+          })
+          .run()
+      }
+    } catch (error) {
+      console.error('블록 삭제 오류:', error)
+      editor.chain().focus().selectParentNode().deleteSelection().run()
+    }
+
+    setDragHandleMenuOpen(false)
+  }, [editor, hoveredNodePos])
+
+  // 드래그 핸들 onNodeChange 콜백 (안정화)
+  const handleNodeChange = useCallback(
+    ({ node, pos }: { node: ProseMirrorNode | null; pos: number }) => {
+      if (node) {
+        setHoveredNodePos(pos)
+      } else {
+        setHoveredNodePos(null)
+      }
+    },
+    [],
+  )
+
   return (
     <TiptapEditorContext.Provider value={contextValue}>
-      <div className="border-border bg-background relative rounded-lg border">
+      <div className="tiptap-wrapper border-border bg-background relative rounded-lg border">
         {editor && (
           <>
             {bubbleMenuOpen && (
@@ -558,6 +620,70 @@ export function TiptapEditor({
           onUpload={handleImageUpload}
           initialValues={editingImage || undefined}
         />
+
+        {/* 공식 DragHandle 컴포넌트 - 드래그 및 클릭 메뉴 */}
+        {editor && (
+          <DragHandle editor={editor} onNodeChange={handleNodeChange}>
+            {/* 드래그 핸들 UI - 클릭으로 메뉴, 드래그로 이동 */}
+            <button
+              className="flex h-6 w-6 cursor-grab items-center justify-center rounded hover:bg-gray-100 active:cursor-grabbing dark:hover:bg-gray-800"
+              onMouseDown={(e) => {
+                // 드래그 시작 위치 저장
+                const target = e.currentTarget as HTMLButtonElement
+                target.dataset.startX = String(e.clientX)
+                target.dataset.startY = String(e.clientY)
+              }}
+              onClick={(e) => {
+                // 클릭과 드래그 구분: 이동 거리가 5px 미만이면 클릭
+                const target = e.currentTarget as HTMLButtonElement
+                const startX = Number(target.dataset.startX || 0)
+                const startY = Number(target.dataset.startY || 0)
+                const distance = Math.sqrt(
+                  Math.pow(e.clientX - startX, 2) +
+                    Math.pow(e.clientY - startY, 2),
+                )
+                if (distance < 5) {
+                  // 핸들 버튼의 위치 저장
+                  const rect = target.getBoundingClientRect()
+                  setDragHandleMenuPosition({
+                    top: rect.bottom,
+                    left: rect.left,
+                  })
+                  setDragHandleMenuOpen(true)
+                }
+              }}
+              title="클릭으로 메뉴, 드래그로 이동"
+            >
+              <GripVertical className="h-4 w-4 text-gray-400" />
+            </button>
+          </DragHandle>
+        )}
+
+        {/* 드래그 핸들 컨텍스트 메뉴 (고정 위치) */}
+        <DropdownMenu
+          open={dragHandleMenuOpen}
+          onOpenChange={setDragHandleMenuOpen}
+        >
+          <DropdownMenuTrigger asChild>
+            <button
+              className="pointer-events-none fixed opacity-0"
+              style={{
+                top: dragHandleMenuPosition.top,
+                left: dragHandleMenuPosition.left,
+              }}
+              aria-hidden
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" sideOffset={4}>
+            <DropdownMenuItem
+              onClick={handleDeleteBlock}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              삭제
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </TiptapEditorContext.Provider>
   )

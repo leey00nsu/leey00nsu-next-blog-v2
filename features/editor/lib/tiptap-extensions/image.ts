@@ -125,6 +125,6 @@ export const CustomImage = Image.extend({
   inline: false,
   allowBase64: true,
   HTMLAttributes: {
-    class: 'rounded-lg max-w-full mx-auto',
+    class: 'rounded-lg max-w-full',
   },
 })

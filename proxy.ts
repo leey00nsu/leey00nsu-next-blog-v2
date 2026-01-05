@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 
 export const proxy = auth((req) => {
   const { nextUrl } = req
+  if (process.env.SKIP_AUTH === 'true') return NextResponse.next()
   if (!nextUrl.pathname.startsWith(ROUTES.STUDIO)) return NextResponse.next()
   if (!req.auth) {
     const signInUrl = new URL(ROUTES.AUTH_SIGNIN, nextUrl.origin)

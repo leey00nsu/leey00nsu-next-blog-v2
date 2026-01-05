@@ -2,7 +2,7 @@
  * 빌드 시점에 resume PDF를 생성하는 스크립트
  *
  * postbuild에서 실행되며:
- * 1. 임시로 Next.js 서버 시작 (포트 3001)
+ * 1. 임시로 Next.js 서버 시작 (기본 포트 3000, PDF_SERVER_PORT 환경변수로 변경 가능)
  * 2. Playwright로 /print/resume 페이지 렌더링
  * 3. 모든 로케일에 대해 PDF 생성
  * 4. 서버 종료
@@ -10,6 +10,7 @@
  * PDF는 public/pdf/portfolio-{locale}.pdf에 저장됩니다.
  */
 
+import 'dotenv/config'
 import { spawn, type ChildProcess } from 'node:child_process'
 import fs from 'node:fs'
 import { promises as fsp } from 'node:fs'
@@ -18,9 +19,9 @@ import { chromium } from 'playwright'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 
 const PDF_DIR = path.join(process.cwd(), 'public', 'pdf')
-const SERVER_PORT = 3001
+const SERVER_PORT = Number(process.env.PDF_SERVER_PORT ?? 3000)
 const BASE_URL = `http://localhost:${SERVER_PORT}`
-const SERVER_STARTUP_TIMEOUT_MS = 30000
+const SERVER_STARTUP_TIMEOUT_MS = 30_000
 const SERVER_STARTUP_CHECK_INTERVAL_MS = 500
 
 function locateChromiumExecutable(): string | null {
@@ -69,8 +70,24 @@ function findLatestChromiumBinary(root: string): string | null {
       const candidatePaths = [
         path.join(root, dir, 'chrome-linux', 'chrome'),
         path.join(root, dir, 'chrome-linux64', 'chrome'),
-        path.join(root, dir, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
-        path.join(root, dir, 'chrome-mac-arm64', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+        path.join(
+          root,
+          dir,
+          'chrome-mac',
+          'Chromium.app',
+          'Contents',
+          'MacOS',
+          'Chromium',
+        ),
+        path.join(
+          root,
+          dir,
+          'chrome-mac-arm64',
+          'Chromium.app',
+          'Contents',
+          'MacOS',
+          'Chromium',
+        ),
       ]
 
       const match = candidatePaths.find((candidate) => fs.existsSync(candidate))
@@ -86,10 +103,14 @@ function findLatestChromiumBinary(root: string): string | null {
 async function startServer(): Promise<ChildProcess> {
   console.log(`  Starting Next.js server on port ${SERVER_PORT}...`)
 
-  const serverProcess = spawn('pnpm', ['next', 'start', '-p', String(SERVER_PORT)], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false,
-  })
+  const serverProcess = spawn(
+    'pnpm',
+    ['next', 'start', '-p', String(SERVER_PORT)],
+    {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: false,
+    },
+  )
 
   serverProcess.stdout?.on('data', (data) => {
     const message = data.toString().trim()
@@ -113,7 +134,9 @@ async function startServer(): Promise<ChildProcess> {
     } catch {
       // 서버가 아직 준비되지 않음
     }
-    await new Promise((resolve) => setTimeout(resolve, SERVER_STARTUP_CHECK_INTERVAL_MS))
+    await new Promise((resolve) =>
+      setTimeout(resolve, SERVER_STARTUP_CHECK_INTERVAL_MS),
+    )
   }
 
   serverProcess.kill()
@@ -250,6 +273,7 @@ async function main(): Promise<void> {
   }
 }
 
+// eslint-disable-next-line unicorn/prefer-top-level-await -- CJS 형식에서 Top-level await 미지원
 void (async () => {
   try {
     await main()

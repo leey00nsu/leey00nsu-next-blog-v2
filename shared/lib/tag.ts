@@ -25,7 +25,7 @@ export function removeTag(list: string[], tag: string): string[] {
 export function availableSuggestions(
   current: string[],
   suggestions: string[] = [],
-  limit = TAG.SUGGESTION_LIMIT,
+  limit: number = TAG.SUGGESTION_LIMIT,
 ): string[] {
   const set = new Set(current.map((v) => v.toLowerCase()))
   return suggestions

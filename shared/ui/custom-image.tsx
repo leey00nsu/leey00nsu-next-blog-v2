@@ -2,7 +2,7 @@
 
 import { cn } from '@/shared/lib/utils'
 import Image, { ImageProps } from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { IMAGE } from '@/shared/config/constants'
 import { buildDefaultSizes } from '@/shared/ui/custom-image/lib/build-default-sizes'
 
@@ -30,6 +30,39 @@ export function CustomImage({
 }: CustomImageProps) {
   const [isMounted, setIsMounted] = useState(false)
 
+  // svg 여부 판단 (querystring 제거 후 확장자 비교) - hooks는 항상 최상단에
+  const isSvg = useMemo(() => {
+    if (!src) return false
+    if (typeof src !== 'string') return false
+    const beforeQuery = src.split('?')[0]
+    return beforeQuery.toLowerCase().endsWith('.svg')
+  }, [src])
+
+  // src 변경 시 초기화, svg는 즉시 표시
+  useEffect(() => {
+    setIsMounted(isSvg)
+  }, [isSvg, src])
+
+  // handleLoad를 useCallback으로 감싸서 안정화
+  const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
+    (event) => {
+      if (typeof onLoadProp === 'function') {
+        onLoadProp(event)
+      }
+      setIsMounted(true)
+    },
+    [onLoadProp],
+  )
+
+  const handleLoadingComplete = useCallback(() => {
+    setIsMounted(true)
+  }, [])
+
+  const handleError = useCallback(() => {
+    setIsMounted(true)
+  }, [])
+
+  // 계산된 값들
   let numberWidth = Number(width)
   let numberHeight = Number(height)
 
@@ -47,7 +80,7 @@ export function CustomImage({
         <img
           src={typeof src === 'string' ? src : ''}
           alt={alt}
-          className={cn('max-w-full h-auto rounded-lg', className)}
+          className={cn('h-auto max-w-full rounded-lg', className)}
           loading="lazy"
         />
       </span>
@@ -73,35 +106,15 @@ export function CustomImage({
   const normalizedWidth = hasWidth ? Math.round(numberWidth) : undefined
   const normalizedHeight = hasHeight ? Math.round(numberHeight) : undefined
 
-  // svg 여부 판단 (querystring 제거 후 확장자 비교)
-  const isSvg = useMemo(() => {
-    if (!src) return false
-    if (typeof src !== 'string') return false
-    const beforeQuery = src.split('?')[0]
-    return beforeQuery.toLowerCase().endsWith('.svg')
-  }, [src])
-
-  // src 변경 시 초기화, svg는 즉시 표시
-  useEffect(() => {
-    setIsMounted(isSvg)
-  }, [isSvg, src])
-
   const aspectRatioStyle =
     normalizedWidth && normalizedHeight
       ? ({
-        aspectRatio: `${normalizedWidth} / ${normalizedHeight}`,
-      } as const)
+          aspectRatio: `${normalizedWidth} / ${normalizedHeight}`,
+        } as const)
       : undefined
 
   const resolvedSizes = sizes ?? buildDefaultSizes(normalizedWidth)
   const resolvedLoading = priority ? undefined : (loadingProp ?? 'lazy')
-
-  const handleLoad: NonNullable<ImageProps['onLoad']> = (event) => {
-    if (typeof onLoadProp === 'function') {
-      onLoadProp(event)
-    }
-    setIsMounted(true)
-  }
 
   return (
     <span
@@ -138,6 +151,8 @@ export function CustomImage({
         height={normalizedHeight}
         src={src}
         onLoad={handleLoad}
+        onLoadingComplete={handleLoadingComplete}
+        onError={handleError}
         className={cn(
           'absolute inset-0 !m-0 h-full w-full object-contain',
           isMounted ? 'opacity-100 transition-opacity' : 'opacity-0',

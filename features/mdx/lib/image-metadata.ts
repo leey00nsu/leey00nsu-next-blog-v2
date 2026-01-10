@@ -3,9 +3,7 @@
 // Ref: https://kylepfromer.com/blog/nextjs-image-component-blog
 // Similiar structure to:
 // https://github.com/JS-DevTools/rehype-inline-svg/blob/master/src/inline-svg.ts
-import lqip from 'lqip-modern'
-import fs from 'node:fs/promises'
-import path from 'node:path'
+import { THUMBNAIL_METADATA } from '@/entities/post/config/thumbnail-metadata'
 import { Node } from 'unist'
 import { visit } from 'unist-util-visit'
 
@@ -45,19 +43,23 @@ function filterImageNode(node: ImageNode): boolean {
 
 /**
  * Adds the image's `height` and `width` to it's properties.
+ * Uses pre-generated metadata from thumbnail-metadata.generated.ts
  */
-export async function addMetadata(node: ImageNode): Promise<void> {
-  const buffer = await fs.readFile(
-    path.join(process.cwd(), '/public', node.properties.src),
-  )
+export function addMetadata(node: ImageNode): void {
+  const src = node.properties.src
+  // MDX에서 이미지 경로는 /posts/... 형식이므로 /public 접두사 추가
+  const publicPath = `/public${src}`
 
-  // lqip 이미지 라이브러리 plaiceholder 와 lqip-modern 중 lqip-modern이 더 퀄리티가 좋음
-  // const { base64, metadata } = await getPlaiceholder(buffer, { size: 10 });
-  const { metadata } = await lqip(buffer)
+  const metadata = THUMBNAIL_METADATA[publicPath]
 
-  node.properties.width = metadata.originalWidth
-  node.properties.height = metadata.originalHeight
-  node.properties.base64 = metadata.dataURIBase64
+  if (!metadata) {
+    console.warn(`⚠️ Image metadata not found: ${publicPath}`)
+    return
+  }
+
+  node.properties.width = metadata.width
+  node.properties.height = metadata.height
+  node.properties.base64 = metadata.base64
 }
 
 /**
@@ -65,7 +67,7 @@ export async function addMetadata(node: ImageNode): Promise<void> {
  * Read more about Next.js image: https://nextjs.org/docs/api-reference/next/image#layout
  */
 export function imageMetadata() {
-  return async function transformer(tree: Node): Promise<Node> {
+  return function transformer(tree: Node): Node {
     const imgNodes: ImageNode[] = []
 
     visit(tree, 'element', (node) => {
@@ -75,7 +77,7 @@ export function imageMetadata() {
     })
 
     for (const node of imgNodes) {
-      await addMetadata(node)
+      addMetadata(node)
     }
 
     return tree

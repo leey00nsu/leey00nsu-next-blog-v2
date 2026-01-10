@@ -70,6 +70,14 @@
         "ko": "Korean",
         "en": "English"
       }
+    },
+    "preview": {
+      "inline": "Preview",
+      "close": "Close Preview",
+      "newTab": "Preview in New Tab",
+      "banner": "This is a preview. The post is not published.",
+      "notFound": "Preview data not found.",
+      "expired": "Preview session has expired."
     }
   },
   "tagInput": {

@@ -11,8 +11,16 @@ import type { PendingImageMap } from '@/features/editor/model/types'
 import { collectUsedImageSrcs } from '@/features/editor/lib/image-utils'
 import { signOut } from 'next-auth/react'
 import { useCommitPost } from '@/features/studio/model/use-commit-post'
-import { Loader2, Eye, EyeOff, Code, FileText } from 'lucide-react'
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  Code,
+  FileText,
+  ExternalLink,
+} from 'lucide-react'
 import { useRemapImagesOnSlugChange } from '@/features/studio/model/use-remap-images-on-slug-change'
+import { useOpenPreviewNewTab } from '@/features/studio/model/use-open-preview-new-tab'
 import { FRONTMATTER_BLOCK_REGEX } from '@/shared/config/constants'
 import { useTranslations } from 'next-intl'
 import { useLocale } from 'next-intl'
@@ -33,7 +41,8 @@ import {
 } from '@/shared/ui/alert-dialog'
 
 const TiptapEditor = dynamic(
-  () => import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
+  () =>
+    import('@/features/editor/ui/tiptap-editor').then((m) => m.TiptapEditor),
   {
     ssr: false,
     loading: () => (
@@ -104,16 +113,26 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
     setPendingImages(filteredPending)
   }
 
-  const handleAddPendingImage = useCallback((path: string, file: File, objectURL: string) => {
-    setPendingImages((prev) => {
-      const prevEntry = prev[path]
-      // 이전 objectURL이 있고 새로운 것과 다르면 해제
-      if (prevEntry && prevEntry.objectURL !== objectURL) {
-        URL.revokeObjectURL(prevEntry.objectURL)
-      }
-      return { ...prev, [path]: { file, objectURL } }
-    })
-  }, [])
+  const handleAddPendingImage = useCallback(
+    (path: string, file: File, objectURL: string) => {
+      setPendingImages((prev) => {
+        const prevEntry = prev[path]
+        // 이전 objectURL이 있고 새로운 것과 다르면 해제
+        if (prevEntry && prevEntry.objectURL !== objectURL) {
+          URL.revokeObjectURL(prevEntry.objectURL)
+        }
+        return { ...prev, [path]: { file, objectURL } }
+      })
+    },
+    [],
+  )
+
+  // 새 탭에서 미리보기 열기
+  const { isOpeningPreview, openPreviewNewTab } = useOpenPreviewNewTab({
+    frontMatter,
+    bodyMarkdown,
+    pendingImages,
+  })
 
   // 슬러그 변경 시: 마크다운 내 이미지 경로와 pendingImages 키를 모두 새 슬러그로 갱신
   // - '/public/posts/{old}/...' -> '/public/posts/{next}/...'
@@ -160,13 +179,30 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
           className="flex items-center gap-2"
         >
           {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
-          {showPreview ? '미리보기 닫기' : '미리보기'}
+          {showPreview ? t('preview.close') : t('preview.inline')}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={openPreviewNewTab}
+          disabled={
+            !frontMatter || bodyMarkdown.trim().length === 0 || isOpeningPreview
+          }
+          className="flex items-center gap-2"
+        >
+          {isOpeningPreview ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <ExternalLink size={16} />
+          )}
+          {t('preview.newTab')}
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               disabled={
-                !isFrontmatterValid || bodyMarkdown.trim().length === 0 || isSaving
+                !isFrontmatterValid ||
+                bodyMarkdown.trim().length === 0 ||
+                isSaving
               }
             >
               {isSaving ? (
@@ -193,9 +229,7 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
         </AlertDialog>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline">
-              {t('actions.logout')}
-            </Button>
+            <Button variant="outline">{t('actions.logout')}</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -206,7 +240,9 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>취소</AlertDialogCancel>
-              <AlertDialogAction onClick={() => signOut()}>로그아웃</AlertDialogAction>
+              <AlertDialogAction onClick={() => signOut()}>
+                로그아웃
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -217,21 +253,24 @@ export function Studio({ existingSlugs, existingTags }: StudioProps) {
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0">
               <TabsTrigger
                 value="rendered"
-                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                className="data-[state=active]:border-primary flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:bg-transparent"
               >
                 <FileText size={16} />
                 결과 미리보기
               </TabsTrigger>
               <TabsTrigger
                 value="mdx"
-                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                className="data-[state=active]:border-primary flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:bg-transparent"
               >
                 <Code size={16} />
                 MDX 미리보기
               </TabsTrigger>
             </TabsList>
             <TabsContent value="rendered" className="p-4">
-              <MdxClientRenderer content={bodyMarkdown} pendingImages={pendingImages} />
+              <MdxClientRenderer
+                content={bodyMarkdown}
+                pendingImages={pendingImages}
+              />
             </TabsContent>
             <TabsContent value="mdx" className="p-4">
               <pre className="bg-muted overflow-auto rounded-lg p-4 text-sm whitespace-pre-wrap">

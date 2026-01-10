@@ -7,7 +7,7 @@ description: Let's migrate data from Supabase Cloud to self-hosting.
 date: 2024-09-18
 section: blog
 series:
-thumbnail: /public/posts/migration-supabase/supabase.png
+thumbnail: /public/posts/migration-supabase/supabase.webp
 draft: false
 writer: leey00nsu
 ---
@@ -16,7 +16,7 @@ writer: leey00nsu
 
 ## Supabase
 
-![supabase](/public/posts/migration-supabase/supabase.png)
+![supabase](/public/posts/migration-supabase/supabase.webp)
 
 `Supabase` is an open-source backend service that helps developers easily build a complete backend. It is essentially a `BaaS` (Backend as a Service). Supabase is based on a `PostgreSQL` database and provides features such as real-time databases, authentication, storage, and automatic generation of RESTful APIs.
 
@@ -57,7 +57,7 @@ Once the basic self-hosted Supabase is set up, it's time to replace the contents
 
 Since Supabase uses `PostgreSQL` internally, we can proceed with the migration using `pg_dump` and `psql`.
 
-![table-old](/public/posts/migration-supabase/table-old.png)
+![table-old](/public/posts/migration-supabase/table-old.webp)
 
 The current blog view count table looks like this.
 
@@ -124,7 +124,7 @@ psql -U [YOUR_USER] -d postgres -f database-dump.sql
 
 If everything was processed correctly, you can check the self-hosted Supabase GUI to see that it has been applied successfully.
 
-![table-new](/public/posts/migration-supabase/table-new.png)
+![table-new](/public/posts/migration-supabase/table-new.webp)
 
 ## Conclusion
 

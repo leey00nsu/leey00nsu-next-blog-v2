@@ -7,7 +7,7 @@ description: Supabase 클라우드의 데이터를 셀프 호스팅으로 변경
 date: 2024-09-18
 section: blog
 series:
-thumbnail: /public/posts/migration-supabase/supabase.png
+thumbnail: /public/posts/migration-supabase/supabase.webp
 draft: false
 writer: leey00nsu
 ---
@@ -16,7 +16,7 @@ writer: leey00nsu
 
 ## Supabase
 
-![supabase](/public/posts/migration-supabase/supabase.png)
+![supabase](/public/posts/migration-supabase/supabase.webp)
 
 `Supabase`는 오픈 소스 백엔드 서비스로, 개발자가 손쉽게 전체 백엔드를 구축할 수 있도록 도와주는 `BaaS` 입니다.. 기본적으로 Supabase는 `PostgreSQL` 데이터베이스를 기반으로 하며, 실시간 데이터베이스, 인증, 스토리지, 그리고 RESTful API를 자동으로 생성해 주는 기능을 제공합니다.
 
@@ -57,7 +57,7 @@ Supabase는 Firebase와 비슷한 기능을 제공해주며, 특히 PostgreSQL�
 
 supabase는 내부적으로 `postgresql` 을 사용하기 때문에 `pg_dump`와 `psql`을 사용하여 마이그레이션을 진행할 수 있습니다.
 
-![table-old](/public/posts/migration-supabase/table-old.png)
+![table-old](/public/posts/migration-supabase/table-old.webp)
 
 현재 블로그 조회수 테이블은 다음과 같습니다.
 
@@ -125,7 +125,7 @@ psql -U [YOUR_USER] -d postgres -f database-dump.sql
 
 정상적으로 처리되었는지 셀프 호스팅된 supabase의 gui로 접속해보면 다음과 같이 잘 적용된 것을 볼 수 있습니다.
 
-![table-new](/public/posts/migration-supabase/table-new.png)
+![table-new](/public/posts/migration-supabase/table-new.webp)
 
 ## 결론
 

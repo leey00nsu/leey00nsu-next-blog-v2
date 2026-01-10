@@ -9,7 +9,7 @@ description: This post explains how to use React Query for handling asynchronous
 date: 2023-08-02
 section: blog
 series:
-thumbnail: /public/posts/why-use-react-query/query-structure.png
+thumbnail: /public/posts/why-use-react-query/query-structure.webp
 draft: false
 writer: leey00nsu
 ---
@@ -98,7 +98,7 @@ const { data, ...options } = useQuery(queryKey, queryFunction, options)
 
 Now, let's look at an example applied in the actual `artfolio` project.
 
-![description](/public/posts/why-use-react-query/description.png)
+![description](/public/posts/why-use-react-query/description.webp)
 
 The image above shows the auction detail page.
 
@@ -118,11 +118,11 @@ This issue was resolved by using the `queryKey`, which allows both components to
 
 To simplify the process, it can be described as follows.
 
-![query-structure](/public/posts/why-use-react-query/query-structure.png)
+![query-structure](/public/posts/why-use-react-query/query-structure.webp)
 
 When applied in practice, you can see that the auction page content (chart) changes simultaneously with the bid.
 
-![result](/public/posts/why-use-react-query/result.gif)
+![result](/public/posts/why-use-react-query/result.webp)
 
 ## Conclusion
 

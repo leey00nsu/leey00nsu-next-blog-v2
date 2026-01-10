@@ -10,7 +10,7 @@ description: This post explains how to implement Next.js CI/CD using Docker with
 date: 2024-05-09
 section: blog
 series:
-thumbnail: /public/posts/nextjs-github-action-ci-cd/oracle_cloud.png
+thumbnail: /public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp
 draft: false
 writer: leey00nsu
 ---
@@ -51,7 +51,7 @@ module.exports = {
 
 Additionally, the structure of the Oracle Cloud that I am currently operating is as follows:
 
-![oracle_cloud](/public/posts/nextjs-github-action-ci-cd/oracle_cloud.png)
+![oracle_cloud](/public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp)
 
 I am running Nginx in Docker, and since I am operating another project, I needed to connect the new Next.js project to the existing Nginx.
 
@@ -119,7 +119,7 @@ Once connected, the script is set up to execute the following processes:
 
 Now, whenever a new commit is registered, the actions we set up will be executed as follows.
 
-![actions_success](/public/posts/nextjs-github-action-ci-cd/actions_success.png)
+![actions_success](/public/posts/nextjs-github-action-ci-cd/actions_success.webp)
 
 Currently, my project takes about 3 minutes on average.
 

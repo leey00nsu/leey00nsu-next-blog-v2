@@ -8,7 +8,7 @@ description: Here are my thoughts on the project of creating my own Syu and Suho
 date: 2024-01-31
 section: blog
 series:
-thumbnail: /public/posts/syu-character-maker-retrospect/syu-character-maker.png
+thumbnail: /public/posts/syu-character-maker-retrospect/syu-character-maker.webp
 draft: false
 writer: leey00nsu
 ---
@@ -29,7 +29,7 @@ The idea was inspired by a project called [DevJeans](https://devjeans.dev-hee.co
 
 The original structure involved selecting the characters Syu and Suho and drawing on them with a solid color pen.
 
-![syu-character-maker](/public/posts/syu-character-maker-retrospect/syu-character-maker.png)
+![syu-character-maker](/public/posts/syu-character-maker-retrospect/syu-character-maker.webp)
 
 ### How Will I Enhance It?
 
@@ -106,7 +106,7 @@ I was also able to confirm that cookies were being transmitted correctly.
 
 However… **while conducting cross-browser testing, I discovered that cookies were not being transmitted in `safari`.**
 
-![safari-cookie-issue](/public/posts/syu-character-maker-retrospect/safari-cookie-issue.png)
+![safari-cookie-issue](/public/posts/syu-character-maker-retrospect/safari-cookie-issue.webp)
 
 Upon searching, I found that **even if `SameSite=none` is set, Safari's default settings have changed to prevent cookies from being transmitted between different domains.**
 
@@ -136,7 +136,7 @@ I also followed a well-organized [blog](https://sonhc.tistory.com/906) for the o
 
 The project was structured as follows:
 
-![project-structure](/public/posts/syu-character-maker-retrospect/project-structure.png)
+![project-structure](/public/posts/syu-character-maker-retrospect/project-structure.webp)
 
 I utilized `redis` as the session database along with `postgreSQL DB` in `nest`, and I made efforts to deploy easily using `docker` and `docker-compose`.
 
@@ -150,9 +150,9 @@ Of course, since the target user base is primarily students from the university,
 
 However, out of curiosity about how many people would use it, I added `Google Analytics` to measure from the day of deployment.
 
-![everytime](/public/posts/syu-character-maker-retrospect/everytime.png)
+![everytime](/public/posts/syu-character-maker-retrospect/everytime.webp)
 
-![analytics](/public/posts/syu-character-maker-retrospect/analytics.png)
+![analytics](/public/posts/syu-character-maker-retrospect/analytics.webp)
 
 After deploying on January 3rd, about `300` people accessed the site, but it was clear that after a few days post-deployment, it did not attract much interest.
 

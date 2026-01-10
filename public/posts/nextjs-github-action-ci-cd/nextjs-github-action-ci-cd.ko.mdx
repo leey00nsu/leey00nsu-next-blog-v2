@@ -10,7 +10,7 @@ description: github actions로 Docker를 이용해 Next.js CI/CD를 구현하는
 date: 2024-05-09
 section: blog
 series:
-thumbnail: /public/posts/nextjs-github-action-ci-cd/oracle_cloud.png
+thumbnail: /public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp
 draft: false
 writer: leey00nsu
 ---
@@ -51,7 +51,7 @@ module.exports = {
 
 또한 현재 제가 운영중인 Oracle Cloud의 구조는 다음과 같습니다.
 
-![oracle_cloud](/public/posts/nextjs-github-action-ci-cd/oracle_cloud.png)
+![oracle_cloud](/public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp)
 
 Nginx를 Docker에서 돌리고 있으며, 기존에 다른 프로젝트를 운영중이기 때문에 새롭게 배포할 Next.js 프로젝트도 해당 Nginx와 연결시켜주어야 했습니다.
 
@@ -121,7 +121,7 @@ main 브랜치에 새로운 커밋이 푸시되면 클라우드 인스턴스에 
 
 이제 새로운 커밋이 등록되면 다음과 같이 등록한 actions가 실행되게 됩니다.
 
-![actions_success](/public/posts/nextjs-github-action-ci-cd/actions_success.png)
+![actions_success](/public/posts/nextjs-github-action-ci-cd/actions_success.webp)
 
 현재 제 프로젝트에서는 평균 약 3분 정도 시간이 소요됩니다.
 

@@ -8,7 +8,7 @@ description: 나만의 수야, 수호 만들기 프로젝트를 배포하며 느
 date: 2024-01-31
 section: blog
 series:
-thumbnail: /public/posts/syu-character-maker-retrospect/syu-character-maker.png
+thumbnail: /public/posts/syu-character-maker-retrospect/syu-character-maker.webp
 draft: false
 writer: leey00nsu
 ---
@@ -29,7 +29,7 @@ writer: leey00nsu
 
 기존의 형태는 캐릭터인 수야, 수호를 선택하고 , 그 위에 단색 펜으로 그림을 그리는 구조였습니다.
 
-![syu-character-maker](/public/posts/syu-character-maker-retrospect/syu-character-maker.png)
+![syu-character-maker](/public/posts/syu-character-maker-retrospect/syu-character-maker.webp)
 
 ### 어떻게 고도화 할 것인가?
 
@@ -106,7 +106,7 @@ secure를 사용하려면 프로토콜이 https여야 하기 때문에 서버의
 
 하지만 … **크로스 브라우징 테스트를 하던 중 `safari`에서 쿠키가 전달이 안되고 있는 것을 발견했습니다.**
 
-![safari-cookie-issue](/public/posts/syu-character-maker-retrospect/safari-cookie-issue.png)
+![safari-cookie-issue](/public/posts/syu-character-maker-retrospect/safari-cookie-issue.webp)
 
 검색을 해보니, **safari 기본 설정에서는 `SameSite=none`을 해주었더라도 다른 도메인끼리 쿠키를 전달할 수 없도록 바뀌었다고 합니다.**
 
@@ -136,7 +136,7 @@ secure를 사용하려면 프로토콜이 https여야 하기 때문에 서버의
 
 프로젝트는 다음과 같은 구조를 가지도록 구성하였습니다.
 
-![project-structure](/public/posts/syu-character-maker-retrospect/project-structure.png)
+![project-structure](/public/posts/syu-character-maker-retrospect/project-structure.webp)
 
 `nest`에 `postgreSQL DB`와 세션 DB로 `redis`를 활용하였고 `도커`와 `도커 컴포즈`를 사용하여 쉽게 배포 하기 위해 노력했습니다.
 
@@ -150,9 +150,9 @@ secure를 사용하려면 프로토콜이 https여야 하기 때문에 서버의
 
 하지만 얼마나 많은 사람들이 이용해줄까 하는 호기심에 `구글 애널리틱스`를 추가하여 배포한 날로부터 측정하였습니다.
 
-![everytime](/public/posts/syu-character-maker-retrospect/everytime.png)
+![everytime](/public/posts/syu-character-maker-retrospect/everytime.webp)
 
-![analytics](/public/posts/syu-character-maker-retrospect/analytics.png)
+![analytics](/public/posts/syu-character-maker-retrospect/analytics.webp)
 
 1월 3일에 배포를 한 후, 약 `300`명 정도의 사람들이 접속하였지만 확실히 배포하고 며칠 뒤부터는 많은 관심을 끌지 못한 것을 볼 수 있습니다.
 

@@ -11,15 +11,15 @@ description: This article explains how to visualize data using the nivo library.
 date: 2023-08-07
 section: blog
 series:
-thumbnail: /public/posts/nivo-chart/result1.png
+thumbnail: /public/posts/nivo-chart/result1.webp
 draft: false
 writer: leey00nsu
 ---
 
 ## Visualizing Data with nivo Chart
 
-![result1](/public/posts/nivo-chart/result1.png)
-![result2](/public/posts/nivo-chart/result2.png)
+![result1](/public/posts/nivo-chart/result1.webp)
+![result2](/public/posts/nivo-chart/result2.webp)
 
 While working on the `artfolio` project, I needed to implement a graph to display `real-time auction prices` and `tags` as shown above.
 
@@ -39,7 +39,7 @@ According to the description, nivo is a React library that makes it easy to use 
 
 Since the real-time auction prices need to be drawn as a `line chart`, let's take a look at the Line section of nivo.
 
-![nivo-document](/public/posts/nivo-chart/nivo-document.png)
+![nivo-document](/public/posts/nivo-chart/nivo-document.webp)
 
 On the left, you can customize in real-time, while on the right, you can see the chart and the code.
 
@@ -47,7 +47,7 @@ To draw a line chart, you need the `ResponsiveLine` component, so you should ins
 
 After that, inserting the provided code will render an `svg` like the following.
 
-![line-example](/public/posts/nivo-chart/line-example.png)
+![line-example](/public/posts/nivo-chart/line-example.webp)
 
 By default, the chart is automatically drawn based on the dataset assigned to `data`.
 
@@ -153,7 +153,7 @@ Additionally, the chart gradient color overflows beyond the x-axis, so **at this
 
 The final image and code are as follows.
 
-![line-example2](/public/posts/nivo-chart/line-example2.png)
+![line-example2](/public/posts/nivo-chart/line-example2.webp)
 
 ```jsx title="LineChart"
 const LineChart = () => {
@@ -209,7 +209,7 @@ Similar to the line chart, to draw a pie chart, you need the `ResponsivePie` com
 
 After that, inserting the provided code will render a pie chart like the following.
 
-![pie-example](/public/posts/nivo-chart/pie-example.png)
+![pie-example](/public/posts/nivo-chart/pie-example.webp)
 
 By default, the chart is automatically drawn based on the dataset assigned to `data`.
 
@@ -223,7 +223,7 @@ Since I want to display the value with a %, I will format it as `${d.value}%`.
 
 The final image and code are as follows.
 
-![pie-example2](/public/posts/nivo-chart/pie-example2.png)
+![pie-example2](/public/posts/nivo-chart/pie-example2.webp)
 
 ```jsx title="PieChart"
 const PieChart = () => {

@@ -11,15 +11,15 @@ description: nivo 라이브러리를 사용하여 데이터를 시각화하는 �
 date: 2023-08-07
 section: blog
 series:
-thumbnail: /public/posts/nivo-chart/result1.png
+thumbnail: /public/posts/nivo-chart/result1.webp
 draft: false
 writer: leey00nsu
 ---
 
 ## nivo chart로 데이터 시각화하기
 
-![result1](/public/posts/nivo-chart/result1.png)
-![result2](/public/posts/nivo-chart/result2.png)
+![result1](/public/posts/nivo-chart/result1.webp)
+![result2](/public/posts/nivo-chart/result2.webp)
 
 `artfolio` 프로젝트를 진행하면서 위와 같이 `실시간 경매가`와 , `태그`를 표시할 그래프를 구현해야 했습니다.
 
@@ -39,7 +39,7 @@ writer: leey00nsu
 
 실시간 경매가는 `라인 차트`로 그려져야 하므로 , nivo의 Line 항목을 살펴보겠습니다.
 
-![nivo-document](/public/posts/nivo-chart/nivo-document.png)
+![nivo-document](/public/posts/nivo-chart/nivo-document.webp)
 
 좌측에는 실시간으로 커스터마이징 할 수 있게 되어있으며 , 오른쪽에 차트의 모습과 코드를 살펴볼 수 있습니다.
 
@@ -47,7 +47,7 @@ writer: leey00nsu
 
 그 후 제공되는 코드를 넣으면 다음과 같은 `svg` 가 그려집니다.
 
-![line-example](/public/posts/nivo-chart/line-example.png)
+![line-example](/public/posts/nivo-chart/line-example.webp)
 
 기본적으로 `data` 에 할당되는 데이터셋에 의하여 차트가 자동적으로 그려지게 됩니다.
 
@@ -154,7 +154,7 @@ point로 지정한 후 axisBottom에서 format을 이용해 , 시간을 `intl`�
 
 최종 이미지와 코드는 다음과 같습니다.
 
-![line-example2](/public/posts/nivo-chart/line-example2.png)
+![line-example2](/public/posts/nivo-chart/line-example2.webp)
 
 ```jsx title="LineChart"
 const LineChart = () => {
@@ -210,7 +210,7 @@ const LineChart = () => {
 
 그 후 제공되는 코드를 넣으면 다음과 같은 파이 차트가 그려집니다.
 
-![pie-example](/public/posts/nivo-chart/pie-example.png)
+![pie-example](/public/posts/nivo-chart/pie-example.webp)
 
 기본적으로 `data` 에 할당되는 데이터셋에 의하여 차트가 자동적으로 그려지게 됩니다.
 
@@ -224,7 +224,7 @@ const LineChart = () => {
 
 최종 이미지와 코드는 다음과 같습니다.
 
-![pie-example2](/public/posts/nivo-chart/pie-example2.png)
+![pie-example2](/public/posts/nivo-chart/pie-example2.webp)
 
 ```jsx title="PieChart"
 const PieChart = () => {

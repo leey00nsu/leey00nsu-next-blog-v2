@@ -2,7 +2,7 @@
 
 import { cn } from '@/shared/lib/utils'
 import Image, { ImageProps } from 'next/image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IMAGE } from '@/shared/config/constants'
 import { buildDefaultSizes } from '@/shared/ui/custom-image/lib/build-default-sizes'
 
@@ -28,9 +28,10 @@ export function CustomImage({
   onLoad: onLoadProp,
   ...props
 }: CustomImageProps) {
-  const [isMounted, setIsMounted] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const imgRef = useRef<HTMLImageElement | null>(null)
 
-  // svg 여부 판단 (querystring 제거 후 확장자 비교) - hooks는 항상 최상단에
+  // svg 여부 판단 (querystring 제거 후 확장자 비교)
   const isSvg = useMemo(() => {
     if (!src) return false
     if (typeof src !== 'string') return false
@@ -40,26 +41,28 @@ export function CustomImage({
 
   // src 변경 시 초기화, svg는 즉시 표시
   useEffect(() => {
-    setIsMounted(isSvg)
+    setIsLoaded(isSvg)
   }, [isSvg, src])
 
-  // handleLoad를 useCallback으로 감싸서 안정화
+  // 이미지가 이미 로드된 경우를 처리 (onLoad가 호출되지 않는 경우 대비)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setIsLoaded(true)
+    }
+  })
+
   const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
     (event) => {
       if (typeof onLoadProp === 'function') {
         onLoadProp(event)
       }
-      setIsMounted(true)
+      setIsLoaded(true)
     },
     [onLoadProp],
   )
 
-  const handleLoadingComplete = useCallback(() => {
-    setIsMounted(true)
-  }, [])
-
   const handleError = useCallback(() => {
-    setIsMounted(true)
+    setIsLoaded(true)
   }, [])
 
   // 계산된 값들
@@ -134,7 +137,7 @@ export function CustomImage({
           height={normalizedHeight}
           className={cn(
             'absolute inset-0 !m-0 h-full w-full object-contain opacity-100 blur-xs',
-            isMounted && 'opacity-0 transition-opacity',
+            isLoaded && 'opacity-0 transition-opacity',
             className,
           )}
           src={base64}
@@ -145,17 +148,17 @@ export function CustomImage({
 
       <Image
         {...props}
+        ref={imgRef}
         key={String(src)}
         alt={alt}
         width={normalizedWidth}
         height={normalizedHeight}
         src={src}
         onLoad={handleLoad}
-        onLoadingComplete={handleLoadingComplete}
         onError={handleError}
         className={cn(
           'absolute inset-0 !m-0 h-full w-full object-contain',
-          isMounted ? 'opacity-100 transition-opacity' : 'opacity-0',
+          isLoaded ? 'opacity-100 transition-opacity' : 'opacity-0',
           className,
         )}
         loading={resolvedLoading}

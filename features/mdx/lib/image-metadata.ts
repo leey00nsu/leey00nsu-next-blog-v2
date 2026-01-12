@@ -18,6 +18,7 @@ interface ImageNode extends Node {
     height?: number
     width?: number
     base64?: string
+    priority?: boolean
   }
 }
 
@@ -76,8 +77,12 @@ export function imageMetadata() {
       }
     })
 
-    for (const node of imgNodes) {
+    for (const [i, node] of imgNodes.entries()) {
       addMetadata(node)
+      // 첫 번째 이미지는 LCP일 가능성이 높으므로 priority 추가
+      if (i === 0) {
+        node.properties.priority = true
+      }
     }
 
     return tree

@@ -46,7 +46,7 @@ export const WithThumbnail: Story = {
     args: {
         post: {
             ...mockPost,
-            thumbnail: '/logo.png',
+            thumbnail: '/logo.webp',
         },
     },
     render: (args) => (

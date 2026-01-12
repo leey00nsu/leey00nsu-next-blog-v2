@@ -22,7 +22,7 @@ export default async function OpenGraphImage({
 
   // 로고를 파일 시스템에서 읽어 data URL로 변환
   const logoData = await readFile(
-    join(process.cwd(), 'public', 'logo.png'),
+    join(process.cwd(), 'public', 'logo.webp'),
     'base64',
   )
   const logoSrc = `data:image/png;base64,${logoData}`

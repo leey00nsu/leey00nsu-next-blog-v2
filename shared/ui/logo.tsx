@@ -20,7 +20,7 @@ export function Logo({ href = '/blog', className }: LogoProps) {
       )}
     >
       <Link href={href}>
-        <Image src="/logo.png" alt="logo" fill sizes="64px" priority />
+        <Image src="/logo.webp" alt="logo" fill sizes="64px" priority />
       </Link>
     </Button>
   )

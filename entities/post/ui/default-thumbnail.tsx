@@ -16,7 +16,7 @@ export function DefaultThumbnail({ post, className }: DefaultThumbnailProps) {
       )}
     >
       <Image
-        src="/logo.png"
+        src="/logo.webp"
         alt="logo"
         width={80}
         height={80}

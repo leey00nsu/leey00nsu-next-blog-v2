@@ -19,7 +19,7 @@ export default async function OpenGraphImage({
   const description = project?.summary ?? SITE.DEFAULT_DESCRIPTION
 
   const logoData = await readFile(
-    join(process.cwd(), 'public', 'logo.png'),
+    join(process.cwd(), 'public', 'logo.webp'),
     'base64',
   )
   const logoSrc = `data:image/png;base64,${logoData}`

@@ -565,7 +565,7 @@ export function TiptapEditor({
     }
 
     setDragHandleMenuOpen(false)
-  }, [editor, hoveredNodePos])
+  }, [editor, hoveredNodePos, setDragHandleMenuOpen])
 
   // 드래그 핸들 onNodeChange 콜백 (안정화)
   const handleNodeChange = useCallback(
@@ -576,7 +576,7 @@ export function TiptapEditor({
         setHoveredNodePos(null)
       }
     },
-    [],
+    [setHoveredNodePos],
   )
 
   return (

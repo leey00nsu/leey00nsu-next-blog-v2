@@ -14,6 +14,15 @@ import type { CommandProps } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { ImageNodeView } from '../../ui/image-node-view'
 
+// Tiptap Commands 인터페이스 확장
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    customImage: {
+      updateImage: (options: Partial<ImageAttributes>) => ReturnType
+    }
+  }
+}
+
 /**
  * 이미지 속성 인터페이스
  */

@@ -51,6 +51,9 @@ export async function generateMetadata({
       title: post.title,
       description: post.description ?? SITE.DEFAULT_DESCRIPTION,
       images: [ogImage],
+      publishedTime: post.date.toISOString(),
+      authors: [post.writer],
+      tags: post.tags,
     },
     twitter: {
       card: 'summary_large_image',

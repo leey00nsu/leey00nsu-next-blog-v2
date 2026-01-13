@@ -6,9 +6,10 @@ import {
 } from '@/entities/project/lib/project'
 import { ProjectDetail } from '@/widgets/project/ui/project-detail'
 import {
+  buildProjectHref,
+  buildProjectOgImagePath,
   SITE,
   SupportedLocale,
-  buildProjectOgImagePath,
 } from '@/shared/config/constants'
 import { getLocale } from 'next-intl/server'
 import { removePublic } from '@/shared/lib/remove-public'
@@ -43,6 +44,9 @@ export async function generateMetadata({
   return {
     title: project.title,
     description: project.summary ?? SITE.DEFAULT_DESCRIPTION,
+    alternates: {
+      canonical: buildProjectHref(slug),
+    },
     openGraph: {
       type: 'article',
       siteName: SITE.NAME,

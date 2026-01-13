@@ -4,6 +4,7 @@ import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
 import {
   buildBlogOgImagePath,
+  buildBlogPostHref,
   SITE,
   SupportedLocale,
 } from '@/shared/config/constants'
@@ -37,6 +38,9 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.description ?? SITE.DEFAULT_DESCRIPTION,
+    alternates: {
+      canonical: buildBlogPostHref(slug),
+    },
     openGraph: {
       type: 'article',
       siteName: SITE.NAME,

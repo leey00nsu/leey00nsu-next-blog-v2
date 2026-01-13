@@ -7,7 +7,8 @@ import { TocRegister } from '@/features/post/ui/toc-register'
 import { GiscusComments } from '@/features/post/ui/giscus-comments'
 import { TagList } from '@/features/post/ui/tag-list'
 import { ShareButton } from '@/features/post/ui/share-button'
-import { buildBlogTagHref } from '@/shared/config/constants'
+import { buildBlogTagHref, SITE } from '@/shared/config/constants'
+import { JsonLd } from '@/shared/ui/json-ld'
 
 interface PostDetailProps {
   post: Post
@@ -16,8 +17,26 @@ interface PostDetailProps {
 export function PostDetail({ post }: PostDetailProps) {
   const headings = getTableOfContents(post.content)
 
+  const jsonLdData = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date.toISOString(),
+    author: {
+      '@type': 'Person',
+      name: post.writer,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: SITE.NAME,
+    },
+    keywords: post.tags.join(', '),
+  }
+
   return (
     <div className="relative">
+      <JsonLd data={jsonLdData} />
       <TocRegister headings={headings} />
       <article className="prose prose-lg dark:prose-invert mx-auto">
         <div className="flex items-center gap-2">

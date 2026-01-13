@@ -40,6 +40,10 @@ export async function generateMetadata({
     description: post.description ?? SITE.DEFAULT_DESCRIPTION,
     alternates: {
       canonical: buildBlogPostHref(slug),
+      languages: {
+        ko: buildBlogPostHref(slug),
+        en: buildBlogPostHref(slug),
+      },
     },
     openGraph: {
       type: 'article',

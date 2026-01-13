@@ -46,6 +46,10 @@ export async function generateMetadata({
     description: project.summary ?? SITE.DEFAULT_DESCRIPTION,
     alternates: {
       canonical: buildProjectHref(slug),
+      languages: {
+        ko: buildProjectHref(slug),
+        en: buildProjectHref(slug),
+      },
     },
     openGraph: {
       type: 'article',

@@ -38,6 +38,7 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.description ?? SITE.DEFAULT_DESCRIPTION,
+    keywords: post.tags,
     alternates: {
       canonical: buildBlogPostHref(slug),
       languages: {

@@ -3,11 +3,14 @@ import { DefaultThumbnail } from '@/entities/post/ui/default-thumbnail'
 import { CustomImage } from '@/shared/ui/custom-image'
 import { removePublic } from '@/shared/lib/remove-public'
 
+const THUMBNAIL_SIZE = 160
+
 interface PostCardProps {
   post: Post
+  priority?: boolean
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, priority = false }: PostCardProps) {
   return (
     <div className="group hover:bg-muted/50 grid grid-cols-2 items-center gap-2 rounded-lg px-2 py-4 text-left text-sm transition-colors">
       <div className="flex flex-col gap-2 text-left">
@@ -35,6 +38,8 @@ export function PostCard({ post }: PostCardProps) {
             width={post.width}
             height={post.height}
             base64={post.blurDataURL}
+            sizes={`${THUMBNAIL_SIZE}px`}
+            priority={priority}
             className="h-full w-full object-cover object-center transition-all duration-200 group-hover:scale-110"
           />
         ) : (

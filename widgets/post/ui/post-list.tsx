@@ -11,10 +11,10 @@ interface PostListProps {
 export function PostList({ posts }: PostListProps) {
   return (
     <div className="flex flex-col divide-y">
-      {posts.map((post) => {
+      {posts.map((post, index) => {
         return (
           <Link key={post.slug} href={buildBlogPostHref(post.slug)}>
-            <PostCard post={post} />
+            <PostCard post={post} priority={index === 0} />
           </Link>
         )
       })}

@@ -1,16 +1,9 @@
 import { BREAKPOINTS, IMAGE } from '@/shared/config/constants'
-import { CUSTOM_IMAGE_SIZES } from '@/shared/ui/custom-image/config/constants'
 
 export function buildDefaultSizes(width?: number): string {
-  if (!width) {
-    return CUSTOM_IMAGE_SIZES.MOBILE
-  }
+  // prose 영역 최대 너비로 제한하여 불필요한 대용량 이미지 요청 방지
+  const maxWidth = IMAGE.MAX_RENDER_WIDTH
+  const clampedWidth = width ? Math.min(width, maxWidth) : maxWidth
 
-  const clampedWidth = Math.min(width, IMAGE.MAX_RENDER_WIDTH)
-  return `
-    (min-width: ${BREAKPOINTS.DESKTOP}px) ${clampedWidth}px,
-    ${CUSTOM_IMAGE_SIZES.MOBILE}
-  `
-    .replaceAll(/\s+/g, ' ')
-    .trim()
+  return `(min-width: ${BREAKPOINTS.DESKTOP}px) ${clampedWidth}px, min(100vw, ${maxWidth}px)`
 }

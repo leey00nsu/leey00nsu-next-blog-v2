@@ -56,8 +56,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from '@/shared/ui/dropdown-menu'
-import { GripVertical, Trash2 } from 'lucide-react'
+import {
+  GripVertical,
+  Trash2,
+  Pilcrow,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Code,
+  RefreshCw,
+} from 'lucide-react'
 
 const PLACEHOLDER_TEXT = "'/'를 입력하여 블록 추가..."
 
@@ -567,6 +583,64 @@ export function TiptapEditor({
     setDragHandleMenuOpen(false)
   }, [editor, hoveredNodePos, setDragHandleMenuOpen])
 
+  // 블록 타입 변환 핸들러
+  const handleConvertBlock = useCallback(
+    (
+      type:
+        | 'paragraph'
+        | 'heading'
+        | 'bulletList'
+        | 'orderedList'
+        | 'blockquote'
+        | 'codeBlock',
+      level?: number,
+    ) => {
+      if (!editor || hoveredNodePos === null) return
+
+      try {
+        // 해당 노드를 선택
+        editor.chain().focus().setNodeSelection(hoveredNodePos).run()
+
+        // 타입에 따라 변환
+        switch (type) {
+          case 'paragraph': {
+            editor.chain().focus().setParagraph().run()
+            break
+          }
+          case 'heading': {
+            editor
+              .chain()
+              .focus()
+              .setHeading({ level: (level || 1) as 1 | 2 | 3 | 4 | 5 | 6 })
+              .run()
+            break
+          }
+          case 'bulletList': {
+            editor.chain().focus().toggleBulletList().run()
+            break
+          }
+          case 'orderedList': {
+            editor.chain().focus().toggleOrderedList().run()
+            break
+          }
+          case 'blockquote': {
+            editor.chain().focus().toggleBlockquote().run()
+            break
+          }
+          case 'codeBlock': {
+            editor.chain().focus().toggleCodeBlock().run()
+            break
+          }
+        }
+      } catch (error) {
+        console.error('블록 변환 오류:', error)
+      }
+
+      setDragHandleMenuOpen(false)
+    },
+    [editor, hoveredNodePos, setDragHandleMenuOpen],
+  )
+
   // 드래그 핸들 onNodeChange 콜백 (안정화)
   const handleNodeChange = useCallback(
     ({ node, pos }: { node: ProseMirrorNode | null; pos: number }) => {
@@ -675,6 +749,69 @@ export function TiptapEditor({
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" sideOffset={4}>
+            {/* 블록 타입 변환 서브메뉴 */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                다음으로 변환
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('paragraph')}
+                >
+                  <Pilcrow className="mr-2 h-4 w-4" />
+                  텍스트
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('heading', 1)}
+                >
+                  <Heading1 className="mr-2 h-4 w-4" />
+                  제목 1
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('heading', 2)}
+                >
+                  <Heading2 className="mr-2 h-4 w-4" />
+                  제목 2
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('heading', 3)}
+                >
+                  <Heading3 className="mr-2 h-4 w-4" />
+                  제목 3
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('bulletList')}
+                >
+                  <List className="mr-2 h-4 w-4" />
+                  글머리 기호 목록
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('orderedList')}
+                >
+                  <ListOrdered className="mr-2 h-4 w-4" />
+                  번호 목록
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('blockquote')}
+                >
+                  <Quote className="mr-2 h-4 w-4" />
+                  인용문
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleConvertBlock('codeBlock')}
+                >
+                  <Code className="mr-2 h-4 w-4" />
+                  코드 블록
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+
+            {/* 삭제 버튼 */}
             <DropdownMenuItem
               onClick={handleDeleteBlock}
               className="text-destructive focus:text-destructive"

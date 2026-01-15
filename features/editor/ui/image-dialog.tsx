@@ -22,6 +22,7 @@ import {
   type ImageDialogFormValues,
 } from '@/features/editor/model/types'
 import { getObjectURLForPath } from '@/features/editor/model/pending-images-store'
+import type { PendingImageMap } from '@/features/editor/model/types'
 
 interface ImageDialogProps {
   open: boolean
@@ -41,6 +42,8 @@ interface ImageDialogProps {
     width?: number
     height?: number
   }
+  /** pendingImages에서 objectURL 조회용 */
+  pendingImages?: PendingImageMap
 }
 
 export function ImageDialog({
@@ -49,6 +52,7 @@ export function ImageDialog({
   onSubmit,
   onUpload,
   initialValues,
+  pendingImages,
 }: ImageDialogProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -65,12 +69,14 @@ export function ImageDialog({
     if (open && initialValues) {
       reset(initialValues)
       if (initialValues.src) {
-        // pendingImages에서 objectURL 찾기
-        const objectURL = getObjectURLForPath(initialValues.src)
+        // props로 받은 pendingImages에서 objectURL 찾기 (fallback: 전역 스토어)
+        const objectURL =
+          pendingImages?.[initialValues.src]?.objectURL ??
+          getObjectURLForPath(initialValues.src)
         setPreviewUrl(objectURL ?? initialValues.src)
       }
     }
-  }, [open, initialValues, reset])
+  }, [open, initialValues, reset, pendingImages])
 
   const handleClose = useCallback(() => {
     reset()
@@ -119,13 +125,18 @@ export function ImageDialog({
     }
   }, [fileList])
 
-  // URL 입력 시 미리보기
+  // URL 입력 시 미리보기 (pendingImages objectURL 우선 사용)
   const srcValue = watch('src')
   useEffect(() => {
     if (srcValue && !fileList?.length) {
-      setPreviewUrl(srcValue)
+      // pendingImages에서 objectURL 찾기 (fallback: 전역 스토어, 최종: 원본 src)
+      const objectURL =
+        pendingImages?.[srcValue]?.objectURL ??
+        getObjectURLForPath(srcValue) ??
+        srcValue
+      setPreviewUrl(objectURL)
     }
-  }, [srcValue, fileList])
+  }, [srcValue, fileList, pendingImages])
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -178,6 +189,7 @@ export function ImageDialog({
               <div className="space-y-2">
                 <Label>미리보기</Label>
                 <div className="overflow-hidden rounded-lg border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previewUrl}
                     alt="미리보기"

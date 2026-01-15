@@ -693,6 +693,7 @@ export function TiptapEditor({
           onSubmit={handleImageSubmit}
           onUpload={handleImageUpload}
           initialValues={editingImage || undefined}
+          pendingImages={pendingImages}
         />
 
         {/* 공식 DragHandle 컴포넌트 - 드래그 및 클릭 메뉴 */}

@@ -122,9 +122,13 @@ export function useStudioEditor(
     [pendingImages, usedSrcs],
   )
 
-  // 페이지 로드 시 임시 저장 데이터 확인
+  // 이미 복원 대화상자를 처리했는지 추적 (HMR/Strict Mode 중복 방지)
+  const hasCheckedDraftRef = useRef(false)
+
+  // 페이지 로드 시 임시 저장 데이터 확인 (한 번만 실행)
   useEffect(() => {
-    if (hasDraft) {
+    if (hasDraft && !hasCheckedDraftRef.current) {
+      hasCheckedDraftRef.current = true
       setShowRestoreDialog(true)
     }
   }, [hasDraft])

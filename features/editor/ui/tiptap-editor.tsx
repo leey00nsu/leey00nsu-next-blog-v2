@@ -49,7 +49,13 @@ import {
 import { EditorBubbleMenu } from '@/features/editor/ui/bubble-menu'
 import { SlashCommandMenu } from '@/features/editor/ui/slash-command-menu'
 import { ImageDialog } from '@/features/editor/ui/image-dialog'
+import { AIResultBlock } from '@/features/editor/ui/ai-result-block'
+import {
+  INITIAL_AI_STATE,
+  type AIResultState,
+} from '@/features/editor/model/ai-result-state'
 import { buildUniquePath } from '@/features/editor/lib/image-utils'
+import { toast } from 'sonner'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import {
   DropdownMenu,
@@ -215,6 +221,9 @@ export function TiptapEditor({
   })
   // 현재 호버된 노드의 위치 (공식 DragHandle의 onNodeChange에서 연동)
   const [hoveredNodePos, setHoveredNodePos] = useState<number | null>(null)
+
+  // AI 결과 블록 상태 (TiptapEditor에서 관리하여 버블 메뉴가 닫혀도 유지)
+  const [aiState, setAIState] = useState<AIResultState>(INITIAL_AI_STATE)
 
   // 이미지 다이얼로그 열기 이벤트 리스너
   useEffect(() => {
@@ -666,7 +675,11 @@ export function TiptapEditor({
                   left: bubbleMenuPosition.left,
                 }}
               >
-                <EditorBubbleMenu editor={editor} />
+                <EditorBubbleMenu
+                  editor={editor}
+                  aiState={aiState}
+                  onAIStateChange={setAIState}
+                />
               </div>
             )}
 
@@ -822,6 +835,102 @@ export function TiptapEditor({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* AI 결과 블록 (TiptapEditor에서 관리하여 버블 메뉴가 닫혀도 유지) */}
+        {aiState.isVisible && (
+          <div
+            className="fixed z-[9999]"
+            style={{
+              top: aiState.position.top,
+              left: aiState.position.left,
+              maxWidth: '500px',
+              minWidth: '300px',
+            }}
+          >
+            <AIResultBlock
+              isLoading={aiState.isLoading}
+              result={aiState.result}
+              error={aiState.error}
+              onReplace={() => {
+                if (!aiState.result || !editor) return
+                const { doc } = editor.state
+                const originalText = aiState.originalText
+                let foundPos: { from: number; to: number } | null = null
+                doc.descendants((node, pos) => {
+                  if (foundPos) return false
+                  if (node.isText && node.text) {
+                    const index = node.text.indexOf(originalText)
+                    if (index !== -1) {
+                      foundPos = {
+                        from: pos + index,
+                        to: pos + index + originalText.length,
+                      }
+                      return false
+                    }
+                  }
+                  return true
+                })
+                if (foundPos) {
+                  const { from, to } = foundPos
+                  editor
+                    .chain()
+                    .focus()
+                    .deleteRange({ from, to })
+                    .insertContentAt(from, aiState.result)
+                    .run()
+                  toast.success('텍스트가 교체되었습니다.')
+                } else {
+                  editor.chain().focus().insertContent(aiState.result).run()
+                  toast.info(
+                    '원본 텍스트를 찾지 못해 현재 위치에 삽입했습니다.',
+                  )
+                }
+                setAIState(INITIAL_AI_STATE)
+              }}
+              onInsertBelow={() => {
+                if (!aiState.result || !editor) return
+                const { doc } = editor.state
+
+                // 원본 텍스트가 포함된 블록의 끝 위치 찾기
+                const originalText = aiState.originalText
+                let blockEndPos: number | null = null
+
+                doc.descendants((node, pos) => {
+                  if (blockEndPos !== null) return false
+                  // 블록 레벨 노드 확인 (paragraph, heading 등)
+                  if (node.isBlock && node.textContent.includes(originalText)) {
+                    blockEndPos = pos + node.nodeSize
+                    return false
+                  }
+                  return true
+                })
+
+                // 새로운 paragraph로 삽입
+                const newParagraph = {
+                  type: 'paragraph',
+                  content: [{ type: 'text', text: aiState.result }],
+                }
+
+                if (blockEndPos !== null) {
+                  editor
+                    .chain()
+                    .focus()
+                    .insertContentAt(blockEndPos, newParagraph)
+                    .run()
+                  toast.success('텍스트가 새 블록으로 삽입되었습니다.')
+                } else {
+                  // fallback: 현재 위치에 새 paragraph 삽입
+                  editor.chain().focus().insertContent(newParagraph).run()
+                  toast.info(
+                    '원본 텍스트를 찾지 못해 현재 위치에 삽입했습니다.',
+                  )
+                }
+                setAIState(INITIAL_AI_STATE)
+              }}
+              onCancel={() => setAIState(INITIAL_AI_STATE)}
+            />
+          </div>
+        )}
       </div>
     </TiptapEditorContext.Provider>
   )

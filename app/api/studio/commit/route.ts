@@ -4,10 +4,14 @@ import { commitToGithub } from '@/features/studio/actions/commit-to-github'
 import { STUDIO } from '@/features/studio/config/constants'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 import { translateMdxWithOpenAI } from '@/features/studio/api/translate-mdx'
+import { requireAuth } from '@/shared/lib/auth/require-auth'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  const authResult = await requireAuth()
+  if (!authResult.authorized) return authResult.response
+
   try {
     const form = await req.formData()
 

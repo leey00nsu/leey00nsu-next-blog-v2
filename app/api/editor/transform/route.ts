@@ -4,6 +4,7 @@ import {
   AI_TEXT_ACTIONS,
   type AITextAction,
 } from '@/features/editor/config/constants'
+import { requireAuth } from '@/shared/lib/auth/require-auth'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,9 @@ interface TransformRequestBody {
 }
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth()
+  if (!authResult.authorized) return authResult.response
+
   try {
     const body = (await request.json()) as TransformRequestBody
     const { text, action, targetLocale } = body

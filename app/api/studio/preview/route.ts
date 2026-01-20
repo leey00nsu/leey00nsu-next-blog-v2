@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
+import { requireAuth } from '@/shared/lib/auth/require-auth'
 
 /**
  * 미리보기 세션 저장소 (메모리 기반)
@@ -52,6 +53,9 @@ const previewRequestSchema = z.object({
  * POST: 미리보기 데이터 저장 및 ID 발급
  */
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuth()
+  if (!authResult.authorized) return authResult.response
+
   try {
     const body = await request.json()
     const parsed = previewRequestSchema.safeParse(body)
@@ -93,6 +97,9 @@ export async function POST(request: NextRequest) {
  * GET: 저장된 미리보기 데이터 조회
  */
 export async function GET(request: NextRequest) {
+  const authResult = await requireAuth()
+  if (!authResult.authorized) return authResult.response
+
   const { searchParams } = new URL(request.url)
   const previewId = searchParams.get('id')
 

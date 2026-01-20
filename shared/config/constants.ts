@@ -7,7 +7,6 @@ export const PATHS = {
     PUBLIC_POSTS_DIR: 'public/posts',
     PUBLIC_PROJECTS_DIR: 'public/projects',
     ABOUT_MDX_BASENAME: 'public/about/about',
-    IMAGE_CACHE_DIR: '.next/cache/gif-webp',
   },
   URL: {
     // URL 기준(마크다운/이미지 경로에 쓰이는 접두사)

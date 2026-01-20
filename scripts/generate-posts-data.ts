@@ -68,7 +68,7 @@ async function readPost(
   )
 
   const resolvedBlurDataURL = hasThumbnailMetadata
-    ? thumbnailMetadata?.base64 ?? frontmatter.blurDataURL ?? undefined
+    ? (thumbnailMetadata?.base64 ?? frontmatter.blurDataURL ?? undefined)
     : undefined
 
   return {
@@ -86,6 +86,7 @@ async function readPost(
     content: mdx.content,
     width: thumbnailMetadata?.width ?? 0,
     height: thumbnailMetadata?.height ?? 0,
+    isAnimated: thumbnailMetadata?.isAnimated ?? false,
   }
 }
 

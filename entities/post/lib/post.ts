@@ -23,7 +23,8 @@ function resolveGeneratedPost(
 function hydratePost(record: GeneratedPostSerialized | undefined): Post | null {
   if (!record) return null
 
-  const { date, content, width, height, blurDataURL, ...rest } = record
+  const { date, content, width, height, blurDataURL, isAnimated, ...rest } =
+    record
 
   try {
     const frontmatter = PostMetaDataSchema.parse({
@@ -38,6 +39,7 @@ function hydratePost(record: GeneratedPostSerialized | undefined): Post | null {
       width,
       height,
       blurDataURL: blurDataURL || undefined,
+      isAnimated: isAnimated || false,
     }
   } catch (error) {
     console.error(`Error hydrating post for slug ${rest.slug}:`, error)

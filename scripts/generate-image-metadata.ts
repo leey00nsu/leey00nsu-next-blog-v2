@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import fssync from 'node:fs'
 import path from 'node:path'
 import lqipModern from 'lqip-modern'
+import sharp from 'sharp'
 import { PATHS } from '@/shared/config/constants'
 import {
   ThumbnailMetadata,
@@ -41,10 +42,15 @@ async function readImageMetadata(
       return null
     }
 
+    // sharp를 사용해 animated 이미지 감지 (pages > 1이면 animated)
+    const sharpMetadata = await sharp(imageBuffer).metadata()
+    const isAnimated = (sharpMetadata.pages ?? 1) > 1
+
     return {
       width: metadata.originalWidth ?? 0,
       height: metadata.originalHeight ?? 0,
       base64: metadata.dataURIBase64 ?? '',
+      isAnimated,
     }
   } catch (error) {
     console.warn(`⚠️  Failed to process image: ${imagePath}`, error)

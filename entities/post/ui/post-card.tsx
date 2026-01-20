@@ -40,6 +40,7 @@ export function PostCard({ post, priority = false }: PostCardProps) {
             base64={post.blurDataURL}
             sizes={`${THUMBNAIL_SIZE}px`}
             priority={priority}
+            isAnimated={post.isAnimated}
             className="h-full w-full object-cover object-center transition-all duration-200 group-hover:scale-110"
           />
         ) : (

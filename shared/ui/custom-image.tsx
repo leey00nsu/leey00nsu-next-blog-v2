@@ -8,6 +8,7 @@ import { buildDefaultSizes } from '@/shared/ui/custom-image/lib/build-default-si
 
 export interface CustomImageProps extends ImageProps {
   base64?: string
+  isAnimated?: boolean
 }
 
 function isExternalUrl(src: ImageProps['src']): boolean {
@@ -26,6 +27,7 @@ export function CustomImage({
   priority,
   sizes,
   onLoad: onLoadProp,
+  isAnimated,
   ...props
 }: CustomImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -164,6 +166,7 @@ export function CustomImage({
         loading={resolvedLoading}
         priority={priority}
         sizes={resolvedSizes}
+        unoptimized={isAnimated || isExternal}
       />
     </span>
   )

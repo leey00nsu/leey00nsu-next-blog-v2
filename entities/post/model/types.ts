@@ -20,6 +20,7 @@ export const PostSchema = z.object({
   content: z.string(),
   width: z.number(),
   height: z.number(),
+  isAnimated: z.boolean().optional(),
 })
 
 export type Post = z.infer<typeof PostSchema>
@@ -39,6 +40,7 @@ export interface GeneratedPostSerialized {
   content: string
   width: number
   height: number
+  isAnimated?: boolean
 }
 
 export type GeneratedPostsMap = Record<
@@ -50,6 +52,7 @@ export interface ThumbnailMetadata {
   width: number
   height: number
   base64: string
+  isAnimated?: boolean
 }
 
 export type ThumbnailMetadataMap = Record<string, ThumbnailMetadata>

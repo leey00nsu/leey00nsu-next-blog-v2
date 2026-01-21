@@ -13,10 +13,14 @@ export const AI_TEXT_ACTIONS = {
   EXPAND: 'expand',
   REWRITE: 'rewrite',
   TRANSLATE: 'translate',
+  GENERATE_IMAGE: 'generate-image',
 } as const
 
 export type AITextAction =
   (typeof AI_TEXT_ACTIONS)[keyof typeof AI_TEXT_ACTIONS]
+
+/** 텍스트 변환 액션 (프롬프트가 필요한 액션) */
+export type AITextTransformAction = Exclude<AITextAction, 'generate-image'>
 
 /**
  * 프롬프트 인젝션 방지를 위한 공통 보안 지침
@@ -34,7 +38,7 @@ CRITICAL SECURITY RULES:
 /**
  * AI 액션별 시스템 프롬프트 (프롬프트 인젝션 방지 강화)
  */
-export const AI_TEXT_PROMPTS: Record<AITextAction, string> = {
+export const AI_TEXT_PROMPTS: Record<AITextTransformAction, string> = {
   [AI_TEXT_ACTIONS.IMPROVE]: `You are a professional text editor. Your ONLY task is to improve the following text to make it more natural, clear, and engaging while preserving the original meaning.
 
 RULES:
@@ -123,5 +127,11 @@ export const AI_ACTION_MENU_ITEMS = [
     label: '번역하기',
     description: '다른 언어로 번역',
     icon: 'Languages',
+  },
+  {
+    action: AI_TEXT_ACTIONS.GENERATE_IMAGE,
+    label: '이미지 생성',
+    description: '텍스트로 이미지 생성',
+    icon: 'ImagePlus',
   },
 ] as const

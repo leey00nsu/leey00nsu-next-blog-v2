@@ -18,6 +18,7 @@
   - MDX 렌더링: GFM, 줄바꿈, 코드 하이라이트, 이미지 메타데이터 자동 주입(폭/높이·LQIP)
   - 다국어(i18n): `next-intl` + 로케일 별 MDX 파일 구조(`{slug}.{locale}.mdx`)
   - Studio: 브라우저에서 Frontmatter/본문 편집, 이미지 업로드·미리보기, 슬러그 변경 시 이미지 경로 일괄 리매핑, OpenAI 번역 후 다국어 파일 동시 커밋
+  - AI 이미지 생성: 에디터에서 텍스트 선택 후 AI로 이미지 생성, 어댑터 패턴으로 다양한 Provider 지원
   - 배포 파이프라인: GitHub API(Octokit)로 지정 브랜치에 MDX/이미지 커밋
   - 인증: GitHub OAuth(NextAuth v5) + 허용 사용자만 Studio 접근
   - PDF 내보내기: Playwright로 `/print/resume` 화면을 렌더링해 About · 프로젝트 상세를 하나의 포트폴리오 PDF로 다운로드
@@ -129,6 +130,9 @@ OPENAI_MDX_MODEL=gpt-5-mini
 # 선택: MDX 일괄 번역 스크립트 기본값
 MDX_I18N_SOURCE=ko
 MDX_I18N_TARGETS=ko,en
+
+# AI 이미지 생성 (LeesField API)
+LEESFIELD_API_KEY=<leesfield_api_key>
 ```
 
 설정 팁
@@ -150,6 +154,12 @@ MDX_I18N_TARGETS=ko,en
   5. Source/Target 로케일 선택(예: source=ko, targets=ko,en)
   6. 저장 → OpenAI 번역(타겟 로케일), MDX/이미지를 GitHub 브랜치로 커밋
   - 커밋 결과: `public/posts/{slug}/{slug}.{locale}.mdx` 및 이미지가 동일 폴더에 생성됩니다.
+
+- AI 이미지 생성
+  1. 에디터에서 이미지로 만들고 싶은 텍스트를 선택
+  2. AI 메뉴(✨) 클릭 → **이미지 생성** 선택
+  3. 생성된 이미지가 선택 텍스트 뒤에 자동 삽입됨
+  - 사전 조건: `LEESFIELD_API_KEY` 환경 변수 필요
 
 - 기존 MDX 일괄 번역 스크립트
   - 사전 조건: `OPENAI_API_KEY` 필요

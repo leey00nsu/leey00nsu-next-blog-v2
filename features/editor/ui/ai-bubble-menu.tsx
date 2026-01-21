@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Languages,
   Loader2,
+  ImagePlus,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ const ICON_MAP = {
   Expand,
   RefreshCw,
   Languages,
+  ImagePlus,
 } as const
 
 const LOCALE_LABELS: Record<SupportedLocale, string> = {
@@ -64,8 +66,111 @@ export function AIBubbleMenu({
 }: AIBubbleMenuProps) {
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  const handleImageGeneration = useCallback(async () => {
+    const { from, to } = editor.state.selection
+    const selectedText = editor.state.doc.textBetween(from, to)
+
+    if (!selectedText.trim()) {
+      toast.error('이미지 프롬프트로 사용할 텍스트를 선택해주세요.')
+      return
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
+    const { view } = editor
+    const coordsEnd = view.coordsAtPos(to)
+    const coordsStart = view.coordsAtPos(from)
+
+    onAIStateChange({
+      isVisible: true,
+      isLoading: true,
+      result: null,
+      error: null,
+      originalText: selectedText,
+      originalFrom: from,
+      originalTo: to,
+      position: { top: coordsEnd.bottom + 8, left: coordsStart.left },
+    })
+
+    try {
+      const response = await fetch('/api/editor/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: selectedText }),
+        signal: abortControllerRef.current.signal,
+      })
+
+      const result = await response.json()
+
+      if (!result.ok) {
+        onAIStateChange({
+          isVisible: true,
+          isLoading: false,
+          result: null,
+          error: result.error || '이미지 생성 중 오류가 발생했습니다.',
+          originalText: selectedText,
+          originalFrom: from,
+          originalTo: to,
+          position: { top: coordsEnd.bottom + 8, left: coordsStart.left },
+        })
+        return
+      }
+
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(to)
+        .insertContent({
+          type: 'image',
+          attrs: {
+            src: result.imageUrl,
+            alt: selectedText,
+            title: selectedText,
+          },
+        })
+        .run()
+
+      onAIStateChange({
+        isVisible: false,
+        isLoading: false,
+        result: null,
+        error: null,
+        originalText: '',
+        originalFrom: 0,
+        originalTo: 0,
+        position: { top: 0, left: 0 },
+      })
+
+      toast.success('이미지가 생성되었습니다.')
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
+      console.error('Image generation error:', error)
+      onAIStateChange({
+        isVisible: true,
+        isLoading: false,
+        result: null,
+        error: '이미지 생성 중 오류가 발생했습니다.',
+        originalText: selectedText,
+        originalFrom: from,
+        originalTo: to,
+        position: { top: coordsEnd.bottom + 8, left: coordsStart.left },
+      })
+    }
+  }, [editor, onAIStateChange])
+
   const handleAIAction = useCallback(
     async (action: AITextAction, targetLocale?: string) => {
+      // 이미지 생성은 별도 핸들러로 처리
+      if (action === AI_TEXT_ACTIONS.GENERATE_IMAGE) {
+        await handleImageGeneration()
+        return
+      }
+
       const { from, to } = editor.state.selection
       const selectedText = editor.state.doc.textBetween(from, to)
 
@@ -161,7 +266,7 @@ export function AIBubbleMenu({
         })
       }
     },
-    [editor, onAIStateChange],
+    [editor, onAIStateChange, handleImageGeneration],
   )
 
   const iconSize = 16
@@ -185,7 +290,9 @@ export function AIBubbleMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={8}>
         {AI_ACTION_MENU_ITEMS.filter(
-          (item) => item.action !== AI_TEXT_ACTIONS.TRANSLATE,
+          (item) =>
+            item.action !== AI_TEXT_ACTIONS.TRANSLATE &&
+            item.action !== AI_TEXT_ACTIONS.GENERATE_IMAGE,
         ).map((item) => {
           const IconComponent = ICON_MAP[item.icon as keyof typeof ICON_MAP]
 
@@ -233,6 +340,19 @@ export function AIBubbleMenu({
             ))}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+
+        {/* 이미지 생성 */}
+        <DropdownMenuItem
+          onClick={() => handleAIAction(AI_TEXT_ACTIONS.GENERATE_IMAGE)}
+          disabled={isLoading}
+          className="flex items-center gap-2"
+        >
+          <ImagePlus size={iconSize} />
+          <div className="flex flex-col">
+            <span>이미지 생성</span>
+            <span className="text-xs text-gray-500">텍스트로 이미지 생성</span>
+          </div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

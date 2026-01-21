@@ -202,6 +202,8 @@ export function TiptapEditor({
     top: 0,
     left: 0,
   })
+  // 선택 영역 위치 저장 (스크롤 시 재계산용)
+  const selectionFromRef = useRef<number | null>(null)
 
   // 이미지 다이얼로그 상태
   const [imageDialogOpen, setImageDialogOpen] = useState(false)
@@ -254,7 +256,7 @@ export function TiptapEditor({
   }, [])
 
   // 슬래시 커맨드 확장 생성 (한 번만 생성)
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+
   const slashCommandExtension = useMemo(
     () =>
       createSlashCommandExtension({
@@ -388,12 +390,14 @@ export function TiptapEditor({
         if (hasSelection) {
           const { view } = ed
           const coords = view.coordsAtPos(from)
+          selectionFromRef.current = from
           setBubbleMenuPosition({
             top: coords.top - 50,
             left: coords.left,
           })
           setBubbleMenuOpen(true)
         } else {
+          selectionFromRef.current = null
           setBubbleMenuOpen(false)
         }
       },
@@ -435,6 +439,51 @@ export function TiptapEditor({
       editor.view.dispatch(tr)
     }
   }, [editor, pendingImages])
+
+  // 스크롤 시 버블 메뉴 및 AI 결과 블록 위치 업데이트
+  useEffect(() => {
+    if (!editor) return
+    // 버블 메뉴 또는 AI 결과 블록이 열려있을 때만 리스너 등록
+    const shouldListen = bubbleMenuOpen || aiState.isVisible
+    if (!shouldListen) return
+
+    const updatePosition = () => {
+      // 버블 메뉴 위치 업데이트
+      if (bubbleMenuOpen && selectionFromRef.current !== null) {
+        const { view } = editor
+        const coords = view.coordsAtPos(selectionFromRef.current)
+        setBubbleMenuPosition({
+          top: coords.top - 50,
+          left: coords.left,
+        })
+      }
+
+      // AI 결과 블록 위치 업데이트
+      if (aiState.isVisible && aiState.originalTo > 0) {
+        const { view } = editor
+        const coordsEnd = view.coordsAtPos(aiState.originalTo)
+        const coordsStart = view.coordsAtPos(aiState.originalFrom)
+        setAIState((prev) => ({
+          ...prev,
+          position: {
+            top: coordsEnd.bottom + 8,
+            left: coordsStart.left,
+          },
+        }))
+      }
+    }
+
+    globalThis.addEventListener('scroll', updatePosition, true)
+    return () => {
+      globalThis.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [
+    bubbleMenuOpen,
+    editor,
+    aiState.isVisible,
+    aiState.originalTo,
+    aiState.originalFrom,
+  ])
 
   // 컨텍스트 값
   const contextValue: TiptapEditorContextValue = {
@@ -911,19 +960,19 @@ export function TiptapEditor({
                   content: [{ type: 'text', text: aiState.result }],
                 }
 
-                if (blockEndPos !== null) {
+                if (blockEndPos === null) {
+                  // fallback: 현재 위치에 새 paragraph 삽입
+                  editor.chain().focus().insertContent(newParagraph).run()
+                  toast.info(
+                    '원본 텍스트를 찾지 못해 현재 위치에 삽입했습니다.',
+                  )
+                } else {
                   editor
                     .chain()
                     .focus()
                     .insertContentAt(blockEndPos, newParagraph)
                     .run()
                   toast.success('텍스트가 새 블록으로 삽입되었습니다.')
-                } else {
-                  // fallback: 현재 위치에 새 paragraph 삽입
-                  editor.chain().focus().insertContent(newParagraph).run()
-                  toast.info(
-                    '원본 텍스트를 찾지 못해 현재 위치에 삽입했습니다.',
-                  )
                 }
                 setAIState(INITIAL_AI_STATE)
               }}

@@ -41,8 +41,16 @@ export async function transformTextWithOpenAI({
 
   const client = new OpenAI({ apiKey })
 
+  if (action === AI_TEXT_ACTIONS.GENERATE_IMAGE) {
+    return {
+      ok: false,
+      error: 'Image generation is not supported in text transformation API',
+    }
+  }
+
   // 번역 액션의 경우 타겟 언어를 프롬프트에 추가
-  let systemPrompt = AI_TEXT_PROMPTS[action]
+  // 상단 가드로 인해 action은 AITextTransformAction 타입으로 좁혀짐
+  let systemPrompt = AI_TEXT_PROMPTS[action as keyof typeof AI_TEXT_PROMPTS]
   if (action === AI_TEXT_ACTIONS.TRANSLATE && targetLocale) {
     systemPrompt = `${systemPrompt} Target language: ${targetLocale}.`
   }

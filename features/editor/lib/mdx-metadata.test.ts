@@ -81,7 +81,10 @@ describe('코드블록 메타데이터 보존 Property 테스트', () => {
           const codeBlock = parsed.content?.[0]
 
           expect(codeBlock?.type).toBe('codeBlock')
-          expect(codeBlock?.attrs?.language).toBe(language)
+
+          // 직렬화 시 언어가 없으면 'text'로 기본값이 설정됨
+          const expectedLanguage = language || 'text'
+          expect(codeBlock?.attrs?.language).toBe(expectedLanguage)
           expect(codeBlock?.attrs?.title).toBe(title)
         },
       ),

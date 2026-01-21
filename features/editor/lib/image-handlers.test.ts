@@ -27,7 +27,9 @@ const TEST_ITERATIONS = 100
 const slugArbitrary = fc.stringMatching(/^[a-z0-9-]{1,50}$/)
 
 // 유효한 파일명 생성 arbitrary
-const filenameArbitrary = fc.stringMatching(/^[a-zA-Z0-9._-]{1,30}\.(png|jpg|jpeg|gif|webp)$/)
+const filenameArbitrary = fc.stringMatching(
+  /^[a-zA-Z0-9._-]{1,30}\.(png|jpg|jpeg|gif|webp)$/,
+)
 
 // 간단한 파일명 arbitrary (sanitize 테스트용)
 const rawFilenameArbitrary = fc.string({ minLength: 1, maxLength: 50 })
@@ -69,7 +71,7 @@ describe('Property 5: 이미지 경로 생성 일관성', () => {
           if (slug) {
             expect(path).toContain(`/${slug}/`)
           } else {
-            expect(path).toContain('/.../') 
+            expect(path).toContain('/.../')
           }
         },
       ),
@@ -114,10 +116,16 @@ describe('Property 5: 이미지 경로 생성 일관성', () => {
         filenameArbitrary,
         (oldSlug, newSlug, filename) => {
           const originalPath = `${PUBLIC_POSTS_BASE}/${oldSlug}/${filename}`
-          const rewrittenPath = rewriteImagePathSlug(originalPath, oldSlug, newSlug)
+          const rewrittenPath = rewriteImagePathSlug(
+            originalPath,
+            oldSlug,
+            newSlug,
+          )
 
           // 새 슬러그로 변경됨
-          expect(rewrittenPath).toBe(`${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`)
+          expect(rewrittenPath).toBe(
+            `${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`,
+          )
 
           // 파일명은 유지됨
           expect(rewrittenPath.endsWith(filename)).toBe(true)
@@ -133,13 +141,14 @@ describe('Property 5: 이미지 경로 생성 일관성', () => {
         const tempPath = `${PUBLIC_POSTS_BASE}/.../` + filename
         const rewrittenPath = rewriteImagePathSlug(tempPath, null, newSlug)
 
-        expect(rewrittenPath).toBe(`${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`)
+        expect(rewrittenPath).toBe(
+          `${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`,
+        )
       }),
       { numRuns: TEST_ITERATIONS },
     )
   })
 })
-
 
 describe('Property 6: pendingImages 관리', () => {
   it('makeImageHandlers.imageUploadHandler는 고유한 경로를 생성하고 콜백을 호출한다', async () => {
@@ -177,28 +186,32 @@ describe('Property 6: pendingImages 관리', () => {
 
   it('makeImageHandlers.imagePreviewHandler는 pendingImages에 있는 경로를 objectURL로 변환한다', async () => {
     await fc.assert(
-      fc.asyncProperty(slugArbitrary, filenameArbitrary, async (slug, filename) => {
-        const testObjectURL = `blob:http://localhost/${Math.random()}`
-        const path = `${PUBLIC_POSTS_BASE}/${slug}/${filename}`
+      fc.asyncProperty(
+        slugArbitrary,
+        filenameArbitrary,
+        async (slug, filename) => {
+          const testObjectURL = `blob:http://localhost/${Math.random()}`
+          const path = `${PUBLIC_POSTS_BASE}/${slug}/${filename}`
 
-        const pendingImages: PendingImageMap = {
-          [path]: { objectURL: testObjectURL },
-        }
+          const pendingImages: PendingImageMap = {
+            [path]: { objectURL: testObjectURL },
+          }
 
-        const { imagePreviewHandler } = makeImageHandlers({
-          slug,
-          pendingImages,
-        })
+          const { imagePreviewHandler } = makeImageHandlers({
+            slug,
+            pendingImages,
+          })
 
-        // pendingImages에 있는 경로는 objectURL 반환
-        const result = await imagePreviewHandler(path)
-        expect(result).toBe(testObjectURL)
+          // pendingImages에 있는 경로는 objectURL 반환
+          const result = await imagePreviewHandler(path)
+          expect(result).toBe(testObjectURL)
 
-        // pendingImages에 없는 경로는 원본 반환
-        const unknownPath = `${PUBLIC_POSTS_BASE}/${slug}/unknown.png`
-        const unknownResult = await imagePreviewHandler(unknownPath)
-        expect(unknownResult).toBe(unknownPath)
-      }),
+          // pendingImages에 없는 경로는 원본 반환
+          const unknownPath = `${PUBLIC_POSTS_BASE}/${slug}/unknown.png`
+          const unknownResult = await imagePreviewHandler(unknownPath)
+          expect(unknownResult).toBe(unknownPath)
+        },
+      ),
       { numRuns: TEST_ITERATIONS },
     )
   })
@@ -210,6 +223,9 @@ describe('Property 6: pendingImages 관리', () => {
         slugArbitrary,
         fc.array(filenameArbitrary, { minLength: 1, maxLength: 5 }),
         (oldSlug, newSlug, filenames) => {
+          // 슬러그가 같으면 변경 전후가 동일하므로 not.toContain 검증이 실패함. 따라서 스킵.
+          fc.pre(oldSlug !== newSlug)
+
           const pendingImages: PendingImageMap = {}
 
           // 원본 pendingImages 생성
@@ -218,7 +234,11 @@ describe('Property 6: pendingImages 관리', () => {
             pendingImages[path] = { objectURL: `blob:${filename}` }
           }
 
-          const remapped = remapPendingImagesSlug(pendingImages, oldSlug, newSlug)
+          const remapped = remapPendingImagesSlug(
+            pendingImages,
+            oldSlug,
+            newSlug,
+          )
 
           // 모든 키가 새 슬러그로 변경됨
           for (const key of Object.keys(remapped)) {
@@ -227,7 +247,9 @@ describe('Property 6: pendingImages 관리', () => {
           }
 
           // 항목 수는 동일
-          expect(Object.keys(remapped).length).toBe(Object.keys(pendingImages).length)
+          expect(Object.keys(remapped).length).toBe(
+            Object.keys(pendingImages).length,
+          )
 
           // objectURL 값은 유지됨
           for (const filename of filenames) {
@@ -281,11 +303,19 @@ describe('Property 6: pendingImages 관리', () => {
           const safeAlt = altText.replaceAll(/[\[\]()]/g, '')
           const markdown = `# Title\n\n![${safeAlt}](${PUBLIC_POSTS_BASE}/${oldSlug}/${filename})\n\nSome text`
 
-          const rewritten = rewriteMarkdownImagePaths(markdown, oldSlug, newSlug)
+          const rewritten = rewriteMarkdownImagePaths(
+            markdown,
+            oldSlug,
+            newSlug,
+          )
 
           // 이미지 경로가 새 슬러그로 변경됨
-          expect(rewritten).toContain(`${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`)
-          expect(rewritten).not.toContain(`${PUBLIC_POSTS_BASE}/${oldSlug}/${filename}`)
+          expect(rewritten).toContain(
+            `${PUBLIC_POSTS_BASE}/${newSlug}/${filename}`,
+          )
+          expect(rewritten).not.toContain(
+            `${PUBLIC_POSTS_BASE}/${oldSlug}/${filename}`,
+          )
 
           // 다른 내용은 유지됨
           expect(rewritten).toContain('# Title')

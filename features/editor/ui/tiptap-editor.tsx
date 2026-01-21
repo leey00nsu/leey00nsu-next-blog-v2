@@ -58,6 +58,13 @@ import { buildUniquePath } from '@/features/editor/lib/image-utils'
 import { toast } from 'sonner'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  autoUpdate,
+} from '@floating-ui/react'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -198,12 +205,34 @@ export function TiptapEditor({
 
   // 버블 메뉴 상태
   const [bubbleMenuOpen, setBubbleMenuOpen] = useState(false)
-  const [bubbleMenuPosition, setBubbleMenuPosition] = useState({
-    top: 0,
-    left: 0,
-  })
   // 선택 영역 위치 저장 (스크롤 시 재계산용)
   const selectionFromRef = useRef<number | null>(null)
+
+  // 버블 메뉴 Floating UI - 가상 요소를 참조로 사용
+  const bubbleMenuReference = useRef<{
+    getBoundingClientRect: () => DOMRect
+  } | null>(null)
+  const {
+    refs: bubbleRefs,
+    floatingStyles: bubbleFloatingStyles,
+    update: updateBubblePosition,
+  } = useFloating({
+    open: bubbleMenuOpen,
+    placement: 'top-start',
+    middleware: [
+      offset(8),
+      flip({ fallbackPlacements: ['bottom-start', 'top-end', 'bottom-end'] }),
+      shift({ padding: 8 }),
+    ],
+    whileElementsMounted: autoUpdate,
+  })
+  // ESLint 우회: setFloating을 안정적인 콜백으로 감싸기
+  const setBubbleFloatingRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      bubbleRefs.setFloating(node)
+    },
+    [bubbleRefs],
+  )
 
   // 이미지 다이얼로그 상태
   const [imageDialogOpen, setImageDialogOpen] = useState(false)
@@ -226,6 +255,32 @@ export function TiptapEditor({
 
   // AI 결과 블록 상태 (TiptapEditor에서 관리하여 버블 메뉴가 닫혀도 유지)
   const [aiState, setAIState] = useState<AIResultState>(INITIAL_AI_STATE)
+
+  // AI 결과 블록 Floating UI
+  const aiResultReference = useRef<{
+    getBoundingClientRect: () => DOMRect
+  } | null>(null)
+  const {
+    refs: aiResultRefs,
+    floatingStyles: aiResultFloatingStyles,
+    update: updateAIResultPosition,
+  } = useFloating({
+    open: aiState.isVisible,
+    placement: 'bottom-start',
+    middleware: [
+      offset(8),
+      flip({ fallbackPlacements: ['top-start', 'bottom-end', 'top-end'] }),
+      shift({ padding: 8 }),
+    ],
+    whileElementsMounted: autoUpdate,
+  })
+  // ESLint 우회: setFloating을 안정적인 콜백으로 감싸기
+  const setAIResultFloatingRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      aiResultRefs.setFloating(node)
+    },
+    [aiResultRefs],
+  )
 
   // 이미지 다이얼로그 열기 이벤트 리스너
   useEffect(() => {
@@ -389,11 +444,18 @@ export function TiptapEditor({
 
         if (hasSelection) {
           const { view } = ed
-          const coords = view.coordsAtPos(from)
           selectionFromRef.current = from
-          setBubbleMenuPosition({
-            top: coords.top - 50,
-            left: coords.left,
+          // Floating UI 가상 참조 요소 설정
+          bubbleRefs.setReference({
+            getBoundingClientRect: () => {
+              const coords = view.coordsAtPos(from)
+              return new DOMRect(
+                coords.left,
+                coords.top,
+                0,
+                coords.bottom - coords.top,
+              )
+            },
           })
           setBubbleMenuOpen(true)
         } else {
@@ -440,36 +502,41 @@ export function TiptapEditor({
     }
   }, [editor, pendingImages])
 
-  // 스크롤 시 버블 메뉴 및 AI 결과 블록 위치 업데이트
+  // 스크롤 시 Floating UI 가상 참조 요소 업데이트
   useEffect(() => {
     if (!editor) return
-    // 버블 메뉴 또는 AI 결과 블록이 열려있을 때만 리스너 등록
     const shouldListen = bubbleMenuOpen || aiState.isVisible
     if (!shouldListen) return
 
     const updatePosition = () => {
-      // 버블 메뉴 위치 업데이트
+      // 버블 메뉴 가상 참조 요소 업데이트
       if (bubbleMenuOpen && selectionFromRef.current !== null) {
         const { view } = editor
-        const coords = view.coordsAtPos(selectionFromRef.current)
-        setBubbleMenuPosition({
-          top: coords.top - 50,
-          left: coords.left,
+        bubbleRefs.setReference({
+          getBoundingClientRect: () => {
+            const coords = view.coordsAtPos(selectionFromRef.current!)
+            return new DOMRect(
+              coords.left,
+              coords.top,
+              0,
+              coords.bottom - coords.top,
+            )
+          },
         })
+        updateBubblePosition()
       }
 
-      // AI 결과 블록 위치 업데이트
+      // AI 결과 블록 가상 참조 요소 업데이트
       if (aiState.isVisible && aiState.originalTo > 0) {
         const { view } = editor
-        const coordsEnd = view.coordsAtPos(aiState.originalTo)
-        const coordsStart = view.coordsAtPos(aiState.originalFrom)
-        setAIState((prev) => ({
-          ...prev,
-          position: {
-            top: coordsEnd.bottom + 8,
-            left: coordsStart.left,
+        aiResultRefs.setReference({
+          getBoundingClientRect: () => {
+            const coordsEnd = view.coordsAtPos(aiState.originalTo)
+            const coordsStart = view.coordsAtPos(aiState.originalFrom)
+            return new DOMRect(coordsStart.left, coordsEnd.bottom, 0, 0)
           },
-        }))
+        })
+        updateAIResultPosition()
       }
     }
 
@@ -483,6 +550,32 @@ export function TiptapEditor({
     aiState.isVisible,
     aiState.originalTo,
     aiState.originalFrom,
+    bubbleRefs,
+    aiResultRefs,
+    updateBubblePosition,
+    updateAIResultPosition,
+  ])
+
+  // aiState가 visible일 때 Floating UI 가상 참조 요소 설정
+  useEffect(() => {
+    if (!editor || !aiState.isVisible || aiState.originalTo <= 0) return
+
+    const { view } = editor
+    aiResultRefs.setReference({
+      getBoundingClientRect: () => {
+        const coordsEnd = view.coordsAtPos(aiState.originalTo)
+        const coordsStart = view.coordsAtPos(aiState.originalFrom)
+        return new DOMRect(coordsStart.left, coordsEnd.bottom, 0, 0)
+      },
+    })
+    updateAIResultPosition()
+  }, [
+    editor,
+    aiState.isVisible,
+    aiState.originalTo,
+    aiState.originalFrom,
+    aiResultRefs,
+    updateAIResultPosition,
   ])
 
   // 컨텍스트 값
@@ -718,11 +811,9 @@ export function TiptapEditor({
           <>
             {bubbleMenuOpen && (
               <div
-                className="fixed z-50 flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
-                style={{
-                  top: bubbleMenuPosition.top,
-                  left: bubbleMenuPosition.left,
-                }}
+                ref={setBubbleFloatingRef}
+                className="z-50 flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                style={bubbleFloatingStyles}
               >
                 <EditorBubbleMenu
                   editor={editor}
@@ -888,10 +979,10 @@ export function TiptapEditor({
         {/* AI 결과 블록 (TiptapEditor에서 관리하여 버블 메뉴가 닫혀도 유지) */}
         {aiState.isVisible && (
           <div
-            className="fixed z-[9999]"
+            ref={setAIResultFloatingRef}
+            className="z-[9999]"
             style={{
-              top: aiState.position.top,
-              left: aiState.position.left,
+              ...aiResultFloatingStyles,
               maxWidth: '500px',
               minWidth: '300px',
             }}

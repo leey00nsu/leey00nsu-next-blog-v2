@@ -30,7 +30,6 @@ import {
   useCallback,
   useState,
   useRef,
-  useMemo,
   type Ref,
   useImperativeHandle,
   useEffect,
@@ -310,71 +309,65 @@ export function TiptapEditor({
     }
   }, [])
 
-  // 슬래시 커맨드 확장 생성 (한 번만 생성)
+  // 슬러그 커맨드 확장 생성 (한 번만 생성)
 
-  const slashCommandExtension = useMemo(
-    () =>
-      createSlashCommandExtension({
-        render: () => {
-          let component: {
-            onKeyDown: (event: KeyboardEvent) => boolean
-          } | null = null
+  const slashCommandExtension = createSlashCommandExtension({
+    render: () => {
+      let component: {
+        onKeyDown: (event: KeyboardEvent) => boolean
+      } | null = null
 
-          return {
-            onStart: (props) => {
-              setSlashCommandOpen(true)
-              setSlashCommandItems(props.items)
+      return {
+        onStart: (props) => {
+          setSlashCommandOpen(true)
+          setSlashCommandItems(props.items)
 
-              const { view } = props.editor
-              const { from } = view.state.selection
-              const coords = view.coordsAtPos(from)
-              setSlashCommandPosition({
-                top: coords.bottom + 8,
-                left: coords.left,
-              })
+          const { view } = props.editor
+          const { from } = view.state.selection
+          const coords = view.coordsAtPos(from)
+          setSlashCommandPosition({
+            top: coords.bottom + 8,
+            left: coords.left,
+          })
 
-              component = {
-                onKeyDown: (event: KeyboardEvent) => {
-                  if (slashCommandRef.current) {
-                    return slashCommandRef.current.onKeyDown(event)
-                  }
-                  return false
-                },
+          component = {
+            onKeyDown: (event: KeyboardEvent) => {
+              if (slashCommandRef.current) {
+                return slashCommandRef.current.onKeyDown(event)
               }
-            },
-            onUpdate: (props) => {
-              setSlashCommandItems(props.items)
-
-              const { view } = props.editor
-              const { from } = view.state.selection
-              const coords = view.coordsAtPos(from)
-              setSlashCommandPosition({
-                top: coords.bottom + 8,
-                left: coords.left,
-              })
-            },
-            onKeyDown: (props) => {
-              if (props.event.key === 'Escape') {
-                setSlashCommandOpen(false)
-                return true
-              }
-              return component?.onKeyDown(props.event) ?? false
-            },
-            onExit: () => {
-              setSlashCommandOpen(false)
-              setSlashCommandItems([])
+              return false
             },
           }
         },
-      }),
-    [],
-  )
+        onUpdate: (props) => {
+          setSlashCommandItems(props.items)
+
+          const { view } = props.editor
+          const { from } = view.state.selection
+          const coords = view.coordsAtPos(from)
+          setSlashCommandPosition({
+            top: coords.bottom + 8,
+            left: coords.left,
+          })
+        },
+        onKeyDown: (props) => {
+          if (props.event.key === 'Escape') {
+            setSlashCommandOpen(false)
+            return true
+          }
+          return component?.onKeyDown(props.event) ?? false
+        },
+        onExit: () => {
+          setSlashCommandOpen(false)
+          setSlashCommandItems([])
+        },
+      }
+    },
+  })
 
   // 전체 확장 목록 (기본 확장 + 슬래시 커맨드)
-  const extensions = useMemo(
-    () => [...BASE_EXTENSIONS, slashCommandExtension],
-    [slashCommandExtension],
-  )
+
+  const extensions = [...BASE_EXTENSIONS, slashCommandExtension]
 
   // Tiptap 에디터 초기화
   const editor = useEditor(

@@ -1,7 +1,7 @@
 ---
 slug: leemage
 title: Leemage
-summary: OCI Object Storage–based image management platform, an alternative to Cloudinary
+summary: Multi-storage based file and image management platform
 period:
   start: 2025-05
   end: 2025-06
@@ -9,9 +9,13 @@ techStacks:
   - Next.js
   - TypeScript
   - Tailwind CSS
-  - Oracle Cloud Infrastructure
   - PostgreSQL
   - Prisma
+  - OCI Object Storage
+  - Cloudflare R2
+  - Sharp
+  - TanStack Query
+  - Zod
 thumbnail: /public/projects/leemage/logo.webp
 draft: false
 type: solo
@@ -20,19 +24,47 @@ type: solo
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
+Demo : [https://leemage.leey00nsu.com/](https://leemage.leey00nsu.com/)
 
-This is a self-hosted image management platform using Oracle Cloud Infrastructure (OCI) Object Storage.  
-It implements features similar to Cloudinary, enabling efficient project-level image management and providing developer-friendly APIs.
+When adding file upload features to side projects, cost became an issue.
+Since **OCI Object Storage / Cloudflare R2** offer free tiers with a certain amount of storage, I built a **self-hosted file management platform for cost savings** instead of using paid services like Cloudinary.
+Files can be organized by project and quickly integrated into other projects through external APIs and SDKs.
 
 ## Key Features
 
-- Image upload and management based on OCI Object Storage
-- Project-scoped image management and APIs
-- Responsive dashboard and intuitive UI
-- Scalability through FSD (Feature-Sliced Design) architecture
+- Project-based file upload/management: Supports all file extensions including images, videos, and documents
+- Image transformation options: Resize/format conversion
+- External API/SDK: RESTful API and TypeScript SDK
+- OpenAPI documentation automation: Auto-generate OpenAPI spec from Zod schemas
+- Multi-storage support: Choose between OCI Object Storage / Cloudflare R2
+- i18n support: Korean/English
+
+## Problem
+
+- **Server load on large file uploads**: Memory/network load spikes when files go through the server
+- **Multi-storage API differences**: OCI Object Storage and Cloudflare R2 have different API interfaces, requiring full code modification when switching providers
+- **Image size optimization**: Heavy image resizing/format conversion needed
+- **API documentation mismatch**: When managing API docs separately, inconsistencies between code and documentation can occur
+
+## Solution
+
+- **Presigned URL direct upload**: Clients upload directly to storage, eliminating server load
+- **Storage Adapter pattern**: Write provider-independent code with common interfaces, implement only adapters for new providers (OCP compliant)
+- **Sharp-based image transformation**: Parallel processing to generate multiple variants simultaneously, supporting lightweight next-gen formats like WebP/AVIF
+- **TypeScript SDK**: Abstract complex 3-step upload flow (presign → upload → confirm) into a single method
+- **OpenAPI auto-generation**: Auto-generate OpenAPI spec from Zod schemas for API documentation and type synchronization
+
+## Impact
+
+- **Server load**: 0% server load for file transfers with Presigned URL
+- **Image size optimization**: 50-60% reduction compared to original with WebP/AVIF conversion
+- **Cost savings**: Utilizing OCI, Cloudflare R2 Free Tier
+- **Integration ease**: Quick integration into external projects with TypeScript SDK
 
 ## Tech Stack
 
 - Frontend: Next.js, TypeScript, Tailwind CSS
-- Backend: PostgreSQL, Prisma, Next.js API Routes
-- Infra: Oracle Cloud Infrastructure (Object Storage)
+- Data/Validation: TanStack Query, Zod
+- Backend/DB: Next.js API Routes, Prisma, PostgreSQL
+- Image: Sharp
+- Infra: OCI Object Storage, Cloudflare R2

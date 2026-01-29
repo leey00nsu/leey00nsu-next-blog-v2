@@ -1,204 +1,309 @@
-# leey00nsu-next-blog-v2
+![leey00nsu-next-blog-v2 Logo](./public/logo.webp)
 
-![logo](./public/logo.webp)
+<h1 align="center">
+  <strong>leey00nsu-next-blog-v2</strong>
+</h1>
 
-[![en](https://img.shields.io/badge/lang-en-red.svg)](./README.en.md) [![ko](https://img.shields.io/badge/lang-ko-blue.svg)](./README.md)
+<p align="center">
+  <strong>Next.js-based personal blog with MDX multi-language support, in-browser Studio editor, and GitHub auto commit</strong>
+</p>
 
-Next.js-based personal blog with MDX multi-language support, in-browser Studio editor, and GitHub auto commit.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D18.18-brightgreen" alt="Node.js">
+  <a href="https://leey00nsu.com"><img src="https://img.shields.io/badge/demo-live-blue" alt="Demo"></a>
+</p>
 
-## 1) Overview
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#tech-stack">Tech Stack</a> •
+  <a href="https://leey00nsu.com">Demo</a>
+</p>
 
-- Name: leey00nsu-next-blog-v2
-- Description: An MDX-driven technical blog that manages Korean/English posts. You can write posts in a web editor and commit them directly to a GitHub branch.
-- Purpose / Problems solved:
-  - Simplify authoring/translation/deployment pipeline using GitHub
-  - Provide essentials for blogging: image path/metadata, code highlighting, ToC, comments
-  - Manage multilingual posts as files (.ko/.en) and automate translation with OpenAI
-- Key features:
-  - MDX rendering: GFM, soft line breaks, code highlighting, auto-injected image metadata (width/height, LQIP)
-  - i18n: `next-intl` with per-locale MDX files (`{slug}.{locale}.mdx`)
-  - Studio: Edit frontmatter/body in the browser, upload/preview images, remap image paths on slug changes, translate via OpenAI, and commit all locales at once
-  - Deployment: Commit MDX/images to a designated GitHub branch via Octokit
-  - Auth: GitHub OAuth (NextAuth v5) and allowlisted user only for Studio
-  - PDF export: Render `/print/resume` via Playwright and download a unified portfolio for About + project detail content
-  - Comments: Giscus
+<p align="center">
+  <a href="./README.en.md">
+    <img src="https://img.shields.io/badge/lang-en-red.svg" alt="English">
+  </a>
+  <a href="./README.md">
+    <img src="https://img.shields.io/badge/lang-ko-blue.svg" alt="한국어">
+  </a>
+</p>
 
-## 2) Tech Stack
+---
 
-- Framework: Next.js 15.5.2 (App Router), React 19.1.0
-- Styling/UI: Tailwind CSS 4, shadcn/ui
-- MDX: `next-mdx-remote`, `remark-gfm`, `remark-breaks`, `rehype-slug`, `rehype-pretty-code`
-- i18n: `next-intl` v3
-- Editor: Tiptap (Notion-style)
-- Auth: `next-auth@5` (GitHub provider)
-- Translation/Automation: OpenAI SDK, Octokit (GitHub API)
-- Images/Media: `sharp`, `lqip-modern`
-- Utils: `gray-matter`, `zod`, `es-toolkit`, `lucide-react`, `react-hook-form`
-- Dev tools: ESLint 9 (unicorn), Prettier (+tailwind plugin), Husky, lint-staged
+## Table of Contents
 
-## 3) Getting Started
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation & Setup](#installation--setup)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Contributing](#contributing)
+- [License](#license)
 
-- Requirements
-  - Node.js 18.18+ (Recommended: Node.js 20 LTS)
-  - pnpm (recommended)
-  - GitHub OAuth App, GitHub Personal Access Token, OpenAI API Key
+## Quick Start
 
-- Install
-  1. Clone repository
+```bash
+# 1. Clone repository and install dependencies
+git clone https://github.com/leey00nsu/leey00nsu-next-blog-v2 && cd leey00nsu-next-blog-v2 && pnpm install
 
-  ```bash
-  git clone https://github.com/leey00nsu/leey00nsu-next-blog-v2
-  cd leey00nsu-next-blog-v2
-  ```
+# 2. Set up environment variables
+cp .env.example .env.local  # Edit environment variables
 
-  2. Install dependencies
+# 3. Install Playwright (for PDF generation, first run only)
+pnpm playwright:install
 
-  ```bash
-  pnpm install
-  ```
-
-- Run
-  - Install Playwright runtime (first run only)
-
-  ```bash
-  pnpm playwright:install
-  ```
-
-  - Dev server
-
-  ```bash
-  pnpm dev
-  ```
-
-  - Production build/run
-
-  ```bash
-  pnpm build
-  pnpm start
-  ```
-
-  - Docker/Coolify build command
-
-  ```bash
-  pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
-  ```
-
-  > The `postbuild` step starts a temporary server to auto-generate PDFs.
-  > Playwright Chromium must be installed before building.
-
-- .env.local example
-
-Note: The following is an example. Never commit real keys/secrets.
-
-```env
-# Giscus (public)
-NEXT_PUBLIC_GISCUS_REPO=<owner>/<repo>
-NEXT_PUBLIC_GISCUS_REPO_ID=<repo_id>
-NEXT_PUBLIC_GISCUS_CATEGORY=Announcements
-NEXT_PUBLIC_GISCUS_CATEGORY_ID=<category_id>
-
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# GitHub OAuth (NextAuth)
-AUTH_GITHUB_ID=<github_oauth_client_id>
-AUTH_GITHUB_SECRET=<github_oauth_client_secret>
-AUTH_SECRET=<random_secret>
-
-# Studio allowlist
-ALLOWED_GITHUB_USERNAME=<your_github_username>
-
-# GitHub auto commit (Octokit)
-GITHUB_OWNER=<owner>
-GITHUB_REPO=<repo>
-GITHUB_BRANCH=<branch>
-GITHUB_TOKEN=<github_pat>
-
-# PDF export cache (optional)
-RESUME_PDF_CACHE_DIR=.next/cache/resume-pdf
-# RESUME_PDF_CACHE_TTL=86400000 # TTL in milliseconds. Defaults to infinite cache when omitted.
-# PLAYWRIGHT_EXECUTABLE_PATH=/path/to/chromium
-
-# OpenAI (translation)
-OPENAI_API_KEY=<openai_api_key>
-# Optional: model (default gpt-5-mini)
-OPENAI_MDX_MODEL=gpt-5-mini
-
-# Optional: defaults for MDX i18n script
-MDX_I18N_SOURCE=ko
-MDX_I18N_TARGETS=ko,en
+# 4. Start development server
+pnpm dev
 ```
 
-Tips
+→ Open [http://localhost:3000](http://localhost:3000)
 
-- GitHub OAuth: Set Authorization callback to `NEXT_PUBLIC_APP_URL/api/auth/callback/github`.
-- Giscus: Use https://giscus.app to get repo/category IDs.
-- GitHub Token: Use a token with push permission to your repo.
+## Features
 
-## 4) Usage
+### 📝 Blog
 
-- Browse blog
-  - Open `http://localhost:3000/blog`
+- MDX rendering: GFM, line breaks, code highlighting, auto-injected image metadata (width/height, LQIP)
+- Auto-generated Table of Contents (ToC)
+- Giscus comment system
 
-- Write/commit via Studio
-  1. Sign in with GitHub (allowlisted only)
-  2. Visit `/studio`
-  3. Fill frontmatter (required: `slug`, `title`, `description`, `writer`, `section`, `date`, `tags`)
-  4. Write MDX and upload images (preview/path auto)
-  5. Choose source/target locales (e.g., source=ko, targets=ko,en)
-  6. Save → Translate (targets) via OpenAI → Commit MDX/images to GitHub
-  - Result: `public/posts/{slug}/{slug}.{locale}.mdx` and images in the same folder
+### ✏️ Studio Editor
 
-- Batch-generate MDX translations
-  - Prereq: `OPENAI_API_KEY`
-  - Commands
+- Tiptap-based Notion-style editor
+- Frontmatter/body editing, image upload & preview
+- Automatic image path remapping on slug changes
+- Auto-commit MDX/images to GitHub branch
 
-  ```bash
-  # Defaults: source=LOCALES.DEFAULT, targets=LOCALES.SUPPORTED
-  pnpm gen:mdx-i18n
+### 🌐 Internationalization (i18n)
 
-  # With args
-  pnpm gen:mdx-i18n --source=ko --targets=en
+- `next-intl` based Korean/English support
+- Per-locale MDX file structure: `{slug}.{locale}.mdx`
+- OpenAI-powered translation automation
 
-  # With env vars
-  MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
-  ```
+### 🤖 AI Features
 
-  - Behavior: Scans `public/posts/{slug}` and `public/about` and creates missing locale files.
+- Select text in editor to generate AI images
+- Adapter pattern for various providers
 
-- Download About + project PDF
-  - Click the `Download PDF` button at the top of `/about` to download the portfolio PDF.
-  - PDFs are auto-generated at build time (`postbuild`) and saved to `public/pdf/portfolio-{locale}.pdf`.
-  - Playwright Chromium is required at build time.
+### 📄 PDF Export
 
-## 5) Project Structure
+- Render `/print/resume` via Playwright
+- Download About + project details as a single portfolio PDF
 
-This project follows FSD (Feature‑Sliced Design). See [AGENTS](./AGENTS.md) for rules.
+### 🔐 Authentication
+
+- GitHub OAuth (NextAuth v5)
+- Studio access limited to allowlisted users
+
+## Tech Stack
+
+| Area              | Technology                                      |
+| ----------------- | ----------------------------------------------- |
+| **Framework**     | Next.js 16.1.1 (App Router), React 19.1.0       |
+| **Styling**       | Tailwind CSS 4, shadcn/ui                       |
+| **MDX**           | next-mdx-remote, remark-gfm, rehype-pretty-code |
+| **i18n**          | next-intl v4                                    |
+| **Editor**        | Tiptap (Notion-style)                           |
+| **Auth**          | next-auth@5 (GitHub Provider)                   |
+| **AI/Automation** | OpenAI SDK, Octokit (GitHub API)                |
+| **Image**         | sharp, lqip-modern                              |
+| **Test**          | Vitest, Playwright, Storybook 10                |
+| **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
+
+## Installation & Setup
+
+### Prerequisites
+
+- Node.js 18.18+ (Recommended: Node.js 20 LTS)
+- pnpm installed
+- GitHub OAuth App, GitHub Personal Access Token, OpenAI API Key
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/leey00nsu/leey00nsu-next-blog-v2
+cd leey00nsu-next-blog-v2
+
+# Install dependencies
+pnpm install
+```
+
+### Environment Variables
+
+Copy `.env.example` to create `.env.local` and set the values:
+
+```bash
+cp .env.example .env.local
+```
+
+See [.env.example](./.env.example) for detailed environment variable descriptions.
+
+### Setup Tips
+
+- **GitHub OAuth**: Set Authorization callback URL to `NEXT_PUBLIC_APP_URL/api/auth/callback/github`
+- **Giscus**: Get repoId and categoryId from https://giscus.app
+- **GitHub Token**: Use a token with push permission to your repository
+
+### Running
+
+```bash
+# Development server
+pnpm dev
+
+# Production build/run
+pnpm build
+pnpm start
+
+# Docker/Coolify build command
+pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
+```
+
+> The `postbuild` step starts a temporary server to auto-generate PDFs.  
+> Playwright Chromium must be installed before building.
+
+## Usage
+
+### Browse Blog
+
+Open `http://localhost:3000/blog` in your browser
+
+### Write/Commit via Studio
+
+1. Sign in with GitHub (allowlisted users only)
+2. Navigate to `/studio`
+3. Fill in frontmatter (required: `slug`, `title`, `description`, `writer`, `section`, `date`, `tags`)
+4. Write MDX content and upload images
+5. Select source/target locales (e.g., source=ko, targets=ko,en)
+6. Save → Translate via OpenAI (targets) → Commit MDX/images to GitHub branch
+
+Result: `public/posts/{slug}/{slug}.{locale}.mdx` and images in the same folder
+
+### AI Image Generation
+
+1. Select text you want to convert to an image in the editor
+2. Click AI menu (✨) → Select **Generate Image**
+3. Generated image is automatically inserted after the selected text
+
+> Prerequisite: `LEESFIELD_API_KEY` environment variable required
+
+### Batch MDX Translation Script
+
+```bash
+# Defaults: source=LOCALES.DEFAULT, targets=LOCALES.SUPPORTED
+pnpm gen:mdx-i18n
+
+# With arguments
+pnpm gen:mdx-i18n --source=ko --targets=en
+
+# With environment variables
+MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
+```
+
+Scans `public/posts/{slug}` and `public/about` to create missing locale MDX files.
+
+### Download About + Project PDF
+
+- Click the `Download PDF` button at the top of `/about` page
+- PDFs are auto-generated at build time (`postbuild`) and saved to `public/pdf/portfolio-{locale}.pdf`
+
+## Project Structure
+
+This project follows **FSD (Feature-Sliced Design)**.  
+See [AGENTS.md](./AGENTS.md) for detailed rules.
 
 ```
-app/                # Routing, layout, RSC composition (e.g., /blog, /studio, API routes)
-widgets/            # Page sections composed of multiple features/entities
-features/           # User actions (UI + model + API)
-entities/           # Domain objects (types/queries)
-shared/             # Shared UI/utils/config (no domain knowledge)
-messages/           # next-intl messages (ko/en)
-scripts/            # Node scripts (MDX i18n generation)
-public/             # Static files and MDX posts (with images)
+leey00nsu-next-blog-v2/
+├── app/             # Next.js App Router (routing, layout, API routes)
+├── widgets/         # Page sections composed of multiple features/entities
+├── features/        # User action units (auth, editor, i18n, mdx, pdf, post, studio)
+├── entities/        # Domain objects (about, editor, post, project, studio)
+├── shared/          # Shared UI/utils/config (no domain knowledge)
+├── lib/             # Server-side shared logic
+├── i18n/            # next-intl routing configuration
+├── messages/        # next-intl translation messages (ko/en)
+├── scripts/         # Node scripts (MDX i18n, PDF generation, etc.)
+├── public/          # Static files and MDX posts (with images)
+├── e2e/             # Playwright E2E tests
+└── views/           # View-related files
 ```
 
-- Examples
-  - `features/studio`: authoring/commit/translation (e.g., `api/translate-mdx.ts`, `actions/commit-to-github.ts`)
-  - `entities/post`: types + read APIs (`getPostBySlug`, `getAllPosts`)
-  - `features/mdx`: renderer and remark/rehype plugins
-  - `shared/config/constants.ts`: paths, locales, routes, OG helpers
+**FSD Dependency Flow**: `shared → entities → features → widgets → app`
 
-FSD dependency flow: `shared → entities → features → widgets → app`
+## Testing
 
-## 6) License
+```bash
+# Unit tests
+pnpm test
 
-MIT License – see [LICENSE](./LICENSE).
+# Single test run
+pnpm test:run
 
-## 7) Contact
+# With coverage
+pnpm test:coverage
 
-- Author: leey00nsu
-- GitHub: https://github.com/leey00nsu
+# E2E tests
+pnpm test:e2e
+
+# E2E UI mode
+pnpm test:e2e:ui
+```
+
+Test structure:
+
+- `e2e/` - Playwright E2E tests
+- `**/*.test.ts` - Vitest unit tests
+- `**/*.stories.tsx` - Storybook component documentation
+
+## Troubleshooting
+
+<details>
+<summary><strong>Playwright Installation Error</strong></summary>
+
+```bash
+# Manual Chromium installation
+pnpm playwright:install
+
+# Or install all browsers with dependencies
+pnpm exec playwright install --with-deps
+```
+
+</details>
+
+<details>
+<summary><strong>PDF Generation Failure During Build</strong></summary>
+
+- Verify Playwright Chromium is installed
+- Set `PLAYWRIGHT_EXECUTABLE_PATH` environment variable if needed
+- In Docker environments, use `--with-deps` option to install dependencies
+
+</details>
+
+<details>
+<summary><strong>GitHub Commit Failure</strong></summary>
+
+- Verify `GITHUB_TOKEN` has push permission for the repository
+- Check `GITHUB_OWNER`, `GITHUB_REPO`, `GITHUB_BRANCH` values
+
+</details>
+
+<details>
+<summary><strong>OpenAI Translation Error</strong></summary>
+
+- Verify `OPENAI_API_KEY` is valid
+- Check API usage limits
+
+</details>
+
+## Contributing
+
+1. Fork → Create branch → Develop → Pull Request
+
+## License
+
+[MIT License](./LICENSE)
+
+---

@@ -16,7 +16,7 @@ const DEFAULT_WIDTH = 1024
 const DEFAULT_HEIGHT = 1024
 const DEFAULT_STEPS = 9
 const DEFAULT_IMAGE_COUNT = 1
-const MODEL = 'z-image-turbo'
+const MODEL = 'flux2-klein-9b'
 
 /** 폴링 간격 (ms) */
 const POLL_INTERVAL = 2000

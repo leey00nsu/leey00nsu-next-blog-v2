@@ -1,0 +1,75 @@
+---
+slug: leesfield
+title: Leesfield
+summary: AI image/video generation platform based on Hugging Face Space
+period:
+  start: 2025-06
+  end: 2025-07
+techStacks:
+  - Next.js
+  - TypeScript
+  - Tailwind CSS
+  - shadcn/ui
+  - PostgreSQL
+  - Prisma
+  - iron-session
+  - Hugging Face
+  - Gradio Client
+  - TanStack Query
+  - Zod
+thumbnail: /public/projects/leesfield/logo.webp
+draft: false
+type: solo
+---
+
+## Project Overview
+
+GitHub : [https://github.com/leey00nsu/leesfield](https://github.com/leey00nsu/leesfield)
+Demo : [https://leesfield.leey00nsu.com/](https://leesfield.leey00nsu.com/)
+
+When adding AI image/video generation to side projects, I wanted to build my **own pipeline**.
+Most image/video generation APIs are paid, but **Hugging Face Zero GPU** offers limited free usage, allowing me to start without cost concerns.
+
+Currently only the Hugging Face adapter is implemented, but the **adapter pattern design** allows easy integration with other AI APIs (OpenAI, Replicate, etc.) in the future.
+It provides various AI models (FLUX, etc.) through a unified UI/API and automatically saves generated results to storage via Leemage integration.
+
+## Key Features
+
+- AI image/video generation: Adapter-based extensible architecture (currently provides free Hugging Face Space adapter)
+- Model catalog management: DB-based model registration/editing, dynamic UI rendering
+- Monitoring dashboard: Generation request status and monitoring
+- Generation history management: All generation requests saved to DB
+- External API: OpenAPI auto-generation based on Zod schemas
+- Leemage integration: Automatic upload of generated results
+- i18n support: Korean/English
+
+## Problem
+
+- **AI model diversity**: Different API interfaces, parameters, and timeouts for each model
+- **Storage integration**: External storage integration needed for permanent result storage
+- **Model configuration management**: Need to manage model-specific parameters, UI types, and defaults without code modification
+- **API documentation mismatch**: When managing API docs separately, inconsistencies between code and documentation can occur
+- **Difficulty tracking generation requests**: Hard to monitor success/failure rates and processing delays in real-time
+
+## Solution
+
+- **API call adapter pattern**: Separate adapters per model provider (hf_space, etc.), implement only adapters for new providers
+- **Storage adapter pattern**: Separate external storage integration (Leemage, etc.) into adapters
+- **DB-based model catalog**: Register model settings/parameters via admin UI, add new models without code changes
+- **OpenAPI auto-generation**: Auto-generate OpenAPI spec from Zod schemas for API documentation and type synchronization
+- **Integrated monitoring dashboard**: Real-time view of request status (active/pending/processing), error rates, and avg/P95 latency. Model/API key statistics and daily trend charts
+
+## Impact
+
+- **Cost savings**: Utilizing Hugging Face Space free GPU
+- **Model scalability**: Add new models without code modification via DB model catalog
+- **Storage integration**: Permanent generation history preservation via Leemage integration
+- **Operational visibility**: Real-time monitoring for immediate request status and error rate tracking
+- **Multilingual support**: Korean/English i18n
+
+## Tech Stack
+
+- Frontend: Next.js, TypeScript, Tailwind CSS, shadcn/ui
+- Data/Validation: TanStack Query, Zod
+- Backend/DB: Next.js API Routes, Prisma, PostgreSQL, iron-session
+- AI: Hugging Face Space, Gradio Client

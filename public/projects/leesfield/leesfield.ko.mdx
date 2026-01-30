@@ -1,0 +1,75 @@
+---
+slug: leesfield
+title: Leesfield
+summary: Hugging Face Space 기반 AI 이미지/비디오 생성 플랫폼
+period:
+  start: 2025-06
+  end: 2025-07
+techStacks:
+  - Next.js
+  - TypeScript
+  - Tailwind CSS
+  - shadcn/ui
+  - PostgreSQL
+  - Prisma
+  - iron-session
+  - Hugging Face
+  - Gradio Client
+  - TanStack Query
+  - Zod
+thumbnail: /public/projects/leesfield/logo.webp
+draft: false
+type: solo
+---
+
+## 프로젝트 소개
+
+GitHub : [https://github.com/leey00nsu/leesfield](https://github.com/leey00nsu/leesfield)
+Demo : [https://leesfield.leey00nsu.com/](https://leesfield.leey00nsu.com/)
+
+사이드 프로젝트에 AI 이미지/비디오 생성 기능을 추가할 때 **자체 파이프라인**을 구축하고 싶었습니다.
+대부분의 이미지/비디오 생성 API는 유료로 제공되지만, **Hugging Face Zero GPU**는 제한적이지만 무료로 사용할 수 있어 비용 부담 없이 시작할 수 있었습니다.
+
+현재는 Hugging Face 어댑터만 구현되어 있지만, **어댑터 패턴으로 설계**되어 추후 다른 AI API(OpenAI, Replicate 등)도 쉽게 연동할 수 있습니다.
+다양한 AI 모델(FLUX 등)을 통합 UI/API로 제공하고, Leemage와 연동하여 생성된 결과를 자동으로 스토리지에 저장합니다.
+
+## 핵심 기능
+
+- AI 이미지/비디오 생성: 어댑터 기반 확장 가능 (현재 무료 Hugging Face Space 어댑터 제공)
+- 모델 카탈로그 관리: DB 기반 모델 등록/수정, 동적 UI 렌더링
+- 모니터링 대시보드: 생성 요청 현황 및 상태 모니터링
+- 생성 히스토리 관리: 모든 생성 요청 DB 저장
+- 외부 API 제공: Zod 스키마 기반 OpenAPI 자동 생성
+- Leemage 연동: 생성 결과 자동 업로드
+- i18n 지원: 한국어/영어 제공
+
+## Problem
+
+- **AI 모델 다양성**: 모델마다 API 인터페이스, 파라미터, 타임아웃이 상이
+- **스토리지 연동**: 생성 결과를 영구 저장하려면 외부 스토리지 연동 필요
+- **모델 설정 관리**: 모델별 파라미터, UI 타입, 기본값을 코드 수정 없이 관리 필요
+- **API 문서 불일치**: API 문서를 별도 관리할 경우 코드와 문서 간 불일치 발생 가능
+- **생성 요청 상태 파악 어려움**: AI 생성 요청의 성공/실패 현황, 처리 지연 여부를 실시간으로 파악하기 어려움
+
+## Solution
+
+- **API 호출 어댑터 패턴**: 모델 프로바이더(hf_space 등)별 어댑터 분리, 새 프로바이더 추가 시 어댑터만 구현
+- **Storage 어댑터 패턴**: Leemage 등 외부 스토리지 연동을 어댑터로 분리
+- **DB 기반 모델 카탈로그**: 관리 화면에서 모델 설정/파라미터 등록, 코드 수정 없이 모델 추가
+- **OpenAPI 자동 생성**: Zod 스키마에서 OpenAPI 스펙 자동 생성으로 API 문서와 타입 동기화
+- **통합 모니터링 대시보드**: 요청 현황(active/pending/processing), 에러율, 평균/P95 레이턴시를 실시간 조회. 모델별/API 키별 통계 및 일별 추이 차트 제공
+
+## Impact
+
+- **비용 절감**: Hugging Face Space 무료 GPU 활용
+- **모델 확장성**: DB 모델 카탈로그로 코드 수정 없이 새 모델 추가 가능
+- **저장소 연동**: Leemage 연동으로 생성 히스토리 영구 보존
+- **운영 가시성 확보**: 실시간 모니터링으로 요청 현황 및 에러율 즉시 확인 가능
+- **다국어 지원**: 한국어/영어 i18n
+
+## 기술 스택
+
+- Frontend: Next.js, TypeScript, Tailwind CSS, shadcn/ui
+- Data/Validation: TanStack Query, Zod
+- Backend/DB: Next.js API Routes, Prisma, PostgreSQL, iron-session
+- AI: Hugging Face Space, Gradio Client

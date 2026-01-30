@@ -329,6 +329,12 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRq4AAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSFMAAAARL6AkAAI0xxwSyRoREZB3glEkSYr6QMHtCuD/0fwPDSz4F8MSIvo/Aei58oyIUyIC25OLHpOJJL5k/wNP+GOQhElQwnhYBgCvZG4GIOixSDdCTwBWUDggNAAAAPABAJ0BKhAAEAAFQHwlpAACw/lKdMmkAAD+FicWoLw2xaTwQC6hg4vaIjF4omaVJu1gAAA=",
     "isAnimated": false
   },
+  "/public/projects/leesfield/logo.webp": {
+    "width": 512,
+    "height": 512,
+    "base64": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAABQAgCdASoQABAABUB8JbAAD4MNamfT5SxPtAAA/tOHZMZe8tICJbq0YwqBhVDucCt/KICy8i6rE61LybC8QiOsJ2Bfa/FQCYfurd2Jnphdodm4WAzYSlwx///DQiIf4Nf3wynkeLtYdEGoAAA=",
+    "isAnimated": false
+  },
   "/public/projects/syu-character-maker/syu-character-maker.webp": {
     "width": 2578,
     "height": 1810,

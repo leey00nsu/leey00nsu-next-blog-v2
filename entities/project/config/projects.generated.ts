@@ -54,7 +54,7 @@ export const GENERATED_PROJECTS = {
       "summary": "AI 에이전트 기반 개발을 위한 프로젝트 문서 구조 생성 CLI",
       "period": {
         "start": "2025-12",
-        "end": null
+        "end": "2026-02"
       },
       "techStacks": [
         "Node.js",
@@ -77,7 +77,7 @@ export const GENERATED_PROJECTS = {
       "summary": "멀티 스토리지 기반 파일·이미지 관리 플랫폼",
       "period": {
         "start": "2025-05",
-        "end": "2025-06"
+        "end": "2026-01"
       },
       "techStacks": [
         "Next.js",
@@ -103,8 +103,8 @@ export const GENERATED_PROJECTS = {
       "title": "Leesfield",
       "summary": "Hugging Face Space 기반 AI 이미지/비디오 생성 플랫폼",
       "period": {
-        "start": "2025-06",
-        "end": "2025-07"
+        "start": "2026-01",
+        "end": "2026-02"
       },
       "techStacks": [
         "Next.js",
@@ -199,7 +199,7 @@ export const GENERATED_PROJECTS = {
       "summary": "CLI to generate a project docs structure for AI-assisted development",
       "period": {
         "start": "2025-12",
-        "end": null
+        "end": "2026-02"
       },
       "techStacks": [
         "Node.js",
@@ -222,7 +222,7 @@ export const GENERATED_PROJECTS = {
       "summary": "Multi-storage based file and image management platform",
       "period": {
         "start": "2025-05",
-        "end": "2025-06"
+        "end": "2026-01"
       },
       "techStacks": [
         "Next.js",
@@ -248,8 +248,8 @@ export const GENERATED_PROJECTS = {
       "title": "Leesfield",
       "summary": "AI image/video generation platform based on Hugging Face Space",
       "period": {
-        "start": "2025-06",
-        "end": "2025-07"
+        "start": "2026-01",
+        "end": "2026-02"
       },
       "techStacks": [
         "Next.js",

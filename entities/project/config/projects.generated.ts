@@ -9,6 +9,7 @@ export const GENERATED_PROJECTS = {
       "slug": "artfolio",
       "title": "아트폴리오",
       "summary": "AI 기반 예술품 경매 서비스",
+      "keyFeatures": [],
       "period": {
         "start": "2023-04",
         "end": "2023-09"
@@ -22,7 +23,7 @@ export const GENERATED_PROJECTS = {
         "Stomp.js"
       ],
       "thumbnail": "/public/projects/artfolio/artfolio.webp",
-      "draft": false,
+      "draft": true,
       "type": "team",
       "content": "\n## 프로젝트 소개\n\nGitHub : [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)\n\nAI 기반 예술품 경매 서비스입니다. 사용자가 그림을 업로드하면 AI가 분석하여 설명과 음성을 자동 생성하고, 실시간 경매 시스템을 통해 거래할 수 있습니다.  \n삼육대학교 SW프로젝트 경진대회에서 장려상을 수상하였으며, 팀 프로젝트에서 **프론트엔드 개발과 팀장을 담당**했습니다.\n\n## 주요 기능\n\n- 웹소켓(Stomp.js)을 활용한 실시간 예술품 경매 및 입찰\n- Nivo를 활용한 경매가 실시간 차트 시각화\n- AI 분석 기반 예술품 평가 및 설명 자동 생성\n\n## 기술 스택\n\n- Frontend: React, TypeScript, Tailwind CSS, Zustand, Nivo, Stomp.js\n- Backend: NestJS, PostgreSQL, Prisma\n",
       "width": 2714,
@@ -32,6 +33,7 @@ export const GENERATED_PROJECTS = {
       "slug": "blog",
       "title": "블로그",
       "summary": "Next.js + MDX 기반, AI 자동 번역과 GitHub 연동 블로그",
+      "keyFeatures": [],
       "period": {
         "start": "2025-09",
         "end": null
@@ -52,17 +54,18 @@ export const GENERATED_PROJECTS = {
       "slug": "lee-spec-kit",
       "title": "lee-spec-kit",
       "summary": "AI 에이전트 기반 개발을 위한 프로젝트 문서 구조 생성 CLI",
+      "keyFeatures": [
+        "Spec-driven development 워크플로우 템플릿화",
+        "Feature 단위 문서 구조화로 진행/리뷰/히스토리 추적 단순화",
+        "에이전트 컨텍스트/상태 요약 및 문서 구조 검증으로 협업 안정화"
+      ],
       "period": {
         "start": "2025-12",
         "end": "2026-02"
       },
       "techStacks": [
         "Node.js",
-        "TypeScript",
-        "Commander.js",
-        "pnpm",
-        "tsup",
-        "prompts"
+        "TypeScript"
       ],
       "thumbnail": "/public/projects/lee-spec-kit/logo.png",
       "draft": false,
@@ -75,6 +78,12 @@ export const GENERATED_PROJECTS = {
       "slug": "leemage",
       "title": "Leemage",
       "summary": "멀티 스토리지 기반 파일·이미지 관리 플랫폼",
+      "keyFeatures": [
+        "프로젝트 단위 파일 업로드/관리 (이미지·비디오·문서 등 모든 확장자 지원)",
+        "이미지 변환 옵션 제공 (리사이즈/포맷 변환)",
+        "멀티 스토리지(OCI / Cloudflare R2) 어댑터",
+        "TypeScript SDK 및 OpenAPI 문서 자동화"
+      ],
       "period": {
         "start": "2025-05",
         "end": "2026-01"
@@ -101,7 +110,11 @@ export const GENERATED_PROJECTS = {
     "leesfield": {
       "slug": "leesfield",
       "title": "Leesfield",
-      "summary": "Hugging Face Space 기반 AI 이미지/비디오 생성 플랫폼",
+      "summary": "AI 이미지/비디오 생성 플랫폼",
+      "keyFeatures": [
+        "어댑터 패턴 기반 이미지/비디오 생성 (현재는 Hugging Face Space 어댑터 제공)",
+        "모니터링/히스토리 및 외부 API 제공(OpenAPI)"
+      ],
       "period": {
         "start": "2026-01",
         "end": "2026-02"
@@ -130,6 +143,7 @@ export const GENERATED_PROJECTS = {
       "slug": "syu-character-maker",
       "title": "나만의 수야,수호 만들기",
       "summary": "삼육대 마스코트 꾸미기, 공유 웹 프로그램",
+      "keyFeatures": [],
       "period": {
         "start": "2023-05",
         "end": "2023-12"
@@ -142,7 +156,7 @@ export const GENERATED_PROJECTS = {
         "React-konva"
       ],
       "thumbnail": "/public/projects/syu-character-maker/syu-character-maker.webp",
-      "draft": false,
+      "draft": true,
       "type": "solo",
       "content": "\n## 프로젝트 소개\n\nGitHub : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)\n\n삼육대학교 마스코트 **수야/수호를 꾸밀 수 있는 웹 프로그램**입니다.  \n학생들이 자유롭게 캐릭터를 꾸미고 결과를 이미지로 저장하거나 학우들과 공유할 수 있도록 했습니다.\n\n## 주요 기능\n\n- React-konva 캔버스 기반 꾸미기 도구(펜, 스티커 등)\n- 결과물 이미지 다운로드 및 업로드 공유\n- Zustand + TanStack Query 기반 상태 관리 및 최적화\n\n## 기술 스택\n\n- Frontend: React, TypeScript, Tailwind CSS, Zustand, React-konva\n- Backend: NestJS, PostgreSQL, Prisma, Redis\n",
       "width": 2578,
@@ -154,6 +168,7 @@ export const GENERATED_PROJECTS = {
       "slug": "artfolio",
       "title": "ArtFolio",
       "summary": "AI-powered art auction service",
+      "keyFeatures": [],
       "period": {
         "start": "2023-04",
         "end": "2023-09"
@@ -167,7 +182,7 @@ export const GENERATED_PROJECTS = {
         "Stomp.js"
       ],
       "thumbnail": "/public/projects/artfolio/artfolio.webp",
-      "draft": false,
+      "draft": true,
       "type": "team",
       "content": "\n## Project Overview\n\nGitHub : [https://github.com/leey00nsu/ArtFolio-FE](https://github.com/leey00nsu/ArtFolio-FE)\n\nThis is an AI-powered art auction service. When a user uploads a painting, the AI analyzes it and automatically generates descriptions and audio, and items can be traded through a real-time auction system.  \nThe project won the Encouragement Award at the Sahmyook University SW Project Competition, and I served as the team lead and was responsible for **frontend development and team leadership**.\n\n## Key Features\n\n- Real-time art auctions and bidding using WebSockets (Stomp.js)\n- Real-time auction price chart visualization using Nivo\n- AI-driven artwork evaluation and automatic generation of descriptions\n\n## Tech Stack\n\n- Frontend: React, TypeScript, Tailwind CSS, Zustand, Nivo, Stomp.js\n- Backend: NestJS, PostgreSQL, Prisma\n",
       "width": 2714,
@@ -177,6 +192,7 @@ export const GENERATED_PROJECTS = {
       "slug": "blog",
       "title": "Blog",
       "summary": "Next.js + MDX-based blog with AI automatic translation and GitHub integration",
+      "keyFeatures": [],
       "period": {
         "start": "2025-09",
         "end": null
@@ -197,17 +213,18 @@ export const GENERATED_PROJECTS = {
       "slug": "lee-spec-kit",
       "title": "lee-spec-kit",
       "summary": "CLI to generate a project docs structure for AI-assisted development",
+      "keyFeatures": [
+        "Spec-driven development workflow templates",
+        "Feature-based documentation for simpler progress/review/history tracking",
+        "Agent-friendly context/status summaries and doc structure validation"
+      ],
       "period": {
         "start": "2025-12",
         "end": "2026-02"
       },
       "techStacks": [
         "Node.js",
-        "TypeScript",
-        "Commander.js",
-        "pnpm",
-        "tsup",
-        "prompts"
+        "TypeScript"
       ],
       "thumbnail": "/public/projects/lee-spec-kit/logo.png",
       "draft": false,
@@ -220,6 +237,12 @@ export const GENERATED_PROJECTS = {
       "slug": "leemage",
       "title": "Leemage",
       "summary": "Multi-storage based file and image management platform",
+      "keyFeatures": [
+        "Project-based file upload/management (images, videos, documents, and more)",
+        "Image transformation options (resize/format conversion)",
+        "Multi-storage adapters (OCI / Cloudflare R2)",
+        "TypeScript SDK and OpenAPI documentation automation"
+      ],
       "period": {
         "start": "2025-05",
         "end": "2026-01"
@@ -246,7 +269,11 @@ export const GENERATED_PROJECTS = {
     "leesfield": {
       "slug": "leesfield",
       "title": "Leesfield",
-      "summary": "AI image/video generation platform based on Hugging Face Space",
+      "summary": "AI image/video generation platform",
+      "keyFeatures": [
+        "Adapter-pattern-based image/video generation (currently includes Hugging Face Space adapter)",
+        "Monitoring/history and external API (OpenAPI)"
+      ],
       "period": {
         "start": "2026-01",
         "end": "2026-02"
@@ -275,6 +302,7 @@ export const GENERATED_PROJECTS = {
       "slug": "syu-character-maker",
       "title": "Create Your Own Suya and Suho",
       "summary": "A web app to customize and share Sahmyook University mascots",
+      "keyFeatures": [],
       "period": {
         "start": "2023-05",
         "end": "2023-12"
@@ -287,7 +315,7 @@ export const GENERATED_PROJECTS = {
         "React-konva"
       ],
       "thumbnail": "/public/projects/syu-character-maker/syu-character-maker.webp",
-      "draft": false,
+      "draft": true,
       "type": "solo",
       "content": "\n## Project Introduction\n\nGitHub : [https://github.com/leey00nsu/syu-character-maker](https://github.com/leey00nsu/syu-character-maker)\n\nThis is a web application that lets you customize Sahmyook University mascots, Suya and Suho.  \nStudents can freely decorate the characters and save the results as images or share them with classmates.\n\n## Key Features\n\n- React-konva canvas-based decorating tools (pen, stickers, etc.)\n- Download the result as an image and upload/share\n- State management and optimization using Zustand + TanStack Query\n\n## Tech Stack\n\n- Frontend: React, TypeScript, Tailwind CSS, Zustand, React-konva\n- Backend: NestJS, PostgreSQL, Prisma, Redis\n",
       "width": 2578,

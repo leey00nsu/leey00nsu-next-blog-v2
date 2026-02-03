@@ -31,7 +31,7 @@ export async function ProjectSection({ locale }: ProjectSectionProps) {
         </h2>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-4">
         {projects.map((project) => (
           <ProjectSummaryCard
             key={project.slug}

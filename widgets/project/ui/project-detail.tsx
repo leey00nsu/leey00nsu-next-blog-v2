@@ -68,11 +68,11 @@ export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
       </section>
 
       {hasThumbnail ? (
-        <figure className="not-prose border-border overflow-hidden rounded-xl border">
+        <figure className="not-prose overflow-hidden rounded-xl">
           <CustomImage
             src={removePublic(project.thumbnail!)}
             alt={project.title}
-            className="w-full object-cover"
+            className="w-full object-contain"
             width={hasDimensions ? project.width : undefined}
             height={hasDimensions ? project.height : undefined}
             priority

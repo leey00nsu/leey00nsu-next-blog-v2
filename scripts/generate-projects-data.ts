@@ -49,6 +49,7 @@ function mapFrontmatterToProject(
     slug: frontmatter.slug,
     title: frontmatter.title,
     summary: frontmatter.summary,
+    keyFeatures: frontmatter.keyFeatures,
     period: {
       start: frontmatter.period.start,
       end: frontmatter.period.end ?? null,

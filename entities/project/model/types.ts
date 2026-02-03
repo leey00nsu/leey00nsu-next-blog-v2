@@ -16,6 +16,7 @@ export const ProjectMetaDataSchema = z.object({
   slug: z.string().min(1, '프로젝트 슬러그를 입력하세요.'),
   title: z.string().min(1, '프로젝트명을 입력하세요.'),
   summary: z.string().min(1, '프로젝트 요약을 입력하세요.'),
+  keyFeatures: z.array(z.string().min(1)).optional().default([]),
   period: ProjectPeriodSchema,
   techStacks: z.array(z.string().min(1)).min(1, '기술 스택을 최소 1개 이상 입력하세요.'),
   thumbnail: z.string().min(1).nullable().optional().default(null),
@@ -37,6 +38,7 @@ export interface GeneratedProjectSerialized {
   slug: string
   title: string
   summary: string
+  keyFeatures: string[]
   period: ProjectPeriod
   techStacks: string[]
   thumbnail: string | null

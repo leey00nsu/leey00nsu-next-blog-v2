@@ -10,6 +10,9 @@ export const GENERATED_PROJECTS = {
       "title": "아트폴리오",
       "summary": "AI 기반 예술품 경매 서비스",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/ArtFolio-FE"
+      },
       "period": {
         "start": "2023-04",
         "end": "2023-09"
@@ -34,6 +37,9 @@ export const GENERATED_PROJECTS = {
       "title": "블로그",
       "summary": "Next.js + MDX 기반, AI 자동 번역과 GitHub 연동 블로그",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/leey00nsu-next-blog-v2"
+      },
       "period": {
         "start": "2025-09",
         "end": null
@@ -59,6 +65,10 @@ export const GENERATED_PROJECTS = {
         "Feature 단위 문서 구조화로 진행/리뷰/히스토리 추적 단순화",
         "에이전트 컨텍스트/상태 요약 및 문서 구조 검증으로 협업 안정화"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/lee-spec-kit",
+        "npm": "https://www.npmjs.com/package/lee-spec-kit"
+      },
       "period": {
         "start": "2025-12",
         "end": "2026-02"
@@ -80,10 +90,13 @@ export const GENERATED_PROJECTS = {
       "summary": "멀티 스토리지 기반 파일·이미지 관리 플랫폼",
       "keyFeatures": [
         "프로젝트 단위 파일 업로드/관리 (이미지·비디오·문서 등 모든 확장자 지원)",
-        "이미지 변환 옵션 제공 (리사이즈/포맷 변환)",
         "멀티 스토리지(OCI / Cloudflare R2) 어댑터",
-        "TypeScript SDK 및 OpenAPI 문서 자동화"
+        "외부 API/TypeScript SDK 제공"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/leemage",
+        "demo": "https://leemage.leey00nsu.com/"
+      },
       "period": {
         "start": "2025-05",
         "end": "2026-01"
@@ -113,8 +126,13 @@ export const GENERATED_PROJECTS = {
       "summary": "AI 이미지/비디오 생성 플랫폼",
       "keyFeatures": [
         "어댑터 패턴 기반 이미지/비디오 생성 (현재는 Hugging Face Space 어댑터 제공)",
-        "모니터링/히스토리 및 외부 API 제공(OpenAPI)"
+        "모니터링 대시보드 제공",
+        "외부 API 제공"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/leesfield",
+        "demo": "https://leesfield.leey00nsu.com/"
+      },
       "period": {
         "start": "2026-01",
         "end": "2026-02"
@@ -144,6 +162,9 @@ export const GENERATED_PROJECTS = {
       "title": "나만의 수야,수호 만들기",
       "summary": "삼육대 마스코트 꾸미기, 공유 웹 프로그램",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/syu-character-maker"
+      },
       "period": {
         "start": "2023-05",
         "end": "2023-12"
@@ -169,6 +190,9 @@ export const GENERATED_PROJECTS = {
       "title": "ArtFolio",
       "summary": "AI-powered art auction service",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/ArtFolio-FE"
+      },
       "period": {
         "start": "2023-04",
         "end": "2023-09"
@@ -193,6 +217,9 @@ export const GENERATED_PROJECTS = {
       "title": "Blog",
       "summary": "Next.js + MDX-based blog with AI automatic translation and GitHub integration",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/leey00nsu-next-blog-v2"
+      },
       "period": {
         "start": "2025-09",
         "end": null
@@ -218,6 +245,10 @@ export const GENERATED_PROJECTS = {
         "Feature-based documentation for simpler progress/review/history tracking",
         "Agent-friendly context/status summaries and doc structure validation"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/lee-spec-kit",
+        "npm": "https://www.npmjs.com/package/lee-spec-kit"
+      },
       "period": {
         "start": "2025-12",
         "end": "2026-02"
@@ -239,10 +270,13 @@ export const GENERATED_PROJECTS = {
       "summary": "Multi-storage based file and image management platform",
       "keyFeatures": [
         "Project-based file upload/management (images, videos, documents, and more)",
-        "Image transformation options (resize/format conversion)",
         "Multi-storage adapters (OCI / Cloudflare R2)",
-        "TypeScript SDK and OpenAPI documentation automation"
+        "External API and TypeScript SDK"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/leemage",
+        "demo": "https://leemage.leey00nsu.com/"
+      },
       "period": {
         "start": "2025-05",
         "end": "2026-01"
@@ -272,8 +306,13 @@ export const GENERATED_PROJECTS = {
       "summary": "AI image/video generation platform",
       "keyFeatures": [
         "Adapter-pattern-based image/video generation (currently includes Hugging Face Space adapter)",
-        "Monitoring/history and external API (OpenAPI)"
+        "Monitoring dashboard",
+        "External API (OpenAPI)"
       ],
+      "links": {
+        "github": "https://github.com/leey00nsu/leesfield",
+        "demo": "https://leesfield.leey00nsu.com/"
+      },
       "period": {
         "start": "2026-01",
         "end": "2026-02"
@@ -303,6 +342,9 @@ export const GENERATED_PROJECTS = {
       "title": "Create Your Own Suya and Suho",
       "summary": "A web app to customize and share Sahmyook University mascots",
       "keyFeatures": [],
+      "links": {
+        "github": "https://github.com/leey00nsu/syu-character-maker"
+      },
       "period": {
         "start": "2023-05",
         "end": "2023-12"

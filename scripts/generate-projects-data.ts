@@ -50,6 +50,7 @@ function mapFrontmatterToProject(
     title: frontmatter.title,
     summary: frontmatter.summary,
     keyFeatures: frontmatter.keyFeatures,
+    links: frontmatter.links,
     period: {
       start: frontmatter.period.start,
       end: frontmatter.period.end ?? null,

@@ -7,6 +7,14 @@ export const ProjectTypeSchema = z.enum(PROJECT_TYPE_VALUES)
 
 export type ProjectType = z.infer<typeof ProjectTypeSchema>
 
+export const ProjectLinksSchema = z.object({
+  github: z.string().url().optional(),
+  demo: z.string().url().optional(),
+  npm: z.string().url().optional(),
+})
+
+export type ProjectLinks = z.infer<typeof ProjectLinksSchema>
+
 export const ProjectPeriodSchema = z.object({
   start: z.string().min(1, '프로젝트 시작일을 입력하세요.'),
   end: z.string().min(1).nullable().optional().default(null),
@@ -17,6 +25,7 @@ export const ProjectMetaDataSchema = z.object({
   title: z.string().min(1, '프로젝트명을 입력하세요.'),
   summary: z.string().min(1, '프로젝트 요약을 입력하세요.'),
   keyFeatures: z.array(z.string().min(1)).optional().default([]),
+  links: ProjectLinksSchema.optional().default({}),
   period: ProjectPeriodSchema,
   techStacks: z.array(z.string().min(1)).min(1, '기술 스택을 최소 1개 이상 입력하세요.'),
   thumbnail: z.string().min(1).nullable().optional().default(null),
@@ -39,6 +48,7 @@ export interface GeneratedProjectSerialized {
   title: string
   summary: string
   keyFeatures: string[]
+  links: ProjectLinks
   period: ProjectPeriod
   techStacks: string[]
   thumbnail: string | null

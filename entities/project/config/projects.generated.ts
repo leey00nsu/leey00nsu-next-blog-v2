@@ -104,8 +104,8 @@ export const GENERATED_PROJECTS = {
       "techStacks": [
         "Next.js",
         "TypeScript",
-        "Tailwind CSS",
         "PostgreSQL",
+        "Tailwind CSS",
         "Prisma",
         "OCI Object Storage",
         "Cloudflare R2",
@@ -140,9 +140,9 @@ export const GENERATED_PROJECTS = {
       "techStacks": [
         "Next.js",
         "TypeScript",
+        "PostgreSQL",
         "Tailwind CSS",
         "shadcn/ui",
-        "PostgreSQL",
         "Prisma",
         "iron-session",
         "Hugging Face",
@@ -284,8 +284,8 @@ export const GENERATED_PROJECTS = {
       "techStacks": [
         "Next.js",
         "TypeScript",
-        "Tailwind CSS",
         "PostgreSQL",
+        "Tailwind CSS",
         "Prisma",
         "OCI Object Storage",
         "Cloudflare R2",
@@ -307,7 +307,7 @@ export const GENERATED_PROJECTS = {
       "keyFeatures": [
         "Adapter-pattern-based image/video generation (currently includes Hugging Face Space adapter)",
         "Monitoring dashboard",
-        "External API (OpenAPI)"
+        "External API"
       ],
       "links": {
         "github": "https://github.com/leey00nsu/leesfield",
@@ -320,9 +320,9 @@ export const GENERATED_PROJECTS = {
       "techStacks": [
         "Next.js",
         "TypeScript",
+        "PostgreSQL",
         "Tailwind CSS",
         "shadcn/ui",
-        "PostgreSQL",
         "Prisma",
         "iron-session",
         "Hugging Face",

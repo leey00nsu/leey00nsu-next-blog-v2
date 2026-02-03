@@ -3,17 +3,30 @@ import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { ProjectSection } from '@/widgets/about/ui/project-section'
 import { SupportedLocale } from '@/shared/config/constants'
 import { DownloadResumeButton } from '@/features/pdf/ui/download-resume-button'
+import type { ProjectSummaryCardLinkVariant } from '@/entities/project/ui/project-summary-card'
 
 interface AboutDetailProps {
   about: About
   locale: SupportedLocale
   showDownloadButton?: boolean
+  projectCardLinkVariant?: ProjectSummaryCardLinkVariant
 }
 
-function ProjectSectionSlot({ locale }: { locale: SupportedLocale }) {
+interface ProjectSectionSlotProps {
+  locale: SupportedLocale
+  projectCardLinkVariant?: ProjectSummaryCardLinkVariant
+}
+
+function ProjectSectionSlot({
+  locale,
+  projectCardLinkVariant,
+}: ProjectSectionSlotProps) {
   return (
     <div className="not-prose">
-      <ProjectSection locale={locale} />
+      <ProjectSection
+        locale={locale}
+        projectCardLinkVariant={projectCardLinkVariant}
+      />
     </div>
   )
 }
@@ -22,6 +35,7 @@ export function AboutDetail({
   about,
   locale,
   showDownloadButton = true,
+  projectCardLinkVariant,
 }: AboutDetailProps) {
   return (
     <article className="prose prose-lg dark:prose-invert mx-auto">
@@ -33,10 +47,18 @@ export function AboutDetail({
       <MdxRenderer
         content={about.content}
         components={{
-          ProjectSection: () => <ProjectSectionSlot locale={locale} />,
+          ProjectSection: () => (
+            <ProjectSectionSlot
+              locale={locale}
+              projectCardLinkVariant={projectCardLinkVariant}
+            />
+          ),
         }}
       />
-      <ProjectSectionSlot locale={locale} />
+      <ProjectSectionSlot
+        locale={locale}
+        projectCardLinkVariant={projectCardLinkVariant}
+      />
     </article>
   )
 }

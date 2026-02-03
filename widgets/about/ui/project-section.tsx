@@ -1,13 +1,18 @@
 import { SupportedLocale } from '@/shared/config/constants'
 import { getAllProjects } from '@/entities/project/lib/project'
 import { ProjectSummaryCard } from '@/entities/project/ui/project-summary-card'
+import type { ProjectSummaryCardLinkVariant } from '@/entities/project/ui/project-summary-card'
 import { getTranslations } from 'next-intl/server'
 
 interface ProjectSectionProps {
   locale: SupportedLocale
+  projectCardLinkVariant?: ProjectSummaryCardLinkVariant
 }
 
-export async function ProjectSection({ locale }: ProjectSectionProps) {
+export async function ProjectSection({
+  locale,
+  projectCardLinkVariant,
+}: ProjectSectionProps) {
   const [projects, t] = await Promise.all([
     getAllProjects(locale),
     getTranslations({ locale, namespace: 'about.projects' }),
@@ -37,6 +42,7 @@ export async function ProjectSection({ locale }: ProjectSectionProps) {
             key={project.slug}
             project={project}
             locale={locale}
+            linkVariant={projectCardLinkVariant}
           />
         ))}
       </div>

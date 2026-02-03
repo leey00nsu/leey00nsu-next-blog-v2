@@ -20,7 +20,12 @@ export default async function ResumePrintPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
-      <AboutDetail about={about} locale={locale} showDownloadButton={false} />
+      <AboutDetail
+        about={about}
+        locale={locale}
+        showDownloadButton={false}
+        projectCardLinkVariant="github"
+      />
 
       {projects.map((project) => (
         <div

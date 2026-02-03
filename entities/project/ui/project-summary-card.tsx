@@ -12,11 +12,15 @@ import { removePublic } from '@/shared/lib/remove-public'
 interface ProjectSummaryCardProps {
   project: Project
   locale: SupportedLocale
+  linkVariant?: ProjectSummaryCardLinkVariant
 }
+
+export type ProjectSummaryCardLinkVariant = 'detail' | 'github'
 
 export async function ProjectSummaryCard({
   project,
   locale,
+  linkVariant = 'detail',
 }: ProjectSummaryCardProps) {
   const t = await getTranslations({ locale, namespace: 'about.projects' })
   const inProgressLabel = t('inProgress')
@@ -25,7 +29,8 @@ export async function ProjectSummaryCard({
   const typeLabel = t('type.label')
   const projectTypeLabel = t(`type.${project.type}`)
   const githubUrl = project.links.github
-  const ariaLabel = githubUrl
+  const shouldLinkToGithub = linkVariant === 'github' && Boolean(githubUrl)
+  const ariaLabel = shouldLinkToGithub
     ? t('viewGithubAria', { project: project.title })
     : t('viewDetailAria', { project: project.title })
   const visibleTechStacks = project.techStacks.slice(
@@ -115,7 +120,7 @@ export async function ProjectSummaryCard({
     </article>
   )
 
-  if (githubUrl) {
+  if (shouldLinkToGithub) {
     return (
       <a
         href={githubUrl}

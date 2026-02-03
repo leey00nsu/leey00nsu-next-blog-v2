@@ -1,0 +1,60 @@
+---
+slug: lee-spec-kit
+title: lee-spec-kit
+summary: AI 에이전트 기반 개발을 위한 프로젝트 문서 구조 생성 CLI
+period:
+  start: 2025-12
+  end:
+techStacks:
+  - Node.js
+  - TypeScript
+  - Commander.js
+  - pnpm
+  - tsup
+  - prompts
+thumbnail: /public/projects/lee-spec-kit/logo.png
+draft: false
+type: solo
+---
+
+## 프로젝트 소개
+
+GitHub : [https://github.com/leey00nsu/lee-spec-kit](https://github.com/leey00nsu/lee-spec-kit)  
+npm : [https://www.npmjs.com/package/lee-spec-kit](https://www.npmjs.com/package/lee-spec-kit)
+
+AI 에이전트(코드 어시스턴트)와 함께 개발할 때, 문서 구조/규칙/진행 상태가 팀·레포마다 달라지면 컨텍스트 전달 비용이 크게 늘어납니다.  
+`lee-spec-kit`은 **AI 보조 개발을 위한 문서 구조를 빠르게 생성하고, Feature 단위 워크플로우를 일관되게 유지**하기 위해 만든 CLI입니다.
+spec-kit의 문서 구조와 워크플로우를 참고하여, Spec-driven development(스펙 기반 개발)를 프로젝트에 쉽게 적용할 수 있도록 설계했습니다.
+
+## 핵심 기능
+
+- Spec-driven development 워크플로우 고정: Feature마다 스펙 → 플랜 → 태스크 → 결정 기록 흐름을 표준화하여 “무엇/왜/어떻게/무엇을 했는지”가 문서로 남습니다.
+- 문서 구조 표준화: 프로젝트 문서 루트의 기본 골격(agents/prd/features 등)과 공용 템플릿을 제공해 문서의 형태와 품질을 일정하게 유지합니다.
+- Feature 중심 문서 관리: 기능 단위 폴더 단위로 진행 상황을 한눈에 파악하고, 리뷰·우선순위·히스토리 추적을 쉽게 만듭니다.
+- 에이전트 친화적 컨텍스트: 현재 작업 중인 Feature의 핵심 정보와 다음 액션을 출력하여, 사람·에이전트가 동일한 프로세스를 따르게 합니다.
+- 템플릿 업데이트: 문서 템플릿/가이드(agents, skills 등)를 최신 상태로 유지할 수 있도록 업데이트 경로를 제공합니다.
+
+## Problem
+
+- **에이전트 컨텍스트 비용**: 문서 구조/규칙이 프로젝트마다 달라 매번 설명이 필요
+- **워크플로우 일관성 부재**: 스펙/플랜/태스크/결정 기록이 흩어져 리뷰·진행 추적이 어려움
+- **문서 품질 관리 어려움**: 누락 파일/상태, 중복 ID, placeholder 등이 누적됨
+
+## Solution
+
+- 프로젝트 문서의 기본 골격과 공용 템플릿을 제공하여 문서 구조를 고정
+- Feature 단위 산출물(`spec.md`, `plan.md`, `tasks.md`, `decisions.md`)을 자동으로 생성해 SDD 흐름을 유지
+- 현재 상태/다음 액션을 요약 출력하고 JSON 출력으로 자동화 파이프라인에 연동
+- 구조·메타데이터를 검증하고 템플릿을 최신화하여 문서 품질을 지속적으로 유지
+
+## Impact
+
+- **온보딩/커뮤니케이션 비용 감소**: 문서 구조가 통일되어 컨텍스트 전달이 단순화
+- **Feature 단위 진행 가시성 확보**: 워크플로우가 템플릿화되어 상태 파악/리뷰가 쉬워짐
+- **문서 품질 유지**: 구조/메타데이터 검증으로 오류를 빠르게 차단
+
+## 기술 스택
+
+- Runtime: Node.js
+- Language/Build: TypeScript, tsup
+- CLI: Commander.js, prompts, chalk

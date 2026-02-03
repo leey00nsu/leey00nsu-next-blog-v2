@@ -323,6 +323,12 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRr4AAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSEkAAAARL6CobSM2VTq39/8iInBN/mAaSbKqh/6jZ8/+hfBp8g/m0Q8hov8TIP4sQwUm0NEGlojDBi5MRAduVOAB7b1weg5mT5SlDGQCAFZQOCBOAAAAUAIAnQEqEAAQAAVAfCWwAnR/ABhL7hiz3VyAAP6M8QmRA9Y5duRfGIOjAVkt4AFD1ANq7ZvmiSAwtIfGDqQbQjrFydWhJI/QHOTLgQAA",
     "isAnimated": false
   },
+  "/public/projects/lee-spec-kit/logo.png": {
+    "width": 692,
+    "height": 730,
+    "base64": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAwAgCdASoPABAABUB8JbACdEf/gS+OVqAc6AD+6gRXTc8ei4igDOMIa8ISm4EWTwgFVFw8ZGd8+OfaTlW9h/gPQygkKzX6My+fXyst0ujSxncqgSmlkcNvfoiAAA==",
+    "isAnimated": false
+  },
   "/public/projects/leemage/logo.webp": {
     "width": 1024,
     "height": 1024,

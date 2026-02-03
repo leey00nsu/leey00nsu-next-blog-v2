@@ -1,0 +1,60 @@
+---
+slug: lee-spec-kit
+title: lee-spec-kit
+summary: CLI to generate a project docs structure for AI-assisted development
+period:
+  start: 2025-12
+  end:
+techStacks:
+  - Node.js
+  - TypeScript
+  - Commander.js
+  - pnpm
+  - tsup
+  - prompts
+thumbnail: /public/projects/lee-spec-kit/logo.png
+draft: false
+type: solo
+---
+
+## Project Overview
+
+GitHub : [https://github.com/leey00nsu/lee-spec-kit](https://github.com/leey00nsu/lee-spec-kit)  
+npm : [https://www.npmjs.com/package/lee-spec-kit](https://www.npmjs.com/package/lee-spec-kit)
+
+When working with AI coding assistants, the biggest bottleneck often becomes **inconsistent documentation structure and missing context** across projects.  
+`lee-spec-kit` is a CLI that helps you **bootstrap a predictable docs structure** and keep a consistent feature workflow (`spec → plan → tasks → decisions`) so both humans and agents can collaborate with less friction.
+Based on spec-kit’s docs structure and workflow, it was designed to make Spec-driven development (SDD) easy to adopt in real projects.
+
+## Key Features
+
+- Enforces Spec-driven development workflow: standardizes the “spec → plan → tasks → decisions” flow per feature so intent, design, execution, and decisions stay traceable.
+- Standardized docs structure: provides a consistent docs skeleton (agents/prd/features, shared templates) to keep documentation shape and quality predictable.
+- Feature-centric doc management: organizes artifacts in per-feature folders so progress is visible at a glance and review, prioritization, and history tracking are straightforward.
+- Agent-friendly context: outputs the current feature’s key context and next actions so humans and agents follow the same process.
+- Template updates: provides a maintenance path to keep templates and guides (agents, skills, etc.) up to date.
+
+## Problem
+
+- **Context overhead for agents**: documentation structure and conventions vary across projects
+- **Fragmented workflow**: spec/plan/tasks/decisions are scattered, making reviews and progress tracking harder
+- **Doc quality drift**: missing files/status, duplicate IDs, and leftover placeholders accumulate over time
+
+## Solution
+
+- Provide a standardized docs skeleton and shared templates to keep documentation structure consistent
+- Automatically scaffold feature artifacts (`spec.md`, `plan.md`, `tasks.md`, `decisions.md`) to preserve the SDD flow
+- Summarize current state/next actions and integrate with automation via JSON output
+- Validate structure/metadata and keep templates up to date to prevent documentation drift
+
+## Impact
+
+- **Lower onboarding/communication cost**: standardized docs make context sharing simpler
+- **Better feature visibility**: templated workflow keeps progress consistent and reviewable
+- **Sustained doc quality**: automated validation catches structural/metadata issues early
+
+## Tech Stack
+
+- Runtime: Node.js
+- Language/Build: TypeScript, tsup
+- CLI: Commander.js, prompts, chalk

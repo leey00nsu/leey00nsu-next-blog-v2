@@ -9,6 +9,7 @@
       "title": "프로젝트",
       "description": "최근 진행한 프로젝트입니다.",
       "viewDetailAria": "{project} 상세 페이지로 이동",
+      "viewGithubAria": "{project} GitHub로 이동",
       "inProgress": "진행 중",
       "duration": "프로젝트 기간",
       "techStack": "기술 스택",

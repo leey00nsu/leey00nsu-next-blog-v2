@@ -9,6 +9,7 @@
       "title": "Projects",
       "description": "A quick overview of recent projects.",
       "viewDetailAria": "Open detail page for {project}",
+      "viewGithubAria": "Open GitHub for {project}",
       "inProgress": "In Progress",
       "duration": "Duration",
       "techStack": "Tech Stack",

@@ -1,16 +1,27 @@
 ---
 slug: blog
 title: Blog
-summary: Next.js + MDX-based blog with AI automatic translation and GitHub integration
+summary: A Next.js blog with multilingual MDX, Studio editor, and GitHub auto-commit
+keyFeatures:
+  - Author MDX in Studio and auto-commit to GitHub
+  - Multilingual MDX with OpenAI-powered translation
+  - Automatic image metadata injection and portfolio PDF generation
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
+  demo: https://leey00nsu.com
 period:
   start: 2025-09
-  end:
+  end: 2026-02
 techStacks:
   - Next.js
   - TypeScript
+  - OpenAI SDK
   - Tailwind CSS
+  - next-intl
+  - Tiptap
+  - NextAuth
+  - Octokit
+  - Playwright
 thumbnail: /public/projects/blog/logo.webp
 draft: false
 type: solo
@@ -19,19 +30,50 @@ type: solo
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
+Demo : [https://leey00nsu.com](https://leey00nsu.com)
 
 This is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.
 **A fully automated blog pipeline from writing to deployment** is a key feature.
 
 ## Key Features
 
-- MDX document authoring via a web editor
-- AI automatic translation (Korean ↔ English)
-- Automatic commits via GitHub API integration
-- Image metadata extraction and LCP/CLS improvements
-- Modularization based on FSD architecture
+- MDX-based blog (syntax highlighting, image metadata, etc.)
+- Studio editor (Tiptap) for authoring frontmatter/body and uploading images
+- GitHub API (Octokit) auto-commit for MDX/images
+- i18n: `next-intl` + OpenAI-powered translation
+- AI image generation from selected text (requires `LEESFIELD_API_KEY`)
+- Playwright-based portfolio PDF generation
+
+## Problem
+
+- **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions
+- **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone
+- **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS
+- **Access control**: Editing capabilities need protection to prevent abuse
+
+## Solution
+
+- Standardize the authoring flow with a web-based MDX editor
+- Synchronize Korean/English content with OpenAI-powered translation
+- Automate commits to a branch via GitHub API (Octokit) to streamline deployment
+- Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance
+- Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach
+- Automate portfolio PDF output with a Playwright-based pipeline
+- Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)
+
+## Impact
+
+- **Lower ops cost**: Less repetitive work thanks to automated translation and deployment
+- **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates
+- **Improved web performance**: More stable image rendering contributes to better LCP/CLS
+- **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing
 
 ## Tech Stack
 
-- Frontend: Next.js, TypeScript, Tailwind CSS
-- Infra: GitHub API (Octokit), OpenAI SDK
+- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- MDX: next-mdx-remote, remark/rehype
+- i18n: next-intl
+- Editor: Tiptap
+- Auth: NextAuth
+- AI/Automation: OpenAI SDK, Octokit (GitHub API)
+- Test/Tooling: Vitest, Playwright, Storybook

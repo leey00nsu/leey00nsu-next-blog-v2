@@ -1,16 +1,27 @@
 ---
 slug: blog
 title: 블로그
-summary: Next.js + MDX 기반, AI 자동 번역과 GitHub 연동 블로그
+summary: 다국어(MDX), Studio 편집기, GitHub 자동 커밋을 포함한 Next.js 기반 블로그
+keyFeatures:
+  - Studio에서 MDX 작성 후 GitHub로 자동 커밋
+  - 다국어(MDX) + OpenAI 기반 자동 번역
+  - 이미지 메타데이터 자동 주입 및 포트폴리오 PDF 생성
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
+  demo: https://leey00nsu.com
 period:
   start: 2025-09
-  end:
+  end: 2026-02
 techStacks:
   - Next.js
   - TypeScript
+  - OpenAI SDK
   - Tailwind CSS
+  - next-intl
+  - Tiptap
+  - NextAuth
+  - Octokit
+  - Playwright
 thumbnail: /public/projects/blog/logo.webp
 draft: false
 type: solo
@@ -19,19 +30,50 @@ type: solo
 ## 프로젝트 소개
 
 GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
+Demo : [https://leey00nsu.com](https://leey00nsu.com)
 
 Next.js 기반의 기술 블로그입니다. 자체 웹 에디터에서 작성한 글을 AI가 한국어/영어로 자동 번역하고, GitHub API를 통해 브랜치에 직접 커밋하여 배포까지 자동화했습니다.
 **글쓰기부터 배포까지 완전 자동화된 블로그 파이프라인**을 구축한 것이 특징입니다.
 
-## 주요 기능
+## 핵심 기능
 
-- 웹 에디터를 통한 MDX 문서 작성
-- AI 자동 번역(한국어 ↔ 영어) 지원
-- GitHub API 연동 자동 커밋
-- 이미지 메타데이터 추출 및 LCP/CLS 개선
-- FSD 아키텍처 기반 모듈화
+- MDX 기반 블로그(코드 하이라이트/이미지 메타데이터 등)
+- Studio 편집기(Tiptap)로 Frontmatter/본문 작성 및 이미지 업로드
+- GitHub API(Octokit)로 MDX/이미지 자동 커밋
+- 다국어(i18n): `next-intl` + OpenAI 자동 번역
+- AI 이미지 생성(에디터에서 텍스트 선택 후 생성, `LEESFIELD_API_KEY` 필요)
+- Playwright 기반 포트폴리오 PDF 자동 생성
+
+## Problem
+
+- **다국어 콘텐츠 운영 부담**: 한국어/영어를 수동으로 관리하면 누락/불일치가 발생하기 쉬움
+- **배포까지의 마찰**: 작성 → 번역 → 커밋 → 배포 과정이 수작업이면 반복 비용이 큼
+- **이미지 성능 이슈**: 이미지 크기/플레이스홀더 정보가 없으면 LCP/CLS가 악화되기 쉬움
+- **보안/권한 문제**: 편집 기능을 공개하면 오남용 위험이 있어 접근 제어가 필요
+
+## Solution
+
+- 웹 기반 에디터로 MDX 작성 플로우를 단일화하고, 글 작성 경험을 표준화
+- OpenAI 기반 자동 번역으로 한국어/영어 문서를 동기화
+- GitHub API(Octokit)로 브랜치에 직접 커밋하여 배포 파이프라인을 자동화
+- 이미지 메타데이터(width/height/LQIP)를 사전 생성하여 렌더링 안정성과 성능을 개선
+- NextAuth 기반 GitHub OAuth로 Studio 접근을 제한하고, 허용 사용자만 편집 가능하도록 구성
+- Playwright 기반 PDF 생성으로 포트폴리오 산출물을 자동화
+- FSD(Feature-Sliced Design) 구조로 모듈을 분리하여 유지보수성을 확보
+
+## Impact
+
+- **운영 비용 절감**: 다국어 문서와 배포가 자동화되어 반복 작업이 크게 감소
+- **품질/일관성 향상**: 문서/코드/배포 흐름이 연결되어 변경 누락을 줄임
+- **웹 성능 개선**: 이미지 렌더링 안정화로 LCP/CLS 개선에 기여
+- **산출물 자동화**: 포트폴리오 PDF를 자동 생성하여 공유/제출이 쉬워짐
 
 ## 기술 스택
 
-- Frontend: Next.js, TypeScript, Tailwind CSS
-- Infra: GitHub API (Octokit), OpenAI SDK
+- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- MDX: next-mdx-remote, remark/rehype
+- i18n: next-intl
+- Editor: Tiptap
+- Auth: NextAuth
+- AI/Automation: OpenAI SDK, Octokit (GitHub API)
+- Test/Tooling: Vitest, Playwright, Storybook

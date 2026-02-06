@@ -29,18 +29,34 @@ export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
-            {project.title}
-          </h1>
-          <span className="border-border bg-muted inline-flex rounded-full border px-3 py-1 text-xs font-semibold">
-            <span className="sr-only">{typeLabel}</span>
-            {projectTypeLabel}
-          </span>
+        <div className="flex items-start gap-4">
+          {hasThumbnail ? (
+            <span className="border-border bg-muted flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border">
+              <CustomImage
+                src={removePublic(project.thumbnail!)}
+                alt=""
+                aria-hidden
+                className="h-full w-full object-cover"
+                width={hasDimensions ? project.width : undefined}
+                height={hasDimensions ? project.height : undefined}
+              />
+            </span>
+          ) : null}
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
+                {project.title}
+              </h1>
+              <span className="border-border bg-muted inline-flex rounded-full border px-3 py-1 text-xs font-semibold">
+                <span className="sr-only">{typeLabel}</span>
+                {projectTypeLabel}
+              </span>
+            </div>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              {project.summary}
+            </p>
+          </div>
         </div>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          {project.summary}
-        </p>
       </header>
 
       <section className="grid gap-6 md:grid-cols-2">
@@ -66,19 +82,6 @@ export async function ProjectDetail({ project, locale }: ProjectDetailProps) {
           </ul>
         </div>
       </section>
-
-      {hasThumbnail ? (
-        <figure className="not-prose overflow-hidden rounded-xl">
-          <CustomImage
-            src={removePublic(project.thumbnail!)}
-            alt={project.title}
-            className="w-full object-contain"
-            width={hasDimensions ? project.width : undefined}
-            height={hasDimensions ? project.height : undefined}
-            priority
-          />
-        </figure>
-      ) : null}
 
       <article className="prose prose-lg dark:prose-invert mx-auto">
         <MdxRenderer content={project.content} />

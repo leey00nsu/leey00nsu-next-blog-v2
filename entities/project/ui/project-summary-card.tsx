@@ -136,7 +136,7 @@ export async function ProjectSummaryCard({
 
   return (
     <Link
-      href={buildProjectHref(project.slug)}
+      href={buildProjectHref(project.slug, locale)}
       className={className}
       aria-label={ariaLabel}
     >

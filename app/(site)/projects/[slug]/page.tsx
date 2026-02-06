@@ -6,6 +6,7 @@ import {
 } from '@/entities/project/lib/project'
 import { ProjectDetail } from '@/widgets/project/ui/project-detail'
 import {
+  LOCALES,
   buildProjectHref,
   buildProjectOgImagePath,
   SITE,
@@ -37,18 +38,20 @@ export async function generateMetadata({
     }
   }
 
+  const canonicalUrl = buildProjectHref(slug, locale)
   const ogImage = project.thumbnail
     ? removePublic(project.thumbnail)
-    : buildProjectOgImagePath(slug)
+    : buildProjectOgImagePath(slug, locale)
 
   return {
     title: project.title,
     description: project.summary ?? SITE.DEFAULT_DESCRIPTION,
     alternates: {
-      canonical: buildProjectHref(slug),
+      canonical: canonicalUrl,
       languages: {
-        ko: buildProjectHref(slug),
-        en: buildProjectHref(slug),
+        ko: buildProjectHref(slug, 'ko'),
+        en: buildProjectHref(slug, 'en'),
+        'x-default': buildProjectHref(slug, LOCALES.DEFAULT),
       },
     },
     openGraph: {
@@ -56,6 +59,7 @@ export async function generateMetadata({
       siteName: SITE.NAME,
       title: project.title,
       description: project.summary ?? SITE.DEFAULT_DESCRIPTION,
+      url: canonicalUrl,
       images: [ogImage],
     },
     twitter: {

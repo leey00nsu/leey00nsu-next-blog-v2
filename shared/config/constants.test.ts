@@ -4,6 +4,8 @@ import {
   buildPostMdxRelativePathLocalized,
   buildProjectMdxRelativePath,
   buildProjectMdxRelativePathLocalized,
+  buildLocalizedRoutePath,
+  stripLocalePrefix,
   buildBlogPostHref,
   buildBlogTagHref,
   buildProjectHref,
@@ -51,6 +53,11 @@ describe('경로 빌더 함수', () => {
     it('블로그 포스트 URL을 생성한다', () => {
       expect(buildBlogPostHref('my-post')).toBe('/blog/my-post')
     })
+
+    it('로케일이 지정되면 로케일 프리픽스를 붙인다', () => {
+      expect(buildBlogPostHref('my-post', 'ko')).toBe('/ko/blog/my-post')
+      expect(buildBlogPostHref('my-post', 'en')).toBe('/en/blog/my-post')
+    })
   })
 
   describe('buildBlogTagHref', () => {
@@ -61,11 +68,39 @@ describe('경로 빌더 함수', () => {
     it('특수문자가 포함된 태그를 인코딩한다', () => {
       expect(buildBlogTagHref('c++')).toBe('/blog?tag=c%2B%2B')
     })
+
+    it('로케일이 지정되면 로케일 프리픽스를 붙인다', () => {
+      expect(buildBlogTagHref('react', 'ko')).toBe('/ko/blog?tag=react')
+    })
   })
 
   describe('buildProjectHref', () => {
     it('프로젝트 URL을 생성한다', () => {
       expect(buildProjectHref('my-project')).toBe('/projects/my-project')
+    })
+
+    it('로케일이 지정되면 로케일 프리픽스를 붙인다', () => {
+      expect(buildProjectHref('my-project', 'en')).toBe('/en/projects/my-project')
+    })
+  })
+
+  describe('buildLocalizedRoutePath', () => {
+    it('루트 경로를 로케일 경로로 변환한다', () => {
+      expect(buildLocalizedRoutePath('/', 'ko')).toBe('/ko')
+    })
+
+    it('일반 경로를 로케일 경로로 변환한다', () => {
+      expect(buildLocalizedRoutePath('/blog', 'en')).toBe('/en/blog')
+    })
+  })
+
+  describe('stripLocalePrefix', () => {
+    it('로케일 프리픽스를 제거한다', () => {
+      expect(stripLocalePrefix('/ko/blog')).toBe('/blog')
+    })
+
+    it('로케일 루트는 일반 루트로 변환한다', () => {
+      expect(stripLocalePrefix('/en')).toBe('/')
     })
   })
 })

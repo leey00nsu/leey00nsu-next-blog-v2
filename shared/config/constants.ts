@@ -62,6 +62,7 @@ export function buildAboutMdxAbsolutePathLocalized(
 
 // 라우트/URL 관련 상수
 export const ROUTES = {
+  ROOT: '/' as Route,
   BLOG: '/blog' as Route,
   ABOUT: '/about' as Route,
   PROJECTS: '/projects' as Route,
@@ -78,26 +79,92 @@ export const ROUTES = {
 // 태그 관련 쿼리스트링 키
 export const DEFAULT_TAG_QUERY_KEY = 'tag'
 
+function normalizeLocalePath(pathname: string): string {
+  if (!pathname.startsWith('/')) {
+    return `/${pathname}`
+  }
+
+  if (pathname === ROUTES.ROOT) {
+    return ROUTES.ROOT
+  }
+
+  return pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+}
+
+export function buildLocalizedRoutePath(
+  pathname: string,
+  locale: SupportedLocale,
+): Route {
+  const normalizedPathname = normalizeLocalePath(pathname)
+
+  if (normalizedPathname === ROUTES.ROOT) {
+    return `/${locale}` as Route
+  }
+
+  return `/${locale}${normalizedPathname}` as Route
+}
+
+export function stripLocalePrefix(pathname: string): string {
+  const normalizedPathname = normalizeLocalePath(pathname)
+  const localePrefixPattern = /^\/(ko|en)(\/|$)/
+  return normalizedPathname.replace(localePrefixPattern, '/') || ROUTES.ROOT
+}
+
 // 경로 빌더
-export function buildBlogPostHref(slug: string): Route {
-  return `${ROUTES.BLOG}/${slug}` as Route
+export function buildBlogPostHref(
+  slug: string,
+  locale?: SupportedLocale,
+): Route {
+  const path = `${ROUTES.BLOG}/${slug}` as Route
+  if (!locale) {
+    return path
+  }
+  return buildLocalizedRoutePath(path, locale)
 }
 
-export function buildBlogOgImagePath(slug: string): Route {
-  return `${ROUTES.BLOG}/${slug}/opengraph-image` as Route
+export function buildBlogOgImagePath(
+  slug: string,
+  locale?: SupportedLocale,
+): Route {
+  const path = `${ROUTES.BLOG}/${slug}/opengraph-image` as Route
+  if (!locale) {
+    return path
+  }
+  return buildLocalizedRoutePath(path, locale)
 }
 
-export function buildProjectHref(slug: string): Route {
-  return `${ROUTES.PROJECTS}/${slug}` as Route
+export function buildProjectHref(
+  slug: string,
+  locale?: SupportedLocale,
+): Route {
+  const path = `${ROUTES.PROJECTS}/${slug}` as Route
+  if (!locale) {
+    return path
+  }
+  return buildLocalizedRoutePath(path, locale)
 }
 
-export function buildProjectOgImagePath(slug: string): Route {
-  return `${ROUTES.PROJECTS}/${slug}/opengraph-image` as Route
+export function buildProjectOgImagePath(
+  slug: string,
+  locale?: SupportedLocale,
+): Route {
+  const path = `${ROUTES.PROJECTS}/${slug}/opengraph-image` as Route
+  if (!locale) {
+    return path
+  }
+  return buildLocalizedRoutePath(path, locale)
 }
 
-export function buildBlogTagHref(tag: string): Route {
+export function buildBlogTagHref(tag: string, locale?: SupportedLocale): Route {
   const searchParams = new URLSearchParams([[DEFAULT_TAG_QUERY_KEY, tag]])
-  return `${ROUTES.BLOG}?${searchParams.toString()}`
+  const path = `${ROUTES.BLOG}?${searchParams.toString()}` as Route
+  if (!locale) {
+    return path
+  }
+
+  const [pathname, queryString = ''] = path.split('?')
+  const localizedPathname = buildLocalizedRoutePath(pathname, locale)
+  return `${localizedPathname}${queryString ? `?${queryString}` : ''}` as Route
 }
 
 export const SITE = {

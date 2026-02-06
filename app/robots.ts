@@ -1,22 +1,22 @@
 import type { MetadataRoute } from 'next'
+import { LOCALES } from '@/shared/config/constants'
+import { getSiteUrl } from '@/shared/config/site-url'
 
-const getBaseOrigin = () => {
-  const raw = process.env.AUTH_URL ?? 'http://localhost:3000'
-  try {
-    return new URL(raw).origin
-  } catch {
-    return 'http://localhost:3000'
-  }
-}
+const ROBOTS_DISALLOW_PATHS = ['/api', '/studio', '/auth', '/print']
 
 export default function robots(): MetadataRoute.Robots {
-  const origin = getBaseOrigin()
+  const siteUrl = getSiteUrl()
+  const origin = siteUrl.origin
+  const localizedDisallowPaths = LOCALES.SUPPORTED.flatMap((locale) =>
+    ROBOTS_DISALLOW_PATHS.map((path) => `/${locale}${path}`),
+  )
+
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api', '/studio', '/auth', '/print'],
+        disallow: [...ROBOTS_DISALLOW_PATHS, ...localizedDisallowPaths],
       },
     ],
     host: origin,

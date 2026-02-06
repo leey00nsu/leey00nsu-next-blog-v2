@@ -12,25 +12,6 @@ interface AboutDetailProps {
   projectCardLinkVariant?: ProjectSummaryCardLinkVariant
 }
 
-interface ProjectSectionSlotProps {
-  locale: SupportedLocale
-  projectCardLinkVariant?: ProjectSummaryCardLinkVariant
-}
-
-function ProjectSectionSlot({
-  locale,
-  projectCardLinkVariant,
-}: ProjectSectionSlotProps) {
-  return (
-    <div className="not-prose">
-      <ProjectSection
-        locale={locale}
-        projectCardLinkVariant={projectCardLinkVariant}
-      />
-    </div>
-  )
-}
-
 export function AboutDetail({
   about,
   locale,
@@ -44,21 +25,13 @@ export function AboutDetail({
           <DownloadResumeButton locale={locale} />
         </div>
       ) : null}
-      <MdxRenderer
-        content={about.content}
-        components={{
-          ProjectSection: () => (
-            <ProjectSectionSlot
-              locale={locale}
-              projectCardLinkVariant={projectCardLinkVariant}
-            />
-          ),
-        }}
-      />
-      <ProjectSectionSlot
-        locale={locale}
-        projectCardLinkVariant={projectCardLinkVariant}
-      />
+      <MdxRenderer content={about.content} />
+      <div className="not-prose">
+        <ProjectSection
+          locale={locale}
+          projectCardLinkVariant={projectCardLinkVariant}
+        />
+      </div>
     </article>
   )
 }

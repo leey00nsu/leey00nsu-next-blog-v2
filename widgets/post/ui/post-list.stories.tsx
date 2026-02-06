@@ -38,6 +38,7 @@ type Story = StoryObj<typeof PostList>
 export const Default: Story = {
     args: {
         posts: mockPosts,
+        locale: 'ko',
     },
     render: (args) => (
         <div className="w-[600px]">
@@ -49,6 +50,7 @@ export const Default: Story = {
 export const SinglePost: Story = {
     args: {
         posts: [mockPosts[0]],
+        locale: 'ko',
     },
     render: (args) => (
         <div className="w-[600px]">
@@ -60,6 +62,7 @@ export const SinglePost: Story = {
 export const Empty: Story = {
     args: {
         posts: [],
+        locale: 'ko',
     },
     render: (args) => (
         <div className="w-[600px]">
@@ -71,6 +74,7 @@ export const Empty: Story = {
 export const ManyPosts: Story = {
     args: {
         posts: Array.from({ length: 10 }, (_, i) => createMockPost(i + 1)),
+        locale: 'ko',
     },
     render: (args) => (
         <div className="w-[600px]">

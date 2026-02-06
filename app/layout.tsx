@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
 import { SITE } from '@/shared/config/constants'
+import { getSiteUrl } from '@/shared/config/site-url'
 
 const pretendard = localFont({
   src: './PretendardVariable.woff2',
@@ -15,7 +16,7 @@ const pretendard = localFont({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.AUTH_URL ?? 'http://localhost:3000'),
+  metadataBase: getSiteUrl(),
 
   title: {
     default: SITE.NAME,

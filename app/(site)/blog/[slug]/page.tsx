@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getAllPosts, getPostBySlug } from '@/entities/post/lib/post'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
 import {
+  LOCALES,
   buildBlogOgImagePath,
   buildBlogPostHref,
   SITE,
@@ -33,17 +34,19 @@ export async function generateMetadata({
     }
   }
 
-  const ogImage = buildBlogOgImagePath(slug)
+  const ogImage = buildBlogOgImagePath(slug, locale)
+  const canonicalUrl = buildBlogPostHref(slug, locale)
 
   return {
     title: post.title,
     description: post.description ?? SITE.DEFAULT_DESCRIPTION,
     keywords: post.tags,
     alternates: {
-      canonical: buildBlogPostHref(slug),
+      canonical: canonicalUrl,
       languages: {
-        ko: buildBlogPostHref(slug),
-        en: buildBlogPostHref(slug),
+        ko: buildBlogPostHref(slug, 'ko'),
+        en: buildBlogPostHref(slug, 'en'),
+        'x-default': buildBlogPostHref(slug, LOCALES.DEFAULT),
       },
     },
     openGraph: {
@@ -51,6 +54,7 @@ export async function generateMetadata({
       siteName: SITE.NAME,
       title: post.title,
       description: post.description ?? SITE.DEFAULT_DESCRIPTION,
+      url: canonicalUrl,
       images: [ogImage],
       publishedTime: post.date.toISOString(),
       authors: [post.writer],
@@ -75,5 +79,5 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
-  return <PostDetail post={post} />
+  return <PostDetail post={post} locale={locale} />
 }

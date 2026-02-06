@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation'
-import { ROUTES } from '@/shared/config/constants'
+import {
+  ROUTES,
+  SupportedLocale,
+  buildLocalizedRoutePath,
+} from '@/shared/config/constants'
+import { getLocale } from 'next-intl/server'
 
-export default function Home() {
-  redirect(ROUTES.BLOG)
+export default async function Home() {
+  const locale = (await getLocale()) as SupportedLocale
+  redirect(buildLocalizedRoutePath(ROUTES.BLOG, locale))
 }

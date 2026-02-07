@@ -64,9 +64,31 @@ function parseLocaleFromAcceptLanguage(
   return null
 }
 
+function resolveRequestOrigin(
+  requestHeaders: Headers,
+  fallbackOrigin: string,
+): string {
+  const forwardedProtocolHeader =
+    requestHeaders.get('x-forwarded-proto') ?? null
+  const protocolCandidate = forwardedProtocolHeader?.split(',')[0]?.trim()
+  const resolvedProtocol = protocolCandidate || 'http'
+
+  const forwardedHostHeader = requestHeaders.get('x-forwarded-host') ?? null
+  const hostHeader = requestHeaders.get('host') ?? null
+  const hostCandidate =
+    forwardedHostHeader?.split(',')[0]?.trim() ?? hostHeader?.trim() ?? ''
+
+  if (!hostCandidate) {
+    return fallbackOrigin
+  }
+
+  return `${resolvedProtocol}://${hostCandidate}`
+}
+
 export const proxy = auth((req) => {
   const { nextUrl } = req
   const requestPathname = nextUrl.pathname
+  const requestOrigin = resolveRequestOrigin(req.headers, nextUrl.origin)
 
   if (shouldSkipProxy(requestPathname)) {
     return NextResponse.next()
@@ -93,7 +115,7 @@ export const proxy = auth((req) => {
     )
     const redirectUrl = new URL(
       `${localizedPathname}${nextUrl.search}`,
-      nextUrl.origin,
+      requestOrigin,
     )
 
     return NextResponse.redirect(redirectUrl)
@@ -112,7 +134,7 @@ export const proxy = auth((req) => {
         pathnameWithoutLocale,
         localeInPath,
       )
-      const signInUrl = new URL(localizedSignInPath, nextUrl.origin)
+      const signInUrl = new URL(localizedSignInPath, requestOrigin)
       signInUrl.searchParams.set(
         'callbackUrl',
         `${localizedCallbackPath}${nextUrl.search}`,
@@ -121,8 +143,10 @@ export const proxy = auth((req) => {
     }
   }
 
-  const rewriteUrl = nextUrl.clone()
-  rewriteUrl.pathname = pathnameWithoutLocale
+  const rewriteUrl = new URL(
+    `${pathnameWithoutLocale}${nextUrl.search}`,
+    requestOrigin,
+  )
 
   const rewrittenRequestHeaders = new Headers(req.headers)
   rewrittenRequestHeaders.set('x-locale', localeInPath)

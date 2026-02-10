@@ -1,8 +1,11 @@
 import { About } from '@/entities/about/model/types'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { ProjectSection } from '@/widgets/about/ui/project-section'
-import { SupportedLocale } from '@/shared/config/constants'
-import { DownloadResumeButton } from '@/features/pdf/ui/download-resume-button'
+import {
+  PDF,
+  SupportedLocale,
+} from '@/shared/config/constants'
+import { DownloadPdfButton } from '@/features/pdf/ui/download-pdf-button'
 import type { ProjectSummaryCardLinkVariant } from '@/entities/project/ui/project-summary-card'
 
 interface AboutDetailProps {
@@ -21,8 +24,15 @@ export function AboutDetail({
   return (
     <article className="prose prose-lg dark:prose-invert mx-auto">
       {showDownloadButton ? (
-        <div className="not-prose mb-6 flex justify-end">
-          <DownloadResumeButton locale={locale} />
+        <div className="not-prose mb-6 flex flex-wrap justify-end gap-2">
+          <DownloadPdfButton
+            locale={locale}
+            documentKind={PDF.DOCUMENT_KIND.RESUME}
+          />
+          <DownloadPdfButton
+            locale={locale}
+            documentKind={PDF.DOCUMENT_KIND.PORTFOLIO}
+          />
         </div>
       ) : null}
       <MdxRenderer content={about.content} />

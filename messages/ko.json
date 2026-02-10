@@ -119,9 +119,12 @@
     }
   },
   "pdf": {
-    "download": "PDF 다운로드",
+    "downloadResume": "이력서 PDF 다운로드",
+    "downloadPortfolio": "포트폴리오 PDF 다운로드",
     "loading": "다운로드 중...",
-    "success": "PDF 다운로드가 시작되었습니다.",
-    "error": "PDF 생성 중 문제가 발생했습니다."
+    "successResume": "이력서 PDF 다운로드가 시작되었습니다.",
+    "successPortfolio": "포트폴리오 PDF 다운로드가 시작되었습니다.",
+    "errorResume": "이력서 PDF 생성 중 문제가 발생했습니다.",
+    "errorPortfolio": "포트폴리오 PDF 생성 중 문제가 발생했습니다."
   }
 }

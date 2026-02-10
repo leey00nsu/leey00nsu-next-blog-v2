@@ -1,13 +1,13 @@
 /**
- * 빌드 시점에 resume PDF를 생성하는 스크립트
+ * 빌드 시점에 PDF를 생성하는 스크립트
  *
  * postbuild에서 실행되며:
  * 1. 임시로 Next.js 서버 시작 (기본 포트 3000, PDF_SERVER_PORT 환경변수로 변경 가능)
- * 2. Playwright로 /print/resume 페이지 렌더링
- * 3. 모든 로케일에 대해 PDF 생성
+ * 2. Playwright로 /print/resume, /print/portfolio 페이지 렌더링
+ * 3. 모든 로케일/문서 종류에 대해 PDF 생성
  * 4. 서버 종료
  *
- * PDF는 public/pdf/portfolio-{locale}.pdf에 저장됩니다.
+ * PDF는 public/pdf/{documentKind}-{locale}.pdf에 저장됩니다.
  */
 
 import 'dotenv/config'
@@ -15,14 +15,43 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import fs from 'node:fs'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
-import { chromium } from 'playwright'
-import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
+import { chromium, type Page } from 'playwright'
+import {
+  buildPdfFileName,
+  LOCALES,
+  PDF,
+  type PdfDocumentKind,
+  type SupportedLocale,
+} from '@/shared/config/constants'
 
 const PDF_DIR = path.join(process.cwd(), 'public', 'pdf')
 const SERVER_PORT = Number(process.env.PDF_SERVER_PORT ?? 3000)
 const BASE_URL = `http://localhost:${SERVER_PORT}`
 const SERVER_STARTUP_TIMEOUT_MS = 30_000
 const SERVER_STARTUP_CHECK_INTERVAL_MS = 500
+const PDF_RENDER = {
+  IMAGE_PRELOAD_INITIAL_WAIT_MS: 800,
+  IMAGE_PRELOAD_SCROLL_STEP_PX: 600,
+  IMAGE_PRELOAD_SCROLL_WAIT_MS: 80,
+  IMAGE_PRELOAD_TIMEOUT_MS: 20_000,
+  IMAGE_PRELOAD_RETRY_WAIT_MS: 120,
+} as const
+
+interface PdfGenerationTarget {
+  documentKind: PdfDocumentKind
+  printRoute: string
+}
+
+const PDF_GENERATION_TARGETS: PdfGenerationTarget[] = [
+  {
+    documentKind: PDF.DOCUMENT_KIND.RESUME,
+    printRoute: PDF.PRINT_ROUTE.RESUME,
+  },
+  {
+    documentKind: PDF.DOCUMENT_KIND.PORTFOLIO,
+    printRoute: PDF.PRINT_ROUTE.PORTFOLIO,
+  },
+]
 
 function locateChromiumExecutable(): string | null {
   const explicit =
@@ -126,7 +155,7 @@ async function startServer(): Promise<ChildProcess> {
   const startTime = Date.now()
   while (Date.now() - startTime < SERVER_STARTUP_TIMEOUT_MS) {
     try {
-      const response = await fetch(`${BASE_URL}/print/resume`)
+      const response = await fetch(`${BASE_URL}${PDF.PRINT_ROUTE.RESUME}`)
       if (response.ok) {
         console.log('  Server is ready!')
         return serverProcess
@@ -148,12 +177,133 @@ function stopServer(serverProcess: ChildProcess): void {
   serverProcess.kill('SIGTERM')
 }
 
+async function preparePageForPdf(page: Page): Promise<void> {
+  await page.emulateMedia({ media: 'screen' })
+
+  // 상대 링크를 절대 URL로 변환 (프로덕션 URL 사용)
+  const productionUrl = process.env.AUTH_URL ?? BASE_URL
+  await page.evaluate((base: string) => {
+    const anchors = document.querySelectorAll('a[href]')
+    for (const anchor of anchors) {
+      const href = anchor.getAttribute('href')
+      if (!href) continue
+      if (href.startsWith('#')) {
+        anchor.removeAttribute('href')
+        continue
+      }
+      if (href.startsWith('/')) {
+        anchor.setAttribute('href', new URL(href, base).toString())
+      }
+      anchor.setAttribute('target', '_blank')
+      anchor.setAttribute('rel', 'noopener noreferrer')
+    }
+  }, productionUrl)
+
+  // 불필요한 UI 요소 숨김
+  await page.addStyleTag({
+    content: `
+        nav, footer, aside, [data-next-route-announcer], [data-nextjs-toolbox],
+        #__next_devtools_container, #__next-route-announcer, #__next_devtools_panel,
+        .nextjs-toast-container { display: none !important; }
+        body { background: white !important; }
+        main { padding: 0 !important; }
+      `,
+  })
+
+  // lazy 이미지가 PDF 캡처 이전에 모두 로드되도록 강제 preloading 수행
+  await page.evaluate(
+    async ({
+      imagePreloadInitialWaitMilliseconds,
+      imagePreloadScrollStepPixel,
+      imagePreloadScrollWaitMilliseconds,
+      imagePreloadTimeoutMilliseconds,
+      imagePreloadRetryWaitMilliseconds,
+    }) => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, imagePreloadInitialWaitMilliseconds)
+      })
+
+      {
+        const imageElements = document.querySelectorAll<HTMLImageElement>('img')
+        for (const imageElement of imageElements) {
+          imageElement.loading = 'eager'
+          imageElement.decoding = 'sync'
+          imageElement.setAttribute('loading', 'eager')
+          imageElement.setAttribute('decoding', 'sync')
+          imageElement.setAttribute('fetchpriority', 'high')
+        }
+      }
+
+      {
+        const documentElement = document.documentElement
+        const maxScrollTop = Math.max(
+          documentElement.scrollHeight - globalThis.innerHeight,
+          0,
+        )
+
+        for (
+          let currentScrollTop = 0;
+          currentScrollTop <= maxScrollTop;
+          currentScrollTop += imagePreloadScrollStepPixel
+        ) {
+          globalThis.scrollTo(0, currentScrollTop)
+          await new Promise((resolve) => {
+            setTimeout(resolve, imagePreloadScrollWaitMilliseconds)
+          })
+        }
+
+        globalThis.scrollTo(0, 0)
+        await new Promise((resolve) => {
+          setTimeout(resolve, imagePreloadScrollWaitMilliseconds)
+        })
+      }
+
+      const timeoutAt = Date.now() + imagePreloadTimeoutMilliseconds
+      while (Date.now() < timeoutAt) {
+        let hasPendingImage = false
+        const imageElements = document.querySelectorAll<HTMLImageElement>('img')
+        for (const imageElement of imageElements) {
+          imageElement.loading = 'eager'
+          imageElement.decoding = 'sync'
+          imageElement.setAttribute('loading', 'eager')
+          imageElement.setAttribute('decoding', 'sync')
+          imageElement.setAttribute('fetchpriority', 'high')
+
+          if (!(imageElement.complete && imageElement.naturalWidth > 0)) {
+            hasPendingImage = true
+          }
+        }
+
+        if (!hasPendingImage) {
+          break
+        }
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, imagePreloadRetryWaitMilliseconds)
+        })
+      }
+    },
+    {
+      imagePreloadInitialWaitMilliseconds:
+        PDF_RENDER.IMAGE_PRELOAD_INITIAL_WAIT_MS,
+      imagePreloadScrollStepPixel: PDF_RENDER.IMAGE_PRELOAD_SCROLL_STEP_PX,
+      imagePreloadScrollWaitMilliseconds:
+        PDF_RENDER.IMAGE_PRELOAD_SCROLL_WAIT_MS,
+      imagePreloadTimeoutMilliseconds: PDF_RENDER.IMAGE_PRELOAD_TIMEOUT_MS,
+      imagePreloadRetryWaitMilliseconds:
+        PDF_RENDER.IMAGE_PRELOAD_RETRY_WAIT_MS,
+    },
+  )
+}
+
 async function generatePdfForLocale(
   executablePath: string,
   locale: SupportedLocale,
+  pdfGenerationTarget: PdfGenerationTarget,
 ): Promise<void> {
-  const targetUrl = new URL('/print/resume', BASE_URL)
-  const cacheFile = path.join(PDF_DIR, `portfolio-${locale}.pdf`)
+  const targetUrl = new URL(pdfGenerationTarget.printRoute, BASE_URL)
+  const pdfFileName = buildPdfFileName(pdfGenerationTarget.documentKind, locale)
+  const cacheFile = path.join(PDF_DIR, pdfFileName)
 
   const browser = await chromium.launch({
     executablePath,
@@ -182,37 +332,7 @@ async function generatePdfForLocale(
 
     const page = await context.newPage()
     await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
-    await page.emulateMedia({ media: 'screen' })
-
-    // 상대 링크를 절대 URL로 변환 (프로덕션 URL 사용)
-    const productionUrl = process.env.AUTH_URL ?? BASE_URL
-    await page.evaluate((base: string) => {
-      const anchors = document.querySelectorAll('a[href]')
-      for (const anchor of anchors) {
-        const href = anchor.getAttribute('href')
-        if (!href) continue
-        if (href.startsWith('#')) {
-          anchor.removeAttribute('href')
-          continue
-        }
-        if (href.startsWith('/')) {
-          anchor.setAttribute('href', new URL(href, base).toString())
-        }
-        anchor.setAttribute('target', '_blank')
-        anchor.setAttribute('rel', 'noopener noreferrer')
-      }
-    }, productionUrl)
-
-    // 불필요한 UI 요소 숨김
-    await page.addStyleTag({
-      content: `
-        nav, footer, aside, [data-next-route-announcer], [data-nextjs-toolbox],
-        #__next_devtools_container, #__next-route-announcer, #__next_devtools_panel,
-        .nextjs-toast-container { display: none !important; }
-        body { background: white !important; }
-        main { padding: 0 !important; }
-      `,
-    })
+    await preparePageForPdf(page)
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -226,7 +346,7 @@ async function generatePdfForLocale(
     })
 
     await fsp.writeFile(cacheFile, pdfBuffer)
-    console.log(`  ✅ Generated portfolio-${locale}.pdf`)
+    console.log(`  ✅ Generated ${pdfFileName}`)
   } finally {
     if (context) {
       await context.close()
@@ -258,10 +378,17 @@ async function main(): Promise<void> {
     serverProcess = await startServer()
 
     for (const locale of LOCALES.SUPPORTED) {
-      try {
-        await generatePdfForLocale(executablePath, locale)
-      } catch (error) {
-        console.error(`  ❌ Failed to generate portfolio-${locale}.pdf:`, error)
+      for (const pdfGenerationTarget of PDF_GENERATION_TARGETS) {
+        const pdfFileName = buildPdfFileName(
+          pdfGenerationTarget.documentKind,
+          locale,
+        )
+
+        try {
+          await generatePdfForLocale(executablePath, locale, pdfGenerationTarget)
+        } catch (error) {
+          console.error(`  ❌ Failed to generate ${pdfFileName}:`, error)
+        }
       }
     }
 

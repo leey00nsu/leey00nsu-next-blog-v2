@@ -119,9 +119,12 @@
     }
   },
   "pdf": {
-    "download": "Download PDF",
+    "downloadResume": "Download Resume PDF",
+    "downloadPortfolio": "Download Portfolio PDF",
     "loading": "Preparing...",
-    "success": "Your PDF download has started.",
-    "error": "Unable to generate the PDF."
+    "successResume": "Your resume PDF download has started.",
+    "successPortfolio": "Your portfolio PDF download has started.",
+    "errorResume": "Unable to generate resume PDF.",
+    "errorPortfolio": "Unable to generate portfolio PDF."
   }
 }

@@ -1,9 +1,9 @@
 /**
- * Resume PDF API
+ * Portfolio PDF API
  *
- * 빌드 시점에 생성된 이력서 PDF 파일을 반환합니다.
+ * 빌드 시점에 생성된 포트폴리오 PDF 파일을 반환합니다.
  * PDF는 postbuild 단계에서 `pnpm run gen:resume-pdf` 스크립트로 생성됩니다.
- * 저장 위치: public/pdf/resume-{locale}.pdf
+ * 저장 위치: public/pdf/portfolio-{locale}.pdf
  */
 
 import fs from 'node:fs'
@@ -29,7 +29,7 @@ function bufferToArrayBuffer(
 export async function GET(request: NextRequest) {
   const localeCookie = request.cookies.get('locale')?.value ?? null
   const locale = determineSupportedLocale([localeCookie])
-  const pdfFileName = buildPdfFileName(PDF.DOCUMENT_KIND.RESUME, locale)
+  const pdfFileName = buildPdfFileName(PDF.DOCUMENT_KIND.PORTFOLIO, locale)
   const pdfFilePath = path.join(PDF_DIR, pdfFileName)
 
   if (!fs.existsSync(pdfFilePath)) {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[pdf] Failed to read resume PDF file:', error)
+    console.error('[pdf] Failed to read portfolio PDF file:', error)
     return NextResponse.json(
       { error: 'Failed to read PDF file' },
       { status: 500 },

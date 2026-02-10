@@ -76,6 +76,31 @@ export const ROUTES = {
   },
 } as const
 
+export const PDF = {
+  DOCUMENT_KIND: {
+    RESUME: 'resume',
+    PORTFOLIO: 'portfolio',
+  },
+  API_ROUTE: {
+    RESUME: '/api/pdf/resume' as Route,
+    PORTFOLIO: '/api/pdf/portfolio' as Route,
+  },
+  PRINT_ROUTE: {
+    RESUME: '/print/resume' as Route,
+    PORTFOLIO: '/print/portfolio' as Route,
+  },
+  FILE_EXTENSION: 'pdf',
+} as const
+
+export type PdfDocumentKind = (typeof PDF.DOCUMENT_KIND)[keyof typeof PDF.DOCUMENT_KIND]
+
+export function buildPdfFileName(
+  documentKind: PdfDocumentKind,
+  locale: SupportedLocale,
+): string {
+  return `${documentKind}-${locale}.${PDF.FILE_EXTENSION}`
+}
+
 // 태그 관련 쿼리스트링 키
 export const DEFAULT_TAG_QUERY_KEY = 'tag'
 

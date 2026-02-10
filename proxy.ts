@@ -64,6 +64,21 @@ function parseLocaleFromAcceptLanguage(
   return null
 }
 
+function parseLocaleFromRequestHeader(
+  localeHeaderValue: string | null,
+): SupportedLocale | null {
+  if (!localeHeaderValue) {
+    return null
+  }
+
+  const normalizedLocale = localeHeaderValue.trim().toLowerCase()
+  if (!LOCALES.SUPPORTED.includes(normalizedLocale as SupportedLocale)) {
+    return null
+  }
+
+  return normalizedLocale as SupportedLocale
+}
+
 function resolveRequestOrigin(
   requestHeaders: Headers,
   fallbackOrigin: string,
@@ -95,8 +110,12 @@ export const proxy = auth((req) => {
   }
 
   const localeInPath = hasSupportedLocalePrefix(requestPathname)
+  const localeFromRewrittenRequestHeader = parseLocaleFromRequestHeader(
+    req.headers.get('x-locale'),
+  )
+  const resolvedLocale = localeInPath ?? localeFromRewrittenRequestHeader
 
-  if (!localeInPath) {
+  if (!resolvedLocale) {
     const localeFromCookie = req.cookies.get('locale')?.value ?? null
     const localeFromAcceptLanguage = parseLocaleFromAcceptLanguage(
       req.headers.get('accept-language'),
@@ -128,11 +147,11 @@ export const proxy = auth((req) => {
     if (isStudioRoute && !req.auth) {
       const localizedSignInPath = buildLocalizedRoutePath(
         ROUTES.AUTH_SIGNIN,
-        localeInPath,
+        resolvedLocale,
       )
       const localizedCallbackPath = buildLocalizedRoutePath(
         pathnameWithoutLocale,
-        localeInPath,
+        resolvedLocale,
       )
       const signInUrl = new URL(localizedSignInPath, requestOrigin)
       signInUrl.searchParams.set(
@@ -143,20 +162,23 @@ export const proxy = auth((req) => {
     }
   }
 
-  const rewriteUrl = new URL(
-    `${pathnameWithoutLocale}${nextUrl.search}`,
-    requestOrigin,
-  )
+  const rewriteUrl = nextUrl.clone()
+  rewriteUrl.pathname = pathnameWithoutLocale
+  rewriteUrl.search = nextUrl.search
+  const requestHostHeader = req.headers.get('host')?.trim() ?? ''
+  if (requestHostHeader) {
+    rewriteUrl.host = requestHostHeader
+  }
 
   const rewrittenRequestHeaders = new Headers(req.headers)
-  rewrittenRequestHeaders.set('x-locale', localeInPath)
+  rewrittenRequestHeaders.set('x-locale', resolvedLocale)
 
   const response = NextResponse.rewrite(rewriteUrl, {
     request: {
       headers: rewrittenRequestHeaders,
     },
   })
-  response.cookies.set('locale', localeInPath)
+  response.cookies.set('locale', resolvedLocale)
 
   return response
 })

@@ -3,13 +3,21 @@ import Image from 'next/image'
 import { cn } from '@/shared/lib/utils'
 import Link from 'next/link'
 import { Route } from 'next'
+import {
+  LOCALES,
+  ROUTES,
+  buildLocalizedRoutePath,
+} from '@/shared/config/constants'
 
 interface LogoProps {
   href?: Route
   className?: string
 }
 
-export function Logo({ href = '/blog', className }: LogoProps) {
+export function Logo({
+  href = buildLocalizedRoutePath(ROUTES.BLOG, LOCALES.DEFAULT),
+  className,
+}: LogoProps) {
   return (
     <Button
       asChild

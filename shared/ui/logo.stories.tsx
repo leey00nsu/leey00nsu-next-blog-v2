@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { ROUTES, buildLocalizedRoutePath } from '@/shared/config/constants'
 import { Logo } from './logo'
 
 const meta: Meta<typeof Logo> = {
@@ -22,7 +23,7 @@ export const Default: Story = {
 
 export const CustomHref: Story = {
     args: {
-        href: '/',
+        href: buildLocalizedRoutePath(ROUTES.BLOG, 'ko'),
     },
 }
 

@@ -9,7 +9,7 @@ import {
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 import { NextResponse } from 'next/server'
 
-const PROXY_SKIP_PATH_PREFIXES = ['/api', '/_next']
+const PROXY_SKIP_PATH_PREFIXES = ['/api', '/_next', '/print']
 const PROXY_SKIP_EXACT_PATHS = new Set([
   '/favicon.ico',
   '/robots.txt',

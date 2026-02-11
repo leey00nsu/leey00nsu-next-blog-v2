@@ -329,10 +329,10 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAwAgCdASoPABAABUB8JbACdEf/gS+OVqAc6AD+6gRXTc8ei4igDOMIa8ISm4EWTwgFVFw8ZGd8+OfaTlW9h/gPQygkKzX6My+fXyst0ujSxncqgSmlkcNvfoiAAA==",
     "isAnimated": false
   },
-  "/public/projects/leemage/logo.webp": {
+  "/public/projects/leemage/cloudy.png": {
     "width": 1024,
     "height": 1024,
-    "base64": "data:image/webp;base64,UklGRq4AAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSFMAAAARL6AkAAI0xxwSyRoREZB3glEkSYr6QMHtCuD/0fwPDSz4F8MSIvo/Aei58oyIUyIC25OLHpOJJL5k/wNP+GOQhElQwnhYBgCvZG4GIOixSDdCTwBWUDggNAAAAPABAJ0BKhAAEAAFQHwlpAACw/lKdMmkAAD+FicWoLw2xaTwQC6hg4vaIjF4omaVJu1gAAA=",
+    "base64": "data:image/webp;base64,UklGRpQAAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSCEAAAARFyAQSBRC33iNiIgFM23bWP3KslCGfwgi+p9l4byHKwMAVlA4IEwAAADwAQCdASoQABAABUB8JbACdACqPPQysmQA+daBg/3yJhfBc4kK4E9nOTpd0CfogrAxmAlpUvGQEDjOnk3U1xeX0v39iZj21RlsAAAA",
     "isAnimated": false
   },
   "/public/projects/leesfield/logo.webp": {

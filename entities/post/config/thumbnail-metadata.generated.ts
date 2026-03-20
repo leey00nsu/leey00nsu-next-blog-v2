@@ -101,6 +101,18 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRjIAAABXRUJQVlA4ICYAAABwAQCdASoQAAkABUB8JYwCdAFAAAD+8C7+p34vPFoCpqfuKClIAA==",
     "isAnimated": false
   },
+  "/public/posts/leemage-case-study/leemage-cost-comparison.png": {
+    "width": 1024,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAACwAQCdASoQABAABUB8JQAAWw9cpdjgAP7h4itgNcQXacsWB62uduUx5Eu9U2fauQRd8U0KigOyIRiEN5cDnPStsCAAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/leemage-case-study/leemage-webp-reduction.png": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAADwAQCdASoQAAsABUB8JZwAAvc6fTSVAAAA/u/RPz0OYXQhYyPi4Qyz+7b6imqZ2dq84QAA",
+    "isAnimated": false
+  },
   "/public/posts/migration-supabase/supabase.webp": {
     "width": 2090,
     "height": 1250,
@@ -255,6 +267,24 @@ export const THUMBNAIL_METADATA_MAP = {
     "width": 1920,
     "height": 1080,
     "base64": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAACQAQCdASoQAAkABUB8JbACdACX64AA1wl6934E0wCXI4Vx/1tsXBU/ayn138gN/4ECFTHSi+JyGSUv5h53cj+AAAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-lee-spec-kit/ai-harness-structure.png": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAADwAQCdASoQAAsABUB8JZwAAuSF/RrB/AAA/uslqVg+GGYaxMAucCoFqZcsXLdtQpuJ18YxIAAAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-lee-spec-kit/feature-workflow-pipeline.png": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAAAwAQCdASoQAAsABUB8JZwAA3AA/vAzl6L5+d4p36jbBwgdym95Az/PfoirAAAA",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-lee-spec-kit/tailored-workflow-system.png": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACwAQCdASoQAAsABUB8JZwAApuiCPjwAP7rMbVxqlXyO5dR6Vf/ujUR061BUMaxhAfv8mHQAAA=",
     "isAnimated": false
   },
   "/public/posts/why-i-do-not-use-vercel-anymore/current-structure.webp": {

@@ -309,6 +309,25 @@ export const GENERATED_POSTS = {
       "height": 1132,
       "isAnimated": true
     },
+    "surviving-one-year-as-an-ordinary-developer": {
+      "slug": "surviving-one-year-as-an-ordinary-developer",
+      "date": "2026-02-07T00:00:00.000Z",
+      "title": "그저 그런 개발자로 1년간 살아남기",
+      "description": "학생에서 실무자로 넘어가며 기술보다 문제와 팀을 더 많이 배우게 된 1년의 기록",
+      "tags": [
+        "회고"
+      ],
+      "section": "blog",
+      "series": null,
+      "thumbnail": "/public/posts/surviving-one-year-as-an-ordinary-developer/thumbnail.webp",
+      "draft": false,
+      "blurDataURL": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACwAQCdASoQAAsABUB8JZwAAsemXuQAAP7WJckf9Yu6BuFxEMZ6evbvAtQktHammZtHLQxwAAA=",
+      "writer": "leey00nsu",
+      "content": "\n## 그저 그런 개발자로 1년간 살아남기\n\n![그저 그런 개발자로 1년간 살아남기](/public/posts/surviving-one-year-as-an-ordinary-developer/thumbnail.webp)\n\n컴퓨터공학부에 편입한 뒤 2024년 2월에 졸업했고, 몇 개월이 지나 회사에 입사하게 되었습니다.\n\n그때까지만 해도 저는 꽤 자신감이 넘치는 상태였습니다. 학부에서 나름대로 학점도 잘 쌓았고, 여러 공모전과 프로젝트를 거치며 실무에 가까운 경험도 해봤다고 생각했습니다. 기본적으로는 프론트엔드 개발자를 희망했지만, 백엔드나 AI 같은 다른 분야에도 관심이 있었기 때문에 면접과 교육 과정에서 그런 점을 적극적으로 어필했습니다.\n\n그 결과였는지, 저는 서버 개발자로 방향을 틀어 팀에 합류하게 되었습니다. 당시에는 개발자란 결국 문제를 푸는 사람이지, 특정 언어나 방식에만 종속되어서는 안 된다고 생각했습니다. 그래서 낯선 영역으로 가는 것에 대한 부담은 있었지만, 한편으로는 그 선택이 크게 두렵지는 않았습니다.\n\n## 무엇을 만드는가보다 무엇을 해결하는가\n\n입사 후에는 ERP와 관련된 비즈니스 로직을 다루고, 쿼리를 작성하거나 수정하고, 자체 프레임워크를 디버깅하는 일을 하게 되었습니다. 학생 때 상상했던 것처럼 새로운 기능을 계속 만들고 도전적인 기술을 빠르게 적용하는 일과는 거리가 있었지만, 생각보다 그 과정이 지루하지는 않았습니다. 오히려 이미 돌아가고 있는 시스템 안에서 문제를 찾고, 그 문제를 더 나은 방향으로 풀어가는 일이 꽤 재미있었습니다.\n\n다만 학생 때와 분명히 달라진 점이 있었습니다. 학교에서는 주로 어떤 방식으로 문제를 풀지 고민했다면, 회사에서는 어떤 문제를 먼저 풀어야 하는지를 더 많이 고민하게 되었습니다.\n\n공모전이나 프로젝트에서는 일단 동작하는 MVP를 빠르게 만드는 것이 중요할 때가 많았습니다. 하지만 실제로 돈을 만들어내는 코드에서는 그보다 더 많은 고민이 필요했습니다. 이 기능이 왜 필요한지, 지금 고치려는 문제가 정말 우선순위가 맞는지, 수정 이후에 어떤 영향이 생길지를 함께 생각해야 했습니다. 기술적인 정답만으로는 부족했고, 문제 자체를 잘 정의하는 일이 더 중요하다는 것을 조금씩 배우게 되었습니다.\n\n## 개발자만 이해하는 언어로는 부족했다\n\n또 하나 크게 느낀 점은, 실무에서는 개발자끼리만 이해하는 언어로는 충분하지 않다는 것이었습니다.\n\n학생 때는 같은 팀원 대부분이 개발자였고, 서로 기술적인 맥락을 어느 정도 공유한 상태에서 대화하는 경우가 많았습니다. 하지만 회사에서는 기획자나 QA 팀처럼 개발을 직접 하지 않는 사람들과도 같은 문제를 바라보고 이야기해야 했습니다. 제가 이해한 문제를 상대도 이해할 수 있도록 설명해야 했고, 왜 이런 수정이 필요한지, 어떤 방식으로 동작이 바뀌는지를 비개발자도 납득할 수 있는 언어로 풀어야 했습니다.\n\n돌이켜보면 이 부분이 기술적인 성장만큼이나 중요했습니다. 개발은 결국 혼자만의 이해로 끝나는 일이 아니었고, 같이 일하는 사람들이 같은 방향을 볼 수 있게 만드는 과정이기도 했습니다.\n\n## 팀에 녹아드는 법과 문서의 언어\n\n짧은 1년 동안 회사 생활이 제게 남긴 것은 단순한 기술 향상만은 아니었습니다. 팀워크가 왜 중요한지, 그리고 이미 굴러가고 있는 시스템 안에서 어떻게 잘 녹아들어야 하는지를 더 많이 배우게 되었습니다.\n\n문서에 대해서도 비슷한 변화를 겪었습니다. 이전에는 어떤 고민이든 제 머릿속에만 정리해두거나, 저만 이해할 수 있는 방식으로 메모해두는 경우가 많았습니다. 하지만 회사에서는 사회적으로 통용되고, 팀 안에서 합의된 형식으로 문서를 작성하고 공유하는 것이 훨씬 중요했습니다. 문서는 단순히 기록을 남기는 수단이 아니라, 서로 다른 사람이 같은 맥락을 공유하기 위한 도구라는 점을 실감했습니다.\n\n예전에는 로컬에서 잘 돌아가면 충분하다고 생각했던 순간들이 많았습니다. 하지만 실제 서비스에서는 로컬과 배포 환경이 다르고, 혼자 개발할 때와 팀에 합류해 개발할 때도 전혀 다르다는 사실을 자주 체감했습니다. 혼자 만들 때는 내 머릿속에서 연결되던 것들이, 팀 안에서는 설명 가능해야 하고 재현 가능해야 했습니다.\n\n## 그저 그런 개발자로 살아남는다는 것\n\n지금 돌아보면, 지난 1년은 무언가 대단한 성취를 이뤘다고 말할 수 있는 시간은 아닐지도 모릅니다. 다만 적어도 저는 그 시간 동안, 문제를 바라보는 방식과 함께 일하는 방식을 조금은 더 현실적으로 배우게 되었습니다.\n\n학생 때의 저는 더 많은 기능을 만들고 더 어려운 기술을 다루는 개발자가 되는 것을 성장이라고 생각했습니다. 지금의 저는, 어떤 문제를 풀어야 하는지 먼저 묻고, 그 문제를 다른 사람들과 함께 이해할 수 있는 형태로 정리하는 것도 분명한 성장이라고 생각합니다.\n\n흔히 개발자들 사이에서 로컬의 세계와 배포의 세계는 다르다고 말합니다. 저에게 지난 1년은, 방구석에서 혼자 개발하는 세계와 팀에 합류해 개발하는 세계도 꽤 다르다는 것을 배우는 시간이었습니다. 아마 저는 여전히 그저 그런 개발자에 가깝겠지만, 적어도 이제는 혼자 잘 만드는 것보다 함께 오래 굴러가는 것을 더 중요하게 생각하게 되었습니다.\n",
+      "width": 1536,
+      "height": 1024,
+      "isAnimated": false
+    },
     "syu-character-maker-retrospect": {
       "slug": "syu-character-maker-retrospect",
       "date": "2024-01-31T00:00:00.000Z",
@@ -735,6 +754,25 @@ export const GENERATED_POSTS = {
       "width": 600,
       "height": 1132,
       "isAnimated": true
+    },
+    "surviving-one-year-as-an-ordinary-developer": {
+      "slug": "surviving-one-year-as-an-ordinary-developer",
+      "date": "2026-02-07T00:00:00.000Z",
+      "title": "Surviving One Year as an Ordinary Developer",
+      "description": "A reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+      "tags": [
+        "회고"
+      ],
+      "section": "blog",
+      "series": null,
+      "thumbnail": "/public/posts/surviving-one-year-as-an-ordinary-developer/thumbnail.webp",
+      "draft": false,
+      "blurDataURL": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACwAQCdASoQAAsABUB8JZwAAsemXuQAAP7WJckf9Yu6BuFxEMZ6evbvAtQktHammZtHLQxwAAA=",
+      "writer": "leey00nsu",
+      "content": "\n## Surviving One Year as an Ordinary Developer\n\n![Surviving One Year as an Ordinary Developer](/public/posts/surviving-one-year-as-an-ordinary-developer/thumbnail.webp)\n\nAfter transferring into the Department of Computer Science, I graduated in February 2024 and joined a company a few months later.\n\nAt that point, I was fairly confident in myself. I had built up decent grades, joined several contests, and gained what I thought was practical experience through projects. I basically wanted to become a frontend developer, but I was also interested in backend and AI, so I tried to show that range during interviews and training.\n\nMaybe because of that, I ended up joining my team as a server-side developer. At the time, I believed that a developer is ultimately someone who solves problems and should not be tied too narrowly to one language or one way of working. So while moving into an unfamiliar area was not exactly easy, it did not feel especially frightening either.\n\n## From How to Solve Things to What to Solve\n\nAfter joining the company, I worked on ERP-related business logic, wrote and maintained queries, and debugged an in-house framework. It was not quite the kind of work I had imagined as a student, where I would constantly build new features and take on obviously exciting challenges. Still, I did not find the work dull. There was something genuinely interesting about finding problems inside an already running system and improving them carefully.\n\nWhat changed most was the way I thought about work. As a student, I spent a lot of time thinking about how to solve a problem. At work, I found myself thinking much more about which problem should be solved in the first place.\n\nIn contests or side projects, building a working MVP quickly is often enough. But code that actually produces money for a business carries a different weight. You have to think about why a feature is needed, whether the issue you are fixing is really the right priority, and what kind of impact the change will have afterward. Technical correctness alone is not enough. Over time, I learned that defining the problem well matters even more.\n\n## Developer Language Was Not Enough\n\nAnother thing I learned very quickly was that it is not enough to speak only in terms developers understand.\n\nAt school, most of my teammates were developers, and we usually shared a technical context already. At work, that was not the case. I had to discuss the same problems with planners, QA, and other people who were not writing the code themselves. I had to explain what I understood in a way they could understand too, and I had to describe why a change was necessary and how the behavior would change in language that non-developers could also follow.\n\nLooking back, that mattered almost as much as technical growth. Development was not something that ended with my own understanding. It was also the work of helping other people see the same problem from the same direction.\n\n## Learning How to Fit into a Team\n\nWhat that first year gave me was not just technical improvement. It also taught me why teamwork matters and how to fit into a system that is already running.\n\nI changed the way I thought about documentation as well. Before that, I often kept my thoughts in my head or wrote them down in a way that only made sense to me. At work, it mattered much more to write and share documents in formats that were socially understood and agreed on by the team. Documentation was not just a personal record. It was a tool for making sure different people could share the same context.\n\nThere were many times when I used to think it was enough if something worked on my machine. But in real services, the local world and the deployed world are different, and working alone is very different from working as part of a team. Things that felt obvious in my own head had to become explainable and reproducible inside a team.\n\n## What It Means to Survive as an Ordinary Developer\n\nLooking back now, I cannot say that the last year was full of dramatic achievements. But I can say that it changed the way I see problems and the way I work with other people.\n\nAs a student, I thought growth meant building more features and handling more difficult technologies. Now I think growth also means asking which problem should be solved first, and organizing that problem in a way other people can understand and work with.\n\nDevelopers often say that the local world and the deployed world are different. For me, the last year was also about learning that building alone in a room and building as part of a team are very different worlds. I may still be close to being just an ordinary developer, but at least now I care more about making things that can keep working with others than about making something clever on my own.\n",
+      "width": 1536,
+      "height": 1024,
+      "isAnimated": false
     },
     "syu-character-maker-retrospect": {
       "slug": "syu-character-maker-retrospect",

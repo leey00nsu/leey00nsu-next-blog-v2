@@ -233,6 +233,12 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAACwAQCdASoIABAABUB8JaQAAucKdTAAAP7OByvzW0UQZx6S85fIt2OzQks3vuEudlcRtC+cUQAAAA==",
     "isAnimated": true
   },
+  "/public/posts/surviving-one-year-as-an-ordinary-developer/thumbnail.webp": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAACwAQCdASoQAAsABUB8JZwAAsemXuQAAP7WJckf9Yu6BuFxEMZ6evbvAtQktHammZtHLQxwAAA=",
+    "isAnimated": false
+  },
   "/public/posts/syu-character-maker-retrospect/analytics.webp": {
     "width": 1460,
     "height": 902,

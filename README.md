@@ -87,6 +87,13 @@ pnpm dev
 
 - 에디터에서 텍스트 선택 후 AI 이미지 생성
 - 어댑터 패턴으로 다양한 Provider 지원
+- Pagefind 기반 블로그 Q&A 챗봇
+  - 빌드 시 MDX를 섹션 단위 검색 레코드로 변환
+  - 서버가 top-k 근거를 선별한 뒤에만 LLM 호출
+  - About/프로젝트 정보를 curated source로 함께 검색해 짧은 프로필 질문을 보강
+  - 질문 유형을 가볍게 분류해 인사형은 고정 응답, 프로필형은 curated source 우선, 일반 기술 질문은 블로그 검색 위주로 처리
+  - 짧은 한국어 질문과 복합 질문은 규칙 기반 정규화/분해로 보강
+  - 답변에 관련 글 링크(출처) 포함, 근거 부족 시 답변 거절
 
 ### 📄 PDF 내보내기
 
@@ -142,6 +149,15 @@ cp .env.example .env.local
 
 자세한 환경 변수 설명은 [.env.example](./.env.example) 파일을 참고하세요.
 
+블로그 Q&A 관련 주요 환경 변수:
+
+- `OPENAI_BLOG_CHAT_MODEL`: Q&A 응답 생성 모델
+- `BLOG_CHAT_SEARCH_TOP_K`: 모델에 전달할 검색 근거 개수
+- `BLOG_CHAT_SEARCH_MINIMUM_SCORE`: 모델 호출 전 최소 검색 점수
+- `BLOG_CHAT_MAXIMUM_QUESTION_CHARACTERS`: 질문 입력 길이 제한
+- `BLOG_CHAT_MAXIMUM_DAILY_REQUESTS`: KST 기준 일일 전체 질문 수 제한
+- `BLOG_CHAT_CACHE_TTL_MS`: 동일 질문 응답 캐시 TTL
+
 ### 설정 팁
 
 - **GitHub OAuth**: Authorization callback URL은 `NEXT_PUBLIC_APP_URL/api/auth/callback/github`로 설정
@@ -165,11 +181,37 @@ pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run bu
 > `postbuild` 단계에서 임시 서버를 띄워 PDF를 자동 생성합니다.  
 > Playwright Chromium이 필요하므로 빌드 전에 설치해야 합니다.
 
+### 블로그 검색 인덱스 생성
+
+- `predev`, `prebuild` 단계에서 `pnpm run gen:blog-search`가 자동 실행됩니다.
+- 이 스크립트는:
+  - `entities/post/config/blog-search-records.generated.ts`를 생성
+  - 같은 레코드 집합으로 `public/pagefind` 검색 번들을 생성
+- 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고,
+  **원본 MDX를 섹션 단위로 chunking 한 뒤 Pagefind Node API(`addCustomRecord`)로 인덱싱**합니다.
+- 이유:
+  - App Router 빌드 산출물이 서버 번들 중심이라 Pagefind에 안정적으로 넘기기 어렵습니다.
+  - MDX 원본은 이미 기존 데이터 생성 흐름에 포함되어 있어 유지보수가 쉽습니다.
+  - 섹션 anchor URL을 직접 통제할 수 있어 citation 품질이 더 안정적입니다.
+
 ## 사용 방법
 
 ### 블로그 보기
 
 브라우저에서 `http://localhost:3000/blog` 접속
+
+### 블로그 Q&A 사용
+
+- 블로그 목록/상세 페이지 우하단의 `블로그 Q&A` 버튼을 클릭
+- 질문을 입력하면 서버가 빌드 시 생성한 섹션 검색 레코드와 curated source(소개/프로젝트)를 함께 조회
+- 인사/챗봇 소개 질문은 모델 호출 없이 고정 응답으로 처리
+- 프로필/대표 프로젝트 질문은 curated source를 우선 검색하고, 일반 기술 질문은 블로그 검색 근거를 우선 사용
+- 복합 질문은 규칙 기반으로 최대 2개 하위 질의로 가볍게 분해하고, 실패하면 원문 질문으로 처리
+- 검색 점수가 기준 미만이면 모델을 호출하지 않고 답변을 거절
+- 점수가 충분하면 top-k 근거만 모델에 전달해 답변과 출처 링크를 반환
+- 모델은 외부 브라우징/툴 호출 없이 제공된 블로그 근거만 사용
+- 캐시는 질문 정규화 결과 기준으로 적용되어 같은 질문의 반복 비용을 줄임
+- 무료 운영 보호를 위해 질문 길이는 기본 200자로 제한되고, KST 기준 서비스 전체 일일 질문 수도 기본 100회로 제한됨
 
 ### Studio로 글 작성/커밋
 
@@ -209,6 +251,21 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 
 - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 클릭
 - PDF는 빌드 시점(`postbuild`)에 자동 생성되어 `public/pdf/portfolio-{locale}.pdf`에 저장
+
+### 블로그 Q&A 안전성 제한
+
+- 검색은 서버가 통제합니다. 모델이 직접 검색/브라우징/파일 수정/툴 호출을 하지 않습니다.
+- 검색 결과가 약하면 LLM을 호출하지 않습니다.
+- 모델에는 top-k 근거만 전달해 비용을 줄입니다.
+- 모델 응답은 JSON 스키마 형식으로 강제합니다.
+- 서버는 모델이 반환한 citation URL이 실제 검색 결과 집합에 포함되는지 검증합니다.
+- 검증 실패 시 답변 대신 안전한 거절 응답을 반환합니다.
+
+### 향후 확장 포인트
+
+- 현재는 lexical retrieval + Pagefind 인덱스 조합입니다.
+- 이후 필요하면 reranking, query rewrite, embedding/vector DB를 추가할 수 있습니다.
+- 다만 현재 구현은 의도적으로 vector DB/embedding/관리형 RAG 없이 유지됩니다.
 
 ## 프로젝트 구조
 

@@ -1,0 +1,9 @@
+export const POST_SEARCH = {
+  INTRO_SECTION_SLUG: 'intro',
+  EXCERPT_MAX_LENGTH: 220,
+  CONTENT_MAX_LENGTH: 1200,
+  HEADING_DEPTHS: {
+    SECTION: 2,
+    SUBSECTION: 3,
+  },
+} as const

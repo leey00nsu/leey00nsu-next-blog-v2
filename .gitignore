@@ -46,6 +46,7 @@ next-env.d.ts
 
 # generated files
 /public/pdf/
+/public/pagefind/
 
 TASKS.md
 .kiro

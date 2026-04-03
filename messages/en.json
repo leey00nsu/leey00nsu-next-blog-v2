@@ -96,6 +96,41 @@
       "notConfigured": "Giscus is not configured. Please set NEXT_PUBLIC_GISCUS_REPO, NEXT_PUBLIC_GISCUS_REPO_ID, NEXT_PUBLIC_GISCUS_CATEGORY, NEXT_PUBLIC_GISCUS_CATEGORY_ID."
     }
   },
+  "chatbot": {
+    "title": "Blog Q&A",
+    "subtitle": "I’ll look through the blog and answer based on what is actually written there.",
+    "trigger": "Blog Q&A",
+    "open": "Open blog Q&A",
+    "close": "Close blog Q&A",
+    "disclaimer": "If there is not enough evidence in the blog, it will avoid guessing.",
+    "emptyTitle": "Ask a question and it will look for the most relevant posts first.",
+    "emptyDescription": "Example: Why is staleTime important in React Query?",
+    "you": "You",
+    "assistant": "Blog assistant",
+    "sources": "Sources",
+    "sourcesCategory": {
+      "blog": "Blog",
+      "profile": "Profile",
+      "project": "Project"
+    },
+    "inputLabel": "Blog question input",
+    "inputPlaceholder": "Ask about the blog posts or public profile pages",
+    "inputCounter": "{current}/{max} chars",
+    "send": "Send question",
+    "sending": "Looking through related posts and drafting an answer...",
+    "errors": {
+      "request_failed": "Something went wrong while loading a response. Please try again shortly."
+    },
+    "refusal": {
+      "insufficient_search_match": "It could not find enough matching posts yet. Try asking in a slightly different way and it will look again.",
+      "insufficient_evidence": "The posts it found were not quite enough to answer confidently. Adding a keyword, technology name, or post title may help.",
+      "invalid_citations": "There was an issue while validating the supporting sources, so the answer was skipped this time.",
+      "missing_api_key": "The chatbot is not fully configured yet. Please try again later.",
+      "model_error": "Something went wrong while drafting the answer. Please try again in a moment.",
+      "question_too_long": "Please keep your question within 200 characters so it can search more accurately.",
+      "daily_limit_exceeded": "The free daily question limit for today (Korean time) has been reached. Please try again after midnight Korean time."
+    }
+  },
   "editor": {
     "imageDialog": {
       "slugInfo": "Slug is empty, so the image will be placed under <code>/public/posts/.../</code>. It will be automatically remapped after setting the slug."

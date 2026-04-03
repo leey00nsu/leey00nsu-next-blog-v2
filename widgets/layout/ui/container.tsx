@@ -1,6 +1,7 @@
 import { Header } from '@/widgets/layout/ui/header'
 import { LeftSidebar } from '@/widgets/layout/ui/left-sidebar'
 import { RightSidebar } from '@/widgets/layout/ui/right-sidebar'
+import { BlogChatWidget } from '@/widgets/chatbot/ui/blog-chat-widget'
 import { Footer } from '@/widgets/layout/ui/footer'
 import { TocProvider } from '@/features/post/model/toc-context'
 
@@ -17,6 +18,7 @@ export function Container({ children }: ContainerProps) {
           <Header />
           <main className="min-h-[calc(100dvh-8rem)] p-4">{children}</main>
           <Footer />
+          <BlogChatWidget />
         </section>
         <RightSidebar />
       </div>

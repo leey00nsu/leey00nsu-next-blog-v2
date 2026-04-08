@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
+import { classifyChatQuestion } from '@/features/chat/api/classify-chat-question'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { shouldCacheBlogChatResponse } from '@/features/chat/lib/blog-chat-cache'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
-import { analyzeQuestion } from '@/features/chat/lib/question-analysis'
+import {
+  analyzeQuestion,
+  normalizeQuestion,
+  type ChatQuestionAnalysis,
+} from '@/features/chat/lib/question-analysis'
+import { rewriteChatQuestionWithHistory } from '@/features/chat/lib/rewrite-chat-question'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
+import type { ChatRequestHandlingType } from '@/features/chat/model/chat-question-routing'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
+import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
+import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
 import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 import {
   BlogChatRequestSchema,
@@ -68,6 +78,67 @@ function buildRefusalResponse(
   }
 }
 
+function buildQuestionAnalysisOverride(params: {
+  normalizedQuestion: string
+  handlingType: ChatRequestHandlingType
+}): ChatQuestionAnalysis | undefined {
+  if (params.handlingType === 'direct_greeting') {
+    return {
+      normalizedQuestion: params.normalizedQuestion,
+      questionType: 'greeting',
+      searchQueries: [],
+    }
+  }
+
+  if (params.handlingType === 'direct_assistant_identity') {
+    return {
+      normalizedQuestion: params.normalizedQuestion,
+      questionType: 'assistant-identity',
+      searchQueries: [],
+    }
+  }
+
+  return undefined
+}
+
+async function buildModelBackedResponse(params: {
+  question: string
+  matches: ChatEvidenceRecord[]
+  cacheKey: string
+}): Promise<BlogChatResponse> {
+  const answerResult = await answerBlogQuestion({
+    question: params.question,
+    matches: params.matches,
+  })
+
+  const responseData =
+    answerResult.ok && answerResult.draftAnswer
+      ? finalizeBlogChatResponse({
+          draftAnswer: answerResult.draftAnswer,
+          matches: params.matches,
+        })
+      : buildRefusalResponse(answerResult.refusalReason ?? 'model_error')
+
+  const validatedResponse = BlogChatResponseSchema.parse(responseData)
+
+  if (shouldCacheBlogChatResponse(validatedResponse)) {
+    blogChatResponseCache.set(params.cacheKey, {
+      createdAt: Date.now(),
+      data: validatedResponse,
+    })
+  }
+
+  return validatedResponse
+}
+
+function shouldRewriteQuestionWithHistory(
+  handlingType: ChatRequestHandlingType,
+): boolean {
+  return (
+    handlingType === 'grounded_retrieval' || handlingType === 'corpus_synthesis'
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const requestBody = await request.json()
@@ -98,23 +169,34 @@ export async function POST(request: NextRequest) {
 
     cleanupExpiredCache()
 
-    const dailyUsageResult = consumeDailyUsage({
-      usageMap: blogChatDailyUsageMap,
-      maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
-    })
-
-    if (!dailyUsageResult.allowed) {
-      return NextResponse.json(
-        BlogChatResponseSchema.parse(
-          buildRefusalResponse('daily_limit_exceeded'),
-        ),
-      )
-    }
-
     const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
-    const questionAnalysis = analyzeQuestion(parsedRequest.data.question)
+    const originalQuestion = parsedRequest.data.question
+    const originalQuestionAnalysis = analyzeQuestion(originalQuestion)
+    const assistantProfile = getChatAssistantProfile(locale)
+    const contactProfile = getChatContactProfile(locale)
+    const questionRouting = await classifyChatQuestion({
+      question: originalQuestion,
+      locale,
+      normalizedQuestion: originalQuestionAnalysis.normalizedQuestion,
+      fallbackQuestionType: originalQuestionAnalysis.questionType,
+      assistantProfile,
+      hasCurrentPostContext: Boolean(parsedRequest.data.currentPostSlug),
+    })
+    const resolvedQuestion = shouldRewriteQuestionWithHistory(
+      questionRouting.handlingType,
+    )
+      ? rewriteChatQuestionWithHistory({
+          question: originalQuestion,
+          conversationHistory: parsedRequest.data.conversationHistory,
+        })
+      : originalQuestion
+    const normalizedQuestion = normalizeQuestion(resolvedQuestion)
+    const resolvedQuestionBaseAnalysis =
+      resolvedQuestion === originalQuestion
+        ? originalQuestionAnalysis
+        : analyzeQuestion(resolvedQuestion)
     const cacheKey = buildCacheKey(
-      questionAnalysis.normalizedQuestion,
+      normalizedQuestion,
       locale,
       parsedRequest.data.currentPostSlug,
     )
@@ -123,15 +205,57 @@ export async function POST(request: NextRequest) {
     if (cachedResponse) {
       return NextResponse.json(cachedResponse.data)
     }
+    const questionAnalysisOverride = buildQuestionAnalysisOverride({
+      normalizedQuestion,
+      handlingType: questionRouting.handlingType,
+    })
+    const resolvedQuestionAnalysis =
+      questionAnalysisOverride ?? resolvedQuestionBaseAnalysis
 
+    const blogRecords = buildBlogEvidenceRecords(locale)
     const curatedRecords = await getCuratedChatSources(locale)
+
+    if (questionRouting.handlingType === 'corpus_synthesis') {
+      const chatRagSearchResult = await runChatRagWorkflow({
+        question: resolvedQuestion,
+        locale,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
+      })
+
+      if (chatRagSearchResult.grounded) {
+        const dailyUsageResult = consumeDailyUsage({
+          usageMap: blogChatDailyUsageMap,
+          maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
+        })
+
+        if (!dailyUsageResult.allowed) {
+          return NextResponse.json(
+            BlogChatResponseSchema.parse(
+              buildRefusalResponse('daily_limit_exceeded'),
+            ),
+          )
+        }
+
+        const responseData = await buildModelBackedResponse({
+          question: resolvedQuestion,
+          matches: chatRagSearchResult.matches,
+          cacheKey,
+        })
+
+        return NextResponse.json(responseData)
+      }
+    }
+
     const resolvedChatRequest = resolveChatRequest({
-      question: parsedRequest.data.question,
+      question: resolvedQuestion,
       locale,
-      blogRecords: buildBlogEvidenceRecords(locale),
+      blogRecords,
       curatedRecords,
       currentPostSlug: parsedRequest.data.currentPostSlug,
-      questionAnalysis,
+      questionAnalysis: resolvedQuestionAnalysis,
+      assistantProfile,
+      contactProfile,
+      handlingType: questionRouting.handlingType,
     })
 
     if (resolvedChatRequest.directResponse) {
@@ -150,6 +274,37 @@ export async function POST(request: NextRequest) {
     }
 
     if (!resolvedChatRequest.shouldCallModel) {
+      if (questionRouting.handlingType === 'grounded_retrieval') {
+        const chatRagSearchResult = await runChatRagWorkflow({
+          question: resolvedQuestion,
+          locale,
+          currentPostSlug: parsedRequest.data.currentPostSlug,
+        })
+
+        if (chatRagSearchResult.grounded) {
+          const dailyUsageResult = consumeDailyUsage({
+            usageMap: blogChatDailyUsageMap,
+            maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
+          })
+
+          if (!dailyUsageResult.allowed) {
+            return NextResponse.json(
+              BlogChatResponseSchema.parse(
+                buildRefusalResponse('daily_limit_exceeded'),
+              ),
+            )
+          }
+
+          const responseData = await buildModelBackedResponse({
+            question: resolvedQuestion,
+            matches: chatRagSearchResult.matches,
+            cacheKey,
+          })
+
+          return NextResponse.json(responseData)
+        }
+      }
+
       const refusalResponse = buildRefusalResponse(
         resolvedChatRequest.refusalReason ?? 'insufficient_search_match',
       )
@@ -157,29 +312,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(BlogChatResponseSchema.parse(refusalResponse))
     }
 
-    const answerResult = await answerBlogQuestion({
-      question: parsedRequest.data.question,
-      matches: resolvedChatRequest.matches,
+    const dailyUsageResult = consumeDailyUsage({
+      usageMap: blogChatDailyUsageMap,
+      maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
     })
 
-    const responseData =
-      answerResult.ok && answerResult.draftAnswer
-        ? finalizeBlogChatResponse({
-            draftAnswer: answerResult.draftAnswer,
-            matches: resolvedChatRequest.matches,
-          })
-        : buildRefusalResponse(answerResult.refusalReason ?? 'model_error')
-
-    const validatedResponse = BlogChatResponseSchema.parse(responseData)
-
-    if (shouldCacheBlogChatResponse(validatedResponse)) {
-      blogChatResponseCache.set(cacheKey, {
-        createdAt: Date.now(),
-        data: validatedResponse,
-      })
+    if (!dailyUsageResult.allowed) {
+      return NextResponse.json(
+        BlogChatResponseSchema.parse(
+          buildRefusalResponse('daily_limit_exceeded'),
+        ),
+      )
     }
 
-    return NextResponse.json(validatedResponse)
+    const responseData = await buildModelBackedResponse({
+      question: resolvedQuestion,
+      matches: resolvedChatRequest.matches,
+      cacheKey,
+    })
+
+    return NextResponse.json(responseData)
   } catch {
     return NextResponse.json(
       {

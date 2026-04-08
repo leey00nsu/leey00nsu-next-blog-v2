@@ -3,19 +3,13 @@ import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 
 export const CHAT_QUESTION_TYPES = [
   'greeting',
-  'profile',
-  'education',
-  'career',
-  'projects',
-  'tech-stack',
-  'blog-purpose',
+  'assistant-identity',
   'general',
 ] as const
 
 export type ChatQuestionType = (typeof CHAT_QUESTION_TYPES)[number]
 
-export type ChatSearchIntent = Exclude<ChatQuestionType, 'greeting'>
-type RuleBasedChatIntent = keyof typeof CHAT_QUESTION_RULES.INTENTS
+export type ChatSearchIntent = 'general'
 
 export interface ChatSearchQuery {
   question: string
@@ -35,8 +29,23 @@ const QUESTION_NORMALIZATION_PATTERNS = {
   WHITESPACE: /\s+/g,
 } as const
 
+function escapeRegularExpression(pattern: string): string {
+  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function normalizeForMatch(text: string): string {
   return text.toLowerCase()
+}
+
+function includesTokenBoundedPattern(text: string, pattern: string): boolean {
+  const normalizedText = normalizeForMatch(text)
+  const normalizedPattern = normalizeForMatch(pattern).trim()
+  const boundedPattern = new RegExp(
+    `(^|\\s)${escapeRegularExpression(normalizedPattern)}($|\\s)`,
+    'u',
+  )
+
+  return boundedPattern.test(normalizedText)
 }
 
 export function normalizeQuestion(question: string): string {
@@ -47,42 +56,9 @@ export function normalizeQuestion(question: string): string {
     .trim()
 }
 
-function detectMatchedIntents(normalizedQuestion: string): RuleBasedChatIntent[] {
-  const normalizedQuestionForMatch = normalizeForMatch(normalizedQuestion)
-  const matchedIntents = Object.entries(CHAT_QUESTION_RULES.INTENTS).flatMap(
-    ([intent, rule]) => {
-      const isMatched = rule.patterns.some((pattern) => {
-        return normalizedQuestionForMatch.includes(normalizeForMatch(pattern))
-      })
-
-      return isMatched ? [intent as RuleBasedChatIntent] : []
-    },
-  )
-
-  return [...new Set(matchedIntents)]
-}
-
 function isGreetingQuestion(normalizedQuestion: string): boolean {
-  const normalizedQuestionForMatch = normalizeForMatch(normalizedQuestion)
-
   return CHAT_QUESTION_RULES.GREETING_PATTERNS.some((pattern) => {
-    return normalizedQuestionForMatch.includes(normalizeForMatch(pattern))
-  })
-}
-
-function buildIntentSearchQueries(
-  matchedIntents: RuleBasedChatIntent[],
-  normalizedQuestion: string,
-): ChatSearchQuery[] {
-  return matchedIntents.map((intent) => {
-    const rule = CHAT_QUESTION_RULES.INTENTS[intent]
-
-    return {
-      question: normalizedQuestion,
-      intent: intent as ChatSearchIntent,
-      additionalKeywords: rule.expansionKeywords,
-      preferredSourceCategories: rule.preferredSourceCategories,
-    }
+    return includesTokenBoundedPattern(normalizedQuestion, pattern)
   })
 }
 
@@ -114,29 +90,6 @@ export function analyzeQuestion(question: string): ChatQuestionAnalysis {
       normalizedQuestion,
       questionType: 'greeting',
       searchQueries: [],
-    }
-  }
-
-  const matchedIntents = detectMatchedIntents(normalizedQuestion)
-
-  if (matchedIntents.length >= 2) {
-    return {
-      normalizedQuestion,
-      questionType: 'general',
-      searchQueries: buildIntentSearchQueries(matchedIntents, normalizedQuestion),
-    }
-  }
-
-  if (matchedIntents.length === 1) {
-    const [singleIntent] = matchedIntents
-
-    return {
-      normalizedQuestion,
-      questionType: singleIntent,
-      searchQueries: buildIntentSearchQueries(
-        [singleIntent],
-        normalizedQuestion,
-      ),
     }
   }
 

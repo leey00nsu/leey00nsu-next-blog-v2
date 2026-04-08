@@ -1,7 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { BlogChatResponseSchema } from '@/features/chat/model/chat-schema'
+import {
+  BlogChatResponseSchema,
+  type BlogChatHistoryItem,
+} from '@/features/chat/model/chat-schema'
+import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import { ROUTES, type SupportedLocale } from '@/shared/config/constants'
 
 export interface BlogChatConversationItem {
@@ -13,7 +17,7 @@ export interface BlogChatConversationItem {
       title: string
       url: string
       sectionTitle: string | null
-      sourceCategory: 'blog' | 'profile' | 'project'
+      sourceCategory: ChatSourceCategory
     }[]
     grounded: boolean
     refusalReason?:
@@ -33,6 +37,7 @@ interface UseBlogChatParams {
 }
 
 const BLOG_CHAT_ERROR_MESSAGE = 'request_failed'
+const MAXIMUM_CONVERSATION_HISTORY_COUNT = 2
 
 function createConversationItemId(): string {
   return globalThis.crypto?.randomUUID() ?? `blog-chat-${Date.now()}`
@@ -48,6 +53,18 @@ export function useBlogChat({
   const [question, setQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [errorCode, setErrorCode] = useState<string | null>(null)
+
+  function buildConversationHistory(): BlogChatHistoryItem[] {
+    return conversationItems
+      .slice(-MAXIMUM_CONVERSATION_HISTORY_COUNT)
+      .map((conversationItem) => {
+        return {
+          question: conversationItem.question,
+          answer: conversationItem.response.answer,
+          citations: conversationItem.response.citations,
+        }
+      })
+  }
 
   async function submitQuestion(): Promise<void> {
     const trimmedQuestion = question.trim()
@@ -69,6 +86,7 @@ export function useBlogChat({
           question: trimmedQuestion,
           locale,
           currentPostSlug,
+          conversationHistory: buildConversationHistory(),
         }),
       })
 

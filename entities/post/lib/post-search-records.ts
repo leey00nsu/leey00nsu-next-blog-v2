@@ -3,6 +3,8 @@ import { POST_SEARCH } from '@/entities/post/config/constants'
 import type { BlogSearchRecord } from '@/entities/post/model/search-types'
 import type { Post } from '@/entities/post/model/types'
 import { buildBlogPostHref, type SupportedLocale } from '@/shared/config/constants'
+import { getSemanticSearchTerms } from '@/shared/lib/chat-semantic-map'
+import { collectSearchTerms } from '@/shared/lib/search-terms'
 
 interface BuildPostSearchRecordsParams {
   post: Post
@@ -144,6 +146,11 @@ function createSearchRecord(params: {
   locale: SupportedLocale
 }): BlogSearchRecord | null {
   const sanitizedBody = sanitizeMarkdownToSearchText(params.body)
+  const semanticSearchTerms = getSemanticSearchTerms({
+    locale: params.locale,
+    slug: params.post.slug,
+    sourceCategory: 'blog',
+  })
 
   if (!sanitizedBody) {
     return null
@@ -168,6 +175,16 @@ function createSearchRecord(params: {
     ),
     sectionTitle: params.sectionTitle,
     tags: params.post.tags,
+    publishedAt: params.post.date.toISOString(),
+    searchTerms: collectSearchTerms({
+      texts: [params.post.title, params.sectionTitle ?? '', sanitizedBody],
+      phrases: [
+        ...semanticSearchTerms,
+        params.post.title,
+        params.sectionTitle ?? '',
+        ...params.post.tags,
+      ],
+    }),
   }
 }
 

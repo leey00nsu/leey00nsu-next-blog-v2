@@ -3,6 +3,23 @@ import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { ChatSourceCategorySchema } from '@/features/chat/model/chat-evidence'
 import { LOCALES } from '@/shared/config/constants'
 
+export const BlogChatCitationSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  sectionTitle: z.string().nullable(),
+  sourceCategory: ChatSourceCategorySchema,
+})
+
+export const BlogChatHistoryItemSchema = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(1)
+    .max(BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS),
+  answer: z.string(),
+  citations: z.array(BlogChatCitationSchema),
+})
+
 export const BlogChatRequestSchema = z.object({
   question: z
     .string()
@@ -11,13 +28,11 @@ export const BlogChatRequestSchema = z.object({
     .max(BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS),
   locale: z.enum(LOCALES.SUPPORTED).default(LOCALES.DEFAULT),
   currentPostSlug: z.string().trim().min(1).max(200).optional(),
-})
-
-export const BlogChatCitationSchema = z.object({
-  title: z.string(),
-  url: z.string(),
-  sectionTitle: z.string().nullable(),
-  sourceCategory: ChatSourceCategorySchema,
+  conversationHistory: z
+    .array(BlogChatHistoryItemSchema)
+    .max(2)
+    .optional()
+    .default([]),
 })
 
 export const BlogChatResponseSchema = z.object({
@@ -45,6 +60,9 @@ export const BlogChatModelDraftSchema = z.object({
 
 export interface BlogChatCitation
   extends z.infer<typeof BlogChatCitationSchema> {}
+
+export interface BlogChatHistoryItem
+  extends z.infer<typeof BlogChatHistoryItemSchema> {}
 
 export interface BlogChatResponse
   extends z.infer<typeof BlogChatResponseSchema> {}

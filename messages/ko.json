@@ -111,7 +111,8 @@
     "sourcesCategory": {
       "blog": "블로그",
       "profile": "소개",
-      "project": "프로젝트"
+      "project": "프로젝트",
+      "assistant": "챗봇 안내"
     },
     "inputLabel": "블로그 질문 입력",
     "inputPlaceholder": "블로그 글과 소개 페이지를 기준으로 질문해보세요",

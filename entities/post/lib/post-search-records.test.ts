@@ -45,6 +45,9 @@ describe('buildPostSearchRecords', () => {
     expect(result[1].sectionTitle).toBe('React Query가 필요한 이유')
     expect(result[2].url).toBe('/ko/blog/react-query-guide#staletime-설정')
     expect(result[2].sectionTitle).toBe('staleTime 설정')
+    expect(result[1].searchTerms).toEqual(
+      expect.arrayContaining(['react query', 'tanstack query']),
+    )
   })
 
   it('코드 펜스 안의 가짜 헤딩은 섹션으로 분리하지 않는다', () => {

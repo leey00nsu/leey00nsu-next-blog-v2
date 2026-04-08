@@ -65,6 +65,7 @@ export function BlogChatWidget() {
     blog: t('sourcesCategory.blog'),
     profile: t('sourcesCategory.profile'),
     project: t('sourcesCategory.project'),
+    assistant: t('sourcesCategory.assistant'),
   } as const
 
   if (!isVisible) {

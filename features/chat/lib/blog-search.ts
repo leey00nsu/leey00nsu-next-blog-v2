@@ -1,6 +1,7 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
 import type { BlogSearchRecord } from '@/entities/post/model/search-types'
+import { SEMANTIC_SEARCH } from '@/shared/config/search-terms'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 interface SelectBlogSearchMatchesParams {
@@ -39,8 +40,18 @@ function normalizeText(text: string): string {
 
 function tokenizeText(text: string): string[] {
   const matches = normalizeText(text).match(TOKEN_PATTERNS.WORD) ?? []
+  const stopWords = new Set<string>([
+    ...SEMANTIC_SEARCH.STOP_WORDS.en,
+    ...SEMANTIC_SEARCH.STOP_WORDS.ko,
+  ])
 
-  return [...new Set(matches.filter((token) => token.length >= 2))]
+  return [
+    ...new Set(
+      matches.filter((token) => {
+        return token.length >= 2 && !stopWords.has(token)
+      }),
+    ),
+  ]
 }
 
 function buildExpandedTokens(baseTokens: string[]): string[] {
@@ -98,6 +109,7 @@ function buildDocumentFrequencyMap(
           record.sectionTitle ?? '',
           record.content,
           record.tags.join(' '),
+          (record.searchTerms ?? []).join(' '),
         ].join(' '),
       )
 
@@ -125,6 +137,7 @@ function buildFieldMatchMultiplier(record: BlogSearchRecord, token: string): num
   const normalizedSectionTitle = normalizeText(record.sectionTitle ?? '')
   const normalizedContent = normalizeText(record.content)
   const normalizedTags = normalizeText(record.tags.join(' '))
+  const normalizedSearchTerms = normalizeText((record.searchTerms ?? []).join(' '))
 
   if (normalizedSectionTitle.includes(token)) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.SECTION
@@ -139,6 +152,10 @@ function buildFieldMatchMultiplier(record: BlogSearchRecord, token: string): num
   }
 
   if (normalizedTags.includes(token)) {
+    return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
+  }
+
+  if (normalizedSearchTerms.includes(token)) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
   }
 
@@ -161,7 +178,13 @@ function scoreRecord(
 ): ScoredBlogSearchRecord | null {
   const matchedTokenCount = countMatchedTokens(
     questionTokens,
-    [record.title, record.sectionTitle, record.content, record.tags.join(' ')]
+    [
+      record.title,
+      record.sectionTitle,
+      record.content,
+      record.tags.join(' '),
+      (record.searchTerms ?? []).join(' '),
+    ]
       .filter(Boolean)
       .join(' '),
   )

@@ -60,7 +60,7 @@ pnpm playwright:install
 pnpm dev
 ```
 
-→ Open [http://localhost:3000](http://localhost:3000)
+→ Open the local URL printed by the development server
 
 ## Features
 
@@ -87,13 +87,12 @@ pnpm dev
 
 - Select text in editor to generate AI images
 - Adapter pattern for various providers
-- Pagefind-based blog Q&A chatbot
-  - Converts blog MDX into section-level search records during build
-  - Calls the LLM only after the server selects top-k grounded evidence
-  - Adds curated profile/project sources for short self-introduction style questions
-  - Uses lightweight question classification so greetings return a fixed answer, profile questions prefer curated sources, and technical questions stay blog-first
-  - Improves short Korean questions and multi-part questions with rule-based normalization and decomposition
-  - Returns source links and refuses when evidence is weak
+- Blog Q&A chatbot
+  - Converts MDX into lexical search records and a SQLite RAG index at build time
+  - Routes questions first so greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
+  - Uses lexical search and curated sources (profile/project/internal assistant docs) first for normal grounded questions
+  - Uses SQLite embedding RAG first for whole-blog synthesis questions
+  - Validates citations and refuses when evidence is weak
 
 ### 📄 PDF Export
 
@@ -115,7 +114,7 @@ pnpm dev
 | **i18n**          | next-intl v4                                    |
 | **Editor**        | Tiptap (Notion-style)                           |
 | **Auth**          | next-auth@5 (GitHub Provider)                   |
-| **AI/Automation** | OpenAI SDK, Octokit (GitHub API)                |
+| **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, better-sqlite3, Modal, Octokit |
 | **Image**         | sharp, lqip-modern                              |
 | **Test**          | Vitest, Playwright, Storybook 10                |
 | **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
@@ -147,16 +146,15 @@ Copy `.env.example` to create `.env.local` and set the values:
 cp .env.example .env.local
 ```
 
-See [.env.example](./.env.example) for detailed environment variable descriptions.
+Use **[.env.example](./.env.example)** as the single source of truth for exact variable names, defaults, and comments.
 
-Key environment variables for blog Q&A:
+The most important groups are:
 
-- `OPENAI_BLOG_CHAT_MODEL`: model used for grounded Q&A answers
-- `BLOG_CHAT_SEARCH_TOP_K`: number of search matches sent to the model
-- `BLOG_CHAT_SEARCH_MINIMUM_SCORE`: minimum lexical score before calling the model
-- `BLOG_CHAT_MAXIMUM_QUESTION_CHARACTERS`: maximum input length per question
-- `BLOG_CHAT_MAXIMUM_DAILY_REQUESTS`: total daily question limit in KST
-- `BLOG_CHAT_CACHE_TTL_MS`: cache TTL for repeated questions
+- Auth.js / GitHub OAuth
+- GitHub auto-commit token
+- OpenAI translation / chat / router model settings
+- Modal embedding endpoint and proxy auth
+- Blog chat limits such as top-k, minimum lexical score, input length, daily quota, and cache TTL
 
 ### Setup Tips
 
@@ -181,18 +179,18 @@ pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run bu
 > The `postbuild` step starts a temporary server to auto-generate PDFs.  
 > Playwright Chromium must be installed before building.
 
-### Blog Search Index Generation
+### Chat Index Generation
 
-- `pnpm run gen:blog-search` runs automatically in `predev` and `prebuild`
-- The script:
-  - generates `entities/post/config/blog-search-records.generated.ts`
-  - generates the `public/pagefind` bundle from the same record set
-- Instead of crawling `.next` HTML output, this project
-  **chunks the source MDX into section records and indexes them through the Pagefind Node API (`addCustomRecord`)**.
-- Why:
-  - the App Router build output is primarily server bundles, not a stable static HTML directory
-  - the MDX source is already part of the existing content generation pipeline
-  - section anchor URLs can be controlled directly for more reliable citations
+- The following scripts run automatically in `predev` and `prebuild`
+  - `pnpm run gen:posts`
+  - `pnpm run gen:projects`
+  - `pnpm run gen:chat-semantic`
+  - `pnpm run gen:blog-search`
+  - `pnpm run gen:chat-rag-sqlite`
+- Instead of crawling `.next` HTML output, this project generates **lexical search records and a SQLite RAG index directly from source MDX**.
+- `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
+- `gen:chat-rag-sqlite` builds the SQLite RAG index from lexical and curated sources.
+- If the embedding provider is not configured, SQLite RAG generation is skipped and lexical retrieval still works.
 
 ## Usage
 
@@ -203,12 +201,11 @@ Open `http://localhost:3000/blog` in your browser
 ### Use Blog Q&A
 
 - Click the `Blog Q&A` button at the bottom-right of blog list/detail pages
-- The server searches both build-generated blog section records and curated profile/project sources
-- Greetings and "what is this chatbot?" style prompts are handled with a fixed response without a model call
-- Profile or representative-project questions prefer curated sources, while technical questions stay focused on blog evidence
-- Multi-part questions are lightly decomposed into up to two sub-queries and fall back to the original question when decomposition is not useful
-- If the search quality is below threshold, it refuses without calling the model
-- If the search quality is good enough, it sends only top-k evidence snippets to the model
+- The server routes the question first
+- Greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
+- Normal grounded questions search both build-generated lexical records and curated sources
+- Whole-blog synthesis questions use SQLite RAG first
+- Normal grounded questions fall back to SQLite RAG when lexical retrieval is weak
 - The model cannot browse, search externally, or call tools
 - Cache keys use the normalized question so repeated requests cost less
 - To protect the free API, the default policy limits each question to 200 characters and the whole service to 100 questions per day in KST

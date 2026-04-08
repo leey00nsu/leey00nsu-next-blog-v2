@@ -14,6 +14,7 @@ const BLOG_SEARCH_RECORDS: BlogSearchRecord[] = [
       'React Query는 서버 상태 관리 라이브러리입니다. 캐시와 재요청 제어를 제공합니다.',
     sectionTitle: null,
     tags: ['react-query', 'tanstack-query'],
+    searchTerms: [],
   },
   {
     id: 'ko/react-query-guide/staletime',
@@ -26,6 +27,7 @@ const BLOG_SEARCH_RECORDS: BlogSearchRecord[] = [
       'staleTime 설정은 데이터를 신선한 상태로 간주하는 시간을 늘려 불필요한 재요청을 줄입니다.',
     sectionTitle: 'staleTime 설정',
     tags: ['react-query', 'tanstack-query'],
+    searchTerms: [],
   },
   {
     id: 'ko/dockerize-nest/intro',
@@ -37,6 +39,7 @@ const BLOG_SEARCH_RECORDS: BlogSearchRecord[] = [
     content: 'Dockerfile과 docker compose를 이용해 NestJS 앱을 배포합니다.',
     sectionTitle: null,
     tags: ['nestjs', 'docker'],
+    searchTerms: [],
   },
 ]
 
@@ -78,6 +81,7 @@ describe('selectBlogSearchMatches', () => {
           '사용자가 좋아요 버튼을 누르면 useMutation을 통해 API를 호출합니다.',
         sectionTitle: 'react-query 낙관적 업데이트',
         tags: ['react-query', 'optimistic update'],
+        searchTerms: [],
       },
       {
         id: 'ko/why-use-react-query/intro',
@@ -89,6 +93,7 @@ describe('selectBlogSearchMatches', () => {
         content: 'react-query는 비동기 데이터를 관리하고 캐시합니다.',
         sectionTitle: 'react-query 왜 사용할까?',
         tags: ['react', 'react-query'],
+        searchTerms: [],
       },
       {
         id: 'ko/why-use-react-query/conclusion',
@@ -101,6 +106,7 @@ describe('selectBlogSearchMatches', () => {
           '쿼리옵션에 따라 데이터를 자동적으로 페칭하거나 유효 기간을 정할 수 있습니다.',
         sectionTitle: '결론',
         tags: ['react', 'react-query'],
+        searchTerms: [],
       },
     ]
 
@@ -127,6 +133,7 @@ describe('selectBlogSearchMatches', () => {
           '결국 AI의 성능은 모델 자체만이 아니라, 그 모델이 일하는 환경, 즉 하네스의 품질에 크게 좌우됩니다.',
         sectionTitle: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다',
         tags: ['lee-spec-kit'],
+        searchTerms: [],
       },
     ]
 
@@ -153,6 +160,7 @@ describe('selectBlogSearchMatches', () => {
           'lee-spec-kit은 AI 보조 개발을 위한 문서 구조와 워크플로우를 정리하기 위해 만든 CLI입니다.',
         sectionTitle: null,
         tags: ['lee-spec-kit'],
+        searchTerms: [],
       },
       {
         id: 'ko/leemage-case-study/intro',
@@ -164,6 +172,7 @@ describe('selectBlogSearchMatches', () => {
         content: 'Leemage는 비용 절감을 위한 파일 관리 플랫폼입니다.',
         sectionTitle: null,
         tags: ['leemage'],
+        searchTerms: [],
       },
     ]
 

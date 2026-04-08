@@ -111,7 +111,8 @@
     "sourcesCategory": {
       "blog": "Blog",
       "profile": "Profile",
-      "project": "Project"
+      "project": "Project",
+      "assistant": "Chatbot Guide"
     },
     "inputLabel": "Blog question input",
     "inputPlaceholder": "Ask about the blog posts or public profile pages",

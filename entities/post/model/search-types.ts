@@ -11,6 +11,8 @@ export const BlogSearchRecordSchema = z.object({
   content: z.string(),
   sectionTitle: z.string().nullable(),
   tags: z.array(z.string()),
+  publishedAt: z.string().datetime().nullable().optional(),
+  searchTerms: z.array(z.string()).optional().default([]),
 })
 
 export interface BlogSearchRecord

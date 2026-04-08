@@ -1,0 +1,3 @@
+litserve>=0.2.17
+sentence-transformers>=3.2.0
+torch>=2.5.0

@@ -47,6 +47,13 @@ next-env.d.ts
 # generated files
 /public/pdf/
 /public/pagefind/
+/data/*.sqlite
+/data/*.sqlite-shm
+/data/*.sqlite-wal
+/services/*/.venv/
+/services/*/__pycache__/
+/services/*/app/__pycache__/
+/services/*/tests/__pycache__/
 
 TASKS.md
 .kiro

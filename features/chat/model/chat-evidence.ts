@@ -4,6 +4,7 @@ export const CHAT_SOURCE_CATEGORIES = [
   'blog',
   'profile',
   'project',
+  'assistant',
 ] as const
 
 export const ChatSourceCategorySchema = z.enum(CHAT_SOURCE_CATEGORIES)
@@ -20,5 +21,7 @@ export interface ChatEvidenceRecord {
   content: string
   sectionTitle: string | null
   tags: string[]
+  publishedAt?: string | null
+  searchTerms?: string[]
   sourceCategory: ChatSourceCategory
 }

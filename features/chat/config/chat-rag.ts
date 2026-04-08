@@ -1,0 +1,82 @@
+import path from 'node:path'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { normalizeOpenAiCompatibleEmbeddingBaseUrl } from '@/features/chat/lib/normalize-openai-compatible-embedding-base-url'
+
+const CHAT_RAG_DEFAULTS = {
+  DATABASE_FILE_PATH: path.join(process.cwd(), 'data', 'chat-rag.sqlite'),
+  EMBEDDING_MODEL_ID: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+  EMBEDDING_PROVIDER: 'modal',
+  MODAL_BASE_URL: '',
+  MAXIMUM_SEMANTIC_CANDIDATES: 8,
+  MAXIMUM_EMBED_BATCH_SIZE: 20,
+  MINIMUM_SIMILARITY_SCORE: 0.15,
+  SEMANTIC_SCORE_MULTIPLIER: 10,
+  DIRECT_ENTITY_MATCH_BOOST: 4,
+  RELATED_ENTITY_MATCH_BOOST: 2,
+  LEXICAL_MATCH_BOOST: 1,
+  CURRENT_POST_MATCH_BOOST: 2,
+  MAXIMUM_RELATION_HOPS: 12,
+  MINIMUM_EMBEDDING_TOKEN_LENGTH: 1,
+} as const
+
+const DETERMINISTIC_QUERY_PATTERNS = [
+  '최신',
+  '최근',
+  '오래된',
+  '가장 오래된',
+  '첫 글',
+  '처음 글',
+  'latest',
+  'recent',
+  'oldest',
+  'oldest post',
+  'first post',
+  '추천',
+  'recommend',
+  'recommended',
+  '추천해줘',
+  '추천해 줘',
+] as const
+
+export const CHAT_RAG = {
+  DATABASE: {
+    FILE_PATH:
+      process.env.BLOG_CHAT_RAG_DATABASE_PATH ??
+      CHAT_RAG_DEFAULTS.DATABASE_FILE_PATH,
+  },
+  EMBEDDING: {
+    PROVIDER:
+      process.env.BLOG_CHAT_RAG_EMBEDDING_PROVIDER ??
+      CHAT_RAG_DEFAULTS.EMBEDDING_PROVIDER,
+    MODEL_ID:
+      process.env.BLOG_CHAT_RAG_EMBEDDING_MODEL ??
+      CHAT_RAG_DEFAULTS.EMBEDDING_MODEL_ID,
+    MODAL_BASE_URL:
+      normalizeOpenAiCompatibleEmbeddingBaseUrl(
+        process.env.MODAL_EMBEDDING_BASE_URL ??
+          CHAT_RAG_DEFAULTS.MODAL_BASE_URL,
+      ),
+    MAXIMUM_BATCH_SIZE: CHAT_RAG_DEFAULTS.MAXIMUM_EMBED_BATCH_SIZE,
+  },
+  SEARCH: {
+    TOP_K: BLOG_CHAT.SEARCH.TOP_K,
+    MAXIMUM_SEMANTIC_CANDIDATES:
+      CHAT_RAG_DEFAULTS.MAXIMUM_SEMANTIC_CANDIDATES,
+    MINIMUM_SIMILARITY_SCORE: CHAT_RAG_DEFAULTS.MINIMUM_SIMILARITY_SCORE,
+    SEMANTIC_SCORE_MULTIPLIER:
+      CHAT_RAG_DEFAULTS.SEMANTIC_SCORE_MULTIPLIER,
+    DIRECT_ENTITY_MATCH_BOOST:
+      CHAT_RAG_DEFAULTS.DIRECT_ENTITY_MATCH_BOOST,
+    RELATED_ENTITY_MATCH_BOOST:
+      CHAT_RAG_DEFAULTS.RELATED_ENTITY_MATCH_BOOST,
+    LEXICAL_MATCH_BOOST: CHAT_RAG_DEFAULTS.LEXICAL_MATCH_BOOST,
+    CURRENT_POST_MATCH_BOOST:
+      CHAT_RAG_DEFAULTS.CURRENT_POST_MATCH_BOOST,
+    MAXIMUM_RELATION_HOPS: CHAT_RAG_DEFAULTS.MAXIMUM_RELATION_HOPS,
+    MINIMUM_EMBEDDING_TOKEN_LENGTH:
+      CHAT_RAG_DEFAULTS.MINIMUM_EMBEDDING_TOKEN_LENGTH,
+  },
+  ROUTING: {
+    DETERMINISTIC_QUERY_PATTERNS,
+  },
+} as const

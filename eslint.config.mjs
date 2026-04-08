@@ -9,7 +9,6 @@ const eslintConfig = [
       '.next/**',
       'out/**',
       'build/**',
-      'public/pagefind/**',
       'next-env.d.ts',
       'storybook-static/**',
     ],

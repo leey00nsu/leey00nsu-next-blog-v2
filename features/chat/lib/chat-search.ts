@@ -1,6 +1,7 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import { SEMANTIC_SEARCH } from '@/shared/config/search-terms'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 interface SelectChatSearchMatchesParams {
@@ -32,6 +33,18 @@ const SCRIPT_BOUNDARY_PATTERNS = {
   HANGUL_TO_LATIN: /([가-힣])([A-Za-z])/g,
 } as const
 
+const CHAT_SEARCH_QUERY_PATTERNS = {
+  RECENCY: ['최신', '최근', 'latest', 'recent'],
+  RECOMMENDATION: [
+    '추천',
+    '추천해',
+    '추천해줘',
+    '추천해달라',
+    'recommend',
+    'recommended',
+  ],
+} as const
+
 function normalizeText(text: string): string {
   return text
     .replaceAll(SCRIPT_BOUNDARY_PATTERNS.LATIN_TO_HANGUL, '$1 $2')
@@ -41,8 +54,27 @@ function normalizeText(text: string): string {
 
 function tokenizeText(text: string): string[] {
   const matches = normalizeText(text).match(TOKEN_PATTERNS.WORD) ?? []
+  const stopWords = new Set<string>([
+    ...SEMANTIC_SEARCH.STOP_WORDS.en,
+    ...SEMANTIC_SEARCH.STOP_WORDS.ko,
+  ])
 
-  return [...new Set(matches.filter((token) => token.length >= 2))]
+  return [
+    ...new Set(
+      matches.filter((token) => {
+        return token.length >= 2 && !stopWords.has(token)
+      }),
+    ),
+  ]
+}
+
+function containsQueryPattern(
+  normalizedQuestion: string,
+  patterns: readonly string[],
+): boolean {
+  return patterns.some((pattern) => {
+    return normalizedQuestion.includes(pattern)
+  })
 }
 
 function buildExpandedTokens(
@@ -83,6 +115,7 @@ function buildDocumentFrequencyMap(
           record.sectionTitle ?? '',
           record.content,
           record.tags.join(' '),
+          (record.searchTerms ?? []).join(' '),
         ].join(' '),
       )
 
@@ -113,6 +146,7 @@ function buildFieldMatchMultiplier(
   const normalizedSectionTitle = normalizeText(record.sectionTitle ?? '')
   const normalizedContent = normalizeText(record.content)
   const normalizedTags = normalizeText(record.tags.join(' '))
+  const normalizedSearchTerms = normalizeText((record.searchTerms ?? []).join(' '))
 
   if (normalizedSectionTitle.includes(token)) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.SECTION
@@ -130,6 +164,10 @@ function buildFieldMatchMultiplier(
     return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
   }
 
+  if (normalizedSearchTerms.includes(token)) {
+    return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
+  }
+
   return 0
 }
 
@@ -141,17 +179,63 @@ function countMatchedTokens(tokens: string[], text: string): number {
   }, 0)
 }
 
-function resolveMinimumMatchedTokenCount(questionTokens: string[]): number {
+function resolveMinimumMatchedTokenCount(params: {
+  questionTokens: string[]
+  additionalKeywords: string[]
+  preferredSourceCategories: ChatEvidenceRecord['sourceCategory'][]
+  normalizedQuestion: string
+}): number {
+  const {
+    questionTokens,
+    additionalKeywords,
+    preferredSourceCategories,
+    normalizedQuestion,
+  } = params
+
   if (questionTokens.length <= 1) {
+    return 1
+  }
+
+  if (
+    containsQueryPattern(
+      normalizedQuestion,
+      CHAT_SEARCH_QUERY_PATTERNS.RECOMMENDATION,
+    ) ||
+    containsQueryPattern(normalizedQuestion, CHAT_SEARCH_QUERY_PATTERNS.RECENCY)
+  ) {
+    return 1
+  }
+
+  if (
+    additionalKeywords.length > 0 ||
+    preferredSourceCategories.length > 0
+  ) {
     return 1
   }
 
   return BLOG_CHAT.SEARCH.MINIMUM_MATCHED_TOKEN_COUNT
 }
 
-function resolveMinimumScore(questionTokens: string[]): number {
+function resolveMinimumScore(
+  questionTokens: string[],
+  normalizedQuestion: string,
+): number {
+  if (
+    containsQueryPattern(
+      normalizedQuestion,
+      CHAT_SEARCH_QUERY_PATTERNS.RECOMMENDATION,
+    ) ||
+    containsQueryPattern(normalizedQuestion, CHAT_SEARCH_QUERY_PATTERNS.RECENCY)
+  ) {
+    return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
+  }
+
   if (questionTokens.length <= 1) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.CONTENT
+  }
+
+  if (questionTokens.length <= 4) {
+    return BLOG_CHAT.SEARCH.FIELD_SCORE.TITLE
   }
 
   return BLOG_CHAT.SEARCH.MINIMUM_SCORE
@@ -163,6 +247,23 @@ function isContextDrivenQuestion(question: string): boolean {
   })
 }
 
+function resolvePublishedAtTimestamp(record: ChatEvidenceRecord): number {
+  if (!record.publishedAt) {
+    return 0
+  }
+
+  const timestamp = new Date(record.publishedAt).getTime()
+
+  return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+function shouldSortByRecency(normalizedQuestion: string): boolean {
+  return containsQueryPattern(
+    normalizedQuestion,
+    CHAT_SEARCH_QUERY_PATTERNS.RECENCY,
+  )
+}
+
 function scoreRecord(
   questionTokens: string[],
   record: ChatEvidenceRecord,
@@ -172,7 +273,13 @@ function scoreRecord(
 ): ScoredChatEvidenceRecord | null {
   const matchedTokenCount = countMatchedTokens(
     questionTokens,
-    [record.title, record.sectionTitle, record.content, record.tags.join(' ')]
+    [
+      record.title,
+      record.sectionTitle,
+      record.content,
+      record.tags.join(' '),
+      (record.searchTerms ?? []).join(' '),
+    ]
       .filter(Boolean)
       .join(' '),
   )
@@ -265,11 +372,16 @@ export function selectChatSearchMatches({
   currentPostSlug,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
   const scopedRecords = records.filter((record) => record.locale === locale)
+  const normalizedQuestion = normalizeText(question)
   const baseQuestionTokens = tokenizeText(question)
   const questionTokens = buildExpandedTokens(baseQuestionTokens, additionalKeywords)
-  const minimumMatchedTokenCount =
-    resolveMinimumMatchedTokenCount(baseQuestionTokens)
-  const minimumScore = resolveMinimumScore(baseQuestionTokens)
+  const minimumMatchedTokenCount = resolveMinimumMatchedTokenCount({
+    questionTokens: baseQuestionTokens,
+    additionalKeywords,
+    preferredSourceCategories,
+    normalizedQuestion,
+  })
+  const minimumScore = resolveMinimumScore(baseQuestionTokens, normalizedQuestion)
   const documentFrequencyMap = buildDocumentFrequencyMap(
     questionTokens,
     scopedRecords,
@@ -294,7 +406,17 @@ export function selectChatSearchMatches({
         record.matchedTokenCount >= minimumMatchedTokenCount
       )
     })
-    .sort((leftRecord, rightRecord) => rightRecord.score - leftRecord.score)
+    .sort((leftRecord, rightRecord) => {
+      if (shouldSortByRecency(normalizedQuestion)) {
+        return (
+          resolvePublishedAtTimestamp(rightRecord) -
+            resolvePublishedAtTimestamp(leftRecord) ||
+          rightRecord.score - leftRecord.score
+        )
+      }
+
+      return rightRecord.score - leftRecord.score
+    })
 
   const limitedMatches = limitMatchesPerSlug(scoredMatches).slice(
     0,

@@ -156,6 +156,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "building-ai-chat-for-my-blog",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "블로그에 ai 챗봇을 붙이면서, 검색과 rag 사이에서 고민한 것들"
+      ],
+      "aliases": [
+        "블로그에 ai 챗봇을 붙이면서, 검색과 rag 사이에서 고민한 것들",
+        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql까지 오며 정리한 블로그 챗봇 설계 기록",
+        "ai",
+        "chatbot",
+        "rag",
+        "next.js"
+      ],
+      "faqQueries": [
+        "블로그에 ai 챗봇을 붙이면서, 검색과 rag 사이에서 고민한 것들 글 뭐야",
+        "블로그에 ai 챗봇을 붙이면서, 검색과 rag 사이에서 고민한 것들 글 추천해줘",
+        "ai 글 뭐야",
+        "ai 글 추천해줘",
+        "chatbot 글 뭐야",
+        "chatbot 글 추천해줘"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "leemage-case-study",
       "sourceCategory": "blog",
       "entityNames": [
@@ -730,6 +754,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what does leemage do",
         "which project uses next.js",
         "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "building-ai-chat-for-my-blog",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "what i learned building an ai chatbot for my blog, between search and rag"
+      ],
+      "aliases": [
+        "what i learned building an ai chatbot for my blog, between search and rag",
+        "notes from moving a blog chatbot from static search to embedding based rag, through lightning ai, modal, and postgresql",
+        "ai",
+        "chatbot",
+        "rag",
+        "next.js"
+      ],
+      "faqQueries": [
+        "what is what i learned building an ai chatbot for my blog, between search and rag",
+        "post about what i learned building an ai chatbot for my blog, between search and rag",
+        "what is ai",
+        "post about ai",
+        "what is chatbot",
+        "post about chatbot"
       ]
     },
     {

@@ -1,0 +1,165 @@
+---
+slug: building-ai-chat-for-my-blog
+title: What I Learned Building an AI Chatbot for My Blog, Between Search and RAG
+tags:
+  - AI
+  - chatbot
+  - RAG
+  - Next.js
+description: Notes from moving a blog chatbot from static search to embedding-based RAG, through Lightning AI, Modal, and PostgreSQL
+date: 2026-04-08
+section: blog
+series:
+thumbnail: /public/posts/building-ai-chat-for-my-blog/blog-chatbot-development-stages.webp
+draft: false
+writer: leey00nsu
+---
+
+## What I Learned Building an AI Chatbot for My Blog, Between Search and RAG
+
+I recently started adding an AI chatbot to this blog.
+
+At first, the idea was simple. As more posts accumulated, I wanted visitors to quickly understand things like "what kind of developer is this person," "what technologies does he mostly use," and "which post should I read first" without manually digging through every article.
+
+But once I started building it, the next set of questions came up almost immediately. Should I just ask an LLM to read the documents directly? Would static search be enough? Or did I really need embedding-based RAG? At one point I tried exposing an embedding API through [`Lightning AI`](https://lightning.ai/). The current direction is a [`Modal`](https://modal.com/) + `PostgreSQL` (`pgvector`) setup.
+
+This post is a record of that process: what I had to think through, and why I ended up making these choices.
+
+![Blog chatbot development stages](/public/posts/building-ai-chat-for-my-blog/blog-chatbot-development-stages.webp)
+
+## At First, I Wanted to Start with Search
+
+I did not begin with the assumption that I needed embedding-based RAG from day one.
+
+This blog is still mostly static content, and the total number of posts is not that large. I was already managing content with `MDX`, so in the beginning it seemed more than reasonable to build a good static search layer first. In practice, that meant something close to [`Pagefind`](https://pagefind.app/): generate search records at build time, then run lexical search over those records at runtime.
+
+That approach had very obvious advantages.
+
+First, it required no extra infrastructure. The blog already runs on `Next.js`, and the search index could be generated during the build. No separate database. No vector store. That alone was a meaningful benefit.
+
+Second, the reasoning behind the results was relatively easy to explain. If a post matched, it usually matched because the title, tags, or body actually contained the relevant words. The search itself was lightweight, and the operational burden was close to zero.
+
+So at that point, it felt good enough. For a static blog, I did not think I needed to jump into a heavy AI architecture immediately.
+
+## But Static Search Started to Hit Its Limits Very Quickly
+
+The problem was that real user questions are rarely as tidy as the documents themselves.
+
+If someone asks using the exact words that already appear in a post, lexical search works well. But real questions do not always look like that. The moment someone asks something like `"what is his name"` in English, or `"what is the shared design philosophy across this blog?"`, plain string-based search starts to run out of room.
+
+I ran into two main limitations.
+
+The first was phrasing. Even when the meaning was the same, slightly different wording often failed to line up with the exact words in the content.
+
+The second was scope. Some questions could not be answered from a single post. You had to look across the About page, project descriptions, and multiple blog posts together. Static search is good at finding "documents with similar strings." It is not naturally good at assembling context from several documents and synthesizing them.
+
+There was one more thing on top of that: the identity of the chatbot itself.
+
+A question like `"what relationship do you have with this person?"` felt awkward to answer through public documents alone. It made more sense to have an internal document that clearly explained the chatbot's identity and role. That was the point where I stopped thinking of it as just a search box and started thinking in terms of "search + internal knowledge + answer policy."
+
+## That Was Why I Wanted to Try Embedding-Based RAG
+
+My reasons for moving toward embedding-based RAG were fairly straightforward.
+
+The biggest one was that I wanted to be less dependent on exact string matches. I wanted the system to find the right documents even when the same meaning was phrased differently. I also wanted it to gather evidence across multiple documents, not just from one article. On top of that, I wanted to index not only blog posts, but also `about`, `projects`, and even internal assistant documents. That felt much closer to a real site-level chatbot than a glorified article search.
+
+There was still an obvious objection at this point.
+
+"Wouldn't it be more natural to just let the LLM read the documents directly?"
+
+That question is still valid. In fact, for prompts like `"hello"`, `"who are you?"`, or `"what is the latest post?"`, a raw LLM can sometimes sound more natural. But that approach gets more expensive as the corpus grows, because you keep pushing long context into the model. It also gives you less control over what the answer is grounded in. Once I cared about things like "do not speak as if you are the author," "only use public information," and "show which post supports this answer," a separate retrieval layer became much more attractive.
+
+So my conclusion was not "send everything through RAG." It was closer to "only turn retrieval on when the question actually needs it."
+
+## Eventually I Had to Think About Cost Too
+
+If you are building embedding-based RAG, the most obvious choice is simply to use the `OpenAI embedding API`. The implementation is fairly straightforward: embed the documents, embed the incoming query with the same model, then retrieve from there.
+
+But in my case, the cost structure started to bother me a little.
+
+I was already using a generation model for answers, and that side felt easier to trial. At the time, the OpenAI setup I was looking at allowed up to `2.5M tokens` per day across the mini family, including `gpt-5.4-mini`, under the data-sharing program. So for answer generation I was comfortable using `GPT-5.4 mini`, while still putting a guardrail in the app itself and treating roughly one hundred requests as the initial trial range.
+
+Embeddings, on the other hand, create a separate cost axis: document indexing and query embedding both call the API continuously. That means the chatbot no longer has only "answer generation cost." It also has a second ongoing cost line just to keep retrieval working.
+
+That mattered because the chatbot was never going to be a one-time feature. I wanted to regenerate the index when new posts were added, and I wanted the freedom to rebuild it when I changed the retrieval pipeline itself. Once I started thinking about it that way, the cost model looked less like "you only pay when a user asks a question" and more like "you also keep paying during the preparation stage."
+
+Of course, at this scale the OpenAI embedding API may not be prohibitively expensive. Even so, I did not really want answer generation and embeddings tied to the exact same cost structure. That was why I kept OpenAI on the answer side, while looking first at options like `Lightning AI` and `Modal`, where I could at least experiment with the embedding layer inside a more generous free tier.
+
+![AI system cost structure comparison](/public/posts/building-ai-chat-for-my-blog/ai-system-cost-structure-comparison.webp)
+
+## Why I Tried Lightning AI, and Why I Stopped There
+
+For a while, I experimented with hosting the embedding API myself through an external platform. The first platform I tried was [`Lightning AI`](https://lightning.ai/).
+
+Using `LitServe` to expose a single embedding endpoint for both document embeddings and query embeddings looked pretty compelling. And during testing, it worked. I was able to send both documents and queries through the same endpoint and return OpenAI-compatible embedding responses without too much trouble.
+
+The problem was the operating model.
+
+`Studio` was convenient for experiments because it gave me a free time window every time I spun it up. That made it useful for short tests like "does the document embedding path work" or "does the query embedding path work." But it still felt like an environment for experimentation, not something I wanted to lean on for this specific production role.
+
+`Deployment`, on the other hand, was closer to production. But what I wanted was a light embedding-only endpoint. Managing a continuously running deployment for that purpose felt heavier than I wanted, both in cost and in operational shape. An embedding server is only one piece of retrieval; it is not a user-facing product feature in the same way the answer model is. I did not want to allocate too much operational weight to that piece.
+
+So my conclusion was that `Lightning AI` was useful for testing, but awkward as the long-term operating model for this blog.
+
+## That Was Why I Moved to Modal
+
+After that, I shifted the embedding endpoint to [`Modal`](https://modal.com/).
+
+My goal was very simple. I did not want to move the blog itself. I just wanted a single endpoint dedicated to embeddings. In that sense, Modal fit what I wanted better.
+
+It was easy to expose a `/v1/embeddings` endpoint with `FastAPI`, and to use the same model for both document and query embeddings. At the same time, answer generation, question routing, and result composition could stay inside `Next.js`. Only embedding generation moved outside. That boundary felt much cleaner.
+
+The cost perspective also became easier to reason about. I could think about answer generation and embedding generation separately, and at least for me, it no longer felt like I was keeping a heavy dedicated deployment alive just for embeddings.
+
+Modal is not a perfect answer either. Cold starts still exist. But for an embedding endpoint attached to a blog at this scale, it felt noticeably lighter and more pragmatic than the Lightning setup I had before.
+
+## Why I Moved the Vector Store to PostgreSQL
+
+Once embeddings enter the picture, the next question becomes where to store them. You can use `pgvector`, an external vector database, or something much heavier.
+
+At first, I thought all of that would be overkill for this blog.
+
+The total document count was not huge, and I was already running things in a self-hosted, single-server environment. So in the beginning, `SQLite` felt perfectly reasonable. The site content is not a massive, highly dynamic corpus. It is closer to static content that gets indexed at build time and regenerated when needed.
+
+But once I connected the chatbot to the real operating flow, a different problem showed up. This project already has a workflow where writing a post on the web eventually creates a GitHub commit, and that commit triggers redeployment. In that situation, keeping embedding output in a `SQLite` file quickly raised awkward questions: when should it be generated, before or after deployment, and does the generated file need to be committed again?
+
+That is why I moved the vector store into `PostgreSQL` with `pgvector`, so embeddings and retrieval metadata live inside the database instead of inside a generated file that gets passed around in Git. The source documents are still tracked in Git, but derived data such as chunks and embeddings are no longer treated as Git artifacts. The index is also updated in a versioned way, so a newly built index only becomes active at the end.
+
+The current direction is much closer to this:
+
+Split blog posts, profile pages, and project pages into chunks, generate embeddings for each chunk, store the results in `PostgreSQL`, then embed the incoming question with the same model and use `pgvector` to find semantic candidates.
+
+What I liked about this structure was simple. It separates application deployment from retrieval storage, it lets me keep the previous active index when re-indexing fails, and it avoids the mismatch between "the committed artifact" and "the actual index the service is reading."
+
+## In the End, I Had to Separate Question Types
+
+Actually building it changed the way I thought about the problem.
+
+At first, I vaguely assumed that adding embeddings would automatically make the chatbot smarter. I do not think that anymore. Embeddings are useful. They help reduce phrasing mismatch and gather evidence across multiple documents. But embeddings alone do not make a product.
+
+What turned out to matter even more was splitting question types correctly.
+
+Questions like `"hello"`, `"who are you?"`, `"how can I contact you?"`, `"what is the latest post?"`, and `"what is the oldest post?"` are closer to product logic than to retrieval. Questions like `"what kind of developer is this person?"`, `"what is the main tech stack?"`, and `"what design philosophy appears across this blog?"` depend much more on evidence retrieval.
+
+That is why the current structure is divided into two layers.
+
+![Hybrid AI blog chatbot architecture](/public/posts/building-ai-chat-for-my-blog/hybrid-ai-blog-chatbot-architecture.webp)
+
+The first is the control plane. It does not treat a question as just one vague intent. It separates what the user is referring to from what they want done with it. That is how greetings, assistant identity, contact, latest post, oldest post, and current post questions are routed quickly.
+
+The second is the retrieval plane. That is where lexical search and PostgreSQL-based embedding RAG actually gather evidence. Information such as the profile page or the chatbot's own identity is also treated less like a language-isolated page and more like a shared factual layer for the site.
+
+Only after introducing that separation did the chatbot start to feel more like a real chatbot. Sending every question through RAG often made the result worse, not better.
+
+Another interesting change was that the chatbot's identity is no longer hardcoded directly in application code. Instead, it is managed in an internal MDX document. That document is not publicly exposed, but it defines who the chatbot is, what evidence scope it answers from, and what role constraints keep it from speaking as if it were the author.
+
+## Closing Thoughts
+
+The biggest reason I built this chatbot, honestly, was that I had been getting more interested in RAG lately. After spending time with products like [`NotebookLM`](https://notebooklm.google/), I found the experience of reading documents and answering with grounded context genuinely compelling. At some point, it stopped feeling enough to just use someone else's product. I wanted to try building that experience into my own blog.
+
+Once I started, the problem turned out to be much wider than I expected. It was not only about whether search was enough, or how far embeddings should go. It also became a question of tone, evidence boundaries, deployment flow, and how indexing should be operated. I do not think this structure is the final form, but I can now explain much more clearly why I started with static search, why I moved toward embedding-based RAG, and why the path eventually went through [`Lightning AI`](https://lightning.ai/) and toward [`Modal`](https://modal.com/) + `PostgreSQL`.
+
+## References
+
+- [Building AI Chat into a Portfolio Site](https://velog.io/@tristanjung1006/AI-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4-%EC%82%AC%EC%9D%B4%ED%8A%B8%EC%97%90-AI-%EC%B1%84%ED%8C%85-%EA%B5%AC%EC%B6%95%ED%95%98%EA%B8%B0)
+- [Building an AI Ask-Me-Anything for a Portfolio, Part 2](https://velog.io/@tristanjung1006/AI-%ED%8F%AC%ED%8F%B4%EB%A6%AC%EC%98%A4%EC%97%90-AI-%EA%B8%B0%EB%B0%98-%EB%AC%B4%EB%AC%BC%EB%B3%B4-%EA%B5%AC%EC%B6%95-2%ED%8E%B8)

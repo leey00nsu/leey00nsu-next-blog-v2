@@ -35,6 +35,24 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQABAABUB8JZwAA3AA/vB/kVAPgAAA",
     "isAnimated": false
   },
+  "/public/posts/building-ai-chat-for-my-blog/ai-system-cost-structure-comparison.webp": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAAAQAgCdASoQAAsABUB8JZwAAt4/z8OTUGCAAP7rGqE5X48MRvV6hn0DdA8rvJDEiwwGsBw9yodmTfwRUMAAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-chat-for-my-blog/blog-chatbot-development-stages.webp": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAACwAQCdASoQAAsABUB8JZwAAuc+6TAAAP7vu6rcy5RDRnHAougmqw4qFkqYK1hVQgA=",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-chat-for-my-blog/hybrid-ai-blog-chatbot-architecture.webp": {
+    "width": 1254,
+    "height": 1254,
+    "base64": "data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoQABAABUB8JaQAAxZiGTEAAP7qv1JHmP1gJ35vmJU/GNrLAAA=",
+    "isAnimated": false
+  },
   "/public/posts/contribute-open-source/contributors.webp": {
     "width": 500,
     "height": 180,

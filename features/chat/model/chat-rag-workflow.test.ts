@@ -1,16 +1,17 @@
-import Database from 'better-sqlite3'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { initializeChatRagDatabase, replaceChatRagLocaleIndex } from '@/features/chat/model/chat-rag-database'
+import { describe, expect, it } from 'vitest'
 import type {
-  GraphRagChunk,
+  ChatRagLocaleSearchData,
+  ChatRagSemanticCandidate,
+} from '@/features/chat/model/chat-rag-database'
+import type {
   GraphRagEntity,
   GraphRagRelation,
 } from '@/features/chat/model/graph-rag'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 
-function buildGraphRagChunk(
-  overrides: Partial<GraphRagChunk>,
-): GraphRagChunk {
+function buildSemanticCandidate(
+  overrides: Partial<ChatRagSemanticCandidate>,
+): ChatRagSemanticCandidate {
   return {
     id: 'ko/blog/default',
     locale: 'ko',
@@ -25,6 +26,7 @@ function buildGraphRagChunk(
     publishedAt: '2026-01-01T00:00:00.000Z',
     sourceCategory: 'blog',
     entityIds: [],
+    semanticSimilarity: 0.9,
     ...overrides,
   }
 }
@@ -57,16 +59,20 @@ function buildGraphRagRelation(
   }
 }
 
+function buildSearchData(
+  overrides: Partial<ChatRagLocaleSearchData>,
+): ChatRagLocaleSearchData {
+  return {
+    entities: [],
+    relations: [],
+    semanticCandidates: [],
+    ...overrides,
+  }
+}
+
 describe('runChatRagWorkflow', () => {
-  let database: Database.Database
-
-  beforeEach(() => {
-    database = new Database(':memory:')
-    initializeChatRagDatabase(database)
-  })
-
   it('영문 이름 질문을 profile chunk로 연결한다', async () => {
-    const profileChunk = buildGraphRagChunk({
+    const profileChunk = buildSemanticCandidate({
       id: 'en/about/profile',
       locale: 'en',
       slug: 'about',
@@ -86,20 +92,16 @@ describe('runChatRagWorkflow', () => {
       chunkIds: [profileChunk.id],
     })
 
-    replaceChatRagLocaleIndex({
-      database,
-      locale: 'en',
-      chunks: [profileChunk],
-      entities: [profileEntity],
-      relations: [],
-      embeddings: [{ chunkId: profileChunk.id, embedding: [0, 1] }],
-    })
-
     const result = await runChatRagWorkflow({
       question: 'what is his name',
       locale: 'en',
-      database,
       embedQuestion: async () => [0, 1],
+      selectSearchData: async () => {
+        return buildSearchData({
+          semanticCandidates: [profileChunk],
+          entities: [profileEntity],
+        })
+      },
     })
 
     expect(result.grounded).toBe(true)
@@ -107,7 +109,7 @@ describe('runChatRagWorkflow', () => {
   })
 
   it('공통 철학 질문에서 semantic 후보와 relation 확장을 함께 사용한다', async () => {
-    const structureChunk = buildGraphRagChunk({
+    const structureChunk = buildSemanticCandidate({
       id: 'ko/blog/lee-spec-kit',
       slug: 'lee-spec-kit',
       title: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다',
@@ -117,8 +119,9 @@ describe('runChatRagWorkflow', () => {
       tags: ['ai'],
       searchTerms: ['문서 구조', '하네스'],
       entityIds: ['ko:term:문서 구조', 'ko:term:하네스'],
+      semanticSimilarity: 0.98,
     })
-    const reuseChunk = buildGraphRagChunk({
+    const reuseChunk = buildSemanticCandidate({
       id: 'ko/blog/leemage',
       slug: 'leemage-case-study',
       title: '비용 문제에서 시작해 파일 관리 플랫폼이 된 Leemage 제작기',
@@ -128,6 +131,7 @@ describe('runChatRagWorkflow', () => {
       tags: ['leemage'],
       searchTerms: ['재사용성', '비용 통제'],
       entityIds: ['ko:term:재사용성'],
+      semanticSimilarity: 0.72,
     })
     const entities = [
       buildGraphRagEntity({
@@ -157,23 +161,17 @@ describe('runChatRagWorkflow', () => {
       }),
     ]
 
-    replaceChatRagLocaleIndex({
-      database,
-      locale: 'ko',
-      chunks: [structureChunk, reuseChunk],
-      entities,
-      relations,
-      embeddings: [
-        { chunkId: structureChunk.id, embedding: [1, 0] },
-        { chunkId: reuseChunk.id, embedding: [0.5, 0.5] },
-      ],
-    })
-
     const result = await runChatRagWorkflow({
       question: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
       locale: 'ko',
-      database,
       embedQuestion: async () => [1, 0],
+      selectSearchData: async () => {
+        return buildSearchData({
+          semanticCandidates: [structureChunk, reuseChunk],
+          entities,
+          relations,
+        })
+      },
     })
 
     expect(result.grounded).toBe(true)

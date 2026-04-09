@@ -5,6 +5,7 @@ import {
   buildProfileChatSemanticEntry,
   buildProjectChatSemanticEntry,
   buildSemanticSearchTerms,
+  getSemanticSearchTerms,
 } from '@/shared/lib/chat-semantic-map'
 
 describe('chat semantic map', () => {
@@ -88,6 +89,18 @@ describe('chat semantic map', () => {
         'react query',
         'tanstack query',
       ]),
+    )
+  })
+
+  it('ko 프로필 검색어는 en profile semantic fallback도 함께 포함한다', () => {
+    const searchTerms = getSemanticSearchTerms({
+      locale: 'ko',
+      slug: 'about',
+      sourceCategory: 'profile',
+    })
+
+    expect(searchTerms).toEqual(
+      expect.arrayContaining(['what is his name', 'who is the author']),
     )
   })
 })

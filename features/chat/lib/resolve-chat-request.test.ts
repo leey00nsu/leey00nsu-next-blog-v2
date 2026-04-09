@@ -84,6 +84,38 @@ const CURATED_CHAT_SOURCES: ChatEvidenceRecord[] = [
       'server',
       'ai',
     ],
+    searchTerms: [
+      '이윤수',
+      'about me',
+      '블로그 소개',
+      '이 사람',
+      '작성자',
+      '이름',
+      'yoonsu lee',
+      'author',
+      'who is the author',
+      'what is his name',
+    ],
+    sourceCategory: 'profile',
+  },
+  {
+    id: 'ko/about/profile-reference-en',
+    locale: 'ko',
+    slug: 'about',
+    title: 'About Me',
+    url: '/en/about',
+    excerpt: 'About this blog',
+    content:
+      'Yoonsu Lee is a developer focused on React, Next.js, and AI-assisted workflows.',
+    sectionTitle: null,
+    tags: ['profile', 'about', 'canonical-reference'],
+    searchTerms: [
+      '영어 이름',
+      'english name',
+      'yoonsu lee',
+      'about me',
+      'what is his name',
+    ],
     sourceCategory: 'profile',
   },
   {
@@ -190,6 +222,12 @@ describe('resolveChatRequest', () => {
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
       assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionRouting: {
+        selector: 'greeting',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(false)
@@ -207,6 +245,12 @@ describe('resolveChatRequest', () => {
         normalizedQuestion: '넌 뭐야',
         questionType: 'assistant-identity',
         searchQueries: [],
+      },
+      questionRouting: {
+        selector: 'assistant_identity',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
       },
     })
 
@@ -227,6 +271,12 @@ describe('resolveChatRequest', () => {
         questionType: 'assistant-identity',
         searchQueries: [],
       },
+      questionRouting: {
+        selector: 'assistant_identity',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(false)
@@ -243,7 +293,12 @@ describe('resolveChatRequest', () => {
       curatedRecords: CURATED_CHAT_SOURCES,
       assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       contactProfile: KO_CHAT_CONTACT_PROFILE,
-      handlingType: 'direct_contact',
+      questionRouting: {
+        selector: 'contact',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(false)
@@ -260,7 +315,12 @@ describe('resolveChatRequest', () => {
       curatedRecords: CURATED_CHAT_SOURCES,
       assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       currentPostSlug: 'why-i-built-lee-spec-kit',
-      handlingType: 'direct_current_post',
+      questionRouting: {
+        selector: 'current_post',
+        action: 'summarize',
+        scope: 'current_page',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(true)
@@ -297,6 +357,46 @@ describe('resolveChatRequest', () => {
     expect(result.matches[0]?.url).toBe('/en/about')
   })
 
+  it('ko 로케일에서도 영어 이름 질문은 canonical profile source를 찾는다', () => {
+    const result = resolveChatRequest({
+      question: 'what is his name',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES,
+      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(result.matches[0]?.sourceCategory).toBe('profile')
+    expect(result.matches[0]?.url).toBe('/ko/about')
+  })
+
+  it('영어 이름 질문은 영어 프로필 참조 source를 우선 선택한다', () => {
+    const result = resolveChatRequest({
+      question: '영어 이름 뭐야?',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES,
+      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(result.matches[0]?.sourceCategory).toBe('profile')
+    expect(result.matches[0]?.url).toBe('/en/about')
+  })
+
   it('최신 글 질문은 날짜 기준 direct response로 처리한다', () => {
     const result = resolveChatRequest({
       question: '최신 글 뭐지?',
@@ -304,6 +404,39 @@ describe('resolveChatRequest', () => {
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
       assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionRouting: {
+        selector: 'latest_post',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(false)
+    expect(result.directResponse?.answer).toContain('가장 최신 글')
+    expect(result.directResponse?.citations[0]?.url).toBe(
+      '/ko/blog/latest-post',
+    )
+  })
+
+  it('latest_post answer 슬롯은 질문 문자열 패턴 없이도 최신 글을 고른다', () => {
+    const result = resolveChatRequest({
+      question: '마지막 글',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES,
+      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionAnalysis: {
+        normalizedQuestion: '마지막 글',
+        questionType: 'general',
+        searchQueries: [],
+      },
+      questionRouting: {
+        selector: 'latest_post',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(false)
@@ -320,6 +453,12 @@ describe('resolveChatRequest', () => {
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
       assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionRouting: {
+        selector: 'oldest_post',
+        action: 'recommend',
+        scope: 'global',
+        reason: 'test',
+      },
     })
 
     expect(result.shouldCallModel).toBe(false)
@@ -327,5 +466,31 @@ describe('resolveChatRequest', () => {
     expect(result.directResponse?.citations[0]?.url).toBe(
       '/ko/blog/oldest-post',
     )
+  })
+
+  it('oldest_post summarize 슬롯은 가장 오래된 글을 모델 근거로 넘긴다', () => {
+    const result = resolveChatRequest({
+      question: '가장 첫 글 요약해봐',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES,
+      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
+      questionAnalysis: {
+        normalizedQuestion: '가장 첫 글 요약해봐',
+        questionType: 'general',
+        searchQueries: [],
+      },
+      questionRouting: {
+        selector: 'oldest_post',
+        action: 'summarize',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(result.directResponse).toBeUndefined()
+    expect(result.matches).toHaveLength(1)
+    expect(result.matches[0]?.url).toBe('/ko/blog/oldest-post')
   })
 })

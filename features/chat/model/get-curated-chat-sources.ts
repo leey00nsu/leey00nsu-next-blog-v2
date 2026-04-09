@@ -6,6 +6,7 @@ import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistan
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import {
   buildLocalizedRoutePath,
+  LOCALES,
   buildProjectHref,
   ROUTES,
   type SupportedLocale,
@@ -16,6 +17,13 @@ import { collectSearchTerms } from '@/shared/lib/search-terms'
 const CURATED_SOURCE_TEXT = {
   MAXIMUM_EXCERPT_LENGTH: 180,
   MAXIMUM_CONTENT_LENGTH: 700,
+} as const
+
+const CROSS_LOCALE_PROFILE_REFERENCE = {
+  SEARCH_PHRASES: {
+    ko: ['영어 이름', 'english name'],
+    en: ['한국 이름', '한글 이름', 'korean name', 'hangul name'],
+  },
 } as const
 
 const MARKDOWN_PATTERNS = {
@@ -44,6 +52,12 @@ function trimText(text: string, maximumLength: number): string {
   }
 
   return `${text.slice(0, maximumLength - 1).trimEnd()}…`
+}
+
+function resolveAlternateLocales(locale: SupportedLocale): SupportedLocale[] {
+  return LOCALES.SUPPORTED.filter((supportedLocale) => {
+    return supportedLocale !== locale
+  })
 }
 
 export const getCuratedChatSources = cache(
@@ -158,6 +172,60 @@ export const getCuratedChatSources = cache(
         }),
         sourceCategory: 'profile',
       })
+
+      const alternateLocales = resolveAlternateLocales(locale)
+
+      for (const alternateLocale of alternateLocales) {
+        const alternateAbout = getAbout(alternateLocale)
+
+        if (!alternateAbout) {
+          continue
+        }
+
+        const sanitizedAlternateAboutContent = sanitizeMarkdownToSearchText(
+          alternateAbout.content,
+        )
+        const alternateProfileSemanticSearchTerms = getSemanticSearchTerms({
+          locale: alternateLocale,
+          slug: 'about',
+          sourceCategory: 'profile',
+        })
+
+        curatedSources.push({
+          id: `${locale}/about/profile-reference-${alternateLocale}`,
+          locale,
+          slug: 'about',
+          title: alternateAbout.title,
+          url: buildLocalizedRoutePath(ROUTES.ABOUT, alternateLocale),
+          excerpt: trimText(
+            alternateAbout.description ?? sanitizedAlternateAboutContent,
+            CURATED_SOURCE_TEXT.MAXIMUM_EXCERPT_LENGTH,
+          ),
+          content: trimText(
+            sanitizedAlternateAboutContent,
+            CURATED_SOURCE_TEXT.MAXIMUM_CONTENT_LENGTH,
+          ),
+          sectionTitle: null,
+          tags: ['profile', 'about', 'canonical-reference'],
+          searchTerms: collectSearchTerms({
+            texts: [
+              alternateAbout.title,
+              alternateAbout.description ?? '',
+              sanitizedAlternateAboutContent,
+            ],
+            phrases: [
+              ...CROSS_LOCALE_PROFILE_REFERENCE.SEARCH_PHRASES[locale],
+              ...alternateProfileSemanticSearchTerms,
+              alternateAbout.title,
+              alternateAbout.description ?? '',
+              'profile',
+              'about',
+              'canonical reference',
+            ],
+          }),
+          sourceCategory: 'profile',
+        })
+      }
     }
 
     for (const project of projects) {

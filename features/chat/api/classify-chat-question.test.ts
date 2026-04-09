@@ -33,7 +33,9 @@ describe('classifyChatQuestion', () => {
       hasCurrentPostContext: false,
     })
 
-    expect(result.handlingType).toBe('direct_assistant_identity')
+    expect(result.selector).toBe('assistant_identity')
+    expect(result.action).toBe('answer')
+    expect(result.scope).toBe('global')
   })
 
   it('연락 질문은 fallback에서 direct_contact로 분류한다', async () => {
@@ -46,7 +48,24 @@ describe('classifyChatQuestion', () => {
       hasCurrentPostContext: false,
     })
 
-    expect(result.handlingType).toBe('direct_contact')
+    expect(result.selector).toBe('contact')
+    expect(result.action).toBe('answer')
+    expect(result.scope).toBe('global')
+  })
+
+  it('마지막 글 질문은 fallback에서 direct_latest로 분류한다', async () => {
+    const result = await classifyChatQuestion({
+      question: '마지막 글 뭐야?',
+      locale: 'ko',
+      normalizedQuestion: '마지막 글 뭐야',
+      fallbackQuestionType: 'general',
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+      hasCurrentPostContext: false,
+    })
+
+    expect(result.selector).toBe('latest_post')
+    expect(result.action).toBe('answer')
+    expect(result.scope).toBe('global')
   })
 
   it('현재 글 컨텍스트가 있으면 현재 글 질문을 direct_current_post로 분류한다', async () => {
@@ -59,6 +78,23 @@ describe('classifyChatQuestion', () => {
       hasCurrentPostContext: true,
     })
 
-    expect(result.handlingType).toBe('direct_current_post')
+    expect(result.selector).toBe('current_post')
+    expect(result.action).toBe('summarize')
+    expect(result.scope).toBe('current_page')
+  })
+
+  it('첫 글 요약 질문은 oldest_post와 summarize 슬롯으로 분류한다', async () => {
+    const result = await classifyChatQuestion({
+      question: '가장 첫 글 요약해봐',
+      locale: 'ko',
+      normalizedQuestion: '가장 첫 글 요약해봐',
+      fallbackQuestionType: 'general',
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+      hasCurrentPostContext: false,
+    })
+
+    expect(result.selector).toBe('oldest_post')
+    expect(result.action).toBe('summarize')
+    expect(result.scope).toBe('global')
   })
 })

@@ -1,0 +1,25 @@
+services:
+  chat-rag-postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${BLOG_CHAT_RAG_POSTGRES_DB:-leey00nsu_blog}
+      POSTGRES_USER: ${BLOG_CHAT_RAG_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${BLOG_CHAT_RAG_POSTGRES_PASSWORD:-postgres}
+    ports:
+      - '${BLOG_CHAT_RAG_POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - chat-rag-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  chat-rag-postgres-data:

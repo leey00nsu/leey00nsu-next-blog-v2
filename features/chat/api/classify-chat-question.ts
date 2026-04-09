@@ -24,7 +24,7 @@ const CHAT_QUESTION_ROUTING = {
       'github',
       'linkedin',
     ],
-    LATEST: ['최신', '최근', 'latest', 'recent'],
+    LATEST: ['최신', '최근', '마지막', '마지막 글', 'latest', 'recent', 'last', 'last post'],
     OLDEST: ['오래된', '가장 오래된', '첫 글', '처음 글', 'oldest', 'first post'],
     CURRENT_POST: [
       '이 글',
@@ -38,30 +38,62 @@ const CHAT_QUESTION_ROUTING = {
       '짧게 소개',
       '핵심',
     ],
+    CORPUS: [
+      '블로그 전체',
+      '전체 글',
+      '전체를 보면',
+      '공통',
+      '공통된',
+      '관통',
+      '반복되는',
+      '여러 글',
+      'across the blog',
+      'across posts',
+      'common patterns',
+      'common philosophy',
+    ],
+    ACTION_SUMMARIZE: ['요약', '요약해', '요약해줘', 'summary', 'summarize'],
+    ACTION_EXPLAIN: ['설명', '설명해', 'explain'],
+    ACTION_RECOMMEND: ['추천', '추천해', '추천해줘', 'recommend'],
+    ACTION_COMPARE: ['비교', 'compare'],
   },
 } as const
 
 const CHAT_QUESTION_ROUTING_PROMPT = {
-  SYSTEM: `Classify each user question for a blog chatbot into exactly one handling type.
+  SYSTEM: `Classify each user question for a blog chatbot into selector, action, and scope.
 
-Handling types:
-- direct_greeting: greetings, small talk, simple pleasantries
-- direct_assistant_identity: asking who the chatbot is, what relationship it has to the author, what scope it answers from
-- direct_contact: asking how to contact the author or where public contact channels are
-- direct_latest: asking for the latest or most recent post
-- direct_oldest: asking for the oldest or first post
-- direct_current_post: asking about the currently viewed post or page when currentPostContext is true
-- grounded_retrieval: normal factual questions that need evidence from blog posts, public profile, or projects
-- corpus_synthesis: questions asking for themes, philosophies, common patterns, or summaries across multiple posts or the whole blog
+Selectors:
+- greeting: greetings, small talk, simple pleasantries
+- assistant_identity: asking who the chatbot is, what relationship it has to the author, or what scope it answers from
+- contact: asking how to contact the author or where public contact channels are
+- latest_post: asking for the latest or most recent post
+- oldest_post: asking for the oldest or first post
+- current_post: asking about the currently viewed post or page when currentPostContext is true
+- retrieval: normal factual questions that need evidence from blog posts, public profile, or projects
+- corpus: questions asking for themes, philosophies, common patterns, or summaries across multiple posts or the whole blog
+
+Actions:
+- answer: direct factual answer
+- summarize: short summary of the selected target
+- explain: explanation of the selected target
+- recommend: recommendation response
+- compare: compare multiple relevant sources
+
+Scopes:
+- global: blog-wide question
+- current_page: question about the currently viewed post or page
 
 Rules:
-- Prefer direct_greeting for short social messages like hello.
-- Prefer direct_assistant_identity for "who are you", "what are you", or "what is your relationship to the author".
-- Prefer direct_contact for questions about how to contact the author or where GitHub/LinkedIn/contact links are.
-- Prefer direct_latest/direct_oldest only for chronological questions about posts.
-- Prefer direct_current_post only when currentPostContext=true and the user is clearly asking about the currently viewed post or page.
-- Prefer corpus_synthesis only when the user asks about the whole blog or repeated patterns across multiple writings.
-- Everything else should be grounded_retrieval.
+- Prefer greeting for short social messages like hello.
+- Prefer assistant_identity for "who are you", "what are you", or "what is your relationship to the author".
+- Prefer contact for questions about how to contact the author or where GitHub/LinkedIn/contact links are.
+- Prefer latest_post/oldest_post only for chronological questions about posts.
+- Prefer current_post only when currentPostContext=true and the user is clearly asking about the currently viewed post or page.
+- Prefer corpus when the user asks about the whole blog or repeated patterns across multiple writings.
+- Use summarize when the user explicitly asks for a summary or gist.
+- Use explain when the user explicitly asks for explanation.
+- Use recommend when the user explicitly asks for a recommendation.
+- Everything else should be retrieval with answer.
 - Return concise reasoning in one sentence.`,
 } as const
 
@@ -70,13 +102,13 @@ function includesAnyPattern(text: string, patterns: readonly string[]): boolean 
 }
 
 function escapeRegularExpression(pattern: string): string {
-  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 }
 
 function includesTokenBoundedPattern(text: string, pattern: string): boolean {
   const normalizedPattern = pattern.trim().toLowerCase()
   const boundedPattern = new RegExp(
-    `(^|\\s)${escapeRegularExpression(normalizedPattern)}($|\\s)`,
+    String.raw`(^|\s)${escapeRegularExpression(normalizedPattern)}($|\s)`,
     'u',
   )
 
@@ -101,15 +133,59 @@ function isAssistantIdentityFallbackQuestion(params: {
   })
 }
 
+function buildFallbackAction(normalizedQuestion: string) {
+  if (
+    includesAnyPattern(
+      normalizedQuestion,
+      CHAT_QUESTION_ROUTING.FALLBACK_PATTERNS.ACTION_SUMMARIZE,
+    )
+  ) {
+    return 'summarize' as const
+  }
+
+  if (
+    includesAnyPattern(
+      normalizedQuestion,
+      CHAT_QUESTION_ROUTING.FALLBACK_PATTERNS.ACTION_EXPLAIN,
+    )
+  ) {
+    return 'explain' as const
+  }
+
+  if (
+    includesAnyPattern(
+      normalizedQuestion,
+      CHAT_QUESTION_ROUTING.FALLBACK_PATTERNS.ACTION_RECOMMEND,
+    )
+  ) {
+    return 'recommend' as const
+  }
+
+  if (
+    includesAnyPattern(
+      normalizedQuestion,
+      CHAT_QUESTION_ROUTING.FALLBACK_PATTERNS.ACTION_COMPARE,
+    )
+  ) {
+    return 'compare' as const
+  }
+
+  return 'answer' as const
+}
+
 function buildFallbackRoutingResult(params: {
   normalizedQuestion: string
   fallbackQuestionType: ChatQuestionType
   assistantProfile?: ChatAssistantProfile | null
   hasCurrentPostContext: boolean
 }): ChatQuestionRoutingResult {
+  const action = buildFallbackAction(params.normalizedQuestion)
+
   if (params.fallbackQuestionType === 'greeting') {
     return {
-      handlingType: 'direct_greeting',
+      selector: 'greeting',
+      action: 'answer',
+      scope: 'global',
       reason: 'fallback greeting classification',
     }
   }
@@ -122,7 +198,9 @@ function buildFallbackRoutingResult(params: {
     })
   ) {
     return {
-      handlingType: 'direct_assistant_identity',
+      selector: 'assistant_identity',
+      action: 'answer',
+      scope: 'global',
       reason: 'fallback assistant identity classification',
     }
   }
@@ -134,7 +212,9 @@ function buildFallbackRoutingResult(params: {
     )
   ) {
     return {
-      handlingType: 'direct_contact',
+      selector: 'contact',
+      action: 'answer',
+      scope: 'global',
       reason: 'fallback contact classification',
     }
   }
@@ -146,7 +226,9 @@ function buildFallbackRoutingResult(params: {
     )
   ) {
     return {
-      handlingType: 'direct_latest',
+      selector: 'latest_post',
+      action,
+      scope: 'global',
       reason: 'fallback chronological latest classification',
     }
   }
@@ -158,7 +240,9 @@ function buildFallbackRoutingResult(params: {
     )
   ) {
     return {
-      handlingType: 'direct_oldest',
+      selector: 'oldest_post',
+      action,
+      scope: 'global',
       reason: 'fallback chronological oldest classification',
     }
   }
@@ -171,13 +255,31 @@ function buildFallbackRoutingResult(params: {
     )
   ) {
     return {
-      handlingType: 'direct_current_post',
+      selector: 'current_post',
+      action,
+      scope: 'current_page',
       reason: 'fallback current post classification',
     }
   }
 
+  if (
+    includesAnyPattern(
+      params.normalizedQuestion,
+      CHAT_QUESTION_ROUTING.FALLBACK_PATTERNS.CORPUS,
+    )
+  ) {
+    return {
+      selector: 'corpus',
+      action,
+      scope: 'global',
+      reason: 'fallback corpus classification',
+    }
+  }
+
   return {
-    handlingType: 'grounded_retrieval',
+    selector: 'retrieval',
+    action,
+    scope: 'global',
     reason: 'fallback grounded retrieval classification',
   }
 }

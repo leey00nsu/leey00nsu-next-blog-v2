@@ -45,6 +45,10 @@ const MARKDOWN_PATTERNS = {
 
 const CHAT_SEMANTIC = {
   QUERY_LIMIT_PER_TAG: 2,
+  CANONICAL_CROSS_LOCALE_SOURCE_CATEGORIES: [
+    'profile',
+    'assistant',
+  ] as ReadonlyArray<ChatSemanticEntry['sourceCategory']>,
 } as const
 
 function normalizeText(text: string): string {
@@ -212,17 +216,30 @@ export function getSemanticSearchTerms(params: {
 }): string[] {
   const { locale, slug, sourceCategory } = params
   const semanticMap = resolveGeneratedSemanticMap()
+  const shouldIncludeCrossLocaleFallback =
+    CHAT_SEMANTIC.CANONICAL_CROSS_LOCALE_SOURCE_CATEGORIES.includes(
+      sourceCategory,
+    )
   const semanticEntries = [
     ...(semanticMap[locale] ?? []),
-    ...(locale === LOCALES.DEFAULT ? [] : (semanticMap[LOCALES.DEFAULT] ?? [])),
+    ...(!shouldIncludeCrossLocaleFallback || locale === LOCALES.DEFAULT
+      ? []
+      : (semanticMap[LOCALES.DEFAULT] ?? [])),
+    ...(!shouldIncludeCrossLocaleFallback || locale === 'en'
+      ? []
+      : (semanticMap.en ?? [])),
   ]
-  const matchedEntry = semanticEntries.find((entry) => {
+  const matchedEntries = semanticEntries.filter((entry) => {
     return entry.slug === slug && entry.sourceCategory === sourceCategory
   })
 
-  if (!matchedEntry) {
+  if (matchedEntries.length === 0) {
     return []
   }
 
-  return buildSemanticSearchTerms(matchedEntry)
+  return uniqueValues(
+    matchedEntries.flatMap((matchedEntry) => {
+      return buildSemanticSearchTerms(matchedEntry)
+    }),
+  )
 }

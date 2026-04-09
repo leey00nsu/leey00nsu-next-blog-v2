@@ -13,7 +13,10 @@ import {
 } from '@/features/chat/lib/question-analysis'
 import { rewriteChatQuestionWithHistory } from '@/features/chat/lib/rewrite-chat-question'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
-import type { ChatRequestHandlingType } from '@/features/chat/model/chat-question-routing'
+import type {
+  ChatQuestionRoutingResult,
+  ChatQuestionSelector,
+} from '@/features/chat/model/chat-question-routing'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
@@ -80,9 +83,9 @@ function buildRefusalResponse(
 
 function buildQuestionAnalysisOverride(params: {
   normalizedQuestion: string
-  handlingType: ChatRequestHandlingType
+  questionRouting: ChatQuestionRoutingResult
 }): ChatQuestionAnalysis | undefined {
-  if (params.handlingType === 'direct_greeting') {
+  if (params.questionRouting.selector === 'greeting') {
     return {
       normalizedQuestion: params.normalizedQuestion,
       questionType: 'greeting',
@@ -90,7 +93,7 @@ function buildQuestionAnalysisOverride(params: {
     }
   }
 
-  if (params.handlingType === 'direct_assistant_identity') {
+  if (params.questionRouting.selector === 'assistant_identity') {
     return {
       normalizedQuestion: params.normalizedQuestion,
       questionType: 'assistant-identity',
@@ -132,10 +135,12 @@ async function buildModelBackedResponse(params: {
 }
 
 function shouldRewriteQuestionWithHistory(
-  handlingType: ChatRequestHandlingType,
+  selector: ChatQuestionSelector,
 ): boolean {
   return (
-    handlingType === 'grounded_retrieval' || handlingType === 'corpus_synthesis'
+    selector === 'retrieval' ||
+    selector === 'corpus' ||
+    selector === 'current_post'
   )
 }
 
@@ -183,7 +188,7 @@ export async function POST(request: NextRequest) {
       hasCurrentPostContext: Boolean(parsedRequest.data.currentPostSlug),
     })
     const resolvedQuestion = shouldRewriteQuestionWithHistory(
-      questionRouting.handlingType,
+      questionRouting.selector,
     )
       ? rewriteChatQuestionWithHistory({
           question: originalQuestion,
@@ -207,7 +212,7 @@ export async function POST(request: NextRequest) {
     }
     const questionAnalysisOverride = buildQuestionAnalysisOverride({
       normalizedQuestion,
-      handlingType: questionRouting.handlingType,
+      questionRouting,
     })
     const resolvedQuestionAnalysis =
       questionAnalysisOverride ?? resolvedQuestionBaseAnalysis
@@ -215,7 +220,7 @@ export async function POST(request: NextRequest) {
     const blogRecords = buildBlogEvidenceRecords(locale)
     const curatedRecords = await getCuratedChatSources(locale)
 
-    if (questionRouting.handlingType === 'corpus_synthesis') {
+    if (questionRouting.selector === 'corpus') {
       const chatRagSearchResult = await runChatRagWorkflow({
         question: resolvedQuestion,
         locale,
@@ -255,7 +260,7 @@ export async function POST(request: NextRequest) {
       questionAnalysis: resolvedQuestionAnalysis,
       assistantProfile,
       contactProfile,
-      handlingType: questionRouting.handlingType,
+      questionRouting,
     })
 
     if (resolvedChatRequest.directResponse) {
@@ -274,7 +279,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!resolvedChatRequest.shouldCallModel) {
-      if (questionRouting.handlingType === 'grounded_retrieval') {
+      if (questionRouting.selector === 'retrieval') {
         const chatRagSearchResult = await runChatRagWorkflow({
           question: resolvedQuestion,
           locale,

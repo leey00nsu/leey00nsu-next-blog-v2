@@ -1,9 +1,10 @@
-import path from 'node:path'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { normalizeOpenAiCompatibleEmbeddingBaseUrl } from '@/features/chat/lib/normalize-openai-compatible-embedding-base-url'
 
 const CHAT_RAG_DEFAULTS = {
-  DATABASE_FILE_PATH: path.join(process.cwd(), 'data', 'chat-rag.sqlite'),
+  DATABASE_URL: '',
+  DATABASE_SSL: false,
+  DATABASE_MAXIMUM_CONNECTIONS: 10,
   EMBEDDING_MODEL_ID: 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
   EMBEDDING_PROVIDER: 'modal',
   MODAL_BASE_URL: '',
@@ -40,9 +41,17 @@ const DETERMINISTIC_QUERY_PATTERNS = [
 
 export const CHAT_RAG = {
   DATABASE: {
-    FILE_PATH:
-      process.env.BLOG_CHAT_RAG_DATABASE_PATH ??
-      CHAT_RAG_DEFAULTS.DATABASE_FILE_PATH,
+    URL:
+      process.env.BLOG_CHAT_RAG_DATABASE_URL ??
+      process.env.DATABASE_URL ??
+      CHAT_RAG_DEFAULTS.DATABASE_URL,
+    SSL:
+      process.env.BLOG_CHAT_RAG_DATABASE_SSL === 'true' ||
+      CHAT_RAG_DEFAULTS.DATABASE_SSL,
+    MAXIMUM_CONNECTIONS: Number(
+      process.env.BLOG_CHAT_RAG_DATABASE_MAXIMUM_CONNECTIONS ??
+        CHAT_RAG_DEFAULTS.DATABASE_MAXIMUM_CONNECTIONS,
+    ),
   },
   EMBEDDING: {
     PROVIDER:

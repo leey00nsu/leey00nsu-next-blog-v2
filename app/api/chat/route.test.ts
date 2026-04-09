@@ -147,7 +147,9 @@ describe('POST /api/chat', () => {
     shouldCacheBlogChatResponseMock.mockReturnValue(true)
     finalizeBlogChatResponseMock.mockReturnValue(GROUNDED_RESPONSE)
     classifyChatQuestionMock.mockResolvedValue({
-      handlingType: 'grounded_retrieval',
+      selector: 'retrieval',
+      action: 'answer',
+      scope: 'global',
       reason: 'default',
     })
     runChatRagWorkflowMock.mockResolvedValue({
@@ -178,11 +180,15 @@ describe('POST /api/chat', () => {
       })
     classifyChatQuestionMock
       .mockResolvedValueOnce({
-        handlingType: 'direct_greeting',
+        selector: 'greeting',
+        action: 'answer',
+        scope: 'global',
         reason: 'smalltalk',
       })
       .mockResolvedValueOnce({
-        handlingType: 'grounded_retrieval',
+        selector: 'retrieval',
+        action: 'answer',
+        scope: 'global',
         reason: 'fact',
       })
 
@@ -277,7 +283,9 @@ describe('POST /api/chat', () => {
       searchQueries: [],
     })
     classifyChatQuestionMock.mockResolvedValue({
-      handlingType: 'grounded_retrieval',
+      selector: 'retrieval',
+      action: 'answer',
+      scope: 'global',
       reason: 'fact',
     })
 
@@ -356,7 +364,9 @@ describe('POST /api/chat', () => {
         searchQueries: [],
       })
     classifyChatQuestionMock.mockResolvedValue({
-      handlingType: 'direct_contact',
+      selector: 'contact',
+      action: 'answer',
+      scope: 'global',
       reason: 'contact request',
     })
     resolveChatRequestMock.mockReturnValue({
@@ -419,14 +429,16 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('grounded retrieval 질문은 lexical 검색 실패 후 sqlite/langgraph를 fallback으로 사용한다', async () => {
+  it('grounded retrieval 질문은 lexical 검색 실패 후 Postgres RAG를 fallback으로 사용한다', async () => {
     analyzeQuestionMock.mockReturnValue({
       normalizedQuestion: 'what is his name',
       questionType: 'general',
       searchQueries: [],
     })
     classifyChatQuestionMock.mockResolvedValue({
-      handlingType: 'grounded_retrieval',
+      selector: 'retrieval',
+      action: 'answer',
+      scope: 'global',
       reason: 'fact',
     })
     resolveChatRequestMock.mockReturnValue({
@@ -476,14 +488,63 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('corpus synthesis 질문은 lexical 검색 전에 sqlite/langgraph를 우선 사용한다', async () => {
+  it('ko 로케일에서도 영어 이름 질문은 retrieval 경로로 모델 호출을 진행한다', async () => {
+    analyzeQuestionMock.mockReturnValue({
+      normalizedQuestion: 'what is his name',
+      questionType: 'general',
+      searchQueries: [],
+    })
+    classifyChatQuestionMock.mockResolvedValue({
+      selector: 'retrieval',
+      action: 'answer',
+      scope: 'global',
+      reason: 'fact',
+    })
+    resolveChatRequestMock.mockReturnValue({
+      normalizedQuestion: 'what is his name',
+      questionType: 'general',
+      shouldCallModel: true,
+      matches: [
+        {
+          id: 'ko/about/profile',
+          locale: 'ko',
+          slug: 'about',
+          title: 'About Me',
+          url: '/ko/about',
+          excerpt: '이윤수를 소개합니다.',
+          content: '이윤수는 개발자입니다.',
+          sectionTitle: null,
+          tags: ['profile'],
+          sourceCategory: 'profile' as const,
+        },
+      ],
+    })
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('what is his name'))
+
+    expect(await response.json()).toEqual(GROUNDED_RESPONSE)
+    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matches: [
+          expect.objectContaining({
+            url: '/ko/about',
+          }),
+        ],
+      }),
+    )
+  })
+
+  it('corpus synthesis 질문은 lexical 검색 전에 Postgres RAG를 우선 사용한다', async () => {
     analyzeQuestionMock.mockReturnValue({
       normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
       questionType: 'general',
       searchQueries: [],
     })
     classifyChatQuestionMock.mockResolvedValue({
-      handlingType: 'corpus_synthesis',
+      selector: 'corpus',
+      action: 'summarize',
+      scope: 'global',
       reason: 'cross-document synthesis',
     })
     runChatRagWorkflowMock.mockResolvedValue({

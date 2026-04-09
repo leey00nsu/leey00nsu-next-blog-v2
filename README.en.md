@@ -88,10 +88,10 @@ pnpm dev
 - Select text in editor to generate AI images
 - Adapter pattern for various providers
 - Blog Q&A chatbot
-  - Converts MDX into lexical search records and a SQLite RAG index at build time
+  - Converts MDX into lexical search records at build time and refreshes a Postgres (`pgvector`) RAG index after deployment
   - Routes questions first so greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
   - Uses lexical search and curated sources (profile/project/internal assistant docs) first for normal grounded questions
-  - Uses SQLite embedding RAG first for whole-blog synthesis questions
+  - Uses Postgres embedding RAG first for whole-blog synthesis questions
   - Validates citations and refuses when evidence is weak
 
 ### 📄 PDF Export
@@ -114,7 +114,7 @@ pnpm dev
 | **i18n**          | next-intl v4                                    |
 | **Editor**        | Tiptap (Notion-style)                           |
 | **Auth**          | next-auth@5 (GitHub Provider)                   |
-| **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, better-sqlite3, Modal, Octokit |
+| **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, PostgreSQL (`pgvector`), Modal, Octokit |
 | **Image**         | sharp, lqip-modern                              |
 | **Test**          | Vitest, Playwright, Storybook 10                |
 | **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
@@ -154,6 +154,7 @@ The most important groups are:
 - GitHub auto-commit token
 - OpenAI translation / chat / router model settings
 - Modal embedding endpoint and proxy auth
+- Postgres Chat RAG connection settings
 - Blog chat limits such as top-k, minimum lexical score, input length, daily quota, and cache TTL
 
 ### Setup Tips
@@ -168,6 +169,9 @@ The most important groups are:
 # Development server
 pnpm dev
 
+# Postgres RAG indexing (optional for local semantic search)
+pnpm run gen:chat-rag-postgres
+
 # Production build/run
 pnpm build
 pnpm start
@@ -179,18 +183,58 @@ pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run bu
 > The `postbuild` step starts a temporary server to auto-generate PDFs.  
 > Playwright Chromium must be installed before building.
 
+### Run Local Postgres (`pgvector`)
+
+To test the full RAG flow locally, start Postgres first.
+
+`docker compose` reads the root `.env` file by default. If you use compose locally, keep `.env.example` mirrored into `.env` or your local environment file.
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+The defaults match `.env.example`, and you can override them with these keys.
+
+```env
+BLOG_CHAT_RAG_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/leey00nsu_blog
+BLOG_CHAT_RAG_POSTGRES_DB=leey00nsu_blog
+BLOG_CHAT_RAG_POSTGRES_USER=postgres
+BLOG_CHAT_RAG_POSTGRES_PASSWORD=postgres
+BLOG_CHAT_RAG_POSTGRES_PORT=5432
+```
+
+Only after Postgres is running should you run:
+
+```bash
+pnpm run gen:chat-rag-postgres
+```
+
 ### Chat Index Generation
 
-- The following scripts run automatically in `predev` and `prebuild`
+- The following deterministic scripts run automatically in `predev` and `prebuild`
   - `pnpm run gen:posts`
   - `pnpm run gen:projects`
   - `pnpm run gen:chat-semantic`
   - `pnpm run gen:blog-search`
-  - `pnpm run gen:chat-rag-sqlite`
-- Instead of crawling `.next` HTML output, this project generates **lexical search records and a SQLite RAG index directly from source MDX**.
+- Instead of crawling `.next` HTML output, this project generates **lexical search records and Postgres RAG input data directly from source MDX**.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
-- `gen:chat-rag-sqlite` builds the SQLite RAG index from lexical and curated sources.
-- If the embedding provider is not configured, SQLite RAG generation is skipped and lexical retrieval still works.
+- `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
+- If the embedding provider or Postgres connection is not configured, Postgres RAG indexing is skipped and lexical retrieval still works.
+
+### Coolify / CI-CD Notes
+
+- Make sure the Coolify PostgreSQL service has the `pgvector` extension enabled.
+- Do not put `gen:chat-rag-postgres` inside `pnpm build`.
+- The recommended flow is:
+  1. Coolify detects the Git push and deploys the new application image
+  2. **Post-deployment Command** runs `pnpm run gen:chat-rag-postgres`
+  3. Only after the full index build succeeds does Postgres switch the active `index_version`
+- This keeps the previous active index intact when re-indexing fails.
+- In production you should at least provide:
+  - `BLOG_CHAT_RAG_DATABASE_URL`
+  - `MODAL_EMBEDDING_BASE_URL`
+  - `MODAL_EMBEDDING_KEY`
+  - `MODAL_EMBEDDING_SECRET`
 
 ## Usage
 
@@ -204,8 +248,8 @@ Open `http://localhost:3000/blog` in your browser
 - The server routes the question first
 - Greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
 - Normal grounded questions search both build-generated lexical records and curated sources
-- Whole-blog synthesis questions use SQLite RAG first
-- Normal grounded questions fall back to SQLite RAG when lexical retrieval is weak
+- Whole-blog synthesis questions use Postgres RAG first
+- Normal grounded questions fall back to Postgres RAG when lexical retrieval is weak
 - The model cannot browse, search externally, or call tools
 - Cache keys use the normalized question so repeated requests cost less
 - To protect the free API, the default policy limits each question to 200 characters and the whole service to 100 questions per day in KST

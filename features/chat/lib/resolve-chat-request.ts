@@ -7,7 +7,10 @@ import {
 import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatRequestHandlingType } from '@/features/chat/model/chat-question-routing'
+import type {
+  ChatQuestionRoutingResult,
+  ChatQuestionSelector,
+} from '@/features/chat/model/chat-question-routing'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 
@@ -20,7 +23,7 @@ interface ResolveChatRequestParams {
   questionAnalysis?: ChatQuestionAnalysis
   assistantProfile?: ChatAssistantProfile | null
   contactProfile?: ChatContactProfile | null
-  handlingType?: ChatRequestHandlingType
+  questionRouting?: ChatQuestionRoutingResult
 }
 
 interface ResolveChatRequestResult {
@@ -150,17 +153,49 @@ function buildUniquePublishedBlogRecords(
 
 function buildChronologicalBlogResponse(params: {
   locale: SupportedLocale
+  selector: 'latest_post' | 'oldest_post'
+  selectedBlogRecord: ChatEvidenceRecord
+}): BlogChatResponse {
+  const isLatestQuestion = params.selector === 'latest_post'
+  const uniquePublishedBlogRecords = buildUniquePublishedBlogRecords(
+    [params.selectedBlogRecord],
+  )
+
+  const answerTemplate = isLatestQuestion
+    ? CHRONOLOGICAL_CHAT_RESPONSES[params.locale].LATEST
+    : CHRONOLOGICAL_CHAT_RESPONSES[params.locale].OLDEST
+
+  return {
+    answer: answerTemplate.replace('{title}', params.selectedBlogRecord.title),
+    grounded: true,
+    citations: [
+      {
+        title: params.selectedBlogRecord.title,
+        url: params.selectedBlogRecord.url,
+        sectionTitle: params.selectedBlogRecord.sectionTitle,
+        sourceCategory: params.selectedBlogRecord.sourceCategory,
+      },
+    ],
+  }
+}
+
+function selectChronologicalBlogRecord(params: {
+  selector: ChatQuestionSelector
   normalizedQuestion: string
   blogRecords: ChatEvidenceRecord[]
-}): BlogChatResponse | undefined {
-  const isLatestQuestion = includesAnyPattern(
-    params.normalizedQuestion,
-    CHRONOLOGICAL_QUERY_PATTERNS.LATEST,
-  )
-  const isOldestQuestion = includesAnyPattern(
-    params.normalizedQuestion,
-    CHRONOLOGICAL_QUERY_PATTERNS.OLDEST,
-  )
+}): ChatEvidenceRecord | undefined {
+  const isLatestQuestion =
+    params.selector === 'latest_post' ||
+    includesAnyPattern(
+      params.normalizedQuestion,
+      CHRONOLOGICAL_QUERY_PATTERNS.LATEST,
+    )
+  const isOldestQuestion =
+    params.selector === 'oldest_post' ||
+    includesAnyPattern(
+      params.normalizedQuestion,
+      CHRONOLOGICAL_QUERY_PATTERNS.OLDEST,
+    )
 
   if (!isLatestQuestion && !isOldestQuestion) {
     return undefined
@@ -187,41 +222,16 @@ function buildChronologicalBlogResponse(params: {
       })
     : uniquePublishedBlogRecords
 
-  const selectedBlogRecord = [...filteredBlogRecords].sort(
-    (previousRecord, nextRecord) => {
-      const previousPublishedAt = new Date(
-        previousRecord.publishedAt ?? 0,
-      ).getTime()
-      const nextPublishedAt = new Date(
-        nextRecord.publishedAt ?? 0,
-      ).getTime()
+  return [...filteredBlogRecords].sort((previousRecord, nextRecord) => {
+    const previousPublishedAt = new Date(
+      previousRecord.publishedAt ?? 0,
+    ).getTime()
+    const nextPublishedAt = new Date(nextRecord.publishedAt ?? 0).getTime()
 
-      return isLatestQuestion
-        ? nextPublishedAt - previousPublishedAt
-        : previousPublishedAt - nextPublishedAt
-    },
-  )[0]
-
-  if (!selectedBlogRecord) {
-    return undefined
-  }
-
-  const answerTemplate = isLatestQuestion
-    ? CHRONOLOGICAL_CHAT_RESPONSES[params.locale].LATEST
-    : CHRONOLOGICAL_CHAT_RESPONSES[params.locale].OLDEST
-
-  return {
-    answer: answerTemplate.replace('{title}', selectedBlogRecord.title),
-    grounded: true,
-    citations: [
-      {
-        title: selectedBlogRecord.title,
-        url: selectedBlogRecord.url,
-        sectionTitle: selectedBlogRecord.sectionTitle,
-        sourceCategory: selectedBlogRecord.sourceCategory,
-      },
-    ],
-  }
+    return isLatestQuestion
+      ? nextPublishedAt - previousPublishedAt
+      : previousPublishedAt - nextPublishedAt
+  })[0]
 }
 
 function buildCurrentPostMatches(params: {
@@ -279,12 +289,15 @@ export function resolveChatRequest({
   questionAnalysis,
   assistantProfile,
   contactProfile,
-  handlingType,
+  questionRouting,
 }: ResolveChatRequestParams): ResolveChatRequestResult {
   const resolvedQuestionAnalysis = questionAnalysis ?? analyzeQuestion(question)
+  const resolvedQuestionRouting = questionRouting
+  const selector = resolvedQuestionRouting?.selector
+  const action = resolvedQuestionRouting?.action
 
   if (
-    handlingType === 'direct_greeting' ||
+    selector === 'greeting' ||
     resolvedQuestionAnalysis.questionType === 'greeting'
   ) {
     return {
@@ -297,7 +310,7 @@ export function resolveChatRequest({
   }
 
   if (
-    handlingType === 'direct_assistant_identity' ||
+    selector === 'assistant_identity' ||
     resolvedQuestionAnalysis.questionType === 'assistant-identity'
   ) {
     return {
@@ -309,7 +322,7 @@ export function resolveChatRequest({
     }
   }
 
-  if (handlingType === 'direct_contact') {
+  if (selector === 'contact') {
     const directContactResponse = buildDirectContactResponse({
       locale,
       contactProfile,
@@ -326,23 +339,37 @@ export function resolveChatRequest({
     }
   }
 
-  const chronologicalBlogResponse = buildChronologicalBlogResponse({
-    locale,
+  const selectedChronologicalBlogRecord = selectChronologicalBlogRecord({
+    selector: selector ?? 'retrieval',
     normalizedQuestion: resolvedQuestionAnalysis.normalizedQuestion,
     blogRecords,
   })
 
-  if (chronologicalBlogResponse) {
+  if (selectedChronologicalBlogRecord) {
+    if (action === 'summarize' || action === 'explain' || action === 'compare') {
+      return {
+        normalizedQuestion: resolvedQuestionAnalysis.normalizedQuestion,
+        questionType: resolvedQuestionAnalysis.questionType,
+        shouldCallModel: true,
+        matches: [selectedChronologicalBlogRecord],
+      }
+    }
+
     return {
       normalizedQuestion: resolvedQuestionAnalysis.normalizedQuestion,
       questionType: resolvedQuestionAnalysis.questionType,
       shouldCallModel: false,
       matches: [],
-      directResponse: chronologicalBlogResponse,
+      directResponse: buildChronologicalBlogResponse({
+        locale,
+        selector:
+          selector === 'oldest_post' ? 'oldest_post' : 'latest_post',
+        selectedBlogRecord: selectedChronologicalBlogRecord,
+      }),
     }
   }
 
-  if (handlingType === 'direct_current_post') {
+  if (selector === 'current_post') {
     const currentPostMatches = buildCurrentPostMatches({
       currentPostSlug,
       blogRecords,

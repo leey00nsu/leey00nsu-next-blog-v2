@@ -22,16 +22,20 @@ import {
   CardTitle,
 } from '@/shared/ui/card'
 import { Textarea } from '@/shared/ui/textarea'
-import { cn } from '@/shared/lib/utils'
 import type { SupportedLocale } from '@/shared/config/constants'
 
-const BLOG_PATH_PATTERN = /^\/(ko|en)\/blog(\/|$)/
-const BLOG_DETAIL_PATH_PATTERN = /^\/(ko|en)\/blog\/([^/?#]+)$/
+const BLOG_CHAT_WIDGET_PATH = {
+  VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about)(\/|$)/,
+  BLOG_DETAIL_PATH_PATTERN: /^\/(ko|en)\/blog\/([^/?#]+)$/,
+} as const
 const MAXIMUM_QUESTION_CHARACTERS =
   BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS
+const BLOG_CHAT_WIDGET_STYLE = {
+  SUBMIT_BUTTON_MIN_WIDTH_CLASS_NAME: 'min-w-24',
+} as const
 
 function resolveCurrentPostSlug(pathname: string): string | undefined {
-  const matchedPath = pathname.match(BLOG_DETAIL_PATH_PATTERN)
+  const matchedPath = pathname.match(BLOG_CHAT_WIDGET_PATH.BLOG_DETAIL_PATH_PATTERN)
 
   return matchedPath?.[2]
 }
@@ -43,7 +47,6 @@ export function BlogChatWidget() {
   const currentPostSlug = resolveCurrentPostSlug(pathname)
   const {
     conversationItems,
-    errorCode,
     isLoading,
     question,
     setQuestion,
@@ -51,7 +54,7 @@ export function BlogChatWidget() {
   } = useBlogChat({ locale, currentPostSlug })
   const [isOpen, setIsOpen] = useState(false)
 
-  const isVisible = BLOG_PATH_PATTERN.test(pathname)
+  const isVisible = BLOG_CHAT_WIDGET_PATH.VISIBLE_PATH_PATTERN.test(pathname)
   const refusalMessages = {
     insufficient_search_match: t('refusal.insufficient_search_match'),
     insufficient_evidence: t('refusal.insufficient_evidence'),
@@ -102,12 +105,6 @@ export function BlogChatWidget() {
             ) : null}
 
             {conversationItems.map((conversationItem) => {
-              const refusalReason = conversationItem.response.refusalReason
-              const answerText =
-                !conversationItem.response.grounded && refusalReason
-                  ? refusalMessages[refusalReason]
-                  : conversationItem.response.answer
-
               return (
                 <div key={conversationItem.id} className="flex flex-col gap-3">
                   <div className="ml-8 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
@@ -119,9 +116,32 @@ export function BlogChatWidget() {
                     <p className="text-muted-foreground mb-2 text-xs">
                       {t('assistant')}
                     </p>
-                    <p className="whitespace-pre-wrap leading-6">{answerText}</p>
+                    {conversationItem.status === 'pending' ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="size-4 animate-spin" />
+                        <span>{t('sending')}</span>
+                      </div>
+                    ) : null}
 
-                    {conversationItem.response.citations.length > 0 ? (
+                    {conversationItem.status === 'failed' ? (
+                      <p className="whitespace-pre-wrap leading-6 text-destructive">
+                        {t(`errors.${conversationItem.errorCode}`)}
+                      </p>
+                    ) : null}
+
+                    {conversationItem.status === 'completed' ? (
+                      <p className="whitespace-pre-wrap leading-6">
+                        {!conversationItem.response.grounded &&
+                        conversationItem.response.refusalReason
+                          ? refusalMessages[
+                              conversationItem.response.refusalReason
+                            ]
+                          : conversationItem.response.answer}
+                      </p>
+                    ) : null}
+
+                    {conversationItem.status === 'completed' &&
+                    conversationItem.response.citations.length > 0 ? (
                       <div className="mt-3 flex flex-col gap-2 border-t pt-3">
                         <p className="text-muted-foreground text-xs">
                           {t('sources')}
@@ -154,15 +174,6 @@ export function BlogChatWidget() {
                 </div>
               )
             })}
-
-            {isLoading ? (
-              <div className="mr-8 rounded-2xl border bg-card px-4 py-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span>{t('sending')}</span>
-                </div>
-              </div>
-            ) : null}
           </CardContent>
           <CardFooter className="flex flex-col items-stretch gap-3 border-t pt-4">
             <form
@@ -195,17 +206,22 @@ export function BlogChatWidget() {
                   max: MAXIMUM_QUESTION_CHARACTERS,
                 })}
               </p>
-              <Button disabled={isLoading || !question.trim()} type="submit">
-                <SendHorizontal />
-                {isLoading ? t('sending') : t('send')}
+              <Button
+                aria-label={isLoading ? t('sending') : t('send')}
+                className={BLOG_CHAT_WIDGET_STYLE.SUBMIT_BUTTON_MIN_WIDTH_CLASS_NAME}
+                disabled={isLoading || !question.trim()}
+                type="submit"
+              >
+                {isLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    <SendHorizontal />
+                    {t('send')}
+                  </>
+                )}
               </Button>
             </form>
-
-            {errorCode ? (
-              <p className={cn('text-sm text-destructive')}>
-                {t(`errors.${errorCode}`)}
-              </p>
-            ) : null}
           </CardFooter>
         </Card>
       ) : null}

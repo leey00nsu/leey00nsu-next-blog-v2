@@ -88,10 +88,10 @@ pnpm dev
 - 에디터에서 텍스트 선택 후 AI 이미지 생성
 - 어댑터 패턴으로 다양한 Provider 지원
 - 블로그 Q&A 챗봇
-  - 빌드 시 MDX를 lexical 검색 레코드와 SQLite RAG 인덱스로 변환
+  - 빌드 시 MDX를 lexical 검색 레코드로 변환하고, 배포 후 Postgres(`pgvector`) 기반 RAG 인덱스를 갱신
   - 질문을 먼저 라우팅해 인사, 챗봇 정체성, 연락처, 최신/오래된 글, 현재 글 질문을 direct path로 처리
   - 일반 질문은 lexical 검색과 curated source(소개/프로젝트/assistant 내부 문서)를 우선 사용
-  - 블로그 전체 주제/공통 철학 같은 질문은 SQLite 기반 임베딩 RAG를 우선 사용
+  - 블로그 전체 주제/공통 철학 같은 질문은 Postgres 기반 임베딩 RAG를 우선 사용
   - 답변은 항상 citation 검증을 거치고, 근거가 부족하면 거절
 
 ### 📄 PDF 내보내기
@@ -114,7 +114,7 @@ pnpm dev
 | **i18n**          | next-intl v4                                    |
 | **Editor**        | Tiptap (Notion 스타일)                          |
 | **Auth**          | next-auth@5 (GitHub Provider)                   |
-| **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, better-sqlite3, Modal, Octokit |
+| **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, PostgreSQL (`pgvector`), Modal, Octokit |
 | **Image**         | sharp, lqip-modern                              |
 | **Test**          | Vitest, Playwright, Storybook 10                |
 | **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
@@ -154,6 +154,7 @@ cp .env.example .env.local
 - GitHub 자동 커밋용 토큰
 - OpenAI 번역/챗봇/질문 라우터 모델 설정
 - Modal 기반 임베딩 endpoint 및 proxy auth
+- Postgres 기반 Chat RAG 연결 정보
 - 블로그 챗봇 제한값(top-k, 최소 점수, 길이 제한, 일일 quota, 캐시 TTL)
 
 ### 설정 팁
@@ -168,6 +169,9 @@ cp .env.example .env.local
 # 개발 서버
 pnpm dev
 
+# Postgres RAG 인덱싱 (선택, 로컬에서 RAG까지 확인할 때)
+pnpm run gen:chat-rag-postgres
+
 # 프로덕션 빌드/실행
 pnpm build
 pnpm start
@@ -179,18 +183,58 @@ pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run bu
 > `postbuild` 단계에서 임시 서버를 띄워 PDF를 자동 생성합니다.  
 > Playwright Chromium이 필요하므로 빌드 전에 설치해야 합니다.
 
+### 로컬 Postgres (`pgvector`) 실행
+
+로컬에서 RAG까지 확인하려면 Postgres를 먼저 띄워야 합니다.
+
+`docker compose`는 기본적으로 루트 `.env`를 읽습니다. 로컬에서 compose까지 함께 쓰려면 `.env.example`을 `.env` 또는 `.env.local`과 동기화해 두는 편이 좋습니다.
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+기본 연결 정보는 `.env.example`과 동일하고, 아래 값으로 compose를 오버라이드할 수 있습니다.
+
+```env
+BLOG_CHAT_RAG_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/leey00nsu_blog
+BLOG_CHAT_RAG_POSTGRES_DB=leey00nsu_blog
+BLOG_CHAT_RAG_POSTGRES_USER=postgres
+BLOG_CHAT_RAG_POSTGRES_PASSWORD=postgres
+BLOG_CHAT_RAG_POSTGRES_PORT=5432
+```
+
+Postgres가 올라온 뒤에만 아래 명령이 동작합니다.
+
+```bash
+pnpm run gen:chat-rag-postgres
+```
+
 ### 챗봇 인덱스 생성
 
-- `predev`, `prebuild` 단계에서 아래 스크립트가 자동 실행됩니다.
+- `predev`, `prebuild` 단계에서는 아래 deterministic 스크립트만 자동 실행됩니다.
   - `pnpm run gen:posts`
   - `pnpm run gen:projects`
   - `pnpm run gen:chat-semantic`
   - `pnpm run gen:blog-search`
-  - `pnpm run gen:chat-rag-sqlite`
-- 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 SQLite RAG 인덱스로 생성**합니다.
+- 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
-- `gen:chat-rag-sqlite`는 lexical/curated source를 바탕으로 SQLite RAG 인덱스를 만듭니다.
-- 임베딩 provider가 설정되지 않으면 SQLite RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
+- `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
+- 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
+
+### Coolify / CI-CD 운영 메모
+
+- Coolify PostgreSQL 서비스에 `pgvector` extension이 활성화되어 있어야 합니다.
+- `gen:chat-rag-postgres`는 `pnpm build`에 넣지 않는 것을 권장합니다.
+- 권장 흐름은 다음과 같습니다.
+  1. Coolify가 Git push를 감지해 새 이미지를 빌드/배포
+  2. **Post-deployment Command**로 `pnpm run gen:chat-rag-postgres` 실행
+  3. 새 인덱싱이 전부 성공하면 Postgres의 활성 `index_version`만 교체
+- 이 방식이면 배포 중 인덱싱이 실패해도 이전 활성 인덱스가 그대로 남습니다.
+- 운영 환경에서는 최소한 아래 값이 필요합니다.
+  - `BLOG_CHAT_RAG_DATABASE_URL`
+  - `MODAL_EMBEDDING_BASE_URL`
+  - `MODAL_EMBEDDING_KEY`
+  - `MODAL_EMBEDDING_SECRET`
 
 ## 사용 방법
 
@@ -204,8 +248,8 @@ pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run bu
 - 질문을 입력하면 서버가 먼저 질문을 라우팅합니다.
 - 인사, 챗봇 정체성, 연락 방법, 최신/가장 오래된 글, 현재 글 질문은 direct path로 처리합니다.
 - 일반 질문은 빌드 시 생성한 lexical 검색 레코드와 curated source(소개/프로젝트/assistant 내부 문서)를 함께 조회합니다.
-- 블로그 전체 공통 주제나 여러 글을 가로지르는 질문은 SQLite RAG를 우선 사용합니다.
-- lexical 검색이 부족한 일반 질문은 SQLite RAG를 fallback으로 사용합니다.
+- 블로그 전체 공통 주제나 여러 글을 가로지르는 질문은 Postgres RAG를 우선 사용합니다.
+- lexical 검색이 부족한 일반 질문은 Postgres RAG를 fallback으로 사용합니다.
 - 모델은 외부 브라우징/툴 호출 없이 제공된 근거만 사용합니다.
 - 캐시는 질문 정규화 결과 기준으로 적용되어 같은 질문의 반복 비용을 줄임
 - 무료 운영 보호를 위해 질문 길이는 기본 200자로 제한되고, KST 기준 서비스 전체 일일 질문 수도 기본 100회로 제한됨

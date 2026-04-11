@@ -172,6 +172,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const dailyUsageResult = consumeDailyUsage({
+      usageMap: blogChatDailyUsageMap,
+      maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
+    })
+
+    if (!dailyUsageResult.allowed) {
+      return NextResponse.json(
+        BlogChatResponseSchema.parse(
+          buildRefusalResponse('daily_limit_exceeded'),
+        ),
+      )
+    }
+
     cleanupExpiredCache()
 
     const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
@@ -228,19 +241,6 @@ export async function POST(request: NextRequest) {
       })
 
       if (chatRagSearchResult.grounded) {
-        const dailyUsageResult = consumeDailyUsage({
-          usageMap: blogChatDailyUsageMap,
-          maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
-        })
-
-        if (!dailyUsageResult.allowed) {
-          return NextResponse.json(
-            BlogChatResponseSchema.parse(
-              buildRefusalResponse('daily_limit_exceeded'),
-            ),
-          )
-        }
-
         const responseData = await buildModelBackedResponse({
           question: resolvedQuestion,
           matches: chatRagSearchResult.matches,
@@ -287,19 +287,6 @@ export async function POST(request: NextRequest) {
         })
 
         if (chatRagSearchResult.grounded) {
-          const dailyUsageResult = consumeDailyUsage({
-            usageMap: blogChatDailyUsageMap,
-            maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
-          })
-
-          if (!dailyUsageResult.allowed) {
-            return NextResponse.json(
-              BlogChatResponseSchema.parse(
-                buildRefusalResponse('daily_limit_exceeded'),
-              ),
-            )
-          }
-
           const responseData = await buildModelBackedResponse({
             question: resolvedQuestion,
             matches: chatRagSearchResult.matches,
@@ -315,19 +302,6 @@ export async function POST(request: NextRequest) {
       )
 
       return NextResponse.json(BlogChatResponseSchema.parse(refusalResponse))
-    }
-
-    const dailyUsageResult = consumeDailyUsage({
-      usageMap: blogChatDailyUsageMap,
-      maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
-    })
-
-    if (!dailyUsageResult.allowed) {
-      return NextResponse.json(
-        BlogChatResponseSchema.parse(
-          buildRefusalResponse('daily_limit_exceeded'),
-        ),
-      )
     }
 
     const responseData = await buildModelBackedResponse({

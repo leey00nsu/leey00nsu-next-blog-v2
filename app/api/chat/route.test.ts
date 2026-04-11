@@ -121,6 +121,13 @@ const GROUNDED_RESPONSE = {
   grounded: true,
 }
 
+const DAILY_LIMIT_EXCEEDED_RESPONSE = {
+  answer: '',
+  citations: [],
+  grounded: false,
+  refusalReason: 'daily_limit_exceeded',
+} as const
+
 function createChatRequest(question: string): NextRequest {
   return new Request('http://localhost/api/chat', {
     method: 'POST',
@@ -166,7 +173,7 @@ describe('POST /api/chat', () => {
     })
   })
 
-  it('고정 응답은 일일 quota를 소모하지 않는다', async () => {
+  it('고정 응답도 일일 quota를 소모한다', async () => {
     analyzeQuestionMock
       .mockReturnValueOnce({
         normalizedQuestion: '안녕',
@@ -234,11 +241,12 @@ describe('POST /api/chat', () => {
       citations: [],
       grounded: false,
     })
-    expect(await groundedResponse.json()).toEqual(GROUNDED_RESPONSE)
-    expect(answerBlogQuestionMock).toHaveBeenCalledTimes(1)
+    expect(await groundedResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
+    expect(classifyChatQuestionMock).toHaveBeenCalledTimes(1)
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
   })
 
-  it('캐시 응답은 quota 검사 전에 반환한다', async () => {
+  it('캐시 응답도 quota를 소모한다', async () => {
     analyzeQuestionMock.mockReturnValue({
       normalizedQuestion: 'react stack',
       questionType: 'general',
@@ -271,7 +279,8 @@ describe('POST /api/chat', () => {
     const secondResponse = await POST(createChatRequest('React stack?'))
 
     expect(await firstResponse.json()).toEqual(GROUNDED_RESPONSE)
-    expect(await secondResponse.json()).toEqual(GROUNDED_RESPONSE)
+    expect(await secondResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
+    expect(classifyChatQuestionMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledTimes(1)
   })
 

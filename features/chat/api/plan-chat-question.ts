@@ -23,6 +23,8 @@ import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
 
 const CHAT_QUESTION_PLANNER = {
   MAXIMUM_QUESTION_CHARACTERS: 300,
+  MAXIMUM_PREFERRED_SOURCE_CATEGORY_COUNT: 4,
+  MAXIMUM_ADDITIONAL_KEYWORD_COUNT: 12,
   PLANNER_MODEL_ID: 'gpt-5.4-mini',
   DETERMINISTIC_PATTERNS: {
     CONTACT: [
@@ -327,6 +329,22 @@ function buildClarificationQuestion(locale: SupportedLocale): string {
   return CHAT_QUESTION_PLANNER.CLARIFICATION_QUESTIONS[locale]
 }
 
+function limitPreferredSourceCategories(
+  preferredSourceCategories: ChatSourceCategory[],
+): ChatSourceCategory[] {
+  return preferredSourceCategories.slice(
+    0,
+    CHAT_QUESTION_PLANNER.MAXIMUM_PREFERRED_SOURCE_CATEGORY_COUNT,
+  )
+}
+
+function limitAdditionalKeywords(additionalKeywords: string[]): string[] {
+  return additionalKeywords.slice(
+    0,
+    CHAT_QUESTION_PLANNER.MAXIMUM_ADDITIONAL_KEYWORD_COUNT,
+  )
+}
+
 function buildContextPreferredSourceCategories(params: {
   normalizedQuestion: string
   contextSnapshot: ReturnType<typeof buildChatQuestionContextSnapshot>
@@ -407,17 +425,19 @@ function buildFallbackQuestionPlan(params: PlanChatQuestionParams): ChatQuestion
   )
   const preferredSourceCategories: ChatSourceCategory[] = assistantIdentityQuestion
     ? ['assistant', 'profile']
-    : [
+    : limitPreferredSourceCategories([
         ...new Set([
           ...normalizedChatQuery.preferredSourceCategories,
           ...contextPreferredSourceCategories,
         ]),
-      ]
+      ])
   const additionalKeywords = assistantIdentityQuestion
-    ? buildAssistantIdentityKeywords({
-        assistantProfile: params.assistantProfile,
-      })
-    : normalizedChatQuery.additionalKeywords
+    ? limitAdditionalKeywords(
+        buildAssistantIdentityKeywords({
+          assistantProfile: params.assistantProfile,
+        }),
+      )
+    : limitAdditionalKeywords(normalizedChatQuery.additionalKeywords)
   const needsClarification =
     deterministicAction === 'none' &&
     shouldClarifyPersonReference({
@@ -425,7 +445,7 @@ function buildFallbackQuestionPlan(params: PlanChatQuestionParams): ChatQuestion
       contextSnapshot,
     })
   const retrievalMode =
-    deterministicAction === 'none'
+    deterministicAction === 'none' && !needsClarification
       ? params.currentPostSlug &&
           includesAnyPattern(
             normalizedStandaloneQuestion,
@@ -465,6 +485,57 @@ function buildFallbackQuestionPlan(params: PlanChatQuestionParams): ChatQuestion
   }
 }
 
+function normalizePlannedQuestionPlan(params: {
+  plannedQuestionPlan: ChatQuestionPlan
+  plannerParams: PlanChatQuestionParams
+}): ChatQuestionPlan {
+  const fallbackQuestionPlan = buildFallbackQuestionPlan(params.plannerParams)
+
+  if (fallbackQuestionPlan.needsClarification) {
+    return {
+      ...fallbackQuestionPlan,
+      reason: params.plannedQuestionPlan.reason,
+    }
+  }
+
+  if (fallbackQuestionPlan.deterministicAction !== 'none') {
+    return {
+      ...fallbackQuestionPlan,
+      reason: params.plannedQuestionPlan.reason,
+    }
+  }
+
+  if (
+    fallbackQuestionPlan.preferredSourceCategories.includes('assistant') &&
+    fallbackQuestionPlan.preferredSourceCategories.includes('profile')
+  ) {
+    return {
+      ...fallbackQuestionPlan,
+      reason: params.plannedQuestionPlan.reason,
+    }
+  }
+
+  return {
+    ...params.plannedQuestionPlan,
+    standaloneQuestion: fallbackQuestionPlan.standaloneQuestion,
+    socialPreamble:
+      params.plannedQuestionPlan.socialPreamble ||
+      fallbackQuestionPlan.socialPreamble,
+    preferredSourceCategories: limitPreferredSourceCategories([
+      ...new Set([
+        ...params.plannedQuestionPlan.preferredSourceCategories,
+        ...fallbackQuestionPlan.preferredSourceCategories,
+      ]),
+    ]),
+    additionalKeywords: limitAdditionalKeywords([
+      ...new Set([
+        ...params.plannedQuestionPlan.additionalKeywords,
+        ...fallbackQuestionPlan.additionalKeywords,
+      ]),
+    ]),
+  }
+}
+
 export async function planChatQuestion(
   params: PlanChatQuestionParams,
 ): Promise<ChatQuestionPlan> {
@@ -497,7 +568,10 @@ export async function planChatQuestion(
       ].join('\n'),
     })
 
-    return output as ChatQuestionPlan
+    return normalizePlannedQuestionPlan({
+      plannedQuestionPlan: output as ChatQuestionPlan,
+      plannerParams: params,
+    })
   } catch {
     return buildFallbackQuestionPlan(params)
   }

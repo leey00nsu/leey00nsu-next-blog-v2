@@ -69,7 +69,6 @@ describe('chat planner evaluation', () => {
         curatedRecords: CHAT_PLANNER_EVALUATION_CURATED_RECORDS,
         currentPostSlug: evaluationCase.currentPostSlug,
         questionAnalysis,
-        assistantProfile: CHAT_PLANNER_EVALUATION_ASSISTANT_PROFILE,
         contactProfile: CHAT_PLANNER_EVALUATION_CONTACT_PROFILE,
         questionRouting,
       })

@@ -19,33 +19,15 @@ export const CHAT_QUESTION_RULES = {
     '이 포스트',
     '이 프로젝트',
     '이 도구',
-    '이 사람',
     '이 서비스',
     '이 라이브러리',
     '이거',
     '이건',
     '짧게 소개',
   ],
-  FOLLOW_UP_QUERY_PATTERNS: [
-    '그건',
-    '그거',
-    '그럼',
-    '왜',
-    '어떻게',
-    '자세히',
-    '예시는',
-    'what about',
-    'how about',
-    'why',
-    'how',
-    'then',
-    'that',
-    'it',
-  ],
 } as const satisfies {
   GREETING_PATTERNS: string[]
   SPLIT_PATTERNS: string[]
   TERM_EXPANSIONS: Record<string, string[]>
   CONTEXT_QUERY_PATTERNS: string[]
-  FOLLOW_UP_QUERY_PATTERNS: string[]
 }

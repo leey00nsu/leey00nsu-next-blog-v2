@@ -1,19 +1,15 @@
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
-import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import {
   normalizeChatQuery,
   normalizeQuestionText,
 } from '@/features/chat/lib/chat-query-normalization'
+import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import {
   LOCALES,
   type SupportedLocale,
 } from '@/shared/config/constants'
 
-export const CHAT_QUESTION_TYPES = [
-  'greeting',
-  'assistant-identity',
-  'general',
-] as const
+export const CHAT_QUESTION_TYPES = ['general'] as const
 
 export type ChatQuestionType = (typeof CHAT_QUESTION_TYPES)[number]
 
@@ -32,33 +28,8 @@ export interface ChatQuestionAnalysis {
   searchQueries: ChatSearchQuery[]
 }
 
-function escapeRegularExpression(pattern: string): string {
-  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
-}
-
-function normalizeForMatch(text: string): string {
-  return text.toLowerCase()
-}
-
-function includesTokenBoundedPattern(text: string, pattern: string): boolean {
-  const normalizedText = normalizeForMatch(text)
-  const normalizedPattern = normalizeForMatch(pattern).trim()
-  const boundedPattern = new RegExp(
-    String.raw`(^|\s)${escapeRegularExpression(normalizedPattern)}($|\s)`,
-    'u',
-  )
-
-  return boundedPattern.test(normalizedText)
-}
-
 export function normalizeQuestion(question: string): string {
   return normalizeQuestionText(question)
-}
-
-function isGreetingQuestion(normalizedQuestion: string): boolean {
-  return CHAT_QUESTION_RULES.GREETING_PATTERNS.some((pattern) => {
-    return includesTokenBoundedPattern(normalizedQuestion, pattern)
-  })
 }
 
 function splitQuestionIntoClauses(normalizedQuestion: string): string[] {
@@ -86,14 +57,6 @@ export function analyzeQuestion(
   locale: SupportedLocale = LOCALES.DEFAULT,
 ): ChatQuestionAnalysis {
   const normalizedQuestion = normalizeQuestion(question)
-
-  if (isGreetingQuestion(normalizedQuestion)) {
-    return {
-      normalizedQuestion,
-      questionType: 'greeting',
-      searchQueries: [],
-    }
-  }
 
   const splitClauses = splitQuestionIntoClauses(normalizedQuestion)
 

@@ -1,36 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { resolveChatRequest } from './resolve-chat-request'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
-
-const KO_CHAT_ASSISTANT_PROFILE: ChatAssistantProfile = {
-  title: '블로그 챗봇 안내',
-  description: '이 챗봇이 누구를 위해 어떤 근거로 답하는지 정리한 내부 문서',
-  chatbotName: '블로그 챗봇',
-  ownerName: '이윤수',
-  greetingAnswer:
-    '안녕하세요. 저는 이윤수 님의 블로그 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
-  identityAnswer:
-    '저는 이윤수 님의 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
-  aliases: ['이 사람 챗봇', '누구의 챗봇'],
-  content:
-    '저는 이윤수 님의 챗봇입니다. 블로그 글과 공개된 소개 페이지를 근거로 답변합니다.',
-}
-
-const EN_CHAT_ASSISTANT_PROFILE: ChatAssistantProfile = {
-  title: 'Blog Chatbot Guide',
-  description: 'Internal document describing who this chatbot is',
-  chatbotName: 'Blog Chatbot',
-  ownerName: 'Yoonsu Lee',
-  greetingAnswer:
-    "Hi there. I am Yoonsu Lee's blog chatbot, and I answer using the blog posts and public profile pages.",
-  identityAnswer:
-    "I am Yoonsu Lee's chatbot, and I answer using the blog posts and public profile pages.",
-  aliases: ['whose chatbot are you', 'relationship with the author'],
-  content:
-    "I am Yoonsu Lee's chatbot. I answer using the blog posts and public profile pages.",
-}
 
 const KO_CHAT_CONTACT_PROFILE: ChatContactProfile = {
   title: 'About Me',
@@ -215,83 +186,12 @@ const BLOG_CHAT_SOURCES: ChatEvidenceRecord[] = [
 ]
 
 describe('resolveChatRequest', () => {
-  it('인사형 질문은 모델 호출 없이 고정 응답으로 처리한다', () => {
-    const result = resolveChatRequest({
-      question: '안녕',
-      locale: 'ko',
-      blogRecords: BLOG_CHAT_SOURCES,
-      curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
-      questionRouting: {
-        selector: 'greeting',
-        action: 'answer',
-        scope: 'global',
-        reason: 'test',
-      },
-    })
-
-    expect(result.shouldCallModel).toBe(false)
-    expect(result.directResponse?.answer).toContain('블로그 챗봇')
-  })
-
-  it('챗봇 정체 질문은 작성자처럼 답하지 않고 챗봇으로 소개한다', () => {
-    const result = resolveChatRequest({
-      question: '넌 뭐야?',
-      locale: 'ko',
-      blogRecords: BLOG_CHAT_SOURCES,
-      curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
-      questionAnalysis: {
-        normalizedQuestion: '넌 뭐야',
-        questionType: 'assistant-identity',
-        searchQueries: [],
-      },
-      questionRouting: {
-        selector: 'assistant_identity',
-        action: 'answer',
-        scope: 'global',
-        reason: 'test',
-      },
-    })
-
-    expect(result.shouldCallModel).toBe(false)
-    expect(result.directResponse?.answer).toContain('이윤수 님의 챗봇')
-    expect(result.directResponse?.answer).not.toContain('저는 프로젝트를')
-  })
-
-  it('챗봇 관계 질문은 assistant 문서 기반 direct response로 처리한다', () => {
-    const result = resolveChatRequest({
-      question: '넌 이 사람이랑 어떤 관계야?',
-      locale: 'ko',
-      blogRecords: BLOG_CHAT_SOURCES,
-      curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
-      questionAnalysis: {
-        normalizedQuestion: '넌 이 사람이랑 어떤 관계야',
-        questionType: 'assistant-identity',
-        searchQueries: [],
-      },
-      questionRouting: {
-        selector: 'assistant_identity',
-        action: 'answer',
-        scope: 'global',
-        reason: 'test',
-      },
-    })
-
-    expect(result.shouldCallModel).toBe(false)
-    expect(result.directResponse?.answer).toBe(
-      '저는 이윤수 님의 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
-    )
-  })
-
   it('연락 질문은 공개 소개 페이지의 연락 채널을 direct response로 처리한다', () => {
     const result = resolveChatRequest({
       question: '어떻게 연락해?',
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       contactProfile: KO_CHAT_CONTACT_PROFILE,
       questionRouting: {
         selector: 'contact',
@@ -313,7 +213,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       currentPostSlug: 'why-i-built-lee-spec-kit',
       questionRouting: {
         selector: 'current_post',
@@ -327,13 +226,46 @@ describe('resolveChatRequest', () => {
     expect(result.matches[0]?.slug).toBe('why-i-built-lee-spec-kit')
   })
 
+  it('standard retrieval 질문은 currentPostSlug가 있어도 현재 글 fallback을 강제하지 않는다', () => {
+    const result = resolveChatRequest({
+      question: '이 사람 이름 뭐야?',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES.filter((record) => {
+        return record.sourceCategory !== 'profile' && record.sourceCategory !== 'assistant'
+      }),
+      currentPostSlug: 'why-i-built-lee-spec-kit',
+      questionAnalysis: {
+        normalizedQuestion: '이 사람 이름 뭐야',
+        questionType: 'general',
+        searchQueries: [
+          {
+            question: '이 사람 이름 뭐야',
+            intent: 'general',
+            additionalKeywords: [],
+            preferredSourceCategories: [],
+          },
+        ],
+      },
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(false)
+    expect(result.matches).toEqual([])
+    expect(result.refusalReason).toBe('insufficient_search_match')
+  })
+
   it('영문 일반 질문도 retrieval-first로 curated source를 검색한다', () => {
     const result = resolveChatRequest({
       question: 'Which project uses TypeScript?',
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
     })
 
     expect(result.shouldCallModel).toBe(true)
@@ -349,7 +281,6 @@ describe('resolveChatRequest', () => {
       locale: 'en',
       blogRecords: [],
       curatedRecords: EN_CURATED_CHAT_SOURCES,
-      assistantProfile: EN_CHAT_ASSISTANT_PROFILE,
     })
 
     expect(result.shouldCallModel).toBe(true)
@@ -363,7 +294,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
@@ -383,7 +313,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
@@ -403,7 +332,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionRouting: {
         selector: 'latest_post',
         action: 'answer',
@@ -414,6 +342,7 @@ describe('resolveChatRequest', () => {
 
     expect(result.shouldCallModel).toBe(false)
     expect(result.directResponse?.answer).toContain('가장 최신 글')
+    expect(result.directResponse?.answer).not.toContain('**')
     expect(result.directResponse?.citations[0]?.url).toBe(
       '/ko/blog/latest-post',
     )
@@ -425,7 +354,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionAnalysis: {
         normalizedQuestion: '마지막 글',
         questionType: 'general',
@@ -452,7 +380,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionRouting: {
         selector: 'oldest_post',
         action: 'recommend',
@@ -463,6 +390,7 @@ describe('resolveChatRequest', () => {
 
     expect(result.shouldCallModel).toBe(false)
     expect(result.directResponse?.answer).toContain('가장 오래된 글')
+    expect(result.directResponse?.answer).not.toContain('**')
     expect(result.directResponse?.citations[0]?.url).toBe(
       '/ko/blog/oldest-post',
     )
@@ -474,7 +402,6 @@ describe('resolveChatRequest', () => {
       locale: 'ko',
       blogRecords: BLOG_CHAT_SOURCES,
       curatedRecords: CURATED_CHAT_SOURCES,
-      assistantProfile: KO_CHAT_ASSISTANT_PROFILE,
       questionAnalysis: {
         normalizedQuestion: '가장 첫 글 요약해봐',
         questionType: 'general',

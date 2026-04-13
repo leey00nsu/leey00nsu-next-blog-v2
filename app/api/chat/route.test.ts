@@ -529,4 +529,45 @@ describe('POST /api/chat', () => {
       }),
     )
   })
+
+  it('standard retrieval 질문은 현재 글 페이지에서도 semantic current post boost를 전달하지 않는다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion: '이 사람 이름 뭐야',
+      reason: 'ambiguous retrieval from planner',
+    })
+    analyzeQuestionMock.mockReturnValueOnce({
+      normalizedQuestion: '이 사람 이름 뭐야',
+      questionType: 'general',
+      searchQueries: [
+        {
+          question: '이 사람 이름 뭐야',
+          intent: 'general',
+          additionalKeywords: [],
+          preferredSourceCategories: [],
+        },
+      ],
+    })
+    resolveChatRequestMock.mockReturnValueOnce({
+      normalizedQuestion: '이 사람 이름 뭐야',
+      questionType: 'general',
+      shouldCallModel: false,
+      matches: [],
+      refusalReason: 'insufficient_search_match',
+    })
+
+    const { POST } = await importRouteModule()
+
+    await POST(
+      createChatRequest('이 사람 이름 뭐야?', {
+        currentPostSlug: 'why-i-built-lee-spec-kit',
+      }),
+    )
+
+    expect(runChatRagWorkflowMock).toHaveBeenCalledWith({
+      question: '이 사람 이름 뭐야',
+      locale: 'ko',
+      currentPostSlug: undefined,
+    })
+  })
 })

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CHAT_RETRIEVAL_EVALUATION_ASSISTANT_PROFILE,
   CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS,
   CHAT_RETRIEVAL_EVALUATION_CASES,
   CHAT_RETRIEVAL_EVALUATION_CONTACT_PROFILE,
@@ -51,7 +50,6 @@ describe('chat retrieval evaluation', () => {
         curatedRecords: CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS,
         currentPostSlug: evaluationCase.currentPostSlug,
         questionAnalysis,
-        assistantProfile: CHAT_RETRIEVAL_EVALUATION_ASSISTANT_PROFILE,
         contactProfile: CHAT_RETRIEVAL_EVALUATION_CONTACT_PROFILE,
         questionRouting: evaluationCase.questionRouting,
       })

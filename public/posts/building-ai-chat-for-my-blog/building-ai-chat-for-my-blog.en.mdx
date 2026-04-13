@@ -1,6 +1,6 @@
 ---
 slug: building-ai-chat-for-my-blog
-title: What I Learned Building an AI Chatbot for My Blog, Between Search and RAG
+title: How My Blog Chatbot Ended Up Using RAG
 tags:
   - AI
   - chatbot
@@ -15,7 +15,7 @@ draft: false
 writer: leey00nsu
 ---
 
-## What I Learned Building an AI Chatbot for My Blog, Between Search and RAG
+## How My Blog Chatbot Ended Up Using RAG
 
 I recently started adding an AI chatbot to this blog.
 
@@ -123,11 +123,11 @@ The total document count was not huge, and I was already running things in a sel
 
 But once I connected the chatbot to the real operating flow, a different problem showed up. This project already has a workflow where writing a post on the web eventually creates a GitHub commit, and that commit triggers redeployment. In that situation, keeping embedding output in a `SQLite` file quickly raised awkward questions: when should it be generated, before or after deployment, and does the generated file need to be committed again?
 
-That is why I moved the vector store into `PostgreSQL` with `pgvector`, so embeddings and retrieval metadata live inside the database instead of inside a generated file that gets passed around in Git. The source documents are still tracked in Git, but derived data such as chunks and embeddings are no longer treated as Git artifacts. The index is also updated in a versioned way, so a newly built index only becomes active at the end.
+That is why I moved the vector store into `PostgreSQL` with `pgvector`, so embeddings and retrieval metadata live inside the database instead of inside a generated file that gets passed around in Git. The source documents are still tracked in Git, but derived data used by the Postgres RAG layer, such as chunks, embeddings, entities, and relations, are no longer treated as Git artifacts. Static generated records for lexical search still exist on the application side as a separate asset. The index is also updated in a versioned way, so a newly built index only becomes active at the end.
 
 The current direction is much closer to this:
 
-Split blog posts, profile pages, and project pages into chunks, generate embeddings for each chunk, store the results in `PostgreSQL`, then embed the incoming question with the same model and use `pgvector` to find semantic candidates.
+Split blog posts, profile pages, project pages, and the internal assistant document into intro and heading-based chunks, generate embeddings for each chunk, store the results in `PostgreSQL`, then embed the incoming question with the same model and use `pgvector` to find semantic candidates. More recently, I have been moving toward taking lexical candidates and semantic candidates together, then re-ranking them into one evidence set instead of treating them as completely separate paths.
 
 What I liked about this structure was simple. It separates application deployment from retrieval storage, it lets me keep the previous active index when re-indexing fails, and it avoids the mismatch between "the committed artifact" and "the actual index the service is reading."
 
@@ -139,19 +139,19 @@ At first, I vaguely assumed that adding embeddings would automatically make the 
 
 What turned out to matter even more was splitting question types correctly.
 
-Questions like `"hello"`, `"who are you?"`, `"how can I contact you?"`, `"what is the latest post?"`, and `"what is the oldest post?"` are closer to product logic than to retrieval. Questions like `"what kind of developer is this person?"`, `"what is the main tech stack?"`, and `"what design philosophy appears across this blog?"` depend much more on evidence retrieval.
+Questions like `"hello"`, `"how can I contact you?"`, `"what is the latest post?"`, and `"what is the oldest post?"` are closer to product logic than to retrieval. Questions like `"who are you?"`, `"what kind of developer is this person?"`, `"what is the main tech stack?"`, and `"what design philosophy appears across this blog?"` depend much more on evidence retrieval.
 
-That is why the current structure is divided into two layers.
+That is why the current structure now looks less like “send everything to retrieval” and more like “organize the question once before deciding what to do next.”
 
-![Hybrid AI blog chatbot architecture](/public/posts/building-ai-chat-for-my-blog/hybrid-ai-blog-chatbot-architecture.webp)
+![Planner-guided blog chatbot architecture](/public/posts/building-ai-chat-for-my-blog/planner-guided-blog-chatbot-architecture.png)
 
-The first is the control plane. It does not treat a question as just one vague intent. It separates what the user is referring to from what they want done with it. That is how greetings, assistant identity, contact, latest post, oldest post, and current post questions are routed quickly.
+The `Question Planner` in the middle is not there to force every prompt into one rigid category. It rewrites the question into something clearer, then decides whether the request can be answered directly, needs evidence retrieval, or is vague enough that it should trigger a short clarification first. In the diagram, `Direct Answers` is reserved for cases like pure greetings, contact questions, or latest and oldest post requests, where product logic is more reliable than search.
 
-The second is the retrieval plane. That is where lexical search and PostgreSQL-based embedding RAG actually gather evidence. Information such as the profile page or the chatbot's own identity is also treated less like a language-isolated page and more like a shared factual layer for the site.
+The `Retrieval Path` is where lexical search, PostgreSQL-based embedding retrieval, and shared documents such as the profile page or chatbot guide are brought together and merged into the final evidence set. Going the other way, a reference like `"this person"` is safer to route through `Clarification` than to guess. I also stopped leaning too hard on the current page. That context now only gets extra weight when the user is clearly referring to the post they are looking at.
 
 Only after introducing that separation did the chatbot start to feel more like a real chatbot. Sending every question through RAG often made the result worse, not better.
 
-Another interesting change was that the chatbot's identity is no longer hardcoded directly in application code. Instead, it is managed in an internal MDX document. That document is not publicly exposed, but it defines who the chatbot is, what evidence scope it answers from, and what role constraints keep it from speaking as if it were the author.
+Another interesting change was that the chatbot's identity is no longer hardcoded directly in application code. Instead, it is managed in an internal MDX document. That document is not publicly exposed, but it defines who the chatbot is, what evidence scope it answers from, and what role constraints keep it from speaking as if it were the author. Lately I have also been keeping a small set of representative questions around projects, the profile page, the assistant guide, the current post, and broader blog-wide summaries, just to make sure the behavior does not drift in odd ways. I also keep a few awkward cases in there, like mixed greeting-plus-question prompts or vague follow-up references. That part is less about implementation and more about operating the system, but it has turned out to matter a lot.
 
 ## Closing Thoughts
 

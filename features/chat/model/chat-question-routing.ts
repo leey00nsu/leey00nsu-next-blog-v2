@@ -1,8 +1,6 @@
 import { z } from 'zod'
 
 export const CHAT_QUESTION_SELECTORS = [
-  'greeting',
-  'assistant_identity',
   'contact',
   'latest_post',
   'oldest_post',

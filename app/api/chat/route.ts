@@ -10,6 +10,7 @@ import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
 import {
   applyQuestionPlanToAnalysis,
   buildQuestionRoutingFromPlan,
+  resolvePlannerCurrentPostSlug,
   shouldRunHybridRetrieval,
 } from '@/features/chat/lib/chat-question-plan-routing'
 import {
@@ -291,6 +292,10 @@ export async function POST(request: NextRequest) {
       locale,
     })
     const questionRouting = buildQuestionRoutingFromPlan(questionPlan)
+    const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
+      questionPlan,
+      currentPostSlug: parsedRequest.data.currentPostSlug,
+    })
 
     const blogRecords = buildBlogEvidenceRecords(locale)
     const curatedRecords = await getCuratedChatSources(locale)
@@ -299,9 +304,8 @@ export async function POST(request: NextRequest) {
       locale,
       blogRecords,
       curatedRecords,
-      currentPostSlug: parsedRequest.data.currentPostSlug,
+      currentPostSlug: plannerCurrentPostSlug,
       questionAnalysis: resolvedQuestionAnalysis,
-      assistantProfile,
       contactProfile,
       questionRouting,
     })
@@ -328,14 +332,14 @@ export async function POST(request: NextRequest) {
       const chatRagSearchResult = await runChatRagWorkflow({
         question: resolvedQuestion,
         locale,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
+        currentPostSlug: plannerCurrentPostSlug,
       })
 
       combinedMatches = fuseChatRetrievalMatches({
         lexicalMatches: resolvedChatRequest.matches,
         semanticMatches: chatRagSearchResult.matches,
         preferredSourceCategories,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
+        currentPostSlug: plannerCurrentPostSlug,
       })
     }
 

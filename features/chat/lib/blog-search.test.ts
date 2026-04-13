@@ -186,4 +186,33 @@ describe('selectBlogSearchMatches', () => {
     expect(result.grounded).toBe(true)
     expect(result.matches[0]?.slug).toBe('why-i-built-lee-spec-kit')
   })
+
+  it('사람 지시어 질문은 현재 글 컨텍스트가 있어도 현재 글 fallback을 강제하지 않는다', () => {
+    const records: BlogSearchRecord[] = [
+      {
+        id: 'ko/why-i-built-lee-spec-kit/intro',
+        locale: 'ko',
+        slug: 'why-i-built-lee-spec-kit',
+        title: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee-spec-kit을 만든 이유',
+        url: '/ko/blog/why-i-built-lee-spec-kit',
+        excerpt: 'lee-spec-kit을 만든 이유를 설명합니다.',
+        content:
+          'lee-spec-kit은 AI 보조 개발을 위한 문서 구조와 워크플로우를 정리하기 위해 만든 CLI입니다.',
+        sectionTitle: null,
+        tags: ['lee-spec-kit'],
+        searchTerms: [],
+      },
+    ]
+
+    const result = selectBlogSearchMatches({
+      question: '이 사람 이름 뭐야?',
+      locale: 'ko',
+      records,
+      currentPostSlug: 'why-i-built-lee-spec-kit',
+    })
+
+    expect(result.grounded).toBe(false)
+    expect(result.matches).toEqual([])
+    expect(result.refusalReason).toBe('insufficient_search_match')
+  })
 })

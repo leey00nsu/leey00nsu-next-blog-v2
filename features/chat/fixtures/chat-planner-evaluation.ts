@@ -57,6 +57,15 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
   },
   {
+    id: 'ambiguous-person-reference-on-current-post',
+    question: '이 사람 이름 뭐야?',
+    locale: 'ko',
+    currentPostSlug: 'why-i-built-lee-spec-kit',
+    expectedRetrieval: false,
+    expectedClarificationQuestion:
+      '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+  },
+  {
     id: 'profile-follow-up-reference',
     question: '이 사람 이름 뭐야?',
     locale: 'ko',

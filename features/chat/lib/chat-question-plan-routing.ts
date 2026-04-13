@@ -137,3 +137,14 @@ export function shouldRunHybridRetrieval(
       questionPlan.retrievalMode === 'corpus')
   )
 }
+
+export function resolvePlannerCurrentPostSlug(params: {
+  questionPlan: ChatQuestionPlan
+  currentPostSlug?: string
+}): string | undefined {
+  if (params.questionPlan.retrievalMode !== 'current_post') {
+    return undefined
+  }
+
+  return params.currentPostSlug
+}

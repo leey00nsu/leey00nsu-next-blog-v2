@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { analyzeQuestion } from './question-analysis'
 
 describe('analyzeQuestion', () => {
-  it('인사형 질문은 greeting으로 분류한다', () => {
+  it('인사형 질문도 analyze 단계에서는 general로 남긴다', () => {
     const result = analyzeQuestion('안녕, 너 뭐 하는 챗봇이야?')
 
-    expect(result.questionType).toBe('greeting')
+    expect(result.questionType).toBe('general')
     expect(result.normalizedQuestion).toBe('안녕 너 뭐 하는 챗봇이야')
-    expect(result.searchQueries).toEqual([])
+    expect(result.searchQueries).toEqual([
+      {
+        question: '안녕 너 뭐 하는 챗봇이야',
+        intent: 'general',
+        additionalKeywords: ['assistant', 'chatbot', '챗봇'],
+        preferredSourceCategories: ['assistant'],
+      },
+    ])
   })
 
   it('챗봇 정체 질문은 analyze 단계에서는 general로 남긴다', () => {

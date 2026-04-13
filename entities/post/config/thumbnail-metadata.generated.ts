@@ -47,10 +47,10 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAACwAQCdASoQAAsABUB8JZwAAuc+6TAAAP7vu6rcy5RDRnHAougmqw4qFkqYK1hVQgA=",
     "isAnimated": false
   },
-  "/public/posts/building-ai-chat-for-my-blog/hybrid-ai-blog-chatbot-architecture.webp": {
-    "width": 1254,
-    "height": 1254,
-    "base64": "data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAACwAQCdASoQABAABUB8JaQAAxZiGTEAAP7qv1JHmP1gJ35vmJU/GNrLAAA=",
+  "/public/posts/building-ai-chat-for-my-blog/planner-guided-blog-chatbot-architecture.png": {
+    "width": 1536,
+    "height": 1024,
+    "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACwAQCdASoQAAsABUB8JaQAAud7OVUAAP7tV5TrgmudRaewexiKwAAA",
     "isAnimated": false
   },
   "/public/posts/contribute-open-source/contributors.webp": {

@@ -4,7 +4,6 @@ import {
   analyzeQuestion,
   type ChatQuestionAnalysis,
 } from '@/features/chat/lib/question-analysis'
-import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type {
@@ -21,7 +20,6 @@ interface ResolveChatRequestParams {
   curatedRecords: ChatEvidenceRecord[]
   currentPostSlug?: string
   questionAnalysis?: ChatQuestionAnalysis
-  assistantProfile?: ChatAssistantProfile | null
   contactProfile?: ChatContactProfile | null
   questionRouting?: ChatQuestionRoutingResult
 }
@@ -35,11 +33,6 @@ interface ResolveChatRequestResult {
   refusalReason?: 'insufficient_search_match'
 }
 
-const FALLBACK_CHAT_RESPONSES = {
-  ko: '안녕하세요. 저는 블로그 글과 공개된 소개 페이지를 근거로 답변하는 블로그 챗봇이에요. 관련 근거가 충분할 때만 답변을 정리해드려요.',
-  en: 'Hi there. I am a blog chatbot that answers from the blog and public profile pages only when there is enough supporting evidence.',
-} as const
-
 const CHRONOLOGICAL_QUERY_PATTERNS = {
   LATEST: ['최신', '최근', 'latest', 'recent'],
   OLDEST: ['오래된', '가장 오래된', '첫 글', '처음 글', 'oldest', 'first post'],
@@ -48,12 +41,12 @@ const CHRONOLOGICAL_QUERY_PATTERNS = {
 
 const CHRONOLOGICAL_CHAT_RESPONSES = {
   ko: {
-    LATEST: '최신 글은 **{title}**입니다.',
-    OLDEST: '가장 오래된 글로는 **{title}**을 추천할게요.',
+    LATEST: '최신 글은 {title}입니다.',
+    OLDEST: '가장 오래된 글로는 {title}을 추천할게요.',
   },
   en: {
-    LATEST: 'The latest post is **{title}**.',
-    OLDEST: 'If you want the oldest post, I would point you to **{title}**.',
+    LATEST: 'The latest post is {title}.',
+    OLDEST: 'If you want the oldest post, I would point you to {title}.',
   },
 } as const
 
@@ -67,28 +60,6 @@ const CONTACT_CHAT_RESPONSES = {
     OUTRO: 'You can find the details on the About page.',
   },
 } as const
-
-function buildDirectGreetingResponse(
-  locale: SupportedLocale,
-  assistantProfile?: ChatAssistantProfile | null,
-): BlogChatResponse {
-  return {
-    answer: assistantProfile?.greetingAnswer ?? FALLBACK_CHAT_RESPONSES[locale],
-    citations: [],
-    grounded: false,
-  }
-}
-
-function buildAssistantIdentityResponse(
-  locale: SupportedLocale,
-  assistantProfile?: ChatAssistantProfile | null,
-): BlogChatResponse {
-  return {
-    answer: assistantProfile?.identityAnswer ?? FALLBACK_CHAT_RESPONSES[locale],
-    citations: [],
-    grounded: false,
-  }
-}
 
 function buildDirectContactResponse(params: {
   locale: SupportedLocale
@@ -263,6 +234,17 @@ function buildCurrentPostMatches(params: {
     .slice(0, BLOG_CHAT.SEARCH.TOP_K)
 }
 
+function resolveCurrentPostSearchSlug(params: {
+  selector: ChatQuestionSelector | undefined
+  currentPostSlug?: string
+}): string | undefined {
+  if (params.selector !== 'current_post') {
+    return undefined
+  }
+
+  return params.currentPostSlug
+}
+
 function mergeMatches(
   previousMatches: ChatEvidenceRecord[],
   nextMatches: ChatEvidenceRecord[],
@@ -287,7 +269,6 @@ export function resolveChatRequest({
   curatedRecords,
   currentPostSlug,
   questionAnalysis,
-  assistantProfile,
   contactProfile,
   questionRouting,
 }: ResolveChatRequestParams): ResolveChatRequestResult {
@@ -296,32 +277,10 @@ export function resolveChatRequest({
   const resolvedQuestionRouting = questionRouting
   const selector = resolvedQuestionRouting?.selector
   const action = resolvedQuestionRouting?.action
-
-  if (
-    selector === 'greeting' ||
-    resolvedQuestionAnalysis.questionType === 'greeting'
-  ) {
-    return {
-      normalizedQuestion: resolvedQuestionAnalysis.normalizedQuestion,
-      questionType: resolvedQuestionAnalysis.questionType,
-      shouldCallModel: false,
-      matches: [],
-      directResponse: buildDirectGreetingResponse(locale, assistantProfile),
-    }
-  }
-
-  if (
-    selector === 'assistant_identity' ||
-    resolvedQuestionAnalysis.questionType === 'assistant-identity'
-  ) {
-    return {
-      normalizedQuestion: resolvedQuestionAnalysis.normalizedQuestion,
-      questionType: resolvedQuestionAnalysis.questionType,
-      shouldCallModel: false,
-      matches: [],
-      directResponse: buildAssistantIdentityResponse(locale, assistantProfile),
-    }
-  }
+  const currentPostSearchSlug = resolveCurrentPostSearchSlug({
+    selector,
+    currentPostSlug,
+  })
 
   if (selector === 'contact') {
     const directContactResponse = buildDirectContactResponse({
@@ -400,7 +359,7 @@ export function resolveChatRequest({
       question: searchQuery.question,
       locale,
       records: blogRecords,
-      currentPostSlug,
+      currentPostSlug: currentPostSearchSlug,
       additionalKeywords: searchQuery.additionalKeywords,
     })
 

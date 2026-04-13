@@ -2,21 +2,35 @@ import { cache } from 'react'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllProjects } from '@/entities/project/lib/project'
 import { CHAT_ASSISTANT } from '@/features/chat/config/chat-assistant'
-import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
+import { buildCuratedChatSourceRecords } from '@/features/chat/lib/chat-curated-source-records'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import {
   buildLocalizedRoutePath,
-  LOCALES,
   buildProjectHref,
+  LOCALES,
   ROUTES,
   type SupportedLocale,
 } from '@/shared/config/constants'
 import { getSemanticSearchTerms } from '@/shared/lib/chat-semantic-map'
-import { collectSearchTerms } from '@/shared/lib/search-terms'
 
-const CURATED_SOURCE_TEXT = {
-  MAXIMUM_EXCERPT_LENGTH: 180,
-  MAXIMUM_CONTENT_LENGTH: 700,
+const CURATED_SOURCE_TAGS = {
+  PROFILE: [
+    'profile',
+    'about',
+    'career',
+    'experience',
+    'education',
+    'university',
+    'school',
+    'major',
+    'developer',
+    'react',
+    'next.js',
+    'typescript',
+  ],
+  PROFILE_REFERENCE: ['profile', 'about', 'canonical-reference'],
+  PROJECT: ['project', 'side project', 'portfolio'],
 } as const
 
 const CROSS_LOCALE_PROFILE_REFERENCE = {
@@ -25,34 +39,6 @@ const CROSS_LOCALE_PROFILE_REFERENCE = {
     en: ['한국 이름', '한글 이름', 'korean name', 'hangul name'],
   },
 } as const
-
-const MARKDOWN_PATTERNS = {
-  IMAGE: /!\[([^\]]*)\]\([^)]+\)/g,
-  LINK: /\[([^\]]+)\]\([^)]+\)/g,
-  INLINE_CODE: /`([^`]+)`/g,
-  HTML_TAG: /<[^>]+>/g,
-  MARKERS: /[*_>#~-]/g,
-  WHITESPACE: /\s+/g,
-} as const
-
-function sanitizeMarkdownToSearchText(markdown: string): string {
-  return markdown
-    .replaceAll(MARKDOWN_PATTERNS.IMAGE, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.LINK, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.INLINE_CODE, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.HTML_TAG, ' ')
-    .replaceAll(MARKDOWN_PATTERNS.MARKERS, ' ')
-    .replaceAll(MARKDOWN_PATTERNS.WHITESPACE, ' ')
-    .trim()
-}
-
-function trimText(text: string, maximumLength: number): string {
-  if (text.length <= maximumLength) {
-    return text
-  }
-
-  return `${text.slice(0, maximumLength - 1).trimEnd()}…`
-}
 
 function resolveAlternateLocales(locale: SupportedLocale): SupportedLocale[] {
   return LOCALES.SUPPORTED.filter((supportedLocale) => {
@@ -68,110 +54,60 @@ export const getCuratedChatSources = cache(
     const curatedSources: ChatEvidenceRecord[] = []
 
     if (assistantProfile) {
-      const sanitizedAssistantContent = sanitizeMarkdownToSearchText(
-        assistantProfile.content,
-      )
-
-      curatedSources.push({
-        id: `${locale}/assistant/profile`,
-        locale,
-        slug: 'assistant-profile',
-        title: assistantProfile.title,
-        url: buildLocalizedRoutePath(ROUTES.ABOUT, locale),
-        excerpt: trimText(
-          assistantProfile.identityAnswer,
-          CURATED_SOURCE_TEXT.MAXIMUM_EXCERPT_LENGTH,
-        ),
-        content: trimText(
-          [
+      curatedSources.push(
+        ...buildCuratedChatSourceRecords({
+          idPrefix: `${locale}/assistant/profile`,
+          locale,
+          slug: 'assistant-profile',
+          title: assistantProfile.title,
+          baseUrl: buildLocalizedRoutePath(ROUTES.ABOUT, locale),
+          introContent: [
             assistantProfile.greetingAnswer,
             assistantProfile.identityAnswer,
-            sanitizedAssistantContent,
           ].join(' '),
-          CURATED_SOURCE_TEXT.MAXIMUM_CONTENT_LENGTH,
-        ),
-        sectionTitle: null,
-        tags: [...CHAT_ASSISTANT.SEARCH.TAGS],
-        searchTerms: collectSearchTerms({
-          texts: [
+          markdownContent: assistantProfile.content,
+          tags: [...CHAT_ASSISTANT.SEARCH.TAGS],
+          baseSearchPhrases: [
+            assistantProfile.chatbotName,
+            assistantProfile.ownerName,
             assistantProfile.title,
             assistantProfile.description ?? '',
             assistantProfile.greetingAnswer,
             assistantProfile.identityAnswer,
-            sanitizedAssistantContent,
-          ],
-          phrases: [
-            assistantProfile.chatbotName,
-            assistantProfile.ownerName,
             ...assistantProfile.aliases,
             ...CHAT_ASSISTANT.SEARCH.TAGS,
           ],
+          sourceCategory: 'assistant',
         }),
-        sourceCategory: 'assistant',
-      })
+      )
     }
 
     if (about) {
-      const sanitizedAboutContent = sanitizeMarkdownToSearchText(about.content)
       const profileSemanticSearchTerms = getSemanticSearchTerms({
         locale,
         slug: 'about',
         sourceCategory: 'profile',
       })
 
-      curatedSources.push({
-        id: `${locale}/about/profile`,
-        locale,
-        slug: 'about',
-        title: about.title,
-        url: buildLocalizedRoutePath(ROUTES.ABOUT, locale),
-        excerpt: trimText(
-          about.description ?? sanitizedAboutContent,
-          CURATED_SOURCE_TEXT.MAXIMUM_EXCERPT_LENGTH,
-        ),
-        content: trimText(
-          sanitizedAboutContent,
-          CURATED_SOURCE_TEXT.MAXIMUM_CONTENT_LENGTH,
-        ),
-        sectionTitle: null,
-        tags: [
-          'profile',
-          'about',
-          'career',
-          'experience',
-          'education',
-          'university',
-          'school',
-          'major',
-          'developer',
-          'react',
-          'next.js',
-          'typescript',
-        ],
-        searchTerms: collectSearchTerms({
-          texts: [
-            about.title,
-            about.description ?? '',
-            sanitizedAboutContent,
-          ],
-          phrases: [
+      curatedSources.push(
+        ...buildCuratedChatSourceRecords({
+          idPrefix: `${locale}/about/profile`,
+          locale,
+          slug: 'about',
+          title: about.title,
+          baseUrl: buildLocalizedRoutePath(ROUTES.ABOUT, locale),
+          introContent: about.description ?? '',
+          markdownContent: about.content,
+          tags: [...CURATED_SOURCE_TAGS.PROFILE],
+          baseSearchPhrases: [
             ...profileSemanticSearchTerms,
             about.title,
             about.description ?? '',
-            'profile',
-            'about',
-            'career',
-            'experience',
-            'education',
-            'university',
-            'developer',
-            'react',
-            'next.js',
-            'typescript',
+            ...CURATED_SOURCE_TAGS.PROFILE,
           ],
+          sourceCategory: 'profile',
         }),
-        sourceCategory: 'profile',
-      })
+      )
 
       const alternateLocales = resolveAlternateLocales(locale)
 
@@ -182,110 +118,73 @@ export const getCuratedChatSources = cache(
           continue
         }
 
-        const sanitizedAlternateAboutContent = sanitizeMarkdownToSearchText(
-          alternateAbout.content,
-        )
         const alternateProfileSemanticSearchTerms = getSemanticSearchTerms({
           locale: alternateLocale,
           slug: 'about',
           sourceCategory: 'profile',
         })
 
-        curatedSources.push({
-          id: `${locale}/about/profile-reference-${alternateLocale}`,
-          locale,
-          slug: 'about',
-          title: alternateAbout.title,
-          url: buildLocalizedRoutePath(ROUTES.ABOUT, alternateLocale),
-          excerpt: trimText(
-            alternateAbout.description ?? sanitizedAlternateAboutContent,
-            CURATED_SOURCE_TEXT.MAXIMUM_EXCERPT_LENGTH,
-          ),
-          content: trimText(
-            sanitizedAlternateAboutContent,
-            CURATED_SOURCE_TEXT.MAXIMUM_CONTENT_LENGTH,
-          ),
-          sectionTitle: null,
-          tags: ['profile', 'about', 'canonical-reference'],
-          searchTerms: collectSearchTerms({
-            texts: [
-              alternateAbout.title,
-              alternateAbout.description ?? '',
-              sanitizedAlternateAboutContent,
-            ],
-            phrases: [
+        curatedSources.push(
+          ...buildCuratedChatSourceRecords({
+            idPrefix: `${locale}/about/profile-reference-${alternateLocale}`,
+            locale,
+            slug: 'about',
+            title: alternateAbout.title,
+            baseUrl: buildLocalizedRoutePath(ROUTES.ABOUT, alternateLocale),
+            introContent: alternateAbout.description ?? '',
+            markdownContent: alternateAbout.content,
+            tags: [...CURATED_SOURCE_TAGS.PROFILE_REFERENCE],
+            baseSearchPhrases: [
               ...CROSS_LOCALE_PROFILE_REFERENCE.SEARCH_PHRASES[locale],
               ...alternateProfileSemanticSearchTerms,
               alternateAbout.title,
               alternateAbout.description ?? '',
-              'profile',
-              'about',
-              'canonical reference',
+              ...CURATED_SOURCE_TAGS.PROFILE_REFERENCE,
             ],
+            sourceCategory: 'profile',
           }),
-          sourceCategory: 'profile',
-        })
+        )
       }
     }
 
     for (const project of projects) {
-      const sanitizedProjectContent = sanitizeMarkdownToSearchText(project.content)
       const projectSemanticSearchTerms = getSemanticSearchTerms({
         locale,
         slug: project.slug,
         sourceCategory: 'project',
       })
-      const combinedProjectContent = [
-        project.summary,
-        project.keyFeatures.join(' '),
-        project.techStacks.join(' '),
-        sanitizedProjectContent,
+      const projectTags = [
+        ...CURATED_SOURCE_TAGS.PROJECT,
+        ...project.techStacks.map((stack) => stack.toLowerCase()),
       ]
-        .filter(Boolean)
-        .join(' ')
 
-      curatedSources.push({
-        id: `${locale}/project/${project.slug}`,
-        locale,
-        slug: project.slug,
-        title: project.title,
-        url: buildProjectHref(project.slug, locale),
-        excerpt: trimText(
-          project.summary,
-          CURATED_SOURCE_TEXT.MAXIMUM_EXCERPT_LENGTH,
-        ),
-        content: trimText(
-          combinedProjectContent,
-          CURATED_SOURCE_TEXT.MAXIMUM_CONTENT_LENGTH,
-        ),
-        sectionTitle: null,
-        tags: [
-          'project',
-          'side project',
-          'portfolio',
-          ...project.techStacks.map((stack) => stack.toLowerCase()),
-        ],
-        searchTerms: collectSearchTerms({
-          texts: [
-            project.title,
+      curatedSources.push(
+        ...buildCuratedChatSourceRecords({
+          idPrefix: `${locale}/project/${project.slug}`,
+          locale,
+          slug: project.slug,
+          title: project.title,
+          baseUrl: buildProjectHref(project.slug, locale),
+          introContent: [
             project.summary,
             project.keyFeatures.join(' '),
             project.techStacks.join(' '),
-            sanitizedProjectContent,
-          ],
-          phrases: [
+          ]
+            .filter(Boolean)
+            .join(' '),
+          markdownContent: project.content,
+          tags: projectTags,
+          baseSearchPhrases: [
             ...projectSemanticSearchTerms,
             project.title,
             project.summary,
             ...project.keyFeatures,
             ...project.techStacks,
-            'project',
-            'side project',
-            'portfolio',
+            ...CURATED_SOURCE_TAGS.PROJECT,
           ],
+          sourceCategory: 'project',
         }),
-        sourceCategory: 'project',
-      })
+      )
     }
 
     return curatedSources

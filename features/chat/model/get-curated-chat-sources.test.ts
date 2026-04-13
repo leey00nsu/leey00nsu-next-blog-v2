@@ -16,4 +16,28 @@ describe('getCuratedChatSources', () => {
       expect.arrayContaining(['영어 이름', 'english name']),
     )
   })
+
+  it('프로젝트와 assistant 문서를 heading section 단위로 분할한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+
+    const projectSectionSource = curatedChatSources.find((source) => {
+      return (
+        source.sourceCategory === 'project' &&
+        source.slug === 'leesfield' &&
+        source.sectionTitle === '핵심 기능'
+      )
+    })
+    const assistantSectionSource = curatedChatSources.find((source) => {
+      return (
+        source.sourceCategory === 'assistant' &&
+        source.slug === 'assistant-profile' &&
+        source.sectionTitle === '답변 근거 범위'
+      )
+    })
+
+    expect(projectSectionSource).toBeDefined()
+    expect(projectSectionSource?.url).toContain('#')
+    expect(assistantSectionSource).toBeDefined()
+    expect(assistantSectionSource?.url).toContain('#')
+  })
 })

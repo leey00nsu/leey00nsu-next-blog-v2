@@ -3538,8 +3538,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "building-ai-chat-for-my-blog",
       "title": "What I Learned Building an AI Chatbot for My Blog, Between Search and RAG",
       "url": "/en/blog/building-ai-chat-for-my-blog#closing-thoughts",
-      "excerpt": "I do not think this chatbot is finished yet. The retrieval score still needs tuning. Questions that summarize the entire blog will need better synthesis. The routing layer can also become more stable. Still, one thing i…",
-      "content": "Closing Thoughts\nI do not think this chatbot is finished yet. The retrieval score still needs tuning. Questions that summarize the entire blog will need better synthesis. The routing layer can also become more stable. Still, one thing is clear to me now. I started with a simple thought: \"maybe I should add an AI chatbot to the blog.\" In practice, that led me into questions about search, embeddings, document structure, product policy, and operations all at once. The current structure is not the final form, but I can at least explain much more clearly now why I started with static search, why I moved toward embedding based RAG, and why the path eventually went through Lightning AI and toward Modal + PostgreSQL. The next post will probably be about a different question: which kinds of questions this chatbot already handles well, and which ones are still weak.",
+      "excerpt": "The biggest reason I built this chatbot, honestly, was that I had been getting more interested in RAG lately. After spending time with products like NotebookLM, I found the experience of reading documents and answering…",
+      "content": "Closing Thoughts\nThe biggest reason I built this chatbot, honestly, was that I had been getting more interested in RAG lately. After spending time with products like NotebookLM, I found the experience of reading documents and answering with grounded context genuinely compelling. At some point, it stopped feeling enough to just use someone else's product. I wanted to try building that experience into my own blog. Once I started, the problem turned out to be much wider than I expected. It was not only about whether search was enough, or how far embeddings should go. It also became a question of tone, evidence boundaries, deployment flow, and how indexing should be operated. I do not think this structure is the final form, but I can now explain much more clearly why I started with static search, why I moved toward embedding based RAG, and why the path eventually went through Lightning AI and toward Modal + PostgreSQL.",
       "sectionTitle": "Closing Thoughts",
       "tags": [
         "AI",
@@ -3572,7 +3572,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "search",
         "closing",
         "thoughts",
-        "do"
+        "biggest"
       ]
     },
     {

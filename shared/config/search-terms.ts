@@ -25,7 +25,17 @@ export const SEMANTIC_SEARCH = {
       'with',
       'you',
     ],
-    ko: ['그리고', '그런데', '에서', '으로', '이거', '이건', '정리', '하는', '했다'],
+    ko: [
+      '그리고',
+      '그런데',
+      '에서',
+      '으로',
+      '이거',
+      '이건',
+      '정리',
+      '하는',
+      '했다',
+    ],
   },
   TERM_GROUPS: [
     ['react-query', 'react query', 'tanstack query', 'tanstack-query'],

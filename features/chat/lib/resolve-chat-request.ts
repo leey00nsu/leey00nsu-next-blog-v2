@@ -291,7 +291,8 @@ export function resolveChatRequest({
   contactProfile,
   questionRouting,
 }: ResolveChatRequestParams): ResolveChatRequestResult {
-  const resolvedQuestionAnalysis = questionAnalysis ?? analyzeQuestion(question)
+  const resolvedQuestionAnalysis =
+    questionAnalysis ?? analyzeQuestion(question, locale)
   const resolvedQuestionRouting = questionRouting
   const selector = resolvedQuestionRouting?.selector
   const action = resolvedQuestionRouting?.action

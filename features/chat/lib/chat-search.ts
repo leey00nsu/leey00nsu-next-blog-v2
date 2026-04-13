@@ -1,7 +1,7 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
+import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import { SEMANTIC_SEARCH } from '@/shared/config/search-terms'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 interface SelectChatSearchMatchesParams {
@@ -53,16 +53,10 @@ function normalizeText(text: string): string {
 }
 
 function tokenizeText(text: string): string[] {
-  const matches = normalizeText(text).match(TOKEN_PATTERNS.WORD) ?? []
-  const stopWords = new Set<string>([
-    ...SEMANTIC_SEARCH.STOP_WORDS.en,
-    ...SEMANTIC_SEARCH.STOP_WORDS.ko,
-  ])
-
   return [
     ...new Set(
-      matches.filter((token) => {
-        return token.length >= 2 && !stopWords.has(token)
+      (normalizeText(text).match(TOKEN_PATTERNS.WORD) ?? []).filter((token) => {
+        return token.length >= 2
       }),
     ),
   ]
@@ -179,6 +173,34 @@ function countMatchedTokens(tokens: string[], text: string): number {
   }, 0)
 }
 
+function buildExactTitleMatchBoost(params: {
+  record: ChatEvidenceRecord
+  normalizedQuestion: string
+  baseQuestionTokens: string[]
+}): number {
+  const normalizedTitle = normalizeText(params.record.title).trim()
+
+  if (!normalizedTitle) {
+    return 0
+  }
+
+  if (params.normalizedQuestion === normalizedTitle) {
+    return BLOG_CHAT.SEARCH.EXACT_TITLE_MATCH_BOOST
+  }
+
+  const titleTokens = tokenizeText(params.record.title)
+
+  if (titleTokens.length === 0 || titleTokens.length > params.baseQuestionTokens.length) {
+    return 0
+  }
+
+  return titleTokens.every((titleToken) => {
+    return params.baseQuestionTokens.includes(titleToken)
+  })
+    ? BLOG_CHAT.SEARCH.EXACT_TITLE_MATCH_BOOST
+    : 0
+}
+
 function resolveMinimumMatchedTokenCount(params: {
   questionTokens: string[]
   additionalKeywords: string[]
@@ -266,6 +288,8 @@ function shouldSortByRecency(normalizedQuestion: string): boolean {
 
 function scoreRecord(
   questionTokens: string[],
+  baseQuestionTokens: string[],
+  normalizedQuestion: string,
   record: ChatEvidenceRecord,
   documentFrequencyMap: Map<string, number>,
   totalRecordCount: number,
@@ -311,10 +335,15 @@ function scoreRecord(
   )
     ? BLOG_CHAT.SEARCH.SOURCE_CATEGORY_BOOST
     : 0
+  const exactTitleMatchBoost = buildExactTitleMatchBoost({
+    record,
+    normalizedQuestion,
+    baseQuestionTokens,
+  })
 
   return {
     ...record,
-    score: score + sourceCategoryBoost,
+    score: score + sourceCategoryBoost + exactTitleMatchBoost,
     matchedTokenCount,
   }
 }
@@ -372,12 +401,22 @@ export function selectChatSearchMatches({
   currentPostSlug,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
   const scopedRecords = records.filter((record) => record.locale === locale)
-  const normalizedQuestion = normalizeText(question)
-  const baseQuestionTokens = tokenizeText(question)
-  const questionTokens = buildExpandedTokens(baseQuestionTokens, additionalKeywords)
+  const normalizedQuery = normalizeChatQuery({
+    question,
+    locale,
+  })
+  const normalizedQuestion = normalizeText(normalizedQuery.normalizedSearchQuestion)
+  const baseQuestionTokens = normalizedQuery.queryTokens
+  const questionTokens = buildExpandedTokens(baseQuestionTokens, [
+    ...normalizedQuery.additionalKeywords,
+    ...additionalKeywords,
+  ])
   const minimumMatchedTokenCount = resolveMinimumMatchedTokenCount({
     questionTokens: baseQuestionTokens,
-    additionalKeywords,
+    additionalKeywords: [
+      ...normalizedQuery.additionalKeywords,
+      ...additionalKeywords,
+    ],
     preferredSourceCategories,
     normalizedQuestion,
   })
@@ -392,6 +431,8 @@ export function selectChatSearchMatches({
       .map((record) =>
         scoreRecord(
           questionTokens,
+          baseQuestionTokens,
+          normalizedQuestion,
           record,
           documentFrequencyMap,
           scopedRecords.length,

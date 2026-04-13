@@ -23,6 +23,7 @@ export const BLOG_CHAT = {
     MAXIMUM_MATCHES_PER_SLUG: 2,
     MINIMUM_MATCHED_TOKEN_COUNT: 2,
     SOURCE_CATEGORY_BOOST: 4,
+    EXACT_TITLE_MATCH_BOOST: 5,
     MINIMUM_SCORE: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_SEARCH_MINIMUM_SCORE,
       6,

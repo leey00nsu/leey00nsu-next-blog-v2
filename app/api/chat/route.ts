@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
     const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
     const originalQuestion = parsedRequest.data.question
-    const originalQuestionAnalysis = analyzeQuestion(originalQuestion)
+    const originalQuestionAnalysis = analyzeQuestion(originalQuestion, locale)
     const assistantProfile = getChatAssistantProfile(locale)
     const contactProfile = getChatContactProfile(locale)
     const questionRouting = await classifyChatQuestion({
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     const resolvedQuestionBaseAnalysis =
       resolvedQuestion === originalQuestion
         ? originalQuestionAnalysis
-        : analyzeQuestion(resolvedQuestion)
+        : analyzeQuestion(resolvedQuestion, locale)
     const cacheKey = buildCacheKey(
       normalizedQuestion,
       locale,

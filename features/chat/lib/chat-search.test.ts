@@ -71,4 +71,84 @@ describe('selectChatSearchMatches', () => {
     expect(result.grounded).toBe(true)
     expect(result.matches[0]?.slug).toBe('latest-retrospect')
   })
+
+  it('프로젝트 이름 뒤에 짧은 질문 표현이 붙어도 해당 프로젝트를 찾는다', () => {
+    const records: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/project/leesfield',
+        locale: 'ko',
+        slug: 'leesfield',
+        title: 'Leesfield',
+        url: '/ko/projects/leesfield',
+        excerpt: 'AI 이미지/비디오 생성 플랫폼',
+        content: 'AI 이미지 생성 플랫폼입니다.',
+        sectionTitle: null,
+        tags: ['project'],
+        searchTerms: ['leesfield', 'ai 이미지 생성'],
+        sourceCategory: 'project',
+      },
+      {
+        id: 'ko/project/blog',
+        locale: 'ko',
+        slug: 'blog',
+        title: '블로그',
+        url: '/ko/projects/blog',
+        excerpt: 'Next.js 기반 블로그',
+        content: 'LEESFIELD API KEY 필요',
+        sectionTitle: null,
+        tags: ['project'],
+        searchTerms: ['블로그 프로젝트 뭐야', '블로그는 뭐야'],
+        sourceCategory: 'project',
+      },
+    ]
+
+    const result = selectChatSearchMatches({
+      question: 'leesfield 알아',
+      locale: 'ko',
+      records,
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.matches[0]?.slug).toBe('leesfield')
+  })
+
+  it('프로젝트 이름 질의에서 질문형 표현 때문에 다른 프로젝트가 우선되지 않는다', () => {
+    const records: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/project/leesfield',
+        locale: 'ko',
+        slug: 'leesfield',
+        title: 'Leesfield',
+        url: '/ko/projects/leesfield',
+        excerpt: 'AI 이미지/비디오 생성 플랫폼',
+        content: 'AI 이미지 생성 플랫폼입니다.',
+        sectionTitle: null,
+        tags: ['project'],
+        searchTerms: ['leesfield', 'ai 이미지 생성'],
+        sourceCategory: 'project',
+      },
+      {
+        id: 'ko/project/blog',
+        locale: 'ko',
+        slug: 'blog',
+        title: '블로그',
+        url: '/ko/projects/blog',
+        excerpt: 'Next.js 기반 블로그',
+        content: 'LEESFIELD API KEY 필요',
+        sectionTitle: null,
+        tags: ['project'],
+        searchTerms: ['블로그 프로젝트 뭐야', '블로그는 뭐야'],
+        sourceCategory: 'project',
+      },
+    ]
+
+    const result = selectChatSearchMatches({
+      question: 'leesfield가 뭐야',
+      locale: 'ko',
+      records,
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.matches[0]?.slug).toBe('leesfield')
+  })
 })

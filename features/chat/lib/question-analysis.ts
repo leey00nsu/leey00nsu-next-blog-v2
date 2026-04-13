@@ -1,5 +1,13 @@
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
+import {
+  normalizeChatQuery,
+  normalizeQuestionText,
+} from '@/features/chat/lib/chat-query-normalization'
+import {
+  LOCALES,
+  type SupportedLocale,
+} from '@/shared/config/constants'
 
 export const CHAT_QUESTION_TYPES = [
   'greeting',
@@ -24,13 +32,8 @@ export interface ChatQuestionAnalysis {
   searchQueries: ChatSearchQuery[]
 }
 
-const QUESTION_NORMALIZATION_PATTERNS = {
-  PUNCTUATION: /[?!,]+/g,
-  WHITESPACE: /\s+/g,
-} as const
-
 function escapeRegularExpression(pattern: string): string {
-  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 }
 
 function normalizeForMatch(text: string): string {
@@ -41,7 +44,7 @@ function includesTokenBoundedPattern(text: string, pattern: string): boolean {
   const normalizedText = normalizeForMatch(text)
   const normalizedPattern = normalizeForMatch(pattern).trim()
   const boundedPattern = new RegExp(
-    `(^|\\s)${escapeRegularExpression(normalizedPattern)}($|\\s)`,
+    String.raw`(^|\s)${escapeRegularExpression(normalizedPattern)}($|\s)`,
     'u',
   )
 
@@ -49,11 +52,7 @@ function includesTokenBoundedPattern(text: string, pattern: string): boolean {
 }
 
 export function normalizeQuestion(question: string): string {
-  return question
-    .trim()
-    .replaceAll(QUESTION_NORMALIZATION_PATTERNS.PUNCTUATION, ' ')
-    .replaceAll(QUESTION_NORMALIZATION_PATTERNS.WHITESPACE, ' ')
-    .trim()
+  return normalizeQuestionText(question)
 }
 
 function isGreetingQuestion(normalizedQuestion: string): boolean {
@@ -82,7 +81,10 @@ function splitQuestionIntoClauses(normalizedQuestion: string): string[] {
   return [normalizedQuestion]
 }
 
-export function analyzeQuestion(question: string): ChatQuestionAnalysis {
+export function analyzeQuestion(
+  question: string,
+  locale: SupportedLocale = LOCALES.DEFAULT,
+): ChatQuestionAnalysis {
   const normalizedQuestion = normalizeQuestion(question)
 
   if (isGreetingQuestion(normalizedQuestion)) {
@@ -100,25 +102,37 @@ export function analyzeQuestion(question: string): ChatQuestionAnalysis {
       normalizedQuestion,
       questionType: 'general',
       searchQueries: splitClauses.map((clause) => {
-        return {
+        const normalizedClause = normalizeChatQuery({
           question: clause,
+          locale,
+        })
+
+        return {
+          question: normalizedClause.normalizedSearchQuestion,
           intent: 'general',
-          additionalKeywords: [],
-          preferredSourceCategories: [],
+          additionalKeywords: normalizedClause.additionalKeywords,
+          preferredSourceCategories:
+            normalizedClause.preferredSourceCategories,
         }
       }),
     }
   }
+
+  const normalizedSearchQuery = normalizeChatQuery({
+    question: normalizedQuestion,
+    locale,
+  })
 
   return {
     normalizedQuestion,
     questionType: 'general',
     searchQueries: [
       {
-        question: normalizedQuestion,
+        question: normalizedSearchQuery.normalizedSearchQuestion,
         intent: 'general',
-        additionalKeywords: [],
-        preferredSourceCategories: [],
+        additionalKeywords: normalizedSearchQuery.additionalKeywords,
+        preferredSourceCategories:
+          normalizedSearchQuery.preferredSourceCategories,
       },
     ],
   }

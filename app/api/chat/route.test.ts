@@ -30,6 +30,7 @@ vi.mock('@/features/chat/config/constants', () => {
         MAXIMUM_MATCHES_PER_SLUG: 2,
         MINIMUM_MATCHED_TOKEN_COUNT: 2,
         SOURCE_CATEGORY_BOOST: 4,
+        EXACT_TITLE_MATCH_BOOST: 5,
         MINIMUM_SCORE: 6,
         FIELD_SCORE: {
           TITLE: 4,
@@ -348,9 +349,13 @@ describe('POST /api/chat', () => {
       }) as NextRequest,
     )
 
-    expect(analyzeQuestionMock).toHaveBeenCalledWith('그건 왜 그렇게 했어?')
+    expect(analyzeQuestionMock).toHaveBeenCalledWith(
+      '그건 왜 그렇게 했어?',
+      'ko',
+    )
     expect(analyzeQuestionMock).toHaveBeenCalledWith(
       '대표 프로젝트가 뭐야? lee-spec-kit 그건 왜 그렇게 했어?',
+      'ko',
     )
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -94,7 +94,6 @@ export function BlogChatWidget() {
                 <X />
               </Button>
             </div>
-            <p className="text-muted-foreground text-xs">{t('disclaimer')}</p>
           </CardHeader>
           <CardContent className="flex max-h-96 flex-col gap-4 overflow-y-auto py-4">
             {conversationItems.length === 0 ? (

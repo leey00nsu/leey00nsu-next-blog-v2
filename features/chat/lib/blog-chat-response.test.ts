@@ -52,6 +52,57 @@ describe('finalizeBlogChatResponse', () => {
     ])
   })
 
+  it('모델 답변에 포함된 마크다운 문법은 평문으로 정리한다', () => {
+    const result = finalizeBlogChatResponse({
+      draftAnswer: {
+        answer: [
+          '## 핵심 요약',
+          '',
+          '**staleTime**을 늘리면 `React Query`가 데이터를 더 오래 fresh 상태로 봅니다.',
+          '- 불필요한 재요청을 줄일 수 있습니다.',
+          '- [출처](/ko/blog/react-query-guide)를 함께 확인할 수 있습니다.',
+          '',
+          '```ts',
+          'const staleTime = 1_000',
+          '```',
+        ].join('\n'),
+        usedCitationUrls: ['/ko/blog/react-query-guide#staletime-설정'],
+        refusalReason: null,
+      },
+      matches: BLOG_SEARCH_MATCHES,
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.answer).toBe(
+      [
+        '핵심 요약',
+        '',
+        'staleTime을 늘리면 React Query가 데이터를 더 오래 fresh 상태로 봅니다.',
+        '불필요한 재요청을 줄일 수 있습니다.',
+        '출처를 함께 확인할 수 있습니다.',
+        '',
+        'const staleTime = 1_000',
+      ].join('\n'),
+    )
+  })
+
+  it('snake_case 식별자는 강조 문법으로 오인하지 않고 유지한다', () => {
+    const result = finalizeBlogChatResponse({
+      draftAnswer: {
+        answer:
+          '설정 키로 NEXT_PUBLIC_GISCUS_REPO 와 current_post_slug 같은 값을 그대로 안내합니다.',
+        usedCitationUrls: ['/ko/blog/react-query-guide#staletime-설정'],
+        refusalReason: null,
+      },
+      matches: BLOG_SEARCH_MATCHES,
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.answer).toBe(
+      '설정 키로 NEXT_PUBLIC_GISCUS_REPO 와 current_post_slug 같은 값을 그대로 안내합니다.',
+    )
+  })
+
   it('검색 결과에 없는 citation이면 안전하게 거절한다', () => {
     const result = finalizeBlogChatResponse({
       draftAnswer: {

@@ -98,11 +98,10 @@
   },
   "chatbot": {
     "title": "Blog Q&A",
-    "subtitle": "I’ll look through the blog and answer based on what is actually written there.",
+    "subtitle": "Depending on the question, preparing an answer can take up to 30 seconds.",
     "trigger": "Blog Q&A",
     "open": "Open blog Q&A",
     "close": "Close blog Q&A",
-    "disclaimer": "If there is not enough evidence in the blog, it will avoid guessing.",
     "emptyTitle": "Ask a question and it will look for the most relevant posts first.",
     "emptyDescription": "Example: Why is staleTime important in React Query?",
     "you": "You",
@@ -115,7 +114,7 @@
       "assistant": "Chatbot Guide"
     },
     "inputLabel": "Blog question input",
-    "inputPlaceholder": "Ask about the blog posts or public profile pages",
+    "inputPlaceholder": "Type your question",
     "inputCounter": "{current}/{max} chars",
     "send": "Send question",
     "sending": "Looking through related posts and drafting an answer...",

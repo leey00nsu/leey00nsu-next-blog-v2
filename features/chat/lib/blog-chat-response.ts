@@ -10,6 +10,22 @@ interface FinalizeBlogChatResponseParams {
   matches: ChatEvidenceRecord[]
 }
 
+const BLOG_CHAT_ANSWER_MARKDOWN_PATTERN = {
+  CODE_FENCE: /```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g,
+  IMAGE: /!\[([^\]]*)\]\([^)]+\)/g,
+  LINK: /\[([^\]]+)\]\([^)]+\)/g,
+  INLINE_CODE: /`([^`]+)`/g,
+  HEADING: /^[ \t]{0,3}#{1,6}\s+/gm,
+  LIST: /^[ \t]*([-*+]|\d+\.)\s+/gm,
+  BLOCKQUOTE: /^[ \t]*>\s?/gm,
+  STRIKETHROUGH: /~~(.*?)~~/g,
+  STRONG: /\*\*(.*?)\*\*/g,
+  EMPHASIS: /\*(.*?)\*/g,
+  HTML_TAG: /<[^>]+>/g,
+  TRAILING_WHITESPACE: /[ \t]+$/gm,
+  EXCESSIVE_NEWLINE: /\n{3,}/g,
+} as const
+
 function buildCitationLookup(
   matches: ChatEvidenceRecord[],
 ): Map<string, ChatEvidenceRecord> {
@@ -51,6 +67,24 @@ function buildRefusalResponse(
   }
 }
 
+export function sanitizeBlogChatAnswerToPlainText(answer: string): string {
+  return answer
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.CODE_FENCE, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.IMAGE, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.LINK, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.INLINE_CODE, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.HEADING, '')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.LIST, '')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.BLOCKQUOTE, '')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.STRIKETHROUGH, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.STRONG, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.EMPHASIS, '$1')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.HTML_TAG, '')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.TRAILING_WHITESPACE, '')
+    .replaceAll(BLOG_CHAT_ANSWER_MARKDOWN_PATTERN.EXCESSIVE_NEWLINE, '\n\n')
+    .trim()
+}
+
 export function finalizeBlogChatResponse({
   draftAnswer,
   matches,
@@ -67,7 +101,7 @@ export function finalizeBlogChatResponse({
   }
 
   return {
-    answer: draftAnswer.answer.trim(),
+    answer: sanitizeBlogChatAnswerToPlainText(draftAnswer.answer),
     citations,
     grounded: true,
   }

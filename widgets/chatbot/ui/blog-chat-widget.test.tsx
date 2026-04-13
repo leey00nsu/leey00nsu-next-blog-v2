@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import koMessages from '@/messages/ko.json'
 import { BlogChatWidget } from '@/widgets/chatbot/ui/blog-chat-widget'
 
 const { usePathnameMock, useBlogChatMock } = vi.hoisted(() => {
@@ -9,11 +10,42 @@ const { usePathnameMock, useBlogChatMock } = vi.hoisted(() => {
   }
 })
 
+const EXPECTED_INPUT_PLACEHOLDER_TEXT = '질문을 입력하세요'
+
+function resolveChatbotTranslationMessage(translationKey: string): string {
+  const translationPathSegments = translationKey.split('.')
+  let resolvedTranslationValue: unknown = koMessages.chatbot
+
+  for (const translationPathSegment of translationPathSegments) {
+    if (
+      typeof resolvedTranslationValue !== 'object' ||
+      resolvedTranslationValue === null ||
+      !(translationPathSegment in resolvedTranslationValue)
+    ) {
+      return translationKey
+    }
+
+    resolvedTranslationValue = (
+      resolvedTranslationValue as Record<string, unknown>
+    )[translationPathSegment]
+  }
+
+  return typeof resolvedTranslationValue === 'string'
+    ? resolvedTranslationValue
+    : translationKey
+}
+
 vi.mock('next-intl', () => {
   return {
     useLocale: () => 'ko',
-    useTranslations: () => {
-      return (translationKey: string) => translationKey
+    useTranslations: (namespace: string) => {
+      return (translationKey: string) => {
+        if (namespace !== 'chatbot') {
+          return translationKey
+        }
+
+        return resolveChatbotTranslationMessage(translationKey)
+      }
     },
   }
 })
@@ -48,7 +80,40 @@ describe('BlogChatWidget', () => {
 
     render(<BlogChatWidget />)
 
-    expect(screen.getByRole('button', { name: 'open' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: koMessages.chatbot.open }),
+    ).toBeInTheDocument()
+  })
+
+  it('열린 위젯 헤더에는 안내 문구 한 줄만 노출한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    expect(screen.getByText(koMessages.chatbot.subtitle)).toBeInTheDocument()
+    expect(screen.queryByText('disclaimer')).not.toBeInTheDocument()
+  })
+
+  it('입력창 placeholder는 간단한 질문 안내 문구를 사용한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    expect(
+      screen.getByPlaceholderText(EXPECTED_INPUT_PLACEHOLDER_TEXT),
+    ).toBeInTheDocument()
   })
 
   it('pending 대화 항목은 질문 버블과 assistant 스피너를 함께 보여준다', () => {
@@ -70,11 +135,13 @@ describe('BlogChatWidget', () => {
     render(<BlogChatWidget />)
 
     act(() => {
-      fireEvent.click(screen.getByRole('button', { name: 'open' }))
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
     })
 
     expect(screen.getByText('보낸 질문')).toBeInTheDocument()
-    expect(screen.getByText('sending')).toBeInTheDocument()
+    expect(screen.getByText(koMessages.chatbot.sending)).toBeInTheDocument()
   })
 
   it('failed 대화 항목은 질문 버블 아래에 에러 문구를 보여준다', () => {
@@ -97,10 +164,14 @@ describe('BlogChatWidget', () => {
     render(<BlogChatWidget />)
 
     act(() => {
-      fireEvent.click(screen.getByRole('button', { name: 'open' }))
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
     })
 
     expect(screen.getByText('실패한 질문')).toBeInTheDocument()
-    expect(screen.getByText('errors.request_failed')).toBeInTheDocument()
+    expect(
+      screen.getByText(koMessages.chatbot.errors.request_failed),
+    ).toBeInTheDocument()
   })
 })

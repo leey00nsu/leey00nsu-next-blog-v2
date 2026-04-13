@@ -98,11 +98,10 @@
   },
   "chatbot": {
     "title": "블로그 Q&A",
-    "subtitle": "블로그에 있는 글을 바탕으로 차분히 찾아서 답해드릴게요.",
+    "subtitle": "질문에 따라 답변 준비에 최대 30초 정도 걸릴 수 있습니다.",
     "trigger": "블로그 Q&A",
     "open": "블로그 Q&A 열기",
     "close": "블로그 Q&A 닫기",
-    "disclaimer": "관련 글에서 충분한 근거를 찾지 못하면 추측해서 답하지 않아요.",
     "emptyTitle": "질문을 남겨주시면 먼저 관련 글을 찾아볼게요.",
     "emptyDescription": "예: React Query에서 staleTime은 왜 중요한가요?",
     "you": "나",
@@ -115,7 +114,7 @@
       "assistant": "챗봇 안내"
     },
     "inputLabel": "블로그 질문 입력",
-    "inputPlaceholder": "블로그 글과 소개 페이지를 기준으로 질문해보세요",
+    "inputPlaceholder": "질문을 입력하세요",
     "inputCounter": "{current}/{max}자",
     "send": "질문 보내기",
     "sending": "관련 글을 찾고 답변을 정리하고 있어요...",

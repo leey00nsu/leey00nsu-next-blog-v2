@@ -201,17 +201,21 @@ function buildRankedChunks(params: {
 function buildSelectedMatches(
   rankedChunks: RankedGraphRagChunk[],
 ): ChatEvidenceRecord[] {
-  const uniqueChunkMap = new Map<string, RankedGraphRagChunk>()
+  const slugMatchCountMap = new Map<string, number>()
+  const selectedChunks: RankedGraphRagChunk[] = []
 
   for (const rankedChunk of rankedChunks) {
-    if (uniqueChunkMap.has(rankedChunk.slug)) {
+    const slugMatchCount = slugMatchCountMap.get(rankedChunk.slug) ?? 0
+
+    if (slugMatchCount >= CHAT_RAG.SEARCH.MAXIMUM_MATCHES_PER_SLUG) {
       continue
     }
 
-    uniqueChunkMap.set(rankedChunk.slug, rankedChunk)
+    slugMatchCountMap.set(rankedChunk.slug, slugMatchCount + 1)
+    selectedChunks.push(rankedChunk)
   }
 
-  return [...uniqueChunkMap.values()]
+  return selectedChunks
     .slice(0, CHAT_RAG.SEARCH.TOP_K)
     .map((chunk) => {
       return {

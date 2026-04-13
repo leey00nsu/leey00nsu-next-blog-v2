@@ -538,6 +538,11 @@ describe('POST /api/chat', () => {
     const response = await POST(createChatRequest('what is his name'))
 
     expect(await response.json()).toEqual(GROUNDED_RESPONSE)
+    expect(runChatRagWorkflowMock).toHaveBeenCalledWith({
+      question: 'what is his name',
+      locale: 'ko',
+      currentPostSlug: undefined,
+    })
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         matches: [
@@ -549,7 +554,7 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('corpus synthesis 질문은 lexical 검색 전에 Postgres RAG를 우선 사용한다', async () => {
+  it('corpus synthesis 질문은 lexical과 Postgres RAG 후보를 함께 재정렬한다', async () => {
     analyzeQuestionMock.mockReturnValue({
       normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
       questionType: 'general',
@@ -561,21 +566,40 @@ describe('POST /api/chat', () => {
       scope: 'global',
       reason: 'cross-document synthesis',
     })
+    resolveChatRequestMock.mockReturnValue({
+      normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
+      questionType: 'general',
+      shouldCallModel: false,
+      matches: [
+        {
+          id: 'ko/blog/lee-spec-kit',
+          locale: 'ko',
+          slug: 'lee-spec-kit',
+          title: 'lee-spec-kit',
+          url: '/ko/blog/lee-spec-kit',
+          excerpt: '문서 구조와 하네스를 다룹니다.',
+          content: '문서 구조와 하네스를 다룹니다.',
+          sectionTitle: null,
+          tags: ['blog'],
+          sourceCategory: 'blog' as const,
+        },
+      ],
+    })
     runChatRagWorkflowMock.mockResolvedValue({
       grounded: true,
       matches: [
         {
-          id: 'ko/about/profile',
+          id: 'ko/project/lee-spec-kit',
           locale: 'ko',
-          slug: 'about',
-          title: 'About Me',
-          url: '/ko/about',
+          slug: 'lee-spec-kit',
+          title: 'lee-spec-kit',
+          url: '/ko/projects/lee-spec-kit',
           excerpt: '구조와 재사용성을 중시합니다.',
           content: '구조와 재사용성을 중시합니다.',
           sectionTitle: null,
-          tags: ['profile'],
+          tags: ['project'],
           publishedAt: null,
-          sourceCategory: 'profile' as const,
+          sourceCategory: 'project' as const,
         },
       ],
     })
@@ -587,6 +611,18 @@ describe('POST /api/chat', () => {
 
     expect(await response.json()).toEqual(GROUNDED_RESPONSE)
     expect(runChatRagWorkflowMock).toHaveBeenCalledTimes(1)
-    expect(resolveChatRequestMock).not.toHaveBeenCalled()
+    expect(resolveChatRequestMock).toHaveBeenCalled()
+    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matches: expect.arrayContaining([
+          expect.objectContaining({
+            url: '/ko/blog/lee-spec-kit',
+          }),
+          expect.objectContaining({
+            url: '/ko/projects/lee-spec-kit',
+          }),
+        ]),
+      }),
+    )
   })
 })

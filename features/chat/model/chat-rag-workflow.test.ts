@@ -186,4 +186,61 @@ describe('runChatRagWorkflow', () => {
       }),
     ).toBe(true)
   })
+
+  it('같은 slug의 section chunk도 최대 개수까지 함께 선택한다', async () => {
+    const introductionChunk = buildSemanticCandidate({
+      id: 'ko/project/leesfield/overview',
+      slug: 'leesfield',
+      title: 'Leesfield',
+      url: '/ko/projects/leesfield#overview',
+      excerpt: '프로젝트 개요입니다.',
+      content: 'Leesfield는 농업 관리 서비스를 돕는 프로젝트입니다.',
+      sectionTitle: '프로젝트 개요',
+      sourceCategory: 'project',
+      searchTerms: ['leesfield', '프로젝트 개요'],
+      semanticSimilarity: 0.98,
+    })
+    const featureChunk = buildSemanticCandidate({
+      id: 'ko/project/leesfield/key-features',
+      slug: 'leesfield',
+      title: 'Leesfield',
+      url: '/ko/projects/leesfield#key-features',
+      excerpt: '핵심 기능입니다.',
+      content: '작물 기록과 현장 운영 기능을 제공합니다.',
+      sectionTitle: '핵심 기능',
+      sourceCategory: 'project',
+      searchTerms: ['leesfield', '핵심 기능'],
+      semanticSimilarity: 0.96,
+    })
+    const otherChunk = buildSemanticCandidate({
+      id: 'ko/project/leemage/overview',
+      slug: 'leemage',
+      title: 'Leemage',
+      url: '/ko/projects/leemage#overview',
+      excerpt: 'Leemage 개요입니다.',
+      content: 'Leemage는 이미지 파일 관리 도구입니다.',
+      sectionTitle: '프로젝트 개요',
+      sourceCategory: 'project',
+      searchTerms: ['leemage'],
+      semanticSimilarity: 0.8,
+    })
+
+    const result = await runChatRagWorkflow({
+      question: 'leesfield 핵심 기능이 뭐야',
+      locale: 'ko',
+      embedQuestion: async () => [1, 1],
+      selectSearchData: async () => {
+        return buildSearchData({
+          semanticCandidates: [introductionChunk, featureChunk, otherChunk],
+        })
+      },
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.matches.map((match) => match.url)).toEqual([
+      '/ko/projects/leesfield#key-features',
+      '/ko/projects/leesfield#overview',
+      '/ko/projects/leemage#overview',
+    ])
+  })
 })

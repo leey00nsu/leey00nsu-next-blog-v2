@@ -5,6 +5,7 @@ import { classifyChatQuestion } from '@/features/chat/api/classify-chat-question
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { shouldCacheBlogChatResponse } from '@/features/chat/lib/blog-chat-cache'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
+import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
 import {
   analyzeQuestion,
@@ -144,6 +145,22 @@ function shouldRewriteQuestionWithHistory(
   )
 }
 
+function shouldRunHybridRetrieval(selector: ChatQuestionSelector): boolean {
+  return selector === 'retrieval' || selector === 'corpus'
+}
+
+function collectPreferredSourceCategories(
+  questionAnalysis: ChatQuestionAnalysis,
+): ChatEvidenceRecord['sourceCategory'][] {
+  return [
+    ...new Set(
+      questionAnalysis.searchQueries.flatMap((searchQuery) => {
+        return searchQuery.preferredSourceCategories
+      }),
+    ),
+  ]
+}
+
 export async function POST(request: NextRequest) {
   try {
     const requestBody = await request.json()
@@ -232,25 +249,6 @@ export async function POST(request: NextRequest) {
 
     const blogRecords = buildBlogEvidenceRecords(locale)
     const curatedRecords = await getCuratedChatSources(locale)
-
-    if (questionRouting.selector === 'corpus') {
-      const chatRagSearchResult = await runChatRagWorkflow({
-        question: resolvedQuestion,
-        locale,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-      })
-
-      if (chatRagSearchResult.grounded) {
-        const responseData = await buildModelBackedResponse({
-          question: resolvedQuestion,
-          matches: chatRagSearchResult.matches,
-          cacheKey,
-        })
-
-        return NextResponse.json(responseData)
-      }
-    }
-
     const resolvedChatRequest = resolveChatRequest({
       question: resolvedQuestion,
       locale,
@@ -278,25 +276,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(validatedDirectResponse)
     }
 
-    if (!resolvedChatRequest.shouldCallModel) {
-      if (questionRouting.selector === 'retrieval') {
-        const chatRagSearchResult = await runChatRagWorkflow({
-          question: resolvedQuestion,
-          locale,
-          currentPostSlug: parsedRequest.data.currentPostSlug,
-        })
+    const preferredSourceCategories = collectPreferredSourceCategories(
+      resolvedQuestionAnalysis,
+    )
+    let combinedMatches = resolvedChatRequest.matches
 
-        if (chatRagSearchResult.grounded) {
-          const responseData = await buildModelBackedResponse({
-            question: resolvedQuestion,
-            matches: chatRagSearchResult.matches,
-            cacheKey,
-          })
+    if (shouldRunHybridRetrieval(questionRouting.selector)) {
+      const chatRagSearchResult = await runChatRagWorkflow({
+        question: resolvedQuestion,
+        locale,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
+      })
 
-          return NextResponse.json(responseData)
-        }
-      }
+      combinedMatches = fuseChatRetrievalMatches({
+        lexicalMatches: resolvedChatRequest.matches,
+        semanticMatches: chatRagSearchResult.matches,
+        preferredSourceCategories,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
+      })
+    }
 
+    const shouldCallModel =
+      resolvedChatRequest.shouldCallModel || combinedMatches.length > 0
+
+    if (!shouldCallModel || combinedMatches.length === 0) {
       const refusalResponse = buildRefusalResponse(
         resolvedChatRequest.refusalReason ?? 'insufficient_search_match',
       )
@@ -306,7 +309,7 @@ export async function POST(request: NextRequest) {
 
     const responseData = await buildModelBackedResponse({
       question: resolvedQuestion,
-      matches: resolvedChatRequest.matches,
+      matches: combinedMatches,
       cacheKey,
     })
 

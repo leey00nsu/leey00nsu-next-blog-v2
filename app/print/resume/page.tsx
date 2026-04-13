@@ -21,6 +21,7 @@ export default async function ResumePrintPage() {
         locale={locale}
         showDownloadButton={false}
         projectCardLinkVariant="github"
+        enableBlockEntranceAnimation={false}
       />
     </div>
   )

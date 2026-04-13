@@ -1,3 +1,16 @@
 export const POST_TAG_FILTER = {
   MAXIMUM_COLLAPSED_TAG_COUNT: 8,
 } as const
+
+export const POST_TOC = {
+  ACTIVE_HEADING_TOP_OFFSET_PX: 64,
+  SCROLL_DEBOUNCE_MILLISECONDS: 100,
+  BASE_HEADING_DEPTH: 2,
+  INDENT_STEP_REM: 1,
+  MOTION: {
+    ACTIVE_INDICATOR_LAYOUT_ID: 'post-toc-active-indicator',
+    ENTER_OFFSET_Y: 12,
+    ENTER_DURATION_SECONDS: 0.24,
+    EASE: [0.22, 1, 0.36, 1],
+  },
+} as const

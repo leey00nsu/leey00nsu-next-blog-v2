@@ -25,6 +25,7 @@ export default async function PortfolioPrintPage() {
         locale={locale}
         showDownloadButton={false}
         projectCardLinkVariant="github"
+        enableBlockEntranceAnimation={false}
       />
 
       {projects.map((project) => (
@@ -33,7 +34,11 @@ export default async function PortfolioPrintPage() {
           style={{ breakBefore: 'page' }}
           className="pt-10"
         >
-          <ProjectDetail locale={locale} project={project} />
+          <ProjectDetail
+            locale={locale}
+            project={project}
+            enableBlockEntranceAnimation={false}
+          />
         </div>
       ))}
     </div>

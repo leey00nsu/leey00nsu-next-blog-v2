@@ -16,7 +16,7 @@ describe('analyzeQuestion', () => {
     expect(result.questionType).toBe('general')
     expect(result.searchQueries).toEqual([
       {
-        question: '넌 뭐야',
+        question: '넌',
         intent: 'general',
         additionalKeywords: [],
         preferredSourceCategories: [],
@@ -46,10 +46,20 @@ describe('analyzeQuestion', () => {
     expect(result.questionType).toBe('general')
     expect(result.searchQueries).toEqual([
       {
-        question: '이 사람은 어떤 개발자고 대표 프로젝트는 뭐야',
+        question: '이 사람은 어떤 개발자고 대표 프로젝트는',
         intent: 'general',
-        additionalKeywords: [],
-        preferredSourceCategories: [],
+        additionalKeywords: [
+          'profile',
+          'about',
+          'author',
+          '소개',
+          '프로필',
+          '작성자',
+          'project',
+          'projects',
+          '프로젝트',
+        ],
+        preferredSourceCategories: ['profile', 'project'],
       },
     ])
   })

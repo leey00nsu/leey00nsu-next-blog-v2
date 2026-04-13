@@ -73,8 +73,12 @@ export function rewriteChatQuestionWithHistory({
     return question
   }
 
-  const latestConversationHistory =
-    conversationHistory[conversationHistory.length - 1]
+  const latestConversationHistory = conversationHistory.at(-1)
+
+  if (!latestConversationHistory) {
+    return question
+  }
+
   const citationTitles = latestConversationHistory.citations
     .slice(0, CHAT_FOLLOW_UP.MAXIMUM_STORED_CITATION_TITLE_COUNT)
     .map((citation) => citation.title)

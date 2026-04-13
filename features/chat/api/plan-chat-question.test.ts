@@ -60,6 +60,32 @@ describe('planChatQuestion', () => {
     expect(result.clarificationQuestion).toContain('구체적으로')
   })
 
+  it('profile citation 맥락이 있으면 사람 지시어 질문을 profile retrieval로 계획한다', async () => {
+    const result = await planChatQuestion({
+      question: '이 사람 이름 뭐야?',
+      locale: 'ko',
+      conversationHistory: [
+        {
+          question: '이 사람은 어떤 개발자야?',
+          answer: 'React와 Next.js 중심의 개발자입니다.',
+          citations: [
+            {
+              title: 'About Me',
+              url: '/ko/about',
+              sectionTitle: null,
+              sourceCategory: 'profile',
+            },
+          ],
+        },
+      ],
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+    })
+
+    expect(result.needsClarification).toBe(false)
+    expect(result.needsRetrieval).toBe(true)
+    expect(result.preferredSourceCategories).toContain('profile')
+  })
+
   it('최신 글 질문은 deterministic action으로 계획한다', async () => {
     const result = await planChatQuestion({
       question: '최신 글 요약해줘',

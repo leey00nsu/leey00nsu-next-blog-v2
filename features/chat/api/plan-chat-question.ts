@@ -327,6 +327,30 @@ function buildClarificationQuestion(locale: SupportedLocale): string {
   return CHAT_QUESTION_PLANNER.CLARIFICATION_QUESTIONS[locale]
 }
 
+function buildContextPreferredSourceCategories(params: {
+  normalizedQuestion: string
+  contextSnapshot: ReturnType<typeof buildChatQuestionContextSnapshot>
+}): ChatSourceCategory[] {
+  const hasPersonReference = includesAnyPattern(
+    params.normalizedQuestion,
+    CHAT_QUESTION_PLANNER.PERSON_REFERENCE_PATTERNS,
+  )
+
+  if (!hasPersonReference) {
+    return []
+  }
+
+  return [
+    ...new Set(
+      params.contextSnapshot.latestCitationSourceCategories.filter(
+        (sourceCategory) => {
+          return sourceCategory === 'profile' || sourceCategory === 'assistant'
+        },
+      ),
+    ),
+  ]
+}
+
 function shouldClarifyPersonReference(params: {
   normalizedQuestion: string
   contextSnapshot: ReturnType<typeof buildChatQuestionContextSnapshot>
@@ -375,9 +399,20 @@ function buildFallbackQuestionPlan(params: PlanChatQuestionParams): ChatQuestion
     normalizedQuestion: normalizedStandaloneQuestion.toLowerCase(),
     assistantProfile: params.assistantProfile,
   })
+  const contextPreferredSourceCategories = buildContextPreferredSourceCategories(
+    {
+      normalizedQuestion: normalizedStandaloneQuestion,
+      contextSnapshot,
+    },
+  )
   const preferredSourceCategories: ChatSourceCategory[] = assistantIdentityQuestion
     ? ['assistant', 'profile']
-    : normalizedChatQuery.preferredSourceCategories
+    : [
+        ...new Set([
+          ...normalizedChatQuery.preferredSourceCategories,
+          ...contextPreferredSourceCategories,
+        ]),
+      ]
   const additionalKeywords = assistantIdentityQuestion
     ? buildAssistantIdentityKeywords({
         assistantProfile: params.assistantProfile,

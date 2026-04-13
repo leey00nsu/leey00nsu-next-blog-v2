@@ -8,13 +8,16 @@ import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
 import {
+  applyQuestionPlanToAnalysis,
+  buildQuestionRoutingFromPlan,
+  shouldRunHybridRetrieval,
+} from '@/features/chat/lib/chat-question-plan-routing'
+import {
   analyzeQuestion,
   normalizeQuestion,
-  type ChatSearchQuery,
   type ChatQuestionAnalysis,
 } from '@/features/chat/lib/question-analysis'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
-import type { ChatQuestionRoutingResult } from '@/features/chat/model/chat-question-routing'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
@@ -27,7 +30,6 @@ import {
   type BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
 import { LOCALES } from '@/shared/config/constants'
-import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 
 export const runtime = 'nodejs'
 
@@ -166,135 +168,6 @@ function buildClarificationResponse(params: {
     citations: [],
     grounded: false,
   }
-}
-
-function buildQuestionRoutingFromPlan(
-  questionPlan: ChatQuestionPlan,
-): ChatQuestionRoutingResult {
-  if (questionPlan.deterministicAction === 'contact') {
-    return {
-      selector: 'contact',
-      action: questionPlan.action,
-      scope: questionPlan.scope,
-      reason: questionPlan.reason,
-    }
-  }
-
-  if (questionPlan.deterministicAction === 'latest_post') {
-    return {
-      selector: 'latest_post',
-      action: questionPlan.action,
-      scope: questionPlan.scope,
-      reason: questionPlan.reason,
-    }
-  }
-
-  if (questionPlan.deterministicAction === 'oldest_post') {
-    return {
-      selector: 'oldest_post',
-      action: questionPlan.action,
-      scope: questionPlan.scope,
-      reason: questionPlan.reason,
-    }
-  }
-
-  if (questionPlan.retrievalMode === 'current_post') {
-    return {
-      selector: 'current_post',
-      action: questionPlan.action,
-      scope: questionPlan.scope,
-      reason: questionPlan.reason,
-    }
-  }
-
-  if (questionPlan.retrievalMode === 'corpus') {
-    return {
-      selector: 'corpus',
-      action: questionPlan.action,
-      scope: questionPlan.scope,
-      reason: questionPlan.reason,
-    }
-  }
-
-  return {
-    selector: 'retrieval',
-    action: questionPlan.action,
-    scope: questionPlan.scope,
-    reason: questionPlan.reason,
-  }
-}
-
-function buildSearchQueryFromQuestionPlan(params: {
-  questionPlan: ChatQuestionPlan
-  locale: string
-}): ChatSearchQuery {
-  const normalizedChatQuery = normalizeChatQuery({
-    question: params.questionPlan.standaloneQuestion,
-    locale: params.locale as (typeof LOCALES.SUPPORTED)[number],
-  })
-
-  return {
-    question: normalizedChatQuery.normalizedSearchQuestion,
-    intent: 'general',
-    additionalKeywords: [
-      ...new Set([
-        ...normalizedChatQuery.additionalKeywords,
-        ...params.questionPlan.additionalKeywords,
-      ]),
-    ],
-    preferredSourceCategories: [
-      ...new Set([
-        ...normalizedChatQuery.preferredSourceCategories,
-        ...params.questionPlan.preferredSourceCategories,
-      ]),
-    ],
-  }
-}
-
-function applyQuestionPlanToAnalysis(params: {
-  questionAnalysis: ChatQuestionAnalysis
-  questionPlan: ChatQuestionPlan
-  locale: string
-}): ChatQuestionAnalysis {
-  const fallbackSearchQuery = buildSearchQueryFromQuestionPlan({
-    questionPlan: params.questionPlan,
-    locale: params.locale,
-  })
-  const baseSearchQueries =
-    params.questionAnalysis.searchQueries.length > 0
-      ? params.questionAnalysis.searchQueries
-      : params.questionPlan.needsRetrieval
-        ? [fallbackSearchQuery]
-        : []
-
-  return {
-    ...params.questionAnalysis,
-    searchQueries: baseSearchQueries.map((searchQuery) => {
-      return {
-        ...searchQuery,
-        additionalKeywords: [
-          ...new Set([
-            ...searchQuery.additionalKeywords,
-            ...params.questionPlan.additionalKeywords,
-          ]),
-        ],
-        preferredSourceCategories: [
-          ...new Set([
-            ...searchQuery.preferredSourceCategories,
-            ...params.questionPlan.preferredSourceCategories,
-          ]),
-        ],
-      }
-    }),
-  }
-}
-
-function shouldRunHybridRetrieval(questionPlan: ChatQuestionPlan): boolean {
-  return (
-    questionPlan.needsRetrieval &&
-    (questionPlan.retrievalMode === 'standard' ||
-      questionPlan.retrievalMode === 'corpus')
-  )
 }
 
 function collectPreferredSourceCategories(

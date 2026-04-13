@@ -7,8 +7,10 @@ const shouldCacheBlogChatResponseMock = vi.fn()
 const finalizeBlogChatResponseMock = vi.fn()
 const resolveChatRequestMock = vi.fn()
 const getCuratedChatSourcesMock = vi.fn()
-const classifyChatQuestionMock = vi.fn()
+const planChatQuestionMock = vi.fn()
 const runChatRagWorkflowMock = vi.fn()
+const getChatAssistantProfileMock = vi.fn()
+const getChatContactProfileMock = vi.fn()
 
 vi.mock('@/entities/post/config/blog-search-records.generated', () => {
   return {
@@ -91,9 +93,9 @@ vi.mock('@/features/chat/lib/resolve-chat-request', () => {
   }
 })
 
-vi.mock('@/features/chat/api/classify-chat-question', () => {
+vi.mock('@/features/chat/api/plan-chat-question', () => {
   return {
-    classifyChatQuestion: classifyChatQuestionMock,
+    planChatQuestion: planChatQuestionMock,
   }
 })
 
@@ -106,6 +108,18 @@ vi.mock('@/features/chat/model/chat-rag-workflow', () => {
 vi.mock('@/features/chat/model/get-curated-chat-sources', () => {
   return {
     getCuratedChatSources: getCuratedChatSourcesMock,
+  }
+})
+
+vi.mock('@/features/chat/model/get-chat-assistant-profile', () => {
+  return {
+    getChatAssistantProfile: getChatAssistantProfileMock,
+  }
+})
+
+vi.mock('@/features/chat/model/get-chat-contact-profile', () => {
+  return {
+    getChatContactProfile: getChatContactProfileMock,
   }
 })
 
@@ -122,6 +136,18 @@ const GROUNDED_RESPONSE = {
   grounded: true,
 }
 
+const SOCIAL_RESPONSE = {
+  answer: '안녕하세요. 무엇을 찾고 계신가요?',
+  citations: [],
+  grounded: false,
+}
+
+const CLARIFICATION_RESPONSE = {
+  answer: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+  citations: [],
+  grounded: false,
+}
+
 const DAILY_LIMIT_EXCEEDED_RESPONSE = {
   answer: '',
   citations: [],
@@ -129,7 +155,31 @@ const DAILY_LIMIT_EXCEEDED_RESPONSE = {
   refusalReason: 'daily_limit_exceeded',
 } as const
 
-function createChatRequest(question: string): NextRequest {
+const DEFAULT_ANALYSIS_RESULT = {
+  normalizedQuestion: 'react stack',
+  questionType: 'general' as const,
+  searchQueries: [],
+}
+
+const DEFAULT_QUESTION_PLAN = {
+  standaloneQuestion: 'React stack',
+  socialPreamble: false,
+  action: 'answer' as const,
+  scope: 'global' as const,
+  deterministicAction: 'none' as const,
+  needsRetrieval: true,
+  retrievalMode: 'standard' as const,
+  preferredSourceCategories: [] as const,
+  additionalKeywords: [] as const,
+  needsClarification: false,
+  clarificationQuestion: null,
+  reason: 'default retrieval',
+}
+
+function createChatRequest(
+  question: string,
+  overrides?: Record<string, unknown>,
+): NextRequest {
   return new Request('http://localhost/api/chat', {
     method: 'POST',
     headers: {
@@ -138,6 +188,7 @@ function createChatRequest(question: string): NextRequest {
     body: JSON.stringify({
       question,
       locale: 'ko',
+      ...overrides,
     }),
   }) as NextRequest
 }
@@ -152,108 +203,28 @@ describe('POST /api/chat', () => {
     vi.clearAllMocks()
 
     getCuratedChatSourcesMock.mockResolvedValue([])
+    getChatAssistantProfileMock.mockReturnValue({
+      chatbotName: '블로그 챗봇',
+      ownerName: '이윤수',
+      greetingAnswer: SOCIAL_RESPONSE.answer,
+      identityAnswer:
+        '저는 이윤수 님의 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
+      aliases: ['이 사람 챗봇'],
+      content: '챗봇 소개',
+    })
+    getChatContactProfileMock.mockReturnValue({
+      title: 'About Me',
+      aboutUrl: '/ko/about',
+      methods: [],
+    })
     shouldCacheBlogChatResponseMock.mockReturnValue(true)
     finalizeBlogChatResponseMock.mockReturnValue(GROUNDED_RESPONSE)
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'retrieval',
-      action: 'answer',
-      scope: 'global',
-      reason: 'default',
-    })
+    planChatQuestionMock.mockResolvedValue(DEFAULT_QUESTION_PLAN)
     runChatRagWorkflowMock.mockResolvedValue({
       grounded: false,
       matches: [],
     })
-    answerBlogQuestionMock.mockResolvedValue({
-      ok: true,
-      draftAnswer: {
-        answer: GROUNDED_RESPONSE.answer,
-        usedCitationUrls: ['/ko/about'],
-        refusalReason: null,
-      },
-    })
-  })
-
-  it('고정 응답도 일일 quota를 소모한다', async () => {
-    analyzeQuestionMock
-      .mockReturnValueOnce({
-        normalizedQuestion: '안녕',
-        questionType: 'general',
-        searchQueries: [],
-      })
-      .mockReturnValueOnce({
-        normalizedQuestion: 'react stack',
-        questionType: 'general',
-        searchQueries: [],
-      })
-    classifyChatQuestionMock
-      .mockResolvedValueOnce({
-        selector: 'greeting',
-        action: 'answer',
-        scope: 'global',
-        reason: 'smalltalk',
-      })
-      .mockResolvedValueOnce({
-        selector: 'retrieval',
-        action: 'answer',
-        scope: 'global',
-        reason: 'fact',
-      })
-
-    resolveChatRequestMock
-      .mockReturnValueOnce({
-        normalizedQuestion: '안녕',
-        questionType: 'greeting',
-        shouldCallModel: false,
-        matches: [],
-        directResponse: {
-          answer: '안녕하세요.',
-          citations: [],
-          grounded: false,
-        },
-      })
-      .mockReturnValueOnce({
-        normalizedQuestion: 'react stack',
-        questionType: 'general',
-        shouldCallModel: true,
-        matches: [
-          {
-            id: 'ko/about/profile',
-            locale: 'ko',
-            slug: 'about',
-            title: 'About Me',
-            url: '/ko/about',
-            excerpt: 'React와 TypeScript를 사용합니다.',
-            content: 'React와 TypeScript를 사용합니다.',
-            sectionTitle: null,
-            tags: ['react', 'typescript'],
-            sourceCategory: 'profile' as const,
-          },
-        ],
-      })
-
-    const { POST } = await importRouteModule()
-
-    const greetingResponse = await POST(createChatRequest('안녕'))
-    const groundedResponse = await POST(createChatRequest('React stack?'))
-
-    expect(await greetingResponse.json()).toEqual({
-      answer: '안녕하세요.',
-      citations: [],
-      grounded: false,
-    })
-    expect(await groundedResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
-    expect(classifyChatQuestionMock).toHaveBeenCalledTimes(1)
-    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
-  })
-
-  it('캐시 응답도 quota를 소모한다', async () => {
-    analyzeQuestionMock.mockReturnValue({
-      normalizedQuestion: 'react stack',
-      questionType: 'general',
-      searchQueries: [],
-    })
-
+    analyzeQuestionMock.mockReturnValue(DEFAULT_ANALYSIS_RESULT)
     resolveChatRequestMock.mockReturnValue({
       normalizedQuestion: 'react stack',
       questionType: 'general',
@@ -273,7 +244,39 @@ describe('POST /api/chat', () => {
         },
       ],
     })
+    answerBlogQuestionMock.mockResolvedValue({
+      ok: true,
+      draftAnswer: {
+        answer: GROUNDED_RESPONSE.answer,
+        usedCitationUrls: ['/ko/about'],
+        refusalReason: null,
+      },
+    })
+  })
 
+  it('planner 기반 direct social reply도 일일 quota를 소모한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion: '안녕',
+      deterministicAction: 'social_reply',
+      needsRetrieval: false,
+      retrievalMode: 'none',
+      reason: 'pure social',
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+
+    const greetingResponse = await POST(createChatRequest('안녕'))
+    const groundedResponse = await POST(createChatRequest('React stack?'))
+
+    expect(await greetingResponse.json()).toEqual(SOCIAL_RESPONSE)
+    expect(await groundedResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
+    expect(planChatQuestionMock).toHaveBeenCalledTimes(1)
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+  })
+
+  it('캐시 응답도 quota를 소모한다', async () => {
     const { POST } = await importRouteModule()
 
     const firstResponse = await POST(createChatRequest('React stack?'))
@@ -281,41 +284,30 @@ describe('POST /api/chat', () => {
 
     expect(await firstResponse.json()).toEqual(GROUNDED_RESPONSE)
     expect(await secondResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
-    expect(classifyChatQuestionMock).toHaveBeenCalledTimes(1)
+    expect(planChatQuestionMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledTimes(1)
   })
 
-  it('후속 질문이면 대화 기록을 붙여 분석한다', async () => {
-    analyzeQuestionMock.mockReturnValue({
+  it('mixed intent follow-up 질문은 planner의 standalone question으로 분석하고 모델 호출한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion:
+        '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
+      socialPreamble: true,
+      preferredSourceCategories: ['project'],
+      additionalKeywords: ['lee-spec-kit'],
+      reason: 'follow-up retrieval',
+    })
+    analyzeQuestionMock.mockReturnValueOnce({
       normalizedQuestion:
         '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
       questionType: 'general',
-      searchQueries: [],
-    })
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'retrieval',
-      action: 'answer',
-      scope: 'global',
-      reason: 'fact',
-    })
-
-    resolveChatRequestMock.mockReturnValue({
-      normalizedQuestion:
-        '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
-      questionType: 'general',
-      shouldCallModel: true,
-      matches: [
+      searchQueries: [
         {
-          id: 'ko/project/lee-spec-kit',
-          locale: 'ko',
-          slug: 'lee-spec-kit',
-          title: 'lee-spec-kit',
-          url: '/ko/projects/lee-spec-kit',
-          excerpt: '프로젝트 소개',
-          content: '프로젝트 소개',
-          sectionTitle: null,
-          tags: ['project'],
-          sourceCategory: 'project' as const,
+          question: '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
+          intent: 'general',
+          additionalKeywords: [],
+          preferredSourceCategories: [],
         },
       ],
     })
@@ -323,146 +315,102 @@ describe('POST /api/chat', () => {
     const { POST } = await importRouteModule()
 
     await POST(
-      new Request('http://localhost/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: '그건 왜 그렇게 했어?',
-          locale: 'ko',
-          conversationHistory: [
-            {
-              question: '대표 프로젝트가 뭐야?',
-              answer: 'lee-spec-kit이 대표 프로젝트입니다.',
-              citations: [
-                {
-                  title: 'lee-spec-kit',
-                  url: '/ko/projects/lee-spec-kit',
-                  sectionTitle: null,
-                  sourceCategory: 'project',
-                },
-              ],
-            },
-          ],
-        }),
-      }) as NextRequest,
-    )
-
-    expect(analyzeQuestionMock).toHaveBeenCalledWith(
-      '그건 왜 그렇게 했어?',
-      'ko',
-    )
-    expect(analyzeQuestionMock).toHaveBeenCalledWith(
-      '대표 프로젝트가 뭐야? lee-spec-kit 그건 왜 그렇게 했어?',
-      'ko',
-    )
-    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        question: '대표 프로젝트가 뭐야? lee-spec-kit 그건 왜 그렇게 했어?',
-      }),
-    )
-  })
-
-  it('연락 질문 분류는 후속 질문 재작성 전에 원문 기준으로 수행한다', async () => {
-    analyzeQuestionMock
-      .mockReturnValueOnce({
-        normalizedQuestion: '어떻게 연락해',
-        questionType: 'general',
-        searchQueries: [],
-      })
-      .mockReturnValueOnce({
-        normalizedQuestion:
-          '이 사람이 원하는 개발자는 어떤 개발자야 About Me 어떻게 연락해',
-        questionType: 'general',
-        searchQueries: [],
-      })
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'contact',
-      action: 'answer',
-      scope: 'global',
-      reason: 'contact request',
-    })
-    resolveChatRequestMock.mockReturnValue({
-      normalizedQuestion: '어떻게 연락해',
-      questionType: 'general',
-      shouldCallModel: false,
-      matches: [],
-      directResponse: {
-        answer: '공개된 연락 채널은 GitHub와 LinkedIn입니다.',
-        citations: [
+      createChatRequest('안녕 그건 왜 그렇게 했어?', {
+        conversationHistory: [
           {
-            title: 'About Me',
-            url: '/ko/about',
-            sectionTitle: null,
-            sourceCategory: 'profile' as const,
+            question: '대표 프로젝트가 뭐야?',
+            answer: 'lee-spec-kit이 대표 프로젝트입니다.',
+            citations: [
+              {
+                title: 'lee-spec-kit',
+                url: '/ko/projects/lee-spec-kit',
+                sectionTitle: null,
+                sourceCategory: 'project',
+              },
+            ],
           },
         ],
-        grounded: true,
-      },
-    })
-
-    const { POST } = await importRouteModule()
-
-    await POST(
-      new Request('http://localhost/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: '어떻게 연락해?',
-          locale: 'ko',
-          conversationHistory: [
-            {
-              question: '이 사람이 원하는 개발자는 어떤 개발자야?',
-              answer: '문제 해결 중심 개발자를 지향합니다.',
-              citations: [
-                {
-                  title: 'About Me',
-                  url: '/ko/about',
-                  sectionTitle: null,
-                  sourceCategory: 'profile',
-                },
-              ],
-            },
-          ],
-        }),
-      }) as NextRequest,
+      }),
     )
 
-    expect(classifyChatQuestionMock).toHaveBeenCalledWith(
+    expect(planChatQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        question: '어떻게 연락해?',
+        question: '안녕 그건 왜 그렇게 했어?',
       }),
+    )
+    expect(analyzeQuestionMock).toHaveBeenCalledWith(
+      '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
+      'ko',
     )
     expect(resolveChatRequestMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        question: '어떻게 연락해?',
+        question: '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
+        questionAnalysis: expect.objectContaining({
+          searchQueries: [
+            expect.objectContaining({
+              additionalKeywords: ['lee-spec-kit'],
+              preferredSourceCategories: ['project'],
+            }),
+          ],
+        }),
+      }),
+    )
+    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
       }),
     )
   })
 
+  it('명확화가 필요한 질문은 retrieval 대신 clarification 응답을 반환한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion: '이 사람 이름 뭐야',
+      needsRetrieval: false,
+      retrievalMode: 'none',
+      needsClarification: true,
+      clarificationQuestion: CLARIFICATION_RESPONSE.answer,
+      reason: 'ambiguous person reference',
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('이 사람 이름 뭐야?'))
+
+    expect(await response.json()).toEqual(CLARIFICATION_RESPONSE)
+    expect(analyzeQuestionMock).not.toHaveBeenCalled()
+    expect(resolveChatRequestMock).not.toHaveBeenCalled()
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+  })
+
   it('grounded retrieval 질문은 lexical 검색 실패 후 Postgres RAG를 fallback으로 사용한다', async () => {
-    analyzeQuestionMock.mockReturnValue({
-      normalizedQuestion: 'what is his name',
-      questionType: 'general',
-      searchQueries: [],
-    })
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'retrieval',
-      action: 'answer',
-      scope: 'global',
-      reason: 'fact',
-    })
-    resolveChatRequestMock.mockReturnValue({
+    resolveChatRequestMock.mockReturnValueOnce({
       normalizedQuestion: 'what is his name',
       questionType: 'general',
       shouldCallModel: false,
       matches: [],
       refusalReason: 'insufficient_search_match',
     })
-    runChatRagWorkflowMock.mockResolvedValue({
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion: 'what is his name',
+      preferredSourceCategories: ['profile'],
+      additionalKeywords: ['name', 'yoonsu lee'],
+      reason: 'profile lookup',
+    })
+    analyzeQuestionMock.mockReturnValueOnce({
+      normalizedQuestion: 'what is his name',
+      questionType: 'general',
+      searchQueries: [
+        {
+          question: 'what is his name',
+          intent: 'general',
+          additionalKeywords: [],
+          preferredSourceCategories: [],
+        },
+      ],
+    })
+    runChatRagWorkflowMock.mockResolvedValueOnce({
       grounded: true,
       matches: [
         {
@@ -490,7 +438,6 @@ describe('POST /api/chat', () => {
       locale: 'ko',
       currentPostSlug: undefined,
     })
-    expect(resolveChatRequestMock).toHaveBeenCalled()
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         matches: [
@@ -502,71 +449,29 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('ko 로케일에서도 영어 이름 질문은 retrieval 경로로 모델 호출을 진행한다', async () => {
-    analyzeQuestionMock.mockReturnValue({
-      normalizedQuestion: 'what is his name',
-      questionType: 'general',
-      searchQueries: [],
+  it('corpus synthesis 질문은 lexical과 Postgres RAG 후보를 함께 재정렬한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ...DEFAULT_QUESTION_PLAN,
+      standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
+      action: 'summarize',
+      retrievalMode: 'corpus',
+      preferredSourceCategories: ['blog'],
+      additionalKeywords: ['구조', '재사용성'],
+      reason: 'cross-document synthesis',
     })
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'retrieval',
-      action: 'answer',
-      scope: 'global',
-      reason: 'fact',
-    })
-    resolveChatRequestMock.mockReturnValue({
-      normalizedQuestion: 'what is his name',
+    analyzeQuestionMock.mockReturnValueOnce({
+      normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
       questionType: 'general',
-      shouldCallModel: true,
-      matches: [
+      searchQueries: [
         {
-          id: 'ko/about/profile',
-          locale: 'ko',
-          slug: 'about',
-          title: 'About Me',
-          url: '/ko/about',
-          excerpt: '이윤수를 소개합니다.',
-          content: '이윤수는 개발자입니다.',
-          sectionTitle: null,
-          tags: ['profile'],
-          sourceCategory: 'profile' as const,
+          question: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
+          intent: 'general',
+          additionalKeywords: [],
+          preferredSourceCategories: [],
         },
       ],
     })
-
-    const { POST } = await importRouteModule()
-    const response = await POST(createChatRequest('what is his name'))
-
-    expect(await response.json()).toEqual(GROUNDED_RESPONSE)
-    expect(runChatRagWorkflowMock).toHaveBeenCalledWith({
-      question: 'what is his name',
-      locale: 'ko',
-      currentPostSlug: undefined,
-    })
-    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        matches: [
-          expect.objectContaining({
-            url: '/ko/about',
-          }),
-        ],
-      }),
-    )
-  })
-
-  it('corpus synthesis 질문은 lexical과 Postgres RAG 후보를 함께 재정렬한다', async () => {
-    analyzeQuestionMock.mockReturnValue({
-      normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
-      questionType: 'general',
-      searchQueries: [],
-    })
-    classifyChatQuestionMock.mockResolvedValue({
-      selector: 'corpus',
-      action: 'summarize',
-      scope: 'global',
-      reason: 'cross-document synthesis',
-    })
-    resolveChatRequestMock.mockReturnValue({
+    resolveChatRequestMock.mockReturnValueOnce({
       normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
       questionType: 'general',
       shouldCallModel: false,
@@ -585,7 +490,7 @@ describe('POST /api/chat', () => {
         },
       ],
     })
-    runChatRagWorkflowMock.mockResolvedValue({
+    runChatRagWorkflowMock.mockResolvedValueOnce({
       grounded: true,
       matches: [
         {
@@ -611,7 +516,6 @@ describe('POST /api/chat', () => {
 
     expect(await response.json()).toEqual(GROUNDED_RESPONSE)
     expect(runChatRagWorkflowMock).toHaveBeenCalledTimes(1)
-    expect(resolveChatRequestMock).toHaveBeenCalled()
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         matches: expect.arrayContaining([

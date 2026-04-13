@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
-import { classifyChatQuestion } from '@/features/chat/api/classify-chat-question'
+import { planChatQuestion } from '@/features/chat/api/plan-chat-question'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { shouldCacheBlogChatResponse } from '@/features/chat/lib/blog-chat-cache'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
@@ -10,15 +10,13 @@ import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
 import {
   analyzeQuestion,
   normalizeQuestion,
+  type ChatSearchQuery,
   type ChatQuestionAnalysis,
 } from '@/features/chat/lib/question-analysis'
-import { rewriteChatQuestionWithHistory } from '@/features/chat/lib/rewrite-chat-question'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
-import type {
-  ChatQuestionRoutingResult,
-  ChatQuestionSelector,
-} from '@/features/chat/model/chat-question-routing'
+import type { ChatQuestionRoutingResult } from '@/features/chat/model/chat-question-routing'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
@@ -29,6 +27,7 @@ import {
   type BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
 import { LOCALES } from '@/shared/config/constants'
+import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 
 export const runtime = 'nodejs'
 
@@ -39,6 +38,17 @@ interface CachedBlogChatResponse {
 
 const blogChatResponseCache = new Map<string, CachedBlogChatResponse>()
 const blogChatDailyUsageMap = new Map<string, number>()
+
+const CHAT_ROUTE = {
+  FALLBACK_SOCIAL_REPLIES: {
+    ko: '안녕하세요. 무엇을 찾고 계신가요?',
+    en: 'Hi there. What are you looking for?',
+  },
+  FALLBACK_CLARIFICATION_QUESTIONS: {
+    ko: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+    en: 'Please clarify who you mean a bit more specifically.',
+  },
+} as const
 
 function buildCacheKey(
   normalizedQuestion: string,
@@ -82,29 +92,6 @@ function buildRefusalResponse(
   }
 }
 
-function buildQuestionAnalysisOverride(params: {
-  normalizedQuestion: string
-  questionRouting: ChatQuestionRoutingResult
-}): ChatQuestionAnalysis | undefined {
-  if (params.questionRouting.selector === 'greeting') {
-    return {
-      normalizedQuestion: params.normalizedQuestion,
-      questionType: 'greeting',
-      searchQueries: [],
-    }
-  }
-
-  if (params.questionRouting.selector === 'assistant_identity') {
-    return {
-      normalizedQuestion: params.normalizedQuestion,
-      questionType: 'assistant-identity',
-      searchQueries: [],
-    }
-  }
-
-  return undefined
-}
-
 async function buildModelBackedResponse(params: {
   question: string
   matches: ChatEvidenceRecord[]
@@ -135,18 +122,179 @@ async function buildModelBackedResponse(params: {
   return validatedResponse
 }
 
-function shouldRewriteQuestionWithHistory(
-  selector: ChatQuestionSelector,
-): boolean {
-  return (
-    selector === 'retrieval' ||
-    selector === 'corpus' ||
-    selector === 'current_post'
-  )
+function cacheResponseIfNeeded(params: {
+  cacheKey: string
+  responseData: BlogChatResponse
+}): void {
+  if (!shouldCacheBlogChatResponse(params.responseData)) {
+    return
+  }
+
+  blogChatResponseCache.set(params.cacheKey, {
+    createdAt: Date.now(),
+    data: params.responseData,
+  })
 }
 
-function shouldRunHybridRetrieval(selector: ChatQuestionSelector): boolean {
-  return selector === 'retrieval' || selector === 'corpus'
+function buildSocialReplyResponse(params: {
+  locale: string
+  assistantProfile: ReturnType<typeof getChatAssistantProfile>
+}): BlogChatResponse {
+  return {
+    answer:
+      params.assistantProfile?.greetingAnswer ??
+      CHAT_ROUTE.FALLBACK_SOCIAL_REPLIES[
+        params.locale as keyof typeof CHAT_ROUTE.FALLBACK_SOCIAL_REPLIES
+      ] ??
+      CHAT_ROUTE.FALLBACK_SOCIAL_REPLIES[LOCALES.DEFAULT],
+    citations: [],
+    grounded: false,
+  }
+}
+
+function buildClarificationResponse(params: {
+  locale: string
+  questionPlan: ChatQuestionPlan
+}): BlogChatResponse {
+  return {
+    answer:
+      params.questionPlan.clarificationQuestion ??
+      CHAT_ROUTE.FALLBACK_CLARIFICATION_QUESTIONS[
+        params.locale as keyof typeof CHAT_ROUTE.FALLBACK_CLARIFICATION_QUESTIONS
+      ] ??
+      CHAT_ROUTE.FALLBACK_CLARIFICATION_QUESTIONS[LOCALES.DEFAULT],
+    citations: [],
+    grounded: false,
+  }
+}
+
+function buildQuestionRoutingFromPlan(
+  questionPlan: ChatQuestionPlan,
+): ChatQuestionRoutingResult {
+  if (questionPlan.deterministicAction === 'contact') {
+    return {
+      selector: 'contact',
+      action: questionPlan.action,
+      scope: questionPlan.scope,
+      reason: questionPlan.reason,
+    }
+  }
+
+  if (questionPlan.deterministicAction === 'latest_post') {
+    return {
+      selector: 'latest_post',
+      action: questionPlan.action,
+      scope: questionPlan.scope,
+      reason: questionPlan.reason,
+    }
+  }
+
+  if (questionPlan.deterministicAction === 'oldest_post') {
+    return {
+      selector: 'oldest_post',
+      action: questionPlan.action,
+      scope: questionPlan.scope,
+      reason: questionPlan.reason,
+    }
+  }
+
+  if (questionPlan.retrievalMode === 'current_post') {
+    return {
+      selector: 'current_post',
+      action: questionPlan.action,
+      scope: questionPlan.scope,
+      reason: questionPlan.reason,
+    }
+  }
+
+  if (questionPlan.retrievalMode === 'corpus') {
+    return {
+      selector: 'corpus',
+      action: questionPlan.action,
+      scope: questionPlan.scope,
+      reason: questionPlan.reason,
+    }
+  }
+
+  return {
+    selector: 'retrieval',
+    action: questionPlan.action,
+    scope: questionPlan.scope,
+    reason: questionPlan.reason,
+  }
+}
+
+function buildSearchQueryFromQuestionPlan(params: {
+  questionPlan: ChatQuestionPlan
+  locale: string
+}): ChatSearchQuery {
+  const normalizedChatQuery = normalizeChatQuery({
+    question: params.questionPlan.standaloneQuestion,
+    locale: params.locale as (typeof LOCALES.SUPPORTED)[number],
+  })
+
+  return {
+    question: normalizedChatQuery.normalizedSearchQuestion,
+    intent: 'general',
+    additionalKeywords: [
+      ...new Set([
+        ...normalizedChatQuery.additionalKeywords,
+        ...params.questionPlan.additionalKeywords,
+      ]),
+    ],
+    preferredSourceCategories: [
+      ...new Set([
+        ...normalizedChatQuery.preferredSourceCategories,
+        ...params.questionPlan.preferredSourceCategories,
+      ]),
+    ],
+  }
+}
+
+function applyQuestionPlanToAnalysis(params: {
+  questionAnalysis: ChatQuestionAnalysis
+  questionPlan: ChatQuestionPlan
+  locale: string
+}): ChatQuestionAnalysis {
+  const fallbackSearchQuery = buildSearchQueryFromQuestionPlan({
+    questionPlan: params.questionPlan,
+    locale: params.locale,
+  })
+  const baseSearchQueries =
+    params.questionAnalysis.searchQueries.length > 0
+      ? params.questionAnalysis.searchQueries
+      : params.questionPlan.needsRetrieval
+        ? [fallbackSearchQuery]
+        : []
+
+  return {
+    ...params.questionAnalysis,
+    searchQueries: baseSearchQueries.map((searchQuery) => {
+      return {
+        ...searchQuery,
+        additionalKeywords: [
+          ...new Set([
+            ...searchQuery.additionalKeywords,
+            ...params.questionPlan.additionalKeywords,
+          ]),
+        ],
+        preferredSourceCategories: [
+          ...new Set([
+            ...searchQuery.preferredSourceCategories,
+            ...params.questionPlan.preferredSourceCategories,
+          ]),
+        ],
+      }
+    }),
+  }
+}
+
+function shouldRunHybridRetrieval(questionPlan: ChatQuestionPlan): boolean {
+  return (
+    questionPlan.needsRetrieval &&
+    (questionPlan.retrievalMode === 'standard' ||
+      questionPlan.retrievalMode === 'corpus')
+  )
 }
 
 function collectPreferredSourceCategories(
@@ -206,30 +354,17 @@ export async function POST(request: NextRequest) {
 
     const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
     const originalQuestion = parsedRequest.data.question
-    const originalQuestionAnalysis = analyzeQuestion(originalQuestion, locale)
     const assistantProfile = getChatAssistantProfile(locale)
     const contactProfile = getChatContactProfile(locale)
-    const questionRouting = await classifyChatQuestion({
+    const questionPlan = await planChatQuestion({
       question: originalQuestion,
       locale,
-      normalizedQuestion: originalQuestionAnalysis.normalizedQuestion,
-      fallbackQuestionType: originalQuestionAnalysis.questionType,
+      conversationHistory: parsedRequest.data.conversationHistory,
+      currentPostSlug: parsedRequest.data.currentPostSlug,
       assistantProfile,
-      hasCurrentPostContext: Boolean(parsedRequest.data.currentPostSlug),
     })
-    const resolvedQuestion = shouldRewriteQuestionWithHistory(
-      questionRouting.selector,
-    )
-      ? rewriteChatQuestionWithHistory({
-          question: originalQuestion,
-          conversationHistory: parsedRequest.data.conversationHistory,
-        })
-      : originalQuestion
+    const resolvedQuestion = questionPlan.standaloneQuestion
     const normalizedQuestion = normalizeQuestion(resolvedQuestion)
-    const resolvedQuestionBaseAnalysis =
-      resolvedQuestion === originalQuestion
-        ? originalQuestionAnalysis
-        : analyzeQuestion(resolvedQuestion, locale)
     const cacheKey = buildCacheKey(
       normalizedQuestion,
       locale,
@@ -240,12 +375,49 @@ export async function POST(request: NextRequest) {
     if (cachedResponse) {
       return NextResponse.json(cachedResponse.data)
     }
-    const questionAnalysisOverride = buildQuestionAnalysisOverride({
-      normalizedQuestion,
-      questionRouting,
+
+    if (questionPlan.deterministicAction === 'social_reply') {
+      const socialReplyResponse = BlogChatResponseSchema.parse(
+        buildSocialReplyResponse({
+          locale,
+          assistantProfile,
+        }),
+      )
+
+      cacheResponseIfNeeded({
+        cacheKey,
+        responseData: socialReplyResponse,
+      })
+
+      return NextResponse.json(socialReplyResponse)
+    }
+
+    if (questionPlan.needsClarification) {
+      const clarificationResponse = BlogChatResponseSchema.parse(
+        buildClarificationResponse({
+          locale,
+          questionPlan,
+        }),
+      )
+
+      cacheResponseIfNeeded({
+        cacheKey,
+        responseData: clarificationResponse,
+      })
+
+      return NextResponse.json(clarificationResponse)
+    }
+
+    const resolvedQuestionBaseAnalysis = analyzeQuestion(
+      resolvedQuestion,
+      locale,
+    )
+    const resolvedQuestionAnalysis = applyQuestionPlanToAnalysis({
+      questionAnalysis: resolvedQuestionBaseAnalysis,
+      questionPlan,
+      locale,
     })
-    const resolvedQuestionAnalysis =
-      questionAnalysisOverride ?? resolvedQuestionBaseAnalysis
+    const questionRouting = buildQuestionRoutingFromPlan(questionPlan)
 
     const blogRecords = buildBlogEvidenceRecords(locale)
     const curatedRecords = await getCuratedChatSources(locale)
@@ -266,12 +438,10 @@ export async function POST(request: NextRequest) {
         resolvedChatRequest.directResponse,
       )
 
-      if (shouldCacheBlogChatResponse(validatedDirectResponse)) {
-        blogChatResponseCache.set(cacheKey, {
-          createdAt: Date.now(),
-          data: validatedDirectResponse,
-        })
-      }
+      cacheResponseIfNeeded({
+        cacheKey,
+        responseData: validatedDirectResponse,
+      })
 
       return NextResponse.json(validatedDirectResponse)
     }
@@ -281,7 +451,7 @@ export async function POST(request: NextRequest) {
     )
     let combinedMatches = resolvedChatRequest.matches
 
-    if (shouldRunHybridRetrieval(questionRouting.selector)) {
+    if (shouldRunHybridRetrieval(questionPlan)) {
       const chatRagSearchResult = await runChatRagWorkflow({
         question: resolvedQuestion,
         locale,

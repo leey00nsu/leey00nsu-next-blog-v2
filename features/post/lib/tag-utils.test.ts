@@ -4,6 +4,7 @@ import {
   parseSelectedTags,
   makeToggleHref,
   filterPostsByTags,
+  selectVisibleTags,
 } from './tag-utils'
 import type { Post } from '@/entities/post/model/types'
 
@@ -138,5 +139,68 @@ describe('filterPostsByTags', () => {
   it('일치하는 포스트가 없으면 빈 배열을 반환한다', () => {
     const filtered = filterPostsByTags(posts, ['angular'])
     expect(filtered).toEqual([])
+  })
+})
+
+describe('selectVisibleTags', () => {
+  it('기본 접힘 상태에서는 앞에서부터 지정한 개수만 반환한다', () => {
+    const visibleTags = selectVisibleTags({
+      tags: [
+        'react',
+        'typescript',
+        'nextjs',
+        'tailwind',
+        'vitest',
+        'playwright',
+        'storybook',
+        'nodejs',
+        'zod',
+        'zustand',
+      ],
+      selectedTags: [],
+      maximumCollapsedTagCount: 8,
+    })
+
+    expect(visibleTags).toEqual([
+      'react',
+      'typescript',
+      'nextjs',
+      'tailwind',
+      'vitest',
+      'playwright',
+      'storybook',
+      'nodejs',
+    ])
+  })
+
+  it('접힌 상태에서도 선택된 태그는 항상 포함한다', () => {
+    const visibleTags = selectVisibleTags({
+      tags: [
+        'react',
+        'typescript',
+        'nextjs',
+        'tailwind',
+        'vitest',
+        'playwright',
+        'storybook',
+        'nodejs',
+        'zod',
+        'zustand',
+      ],
+      selectedTags: ['zustand'],
+      maximumCollapsedTagCount: 8,
+    })
+
+    expect(visibleTags).toEqual([
+      'react',
+      'typescript',
+      'nextjs',
+      'tailwind',
+      'vitest',
+      'playwright',
+      'storybook',
+      'nodejs',
+      'zustand',
+    ])
   })
 })

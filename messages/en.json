@@ -96,6 +96,12 @@
       "notConfigured": "Giscus is not configured. Please set NEXT_PUBLIC_GISCUS_REPO, NEXT_PUBLIC_GISCUS_REPO_ID, NEXT_PUBLIC_GISCUS_CATEGORY, NEXT_PUBLIC_GISCUS_CATEGORY_ID."
     }
   },
+  "blogList": {
+    "tagFilter": {
+      "showMore": "Show more",
+      "showLess": "Show less"
+    }
+  },
   "chatbot": {
     "title": "Blog Q&A",
     "subtitle": "Depending on the question, preparing an answer can take up to 30 seconds.",

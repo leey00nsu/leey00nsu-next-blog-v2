@@ -1,6 +1,6 @@
 import { Post } from '@/entities/post/model/types'
-import { TagList } from '@/features/post/ui/tag-list'
-import { getTagCounts, makeToggleHref } from '@/features/post/lib/tag-utils'
+import { ExpandableTagFilterList } from '@/features/post/ui/expandable-tag-filter-list'
+import { getTagCounts } from '@/features/post/lib/tag-utils'
 import { ROUTES } from '@/shared/config/constants'
 import { Route } from 'next'
 
@@ -19,14 +19,13 @@ export function TagFilterBar({
 }: TagFilterBarProps) {
   const counts = getTagCounts(posts)
   const allTags = Object.keys(counts).sort((a, b) => a.localeCompare(b))
-  const hrefBuilder = makeToggleHref(basePath, selectedTags)
 
   return (
-    <TagList
+    <ExpandableTagFilterList
+      basePath={basePath}
       tags={allTags}
       counts={counts}
       selectedTags={selectedTags}
-      hrefBuilder={hrefBuilder}
       className={className}
     />
   )

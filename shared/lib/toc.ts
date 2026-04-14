@@ -1,4 +1,4 @@
-import { slug } from 'github-slugger'
+import GithubSlugger from 'github-slugger'
 
 export interface TocHeading {
   text: string
@@ -8,7 +8,7 @@ export interface TocHeading {
 
 export function getTableOfContents(content: string): TocHeading[] {
   const headings: TocHeading[] = []
-  const slugger = slug
+  const slugger = new GithubSlugger()
 
   // 이 정규식은 모든 ## 또는 ### 로 시작하는 줄을 찾아냅니다.
   const headingLines = content.match(/^#{2,3}\s.+/gm) || []
@@ -19,7 +19,7 @@ export function getTableOfContents(content: string): TocHeading[] {
 
     headings.push({
       text,
-      slug: slugger(text),
+      slug: slugger.slug(text),
       depth,
     })
   }

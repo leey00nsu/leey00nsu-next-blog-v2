@@ -82,6 +82,21 @@ describe('getTableOfContents', () => {
     expect(result[0].slug).toBe('getting-started')
   })
 
+  it('중복된 헤딩은 rehype-slug와 같은 방식으로 고유한 slug를 만든다', () => {
+    const content = `
+## Introduction
+### Introduction
+## Introduction
+`
+    const result = getTableOfContents(content)
+
+    expect(result.map((heading) => heading.slug)).toEqual([
+      'introduction',
+      'introduction-1',
+      'introduction-2',
+    ])
+  })
+
   it('헤딩 텍스트의 앞뒤 공백을 제거한다', () => {
     const content = '##   공백이 있는 제목   '
     const result = getTableOfContents(content)

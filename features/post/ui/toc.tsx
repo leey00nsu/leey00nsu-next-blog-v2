@@ -2,12 +2,15 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { POST_TOC } from '@/features/post/config/constants'
 import {
   buildTocContainerVariants,
+  calcTocActiveBoundaryRootMargin,
   calcTocHeadingIndent,
   calcTocScrollTargetTop,
+  isTocScrollNearBottom,
+  resolveActiveTocHeadingId,
 } from '@/features/post/lib/toc-motion'
 import { cn } from '@/shared/lib/utils'
 import type { TocHeading } from '@/shared/lib/toc'
@@ -17,54 +20,190 @@ interface TocProps {
   className?: string
 }
 
+const TOC_MANUAL_SCROLL_KEYS = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'PageDown',
+  'PageUp',
+  'Home',
+  'End',
+  ' ',
+])
+
+function queryTocHeadingElement(slug: string): Element | null {
+  return document.querySelector(`#${CSS.escape(slug)}`)
+}
+
 export function Toc({ headings, className }: TocProps) {
   const t = useTranslations('post.toc')
+  const tocInstanceId = useId()
   const [activeId, setActiveId] = useState<string | null>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const activeHeadingSlugReference = useRef<string | null>(null)
+  const lockedActiveHeadingSlugReference = useRef<string | null>(null)
+  const activeBoundaryHeadingSlugSetReference = useRef<Set<string>>(new Set())
+  const visibleHeadingSlugSetReference = useRef<Set<string>>(new Set())
   const shouldReduceMotion = Boolean(useReducedMotion())
   const tocContainerVariants = buildTocContainerVariants(shouldReduceMotion)
+  const activeIndicatorLayoutId = `${POST_TOC.MOTION.ACTIVE_INDICATOR_LAYOUT_ID}-${tocInstanceId}`
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
+    activeHeadingSlugReference.current = activeId
+  }, [activeId])
 
-      timeoutRef.current = setTimeout(() => {
-        let currentId: string | null = null
+  const updateActiveHeading = useCallback(() => {
+    const lockedActiveHeadingSlug = lockedActiveHeadingSlugReference.current
+    const scrollTop = window.scrollY || document.documentElement.scrollTop
+    const viewportHeight = window.innerHeight
+    const documentHeight = document.documentElement.scrollHeight
+    const nearBottom = isTocScrollNearBottom(
+      scrollTop,
+      viewportHeight,
+      documentHeight,
+    )
 
-        for (let i = headings.length - 1; i >= 0; i--) {
-          const heading = headings[i]
-          const element = document.querySelector(`#${heading.slug}`)
-          if (element) {
-            const rect = element.getBoundingClientRect()
-            if (rect.top <= POST_TOC.ACTIVE_HEADING_TOP_OFFSET_PX) {
-              currentId = heading.slug
-              break
-            }
-          }
-        }
-        setActiveId(currentId)
-      }, POST_TOC.SCROLL_DEBOUNCE_MILLISECONDS)
+    if (lockedActiveHeadingSlug) {
+      setActiveId(lockedActiveHeadingSlug)
+      return
     }
 
-    window.addEventListener('scroll', handleScroll)
-    handleScroll()
+    setActiveId(
+      resolveActiveTocHeadingId({
+        headings,
+        activeBoundaryHeadingSlugSet:
+          activeBoundaryHeadingSlugSetReference.current,
+        visibleHeadingSlugSet: visibleHeadingSlugSetReference.current,
+        currentActiveHeadingSlug: activeHeadingSlugReference.current,
+        isNearBottom: nearBottom,
+      }),
+    )
+  }, [headings])
+
+  const releaseLockedActiveHeading = useCallback(() => {
+    if (!lockedActiveHeadingSlugReference.current) {
+      return
+    }
+
+    lockedActiveHeadingSlugReference.current = null
+    updateActiveHeading()
+  }, [updateActiveHeading])
+
+  useEffect(() => {
+    const syncObservedHeadingSlugSet = (
+      entries: IntersectionObserverEntry[],
+      observedHeadingSlugSet: Set<string>,
+    ) => {
+      for (const entry of entries) {
+        const headingSlug = entry.target.id
+
+        if (!headingSlug) {
+          continue
+        }
+
+        if (entry.isIntersecting) {
+          observedHeadingSlugSet.add(headingSlug)
+          continue
+        }
+
+        observedHeadingSlugSet.delete(headingSlug)
+      }
+    }
+
+    let activeBoundaryObserver: IntersectionObserver | null = null
+    let visibleHeadingObserver: IntersectionObserver | null = null
+
+    const observeHeadings = () => {
+      activeBoundaryObserver?.disconnect()
+      visibleHeadingObserver?.disconnect()
+      activeBoundaryHeadingSlugSetReference.current.clear()
+      visibleHeadingSlugSetReference.current.clear()
+
+      activeBoundaryObserver = new IntersectionObserver(
+        (entries) => {
+          syncObservedHeadingSlugSet(
+            entries,
+            activeBoundaryHeadingSlugSetReference.current,
+          )
+          updateActiveHeading()
+        },
+        {
+          rootMargin: calcTocActiveBoundaryRootMargin(window.innerHeight),
+          threshold: 0,
+        },
+      )
+
+      visibleHeadingObserver = new IntersectionObserver(
+        (entries) => {
+          syncObservedHeadingSlugSet(
+            entries,
+            visibleHeadingSlugSetReference.current,
+          )
+          updateActiveHeading()
+        },
+        {
+          threshold: 0,
+        },
+      )
+
+      for (const heading of headings) {
+        const headingElement = queryTocHeadingElement(heading.slug)
+
+        if (!headingElement) {
+          continue
+        }
+
+        activeBoundaryObserver.observe(headingElement)
+        visibleHeadingObserver.observe(headingElement)
+      }
+
+      updateActiveHeading()
+    }
+
+    const handleResize = () => {
+      observeHeadings()
+    }
+
+    observeHeadings()
+    window.addEventListener('resize', handleResize)
 
     return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
+      window.removeEventListener('resize', handleResize)
+      activeBoundaryObserver?.disconnect()
+      visibleHeadingObserver?.disconnect()
+    }
+  }, [headings, updateActiveHeading])
+
+  useEffect(() => {
+    const handleWheel = () => {
+      releaseLockedActiveHeading()
+    }
+
+    const handleTouchMove = () => {
+      releaseLockedActiveHeading()
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (TOC_MANUAL_SCROLL_KEYS.has(event.key)) {
+        releaseLockedActiveHeading()
       }
     }
-  }, [headings])
+
+    globalThis.addEventListener('wheel', handleWheel, { passive: true })
+    globalThis.addEventListener('touchmove', handleTouchMove, { passive: true })
+    globalThis.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      globalThis.removeEventListener('wheel', handleWheel)
+      globalThis.removeEventListener('touchmove', handleTouchMove)
+      globalThis.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [releaseLockedActiveHeading])
 
   const handleClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
     slug: string,
   ) => {
     e.preventDefault()
-    const element = document.querySelector(`#${slug}`)
+    const element = queryTocHeadingElement(slug)
     if (element) {
       const rect = element.getBoundingClientRect()
       const scrollTop = window.scrollY || document.documentElement.scrollTop
@@ -74,6 +213,7 @@ export function Toc({ headings, className }: TocProps) {
         behavior: 'smooth',
       })
     }
+    lockedActiveHeadingSlugReference.current = slug
     setActiveId(slug)
   }
 
@@ -111,7 +251,7 @@ export function Toc({ headings, className }: TocProps) {
                 <span className="relative flex size-3 shrink-0 items-center justify-center">
                   {isActive ? (
                     <motion.span
-                      layoutId={POST_TOC.MOTION.ACTIVE_INDICATOR_LAYOUT_ID}
+                      layoutId={activeIndicatorLayoutId}
                       className="bg-foreground absolute h-3 w-1.5 rounded-full"
                     />
                   ) : (

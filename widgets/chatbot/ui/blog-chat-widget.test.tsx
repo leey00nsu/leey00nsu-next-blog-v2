@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import koMessages from '@/messages/ko.json'
 import { BlogChatWidget } from '@/widgets/chatbot/ui/blog-chat-widget'
 
@@ -12,6 +12,8 @@ const { usePathnameMock, useBlogChatMock } = vi.hoisted(() => {
 })
 
 const EXPECTED_INPUT_PLACEHOLDER_TEXT = '질문을 입력하세요'
+const scrollIntoViewMock = vi.fn()
+const originalScrollIntoView = HTMLElement.prototype.scrollIntoView
 
 interface MotionDivMockProps
   extends Omit<ComponentPropsWithoutRef<'div'>, 'children'> {
@@ -124,6 +126,7 @@ vi.mock('motion/react', () => {
 describe('BlogChatWidget', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    HTMLElement.prototype.scrollIntoView = scrollIntoViewMock
 
     useBlogChatMock.mockReturnValue({
       conversationItems: [],
@@ -132,6 +135,10 @@ describe('BlogChatWidget', () => {
       setQuestion: vi.fn(),
       submitQuestion: vi.fn(),
     })
+  })
+
+  afterAll(() => {
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView
   })
 
   it('소개 페이지에서 챗봇 진입 버튼을 노출한다', () => {
@@ -160,6 +167,42 @@ describe('BlogChatWidget', () => {
     expect(screen.queryByText('disclaimer')).not.toBeInTheDocument()
   })
 
+  it('기존 대화가 있으면 위젯을 열 때 최신 대화 위치로 바로 이동한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+    useBlogChatMock.mockReturnValue({
+      conversationItems: [
+        {
+          id: 'completed-item',
+          question: '기존 질문',
+          status: 'completed',
+          response: {
+            grounded: true,
+            answer: '기존 답변',
+            refusalReason: null,
+            citations: [],
+          },
+        },
+      ],
+      isLoading: false,
+      question: '',
+      setQuestion: vi.fn(),
+      submitQuestion: vi.fn(),
+    })
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'end',
+    })
+  })
+
   it('입력창 placeholder는 간단한 질문 안내 문구를 사용한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
@@ -174,6 +217,64 @@ describe('BlogChatWidget', () => {
     expect(
       screen.getByPlaceholderText(EXPECTED_INPUT_PLACEHOLDER_TEXT),
     ).toBeInTheDocument()
+  })
+
+  it('한글 조합 중 Enter 입력은 질문 제출로 처리하지 않는다', () => {
+    const submitQuestion = vi.fn()
+
+    usePathnameMock.mockReturnValue('/ko/about')
+    useBlogChatMock.mockReturnValue({
+      conversationItems: [],
+      isLoading: false,
+      question: '안녕하세요',
+      setQuestion: vi.fn(),
+      submitQuestion,
+    })
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    fireEvent.keyDown(screen.getByLabelText(koMessages.chatbot.inputLabel), {
+      key: 'Enter',
+      keyCode: 229,
+      shiftKey: false,
+      which: 229,
+    })
+
+    expect(submitQuestion).not.toHaveBeenCalled()
+  })
+
+  it('조합 중이 아닐 때 Enter 입력은 질문을 제출한다', () => {
+    const submitQuestion = vi.fn()
+
+    usePathnameMock.mockReturnValue('/ko/about')
+    useBlogChatMock.mockReturnValue({
+      conversationItems: [],
+      isLoading: false,
+      question: '안녕하세요',
+      setQuestion: vi.fn(),
+      submitQuestion,
+    })
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    fireEvent.keyDown(screen.getByLabelText(koMessages.chatbot.inputLabel), {
+      key: 'Enter',
+      shiftKey: false,
+    })
+
+    expect(submitQuestion).toHaveBeenCalledTimes(1)
   })
 
   it('pending 대화 항목은 질문 버블과 assistant 스피너를 함께 보여준다', () => {
@@ -273,6 +374,97 @@ describe('BlogChatWidget', () => {
 
     expect(screen.getByText('새 질문')).toBeInTheDocument()
     expect(screen.getAllByTestId('motion-div')).toHaveLength(3)
+  })
+
+  it('새 질문이 추가되면 최신 대화 위치로 부드럽게 이동한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    const currentChatState = {
+      conversationItems: [] as Array<Record<string, unknown>>,
+      isLoading: false,
+      question: '',
+      setQuestion: vi.fn(),
+      submitQuestion: vi.fn(),
+    }
+
+    useBlogChatMock.mockImplementation(() => currentChatState)
+
+    const { rerender } = render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    scrollIntoViewMock.mockClear()
+
+    currentChatState.conversationItems = [
+      {
+        id: 'pending-item',
+        question: '새 질문',
+        status: 'pending',
+      },
+    ]
+
+    rerender(<BlogChatWidget />)
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'end',
+    })
+  })
+
+  it('같은 질문에 응답이 도착하면 최신 대화 위치로 부드럽게 이동한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    const currentChatState = {
+      conversationItems: [
+        {
+          id: 'pending-item',
+          question: '새 질문',
+          status: 'pending',
+        },
+      ] as Array<Record<string, unknown>>,
+      isLoading: true,
+      question: '',
+      setQuestion: vi.fn(),
+      submitQuestion: vi.fn(),
+    }
+
+    useBlogChatMock.mockImplementation(() => currentChatState)
+
+    const { rerender } = render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    scrollIntoViewMock.mockClear()
+
+    currentChatState.conversationItems = [
+      {
+        id: 'pending-item',
+        question: '새 질문',
+        status: 'completed',
+        response: {
+          grounded: true,
+          answer: '응답 완료',
+          refusalReason: null,
+          citations: [],
+        },
+      },
+    ]
+    currentChatState.isLoading = false
+
+    rerender(<BlogChatWidget />)
+
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'end',
+    })
   })
 
   it('failed 대화 항목은 질문 버블 아래에 에러 문구를 보여준다', () => {

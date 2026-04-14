@@ -14,3 +14,14 @@ export const BLOG_CHAT_WIDGET_MOTION = {
   CITATION_STAGGER_DELAY_SECONDS: 0.05,
   EASE: [0.22, 1, 0.36, 1],
 } as const
+
+export const BLOG_CHAT_WIDGET_INPUT = {
+  INPUT_METHOD_EDITOR_COMPOSITION_KEY_CODE: 229,
+} as const
+
+export const BLOG_CHAT_WIDGET_SCROLL = {
+  OPEN_BEHAVIOR: 'auto',
+  UPDATE_BEHAVIOR: 'smooth',
+  REDUCED_MOTION_UPDATE_BEHAVIOR: 'auto',
+  BLOCK_POSITION: 'end',
+} as const

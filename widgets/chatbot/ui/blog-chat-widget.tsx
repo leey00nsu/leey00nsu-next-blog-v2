@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
@@ -25,6 +25,10 @@ import {
 import { Textarea } from '@/shared/ui/textarea'
 import type { SupportedLocale } from '@/shared/config/constants'
 import {
+  BLOG_CHAT_WIDGET_INPUT,
+  BLOG_CHAT_WIDGET_SCROLL,
+} from '@/widgets/chatbot/config/constants'
+import {
   buildBlogChatCitationContainerVariants,
   buildBlogChatCitationItemVariants,
   buildBlogChatConversationItemVariants,
@@ -33,6 +37,7 @@ import {
   buildInitialSeenConversationItemIds,
   shouldAnimateBlogChatConversationItem,
 } from '@/widgets/chatbot/lib/blog-chat-widget-motion'
+import { shouldScrollBlogChatToLatestConversationItem } from '@/widgets/chatbot/lib/blog-chat-widget-scroll'
 
 const BLOG_CHAT_WIDGET_PATH = {
   VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about)(\/|$)/,
@@ -40,6 +45,16 @@ const BLOG_CHAT_WIDGET_PATH = {
 } as const
 const MAXIMUM_QUESTION_CHARACTERS =
   BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS
+const INPUT_METHOD_EDITOR_COMPOSITION_KEY_CODE =
+  BLOG_CHAT_WIDGET_INPUT.INPUT_METHOD_EDITOR_COMPOSITION_KEY_CODE
+const BLOG_CHAT_WIDGET_SCROLL_BLOCK_POSITION =
+  BLOG_CHAT_WIDGET_SCROLL.BLOCK_POSITION
+const BLOG_CHAT_WIDGET_SCROLL_OPEN_BEHAVIOR =
+  BLOG_CHAT_WIDGET_SCROLL.OPEN_BEHAVIOR
+const BLOG_CHAT_WIDGET_SCROLL_UPDATE_BEHAVIOR =
+  BLOG_CHAT_WIDGET_SCROLL.UPDATE_BEHAVIOR
+const BLOG_CHAT_WIDGET_SCROLL_REDUCED_MOTION_UPDATE_BEHAVIOR =
+  BLOG_CHAT_WIDGET_SCROLL.REDUCED_MOTION_UPDATE_BEHAVIOR
 const BLOG_CHAT_WIDGET_STYLE = {
   SUBMIT_BUTTON_MIN_WIDTH_CLASS_NAME: 'min-w-24',
 } as const
@@ -63,6 +78,11 @@ export function BlogChatWidget() {
     submitQuestion,
   } = useBlogChat({ locale, currentPostSlug })
   const [isOpen, setIsOpen] = useState(false)
+  const [isQuestionInputComposing, setIsQuestionInputComposing] = useState(false)
+  const latestConversationItemAnchorReference = useRef<HTMLDivElement | null>(
+    null,
+  )
+  const previousConversationItemsReference = useRef(conversationItems)
   const [seenConversationItemIds, setSeenConversationItemIds] = useState(() =>
     buildInitialSeenConversationItemIds(conversationItems),
   )
@@ -79,6 +99,9 @@ export function BlogChatWidget() {
     buildBlogChatCitationContainerVariants(shouldReduceMotion)
   const citationItemVariants =
     buildBlogChatCitationItemVariants(shouldReduceMotion)
+  const conversationUpdateScrollBehavior = shouldReduceMotion
+    ? BLOG_CHAT_WIDGET_SCROLL_REDUCED_MOTION_UPDATE_BEHAVIOR
+    : BLOG_CHAT_WIDGET_SCROLL_UPDATE_BEHAVIOR
   const refusalMessages = {
     insufficient_search_match: t('refusal.insufficient_search_match'),
     insufficient_evidence: t('refusal.insufficient_evidence'),
@@ -132,6 +155,40 @@ export function BlogChatWidget() {
       return nextAnimatedConversationItemIdsSet
     })
   }, [conversationItems, seenConversationItemIds])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    latestConversationItemAnchorReference.current?.scrollIntoView({
+      behavior: BLOG_CHAT_WIDGET_SCROLL_OPEN_BEHAVIOR,
+      block: BLOG_CHAT_WIDGET_SCROLL_BLOCK_POSITION,
+    })
+  }, [isOpen])
+
+  useEffect(() => {
+    const previousConversationItems = previousConversationItemsReference.current
+    previousConversationItemsReference.current = conversationItems
+
+    if (!isOpen) {
+      return
+    }
+
+    if (
+      !shouldScrollBlogChatToLatestConversationItem({
+        previousConversationItems,
+        nextConversationItems: conversationItems,
+      })
+    ) {
+      return
+    }
+
+    latestConversationItemAnchorReference.current?.scrollIntoView({
+      behavior: conversationUpdateScrollBehavior,
+      block: BLOG_CHAT_WIDGET_SCROLL_BLOCK_POSITION,
+    })
+  }, [conversationItems, conversationUpdateScrollBehavior, isOpen])
 
   if (!isVisible) {
     return null
@@ -316,6 +373,11 @@ export function BlogChatWidget() {
                     </motion.div>
                   )
                 })}
+                <div
+                  ref={latestConversationItemAnchorReference}
+                  aria-hidden="true"
+                  className="h-px w-full shrink-0"
+                />
               </CardContent>
               <CardFooter className="flex flex-col items-stretch gap-3 border-t pt-4">
                 <form
@@ -332,10 +394,28 @@ export function BlogChatWidget() {
                     id="blog-chat-question"
                     value={question}
                     onChange={(event) => setQuestion(event.target.value)}
+                    onCompositionStart={() => {
+                      setIsQuestionInputComposing(true)
+                    }}
+                    onCompositionEnd={() => {
+                      setIsQuestionInputComposing(false)
+                    }}
                     placeholder={t('inputPlaceholder')}
                     className="min-h-24 resize-none"
                     maxLength={MAXIMUM_QUESTION_CHARACTERS}
                     onKeyDown={async (event) => {
+                      const isNativeCompositionInProgress =
+                        event.nativeEvent.isComposing ||
+                        event.nativeEvent.keyCode ===
+                          INPUT_METHOD_EDITOR_COMPOSITION_KEY_CODE
+
+                      if (
+                        isQuestionInputComposing ||
+                        isNativeCompositionInProgress
+                      ) {
+                        return
+                      }
+
                       if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault()
                         await submitQuestion()

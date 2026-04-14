@@ -53,6 +53,20 @@ export const BLOG_CHAT = {
       5 * 60 * 1000,
     ),
   },
+  RATE_LIMIT: {
+    WINDOW_MILLISECONDS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RATE_LIMIT_WINDOW_MS,
+      60 * 1000,
+    ),
+    MAXIMUM_REQUESTS_PER_WINDOW: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RATE_LIMIT_MAXIMUM_REQUESTS,
+      5,
+    ),
+    MAXIMUM_CONCURRENT_REQUESTS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RATE_LIMIT_MAXIMUM_CONCURRENT_REQUESTS,
+      1,
+    ),
+  },
   LIMIT: {
     MAXIMUM_DAILY_REQUESTS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_MAXIMUM_DAILY_REQUESTS,

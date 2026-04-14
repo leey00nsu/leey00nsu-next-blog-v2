@@ -133,6 +133,7 @@
       "invalid_citations": "There was an issue while validating the supporting sources, so the answer was skipped this time.",
       "missing_api_key": "The chatbot is not fully configured yet. Please try again later.",
       "model_error": "Something went wrong while processing the question. Please try again in a moment.",
+      "rate_limited": "Requests are a bit busy right now. Please try again in a moment.",
       "question_too_long": "Please keep your question within 200 characters so it can search more accurately.",
       "daily_limit_exceeded": "The free daily question limit for today (Korean time) has been reached. Please try again after midnight Korean time."
     }

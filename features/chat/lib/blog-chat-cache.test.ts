@@ -59,5 +59,13 @@ describe('shouldCacheBlogChatResponse', () => {
         }),
       ),
     ).toBe(false)
+
+    expect(
+      shouldCacheBlogChatResponse(
+        buildResponse({
+          refusalReason: 'rate_limited',
+        }),
+      ),
+    ).toBe(false)
   })
 })

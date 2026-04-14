@@ -19,6 +19,12 @@ import {
   type ChatQuestionAnalysis,
 } from '@/features/chat/lib/question-analysis'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
+import {
+  acquireChatConcurrentRequestSlot,
+  consumeChatRequestRateLimit,
+  releaseChatConcurrentRequestSlot,
+  resolveChatClientKey,
+} from '@/features/chat/lib/chat-rate-limit'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
@@ -41,6 +47,8 @@ interface CachedBlogChatResponse {
 
 const blogChatResponseCache = new Map<string, CachedBlogChatResponse>()
 const blogChatDailyUsageMap = new Map<string, number>()
+const blogChatRateLimitUsageMap = new Map<string, number[]>()
+const blogChatInFlightMap = new Map<string, number>()
 
 const CHAT_ROUTE = {
   FALLBACK_SOCIAL_REPLIES: {
@@ -220,176 +228,211 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const dailyUsageResult = consumeDailyUsage({
-      usageMap: blogChatDailyUsageMap,
-      maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
+    const clientKey = resolveChatClientKey(request.headers)
+    const rateLimitResult = consumeChatRequestRateLimit({
+      usageMap: blogChatRateLimitUsageMap,
+      clientKey,
+      windowMilliseconds: BLOG_CHAT.RATE_LIMIT.WINDOW_MILLISECONDS,
+      maximumRequestsPerWindow:
+        BLOG_CHAT.RATE_LIMIT.MAXIMUM_REQUESTS_PER_WINDOW,
     })
 
-    if (!dailyUsageResult.allowed) {
+    if (!rateLimitResult.allowed) {
       return NextResponse.json(
-        BlogChatResponseSchema.parse(
-          buildRefusalResponse('daily_limit_exceeded'),
-        ),
+        BlogChatResponseSchema.parse(buildRefusalResponse('rate_limited')),
       )
     }
 
-    cleanupExpiredCache()
-
-    const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
-    const originalQuestion = parsedRequest.data.question
-    const assistantProfile = getChatAssistantProfile(locale)
-    const contactProfile = getChatContactProfile(locale)
-    const questionPlan = await planChatQuestion({
-      question: originalQuestion,
-      locale,
-      conversationHistory: parsedRequest.data.conversationHistory,
-      currentPostSlug: parsedRequest.data.currentPostSlug,
-      assistantProfile,
+    const concurrentRequestResult = acquireChatConcurrentRequestSlot({
+      inFlightMap: blogChatInFlightMap,
+      clientKey,
+      maximumConcurrentRequests:
+        BLOG_CHAT.RATE_LIMIT.MAXIMUM_CONCURRENT_REQUESTS,
     })
 
-    if (!questionPlan.ok) {
-      const plannerFailureResponse = BlogChatResponseSchema.parse(
-        buildPlannerFailureResponse(questionPlan.refusalReason),
+    if (!concurrentRequestResult.allowed) {
+      return NextResponse.json(
+        BlogChatResponseSchema.parse(buildRefusalResponse('rate_limited')),
       )
+    }
 
-      cacheResponseIfNeeded({
-        cacheKey: buildCacheKey(
-          normalizeQuestion(originalQuestion),
-          locale,
-          parsedRequest.data.currentPostSlug,
-        ),
-        responseData: plannerFailureResponse,
+    try {
+      const dailyUsageResult = consumeDailyUsage({
+        usageMap: blogChatDailyUsageMap,
+        maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
       })
 
-      return NextResponse.json(plannerFailureResponse)
-    }
+      if (!dailyUsageResult.allowed) {
+        return NextResponse.json(
+          BlogChatResponseSchema.parse(
+            buildRefusalResponse('daily_limit_exceeded'),
+          ),
+        )
+      }
 
-    const resolvedQuestion = questionPlan.questionPlan.standaloneQuestion
-    const normalizedQuestion = normalizeQuestion(resolvedQuestion)
-    const cacheKey = buildCacheKey(
-      normalizedQuestion,
-      locale,
-      parsedRequest.data.currentPostSlug,
-    )
-    const cachedResponse = blogChatResponseCache.get(cacheKey)
+      cleanupExpiredCache()
 
-    if (cachedResponse) {
-      return NextResponse.json(cachedResponse.data)
-    }
-
-    if (questionPlan.questionPlan.deterministicAction === 'social_reply') {
-      const socialReplyResponse = BlogChatResponseSchema.parse(
-        buildSocialReplyResponse({
-          locale,
-          assistantProfile,
-        }),
-      )
-
-      cacheResponseIfNeeded({
-        cacheKey,
-        responseData: socialReplyResponse,
+      const locale = parsedRequest.data.locale ?? LOCALES.DEFAULT
+      const originalQuestion = parsedRequest.data.question
+      const assistantProfile = getChatAssistantProfile(locale)
+      const contactProfile = getChatContactProfile(locale)
+      const questionPlan = await planChatQuestion({
+        question: originalQuestion,
+        locale,
+        conversationHistory: parsedRequest.data.conversationHistory,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
+        assistantProfile,
       })
 
-      return NextResponse.json(socialReplyResponse)
-    }
+      if (!questionPlan.ok) {
+        const plannerFailureResponse = BlogChatResponseSchema.parse(
+          buildPlannerFailureResponse(questionPlan.refusalReason),
+        )
 
-    if (questionPlan.questionPlan.needsClarification) {
-      const clarificationResponse = BlogChatResponseSchema.parse(
-        buildClarificationResponse({
-          locale,
-          questionPlan: questionPlan.questionPlan,
-        }),
+        cacheResponseIfNeeded({
+          cacheKey: buildCacheKey(
+            normalizeQuestion(originalQuestion),
+            locale,
+            parsedRequest.data.currentPostSlug,
+          ),
+          responseData: plannerFailureResponse,
+        })
+
+        return NextResponse.json(plannerFailureResponse)
+      }
+
+      const resolvedQuestion = questionPlan.questionPlan.standaloneQuestion
+      const normalizedQuestion = normalizeQuestion(resolvedQuestion)
+      const cacheKey = buildCacheKey(
+        normalizedQuestion,
+        locale,
+        parsedRequest.data.currentPostSlug,
       )
+      const cachedResponse = blogChatResponseCache.get(cacheKey)
 
-      cacheResponseIfNeeded({
-        cacheKey,
-        responseData: clarificationResponse,
+      if (cachedResponse) {
+        return NextResponse.json(cachedResponse.data)
+      }
+
+      if (questionPlan.questionPlan.deterministicAction === 'social_reply') {
+        const socialReplyResponse = BlogChatResponseSchema.parse(
+          buildSocialReplyResponse({
+            locale,
+            assistantProfile,
+          }),
+        )
+
+        cacheResponseIfNeeded({
+          cacheKey,
+          responseData: socialReplyResponse,
+        })
+
+        return NextResponse.json(socialReplyResponse)
+      }
+
+      if (questionPlan.questionPlan.needsClarification) {
+        const clarificationResponse = BlogChatResponseSchema.parse(
+          buildClarificationResponse({
+            locale,
+            questionPlan: questionPlan.questionPlan,
+          }),
+        )
+
+        cacheResponseIfNeeded({
+          cacheKey,
+          responseData: clarificationResponse,
+        })
+
+        return NextResponse.json(clarificationResponse)
+      }
+
+      const resolvedQuestionBaseAnalysis = analyzeQuestion(
+        resolvedQuestion,
+        locale,
+      )
+      const resolvedQuestionAnalysis = applyQuestionPlanToAnalysis({
+        questionAnalysis: resolvedQuestionBaseAnalysis,
+        questionPlan: questionPlan.questionPlan,
+        locale,
+      })
+      const questionRouting = buildQuestionRoutingFromPlan(
+        questionPlan.questionPlan,
+      )
+      const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
+        questionPlan: questionPlan.questionPlan,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
       })
 
-      return NextResponse.json(clarificationResponse)
-    }
-
-    const resolvedQuestionBaseAnalysis = analyzeQuestion(
-      resolvedQuestion,
-      locale,
-    )
-    const resolvedQuestionAnalysis = applyQuestionPlanToAnalysis({
-      questionAnalysis: resolvedQuestionBaseAnalysis,
-      questionPlan: questionPlan.questionPlan,
-      locale,
-    })
-    const questionRouting = buildQuestionRoutingFromPlan(
-      questionPlan.questionPlan,
-    )
-    const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
-      questionPlan: questionPlan.questionPlan,
-      currentPostSlug: parsedRequest.data.currentPostSlug,
-    })
-
-    const blogRecords = buildBlogEvidenceRecords(locale)
-    const curatedRecords = await getCuratedChatSources(locale)
-    const resolvedChatRequest = resolveChatRequest({
-      question: resolvedQuestion,
-      locale,
-      blogRecords,
-      curatedRecords,
-      currentPostSlug: plannerCurrentPostSlug,
-      questionAnalysis: resolvedQuestionAnalysis,
-      contactProfile,
-      questionRouting,
-    })
-
-    if (resolvedChatRequest.directResponse) {
-      const validatedDirectResponse = BlogChatResponseSchema.parse(
-        resolvedChatRequest.directResponse,
-      )
-
-      cacheResponseIfNeeded({
-        cacheKey,
-        responseData: validatedDirectResponse,
-      })
-
-      return NextResponse.json(validatedDirectResponse)
-    }
-
-    const preferredSourceCategories = collectPreferredSourceCategories(
-      resolvedQuestionAnalysis,
-    )
-    let combinedMatches = resolvedChatRequest.matches
-
-    if (shouldRunHybridRetrieval(questionPlan.questionPlan)) {
-      const chatRagSearchResult = await runChatRagWorkflow({
+      const blogRecords = buildBlogEvidenceRecords(locale)
+      const curatedRecords = await getCuratedChatSources(locale)
+      const resolvedChatRequest = resolveChatRequest({
         question: resolvedQuestion,
         locale,
+        blogRecords,
+        curatedRecords,
         currentPostSlug: plannerCurrentPostSlug,
+        questionAnalysis: resolvedQuestionAnalysis,
+        contactProfile,
+        questionRouting,
       })
 
-      combinedMatches = fuseChatRetrievalMatches({
-        lexicalMatches: resolvedChatRequest.matches,
-        semanticMatches: chatRagSearchResult.matches,
-        preferredSourceCategories,
-        currentPostSlug: plannerCurrentPostSlug,
-      })
-    }
+      if (resolvedChatRequest.directResponse) {
+        const validatedDirectResponse = BlogChatResponseSchema.parse(
+          resolvedChatRequest.directResponse,
+        )
 
-    const shouldCallModel =
-      resolvedChatRequest.shouldCallModel || combinedMatches.length > 0
+        cacheResponseIfNeeded({
+          cacheKey,
+          responseData: validatedDirectResponse,
+        })
 
-    if (!shouldCallModel || combinedMatches.length === 0) {
-      const refusalResponse = buildRefusalResponse(
-        resolvedChatRequest.refusalReason ?? 'insufficient_search_match',
+        return NextResponse.json(validatedDirectResponse)
+      }
+
+      const preferredSourceCategories = collectPreferredSourceCategories(
+        resolvedQuestionAnalysis,
       )
+      let combinedMatches = resolvedChatRequest.matches
 
-      return NextResponse.json(BlogChatResponseSchema.parse(refusalResponse))
+      if (shouldRunHybridRetrieval(questionPlan.questionPlan)) {
+        const chatRagSearchResult = await runChatRagWorkflow({
+          question: resolvedQuestion,
+          locale,
+          currentPostSlug: plannerCurrentPostSlug,
+        })
+
+        combinedMatches = fuseChatRetrievalMatches({
+          lexicalMatches: resolvedChatRequest.matches,
+          semanticMatches: chatRagSearchResult.matches,
+          preferredSourceCategories,
+          currentPostSlug: plannerCurrentPostSlug,
+        })
+      }
+
+      const shouldCallModel =
+        resolvedChatRequest.shouldCallModel || combinedMatches.length > 0
+
+      if (!shouldCallModel || combinedMatches.length === 0) {
+        const refusalResponse = buildRefusalResponse(
+          resolvedChatRequest.refusalReason ?? 'insufficient_search_match',
+        )
+
+        return NextResponse.json(BlogChatResponseSchema.parse(refusalResponse))
+      }
+
+      const responseData = await buildModelBackedResponse({
+        question: resolvedQuestion,
+        matches: combinedMatches,
+        cacheKey,
+      })
+
+      return NextResponse.json(responseData)
+    } finally {
+      releaseChatConcurrentRequestSlot({
+        inFlightMap: blogChatInFlightMap,
+        clientKey,
+      })
     }
-
-    const responseData = await buildModelBackedResponse({
-      question: resolvedQuestion,
-      matches: combinedMatches,
-      cacheKey,
-    })
-
-    return NextResponse.json(responseData)
   } catch {
     return NextResponse.json(
       {

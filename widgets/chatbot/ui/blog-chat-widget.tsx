@@ -85,6 +85,7 @@ export function BlogChatWidget() {
     invalid_citations: t('refusal.invalid_citations'),
     missing_api_key: t('refusal.missing_api_key'),
     model_error: t('refusal.model_error'),
+    rate_limited: t('refusal.rate_limited'),
     question_too_long: t('refusal.question_too_long'),
     daily_limit_exceeded: t('refusal.daily_limit_exceeded'),
   } as const

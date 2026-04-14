@@ -11,6 +11,10 @@ const planChatQuestionMock = vi.fn()
 const runChatRagWorkflowMock = vi.fn()
 const getChatAssistantProfileMock = vi.fn()
 const getChatContactProfileMock = vi.fn()
+const resolveChatClientKeyMock = vi.fn()
+const consumeChatRequestRateLimitMock = vi.fn()
+const acquireChatConcurrentRequestSlotMock = vi.fn()
+const releaseChatConcurrentRequestSlotMock = vi.fn()
 
 vi.mock('@/entities/post/config/blog-search-records.generated', () => {
   return {
@@ -48,6 +52,11 @@ vi.mock('@/features/chat/config/constants', () => {
       },
       CACHE: {
         TTL_MILLISECONDS: 5 * 60 * 1000,
+      },
+      RATE_LIMIT: {
+        WINDOW_MILLISECONDS: 60 * 1000,
+        MAXIMUM_REQUESTS_PER_WINDOW: 5,
+        MAXIMUM_CONCURRENT_REQUESTS: 1,
       },
       LIMIT: {
         MAXIMUM_DAILY_REQUESTS: 1,
@@ -123,6 +132,15 @@ vi.mock('@/features/chat/model/get-chat-contact-profile', () => {
   }
 })
 
+vi.mock('@/features/chat/lib/chat-rate-limit', () => {
+  return {
+    resolveChatClientKey: resolveChatClientKeyMock,
+    consumeChatRequestRateLimit: consumeChatRequestRateLimitMock,
+    acquireChatConcurrentRequestSlot: acquireChatConcurrentRequestSlotMock,
+    releaseChatConcurrentRequestSlot: releaseChatConcurrentRequestSlotMock,
+  }
+})
+
 const GROUNDED_RESPONSE = {
   answer: 'React와 TypeScript를 사용합니다.',
   citations: [
@@ -154,6 +172,12 @@ const DAILY_LIMIT_EXCEEDED_RESPONSE = {
   grounded: false,
   refusalReason: 'daily_limit_exceeded',
 } as const
+const RATE_LIMITED_RESPONSE = {
+  answer: '',
+  citations: [],
+  grounded: false,
+  refusalReason: 'rate_limited',
+} as const
 
 const DEFAULT_ANALYSIS_RESULT = {
   normalizedQuestion: 'react stack',
@@ -183,11 +207,13 @@ const DEFAULT_QUESTION_PLAN_RESULT = {
 function createChatRequest(
   question: string,
   overrides?: Record<string, unknown>,
+  headerOverrides?: Record<string, string>,
 ): NextRequest {
   return new Request('http://localhost/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...headerOverrides,
     },
     body: JSON.stringify({
       question,
@@ -220,6 +246,16 @@ describe('POST /api/chat', () => {
       title: 'About Me',
       aboutUrl: '/ko/about',
       methods: [],
+    })
+    resolveChatClientKeyMock.mockReturnValue('127.0.0.1')
+    consumeChatRequestRateLimitMock.mockReturnValue({
+      allowed: true,
+      currentCount: 1,
+      resetAt: Date.now() + 60_000,
+    })
+    acquireChatConcurrentRequestSlotMock.mockReturnValue({
+      allowed: true,
+      currentCount: 1,
     })
     shouldCacheBlogChatResponseMock.mockReturnValue(true)
     finalizeBlogChatResponseMock.mockReturnValue(GROUNDED_RESPONSE)
@@ -281,6 +317,7 @@ describe('POST /api/chat', () => {
     expect(await groundedResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
     expect(planChatQuestionMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(2)
   })
 
   it('캐시 응답도 quota를 소모한다', async () => {
@@ -293,6 +330,7 @@ describe('POST /api/chat', () => {
     expect(await secondResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
     expect(planChatQuestionMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledTimes(1)
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(2)
   })
 
   it('mixed intent follow-up 질문은 planner의 standalone question으로 분석하고 모델 호출한다', async () => {
@@ -394,6 +432,7 @@ describe('POST /api/chat', () => {
     expect(analyzeQuestionMock).not.toHaveBeenCalled()
     expect(resolveChatRequestMock).not.toHaveBeenCalled()
     expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(1)
   })
 
   it('planner 설정이 비어 있으면 missing_api_key refusal 응답을 반환한다', async () => {
@@ -415,6 +454,7 @@ describe('POST /api/chat', () => {
     expect(analyzeQuestionMock).not.toHaveBeenCalled()
     expect(resolveChatRequestMock).not.toHaveBeenCalled()
     expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(1)
   })
 
   it('planner 호출이 실패하면 model_error refusal 응답을 반환한다', async () => {
@@ -436,6 +476,44 @@ describe('POST /api/chat', () => {
     expect(analyzeQuestionMock).not.toHaveBeenCalled()
     expect(resolveChatRequestMock).not.toHaveBeenCalled()
     expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('short-window rate limit에 걸리면 planner 이전에 rate_limited 응답을 반환한다', async () => {
+    consumeChatRequestRateLimitMock.mockReturnValueOnce({
+      allowed: false,
+      currentCount: 5,
+      resetAt: Date.now() + 60_000,
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+    const response = await POST(
+      createChatRequest('React stack?', undefined, {
+        'x-forwarded-for': '203.0.113.10',
+      }),
+    )
+
+    expect(resolveChatClientKeyMock).toHaveBeenCalledTimes(1)
+    expect(await response.json()).toEqual(RATE_LIMITED_RESPONSE)
+    expect(acquireChatConcurrentRequestSlotMock).not.toHaveBeenCalled()
+    expect(planChatQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).not.toHaveBeenCalled()
+  })
+
+  it('동시 요청 제한에 걸리면 planner 이전에 rate_limited 응답을 반환한다', async () => {
+    acquireChatConcurrentRequestSlotMock.mockReturnValueOnce({
+      allowed: false,
+      currentCount: 1,
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('React stack?'))
+
+    expect(await response.json()).toEqual(RATE_LIMITED_RESPONSE)
+    expect(planChatQuestionMock).not.toHaveBeenCalled()
+    expect(releaseChatConcurrentRequestSlotMock).not.toHaveBeenCalled()
   })
 
   it('grounded retrieval 질문은 lexical 검색 실패 후 Postgres RAG를 fallback으로 사용한다', async () => {
@@ -633,5 +711,6 @@ describe('POST /api/chat', () => {
       locale: 'ko',
       currentPostSlug: undefined,
     })
+    expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(1)
   })
 })

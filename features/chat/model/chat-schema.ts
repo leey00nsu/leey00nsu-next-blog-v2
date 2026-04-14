@@ -46,6 +46,7 @@ export const BlogChatResponseSchema = z.object({
       'invalid_citations',
       'missing_api_key',
       'model_error',
+      'rate_limited',
       'question_too_long',
       'daily_limit_exceeded',
     ])

@@ -4,6 +4,7 @@ const NON_CACHEABLE_REFUSAL_REASONS: ReadonlySet<string> = new Set([
   'invalid_citations',
   'missing_api_key',
   'model_error',
+  'rate_limited',
   'daily_limit_exceeded',
   'question_too_long',
 ] as const)

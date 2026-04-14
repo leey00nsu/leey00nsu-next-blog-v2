@@ -155,7 +155,7 @@ The most important groups are:
 - OpenAI translation / chat / router model settings
 - Modal embedding endpoint and proxy auth
 - Postgres Chat RAG connection settings
-- Blog chat limits such as top-k, minimum lexical score, input length, daily quota, and cache TTL
+- Blog chat limits such as top-k, minimum lexical score, input length, short-window rate limit, concurrent request limit, daily quota, and cache TTL
 
 ### Setup Tips
 

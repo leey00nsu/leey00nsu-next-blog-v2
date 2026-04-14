@@ -155,7 +155,7 @@ cp .env.example .env.local
 - OpenAI 번역/챗봇/질문 라우터 모델 설정
 - Modal 기반 임베딩 endpoint 및 proxy auth
 - Postgres 기반 Chat RAG 연결 정보
-- 블로그 챗봇 제한값(top-k, 최소 점수, 길이 제한, 일일 quota, 캐시 TTL)
+- 블로그 챗봇 제한값(top-k, 최소 점수, 길이 제한, short-window rate limit, 동시 요청 제한, 일일 quota, 캐시 TTL)
 
 ### 설정 팁
 

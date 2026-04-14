@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { FieldErrors, useForm } from 'react-hook-form'
+import { FieldErrors, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -15,6 +15,7 @@ import { Switch } from '@/shared/ui/switch'
 import { TagInput } from '@/shared/ui/tag-input'
 import { finalizeSlug, sanitizeSlug } from '@/features/studio/lib/slug'
 import { useTranslations } from 'next-intl'
+import { CustomImage } from '@/shared/ui/custom-image'
 
 interface FrontmatterFormProps {
   value?: Frontmatter
@@ -59,9 +60,9 @@ export function FrontmatterForm({
 
   const {
     register,
-    watch,
     setValue,
     reset,
+    control,
     formState: { errors, isValid },
   } = useForm<z.input<typeof schema>>({
     resolver: zodResolver(schema),
@@ -69,32 +70,33 @@ export function FrontmatterForm({
     mode: 'onChange',
   })
 
-  const values = watch()
+  const values = useWatch({
+    control,
+  })
 
   // 값 변경시 상위로 전달
   useEffect(() => {
     onChange?.(values as Frontmatter, errors)
-  }, [
-    onChange,
-    errors,
-    values.slug,
-    values.title,
-    values.description,
-    values.writer,
-    values.section,
-    values.series,
-    values.date,
-    values.thumbnail,
-    values.draft,
-    values.tags,
-  ])
+  }, [onChange, errors, values])
 
   // 유효성 변경시 상위로 전달 (별도 effect로 분리하여 렌더링 충돌 방지)
   useEffect(() => {
     onValidityChange?.(isValid)
   }, [onValidityChange, isValid])
 
-  const draft = watch('draft')
+  const draft = useWatch({
+    control,
+    name: 'draft',
+  })
+  const thumbnailValue = useWatch({
+    control,
+    name: 'thumbnail',
+  })
+  const slugValue = useWatch({
+    control,
+    name: 'slug',
+  })
+  const slugRegistration = register('slug')
 
   // 외부 value.thumbnail이 변경되면 폼의 thumbnail 값 동기화
   useEffect(() => {
@@ -105,50 +107,43 @@ export function FrontmatterForm({
 
   // 썸네일 후보(thumbnailChoices)가 바뀌어 현재 선택이 유효하지 않으면 null로 리셋
   useEffect(() => {
-    const cur = watch('thumbnail') as string | null | undefined
+    const cur = thumbnailValue as string | null | undefined
     if (!cur) return
     const exists = thumbnailChoices.some((c) => c.path === cur)
     if (!exists) {
       setValue('thumbnail', null, { shouldValidate: true })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [thumbnailChoices])
+  }, [thumbnailChoices, thumbnailValue, setValue])
 
   return (
     <form className="border-border mb-6 space-y-4 rounded-lg border p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="slug">{t('slug')}</Label>
-          {(() => {
-            const slugReg = register('slug')
-            const slugVal = watch('slug') ?? ''
-            return (
-              <Input
-                id="slug"
-                placeholder={t('slugPlaceholder')}
-                value={slugVal}
-                onChange={(e) =>
-                  setValue('slug', sanitizeSlug(e.target.value), {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                onBlur={(e) => {
-                  setValue('slug', finalizeSlug(e.target.value), {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                  slugReg.onBlur(e)
-                }}
-                ref={slugReg.ref}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                inputMode="text"
-                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
-              />
-            )
-          })()}
+          <Input
+            id="slug"
+            name={slugRegistration.name}
+            placeholder={t('slugPlaceholder')}
+            value={slugValue ?? ''}
+            onChange={(e) =>
+              setValue('slug', sanitizeSlug(e.target.value), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+            onBlur={(e) => {
+              setValue('slug', finalizeSlug(e.target.value), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+              slugRegistration.onBlur(e)
+            }}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          />
           {errors.slug && (
             <p className="text-destructive mt-1 text-xs">
               {errors.slug.message as string}
@@ -255,16 +250,18 @@ export function FrontmatterForm({
                 {errors.thumbnail.message as string}
               </p>
             )}
-            {watch('thumbnail') && (
-              <img
+            {thumbnailValue ? (
+              <CustomImage
                 alt="thumbnail preview"
-                className="mt-2 h-24 w-auto rounded border"
+                className="mt-2 h-24 w-auto rounded border object-contain"
                 src={
-                  thumbnailChoices.find((c) => c.path === watch('thumbnail'))
-                    ?.previewUrl
+                  thumbnailChoices.find((c) => c.path === thumbnailValue)
+                    ?.previewUrl ?? ''
                 }
+                width={96}
+                height={96}
               />
-            )}
+            ) : null}
           </div>
         </div>
         <div className="flex items-center gap-3">

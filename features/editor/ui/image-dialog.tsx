@@ -11,7 +11,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState, useCallback, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -57,7 +57,7 @@ export function ImageDialog({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const { register, handleSubmit, reset, setValue, watch, formState } =
+  const { register, handleSubmit, reset, setValue, control, formState } =
     useForm<ImageDialogFormValues>({
       resolver: zodResolver(ImageDialogFormSchema),
       defaultValues: initialValues,
@@ -115,7 +115,10 @@ export function ImageDialog({
   )
 
   // 파일 선택 시 미리보기
-  const fileList = watch('file')
+  const fileList = useWatch({
+    control,
+    name: 'file',
+  })
   useEffect(() => {
     if (fileList && fileList.length > 0) {
       const file = fileList[0]
@@ -126,7 +129,10 @@ export function ImageDialog({
   }, [fileList])
 
   // URL 입력 시 미리보기 (pendingImages objectURL 우선 사용)
-  const srcValue = watch('src')
+  const srcValue = useWatch({
+    control,
+    name: 'src',
+  })
   useEffect(() => {
     if (srcValue && !fileList?.length) {
       // pendingImages에서 objectURL 찾기 (fallback: 전역 스토어, 최종: 원본 src)

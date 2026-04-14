@@ -15,6 +15,7 @@ import rehypePrettyCode from 'rehype-pretty-code'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
 import { Loader2 } from 'lucide-react'
 import type { PendingImageMap } from '@/features/editor/model/types'
+import { CustomImage } from '@/shared/ui/custom-image'
 
 interface MdxClientRendererProps {
     content: string
@@ -102,12 +103,18 @@ export function MdxClientRenderer({ content, pendingImages = {} }: MdxClientRend
                 {...mdxSource}
                 components={{
                     figcaption: CustomFigcaption,
-                    // eslint-disable-next-line @next/next/no-img-element
                     img: (props) => {
                         // pending 이미지인 경우 objectURL로 변환
                         const src = props.src || ''
                         const displaySrc = pendingImages[src]?.objectURL ?? src
-                        return <img {...props} src={displaySrc} alt={props.alt || ''} className="rounded-lg" />
+                        return (
+                            <CustomImage
+                                {...props}
+                                src={displaySrc}
+                                alt={props.alt || ''}
+                                className="rounded-lg"
+                            />
+                        )
                     },
                 }}
             />

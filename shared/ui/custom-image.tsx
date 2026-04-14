@@ -51,7 +51,7 @@ export function CustomImage({
     if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
       setIsLoaded(true)
     }
-  })
+  }, [src])
 
   const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
     (event) => {

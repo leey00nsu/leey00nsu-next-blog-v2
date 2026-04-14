@@ -40,6 +40,13 @@ export const BLOG_CHAT = {
     MAXIMUM_CONTEXT_CHARACTERS: 2400,
     MAXIMUM_QUESTION_CHARACTERS: 400,
   },
+  PLANNER: {
+    MAXIMUM_QUESTION_CHARACTERS: 300,
+    MODEL_ID:
+      process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL ??
+      process.env.OPENAI_BLOG_CHAT_MODEL ??
+      'gpt-5.4-mini',
+  },
   CACHE: {
     TTL_MILLISECONDS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_CACHE_TTL_MS,

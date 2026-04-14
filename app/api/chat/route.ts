@@ -183,6 +183,15 @@ function collectPreferredSourceCategories(
   ]
 }
 
+function buildPlannerFailureResponse(
+  refusalReason: Extract<
+    BlogChatResponse['refusalReason'],
+    'missing_api_key' | 'model_error'
+  >,
+): BlogChatResponse {
+  return buildRefusalResponse(refusalReason)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const requestBody = await request.json()
@@ -237,7 +246,25 @@ export async function POST(request: NextRequest) {
       currentPostSlug: parsedRequest.data.currentPostSlug,
       assistantProfile,
     })
-    const resolvedQuestion = questionPlan.standaloneQuestion
+
+    if (!questionPlan.ok) {
+      const plannerFailureResponse = BlogChatResponseSchema.parse(
+        buildPlannerFailureResponse(questionPlan.refusalReason),
+      )
+
+      cacheResponseIfNeeded({
+        cacheKey: buildCacheKey(
+          normalizeQuestion(originalQuestion),
+          locale,
+          parsedRequest.data.currentPostSlug,
+        ),
+        responseData: plannerFailureResponse,
+      })
+
+      return NextResponse.json(plannerFailureResponse)
+    }
+
+    const resolvedQuestion = questionPlan.questionPlan.standaloneQuestion
     const normalizedQuestion = normalizeQuestion(resolvedQuestion)
     const cacheKey = buildCacheKey(
       normalizedQuestion,
@@ -250,7 +277,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(cachedResponse.data)
     }
 
-    if (questionPlan.deterministicAction === 'social_reply') {
+    if (questionPlan.questionPlan.deterministicAction === 'social_reply') {
       const socialReplyResponse = BlogChatResponseSchema.parse(
         buildSocialReplyResponse({
           locale,
@@ -266,11 +293,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(socialReplyResponse)
     }
 
-    if (questionPlan.needsClarification) {
+    if (questionPlan.questionPlan.needsClarification) {
       const clarificationResponse = BlogChatResponseSchema.parse(
         buildClarificationResponse({
           locale,
-          questionPlan,
+          questionPlan: questionPlan.questionPlan,
         }),
       )
 
@@ -288,12 +315,14 @@ export async function POST(request: NextRequest) {
     )
     const resolvedQuestionAnalysis = applyQuestionPlanToAnalysis({
       questionAnalysis: resolvedQuestionBaseAnalysis,
-      questionPlan,
+      questionPlan: questionPlan.questionPlan,
       locale,
     })
-    const questionRouting = buildQuestionRoutingFromPlan(questionPlan)
+    const questionRouting = buildQuestionRoutingFromPlan(
+      questionPlan.questionPlan,
+    )
     const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
-      questionPlan,
+      questionPlan: questionPlan.questionPlan,
       currentPostSlug: parsedRequest.data.currentPostSlug,
     })
 
@@ -328,7 +357,7 @@ export async function POST(request: NextRequest) {
     )
     let combinedMatches = resolvedChatRequest.matches
 
-    if (shouldRunHybridRetrieval(questionPlan)) {
+    if (shouldRunHybridRetrieval(questionPlan.questionPlan)) {
       const chatRagSearchResult = await runChatRagWorkflow({
         question: resolvedQuestion,
         locale,

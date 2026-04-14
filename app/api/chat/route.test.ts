@@ -175,6 +175,10 @@ const DEFAULT_QUESTION_PLAN = {
   clarificationQuestion: null,
   reason: 'default retrieval',
 }
+const DEFAULT_QUESTION_PLAN_RESULT = {
+  ok: true as const,
+  questionPlan: DEFAULT_QUESTION_PLAN,
+}
 
 function createChatRequest(
   question: string,
@@ -219,7 +223,7 @@ describe('POST /api/chat', () => {
     })
     shouldCacheBlogChatResponseMock.mockReturnValue(true)
     finalizeBlogChatResponseMock.mockReturnValue(GROUNDED_RESPONSE)
-    planChatQuestionMock.mockResolvedValue(DEFAULT_QUESTION_PLAN)
+    planChatQuestionMock.mockResolvedValue(DEFAULT_QUESTION_PLAN_RESULT)
     runChatRagWorkflowMock.mockResolvedValue({
       grounded: false,
       matches: [],
@@ -256,12 +260,15 @@ describe('POST /api/chat', () => {
 
   it('planner 기반 direct social reply도 일일 quota를 소모한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion: '안녕',
-      deterministicAction: 'social_reply',
-      needsRetrieval: false,
-      retrievalMode: 'none',
-      reason: 'pure social',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: '안녕',
+        deterministicAction: 'social_reply',
+        needsRetrieval: false,
+        retrievalMode: 'none',
+        reason: 'pure social',
+      },
     })
     shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
 
@@ -290,13 +297,16 @@ describe('POST /api/chat', () => {
 
   it('mixed intent follow-up 질문은 planner의 standalone question으로 분석하고 모델 호출한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion:
-        '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
-      socialPreamble: true,
-      preferredSourceCategories: ['project'],
-      additionalKeywords: ['lee-spec-kit'],
-      reason: 'follow-up retrieval',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion:
+          '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
+        socialPreamble: true,
+        preferredSourceCategories: ['project'],
+        additionalKeywords: ['lee-spec-kit'],
+        reason: 'follow-up retrieval',
+      },
     })
     analyzeQuestionMock.mockReturnValueOnce({
       normalizedQuestion:
@@ -364,13 +374,16 @@ describe('POST /api/chat', () => {
 
   it('명확화가 필요한 질문은 retrieval 대신 clarification 응답을 반환한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion: '이 사람 이름 뭐야',
-      needsRetrieval: false,
-      retrievalMode: 'none',
-      needsClarification: true,
-      clarificationQuestion: CLARIFICATION_RESPONSE.answer,
-      reason: 'ambiguous person reference',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: '이 사람 이름 뭐야',
+        needsRetrieval: false,
+        retrievalMode: 'none',
+        needsClarification: true,
+        clarificationQuestion: CLARIFICATION_RESPONSE.answer,
+        reason: 'ambiguous person reference',
+      },
     })
     shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
 
@@ -378,6 +391,48 @@ describe('POST /api/chat', () => {
     const response = await POST(createChatRequest('이 사람 이름 뭐야?'))
 
     expect(await response.json()).toEqual(CLARIFICATION_RESPONSE)
+    expect(analyzeQuestionMock).not.toHaveBeenCalled()
+    expect(resolveChatRequestMock).not.toHaveBeenCalled()
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+  })
+
+  it('planner 설정이 비어 있으면 missing_api_key refusal 응답을 반환한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ok: false,
+      refusalReason: 'missing_api_key',
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('React stack?'))
+
+    expect(await response.json()).toEqual({
+      answer: '',
+      citations: [],
+      grounded: false,
+      refusalReason: 'missing_api_key',
+    })
+    expect(analyzeQuestionMock).not.toHaveBeenCalled()
+    expect(resolveChatRequestMock).not.toHaveBeenCalled()
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
+  })
+
+  it('planner 호출이 실패하면 model_error refusal 응답을 반환한다', async () => {
+    planChatQuestionMock.mockResolvedValueOnce({
+      ok: false,
+      refusalReason: 'model_error',
+    })
+    shouldCacheBlogChatResponseMock.mockReturnValueOnce(false)
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('React stack?'))
+
+    expect(await response.json()).toEqual({
+      answer: '',
+      citations: [],
+      grounded: false,
+      refusalReason: 'model_error',
+    })
     expect(analyzeQuestionMock).not.toHaveBeenCalled()
     expect(resolveChatRequestMock).not.toHaveBeenCalled()
     expect(answerBlogQuestionMock).not.toHaveBeenCalled()
@@ -392,11 +447,14 @@ describe('POST /api/chat', () => {
       refusalReason: 'insufficient_search_match',
     })
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion: 'what is his name',
-      preferredSourceCategories: ['profile'],
-      additionalKeywords: ['name', 'yoonsu lee'],
-      reason: 'profile lookup',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: 'what is his name',
+        preferredSourceCategories: ['profile'],
+        additionalKeywords: ['name', 'yoonsu lee'],
+        reason: 'profile lookup',
+      },
     })
     analyzeQuestionMock.mockReturnValueOnce({
       normalizedQuestion: 'what is his name',
@@ -451,13 +509,16 @@ describe('POST /api/chat', () => {
 
   it('corpus synthesis 질문은 lexical과 Postgres RAG 후보를 함께 재정렬한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
-      action: 'summarize',
-      retrievalMode: 'corpus',
-      preferredSourceCategories: ['blog'],
-      additionalKeywords: ['구조', '재사용성'],
-      reason: 'cross-document synthesis',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
+        action: 'summarize',
+        retrievalMode: 'corpus',
+        preferredSourceCategories: ['blog'],
+        additionalKeywords: ['구조', '재사용성'],
+        reason: 'cross-document synthesis',
+      },
     })
     analyzeQuestionMock.mockReturnValueOnce({
       normalizedQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
@@ -532,9 +593,12 @@ describe('POST /api/chat', () => {
 
   it('standard retrieval 질문은 현재 글 페이지에서도 semantic current post boost를 전달하지 않는다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
-      ...DEFAULT_QUESTION_PLAN,
-      standaloneQuestion: '이 사람 이름 뭐야',
-      reason: 'ambiguous retrieval from planner',
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: '이 사람 이름 뭐야',
+        reason: 'ambiguous retrieval from planner',
+      },
     })
     analyzeQuestionMock.mockReturnValueOnce({
       normalizedQuestion: '이 사람 이름 뭐야',

@@ -1,12 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  CHAT_PLANNER_EVALUATION_ASSISTANT_PROFILE,
   CHAT_PLANNER_EVALUATION_BLOG_RECORDS,
   CHAT_PLANNER_EVALUATION_CASES,
   CHAT_PLANNER_EVALUATION_CONTACT_PROFILE,
   CHAT_PLANNER_EVALUATION_CURATED_RECORDS,
 } from '@/features/chat/fixtures/chat-planner-evaluation'
-import { planChatQuestion } from '@/features/chat/api/plan-chat-question'
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import {
   applyQuestionPlanToAnalysis,
@@ -16,31 +14,10 @@ import {
 import { analyzeQuestion } from '@/features/chat/lib/question-analysis'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
 
-const ORIGINAL_OPENAI_API_KEY = process.env.OPENAI_API_KEY
-
 describe('chat planner evaluation', () => {
-  beforeEach(() => {
-    delete process.env.OPENAI_API_KEY
-  })
-
-  afterEach(() => {
-    if (ORIGINAL_OPENAI_API_KEY) {
-      process.env.OPENAI_API_KEY = ORIGINAL_OPENAI_API_KEY
-      return
-    }
-
-    delete process.env.OPENAI_API_KEY
-  })
-
   for (const evaluationCase of CHAT_PLANNER_EVALUATION_CASES) {
     it(`${evaluationCase.id} 질문을 planner rag 경로로 처리한다`, async () => {
-      const questionPlan = await planChatQuestion({
-        question: evaluationCase.question,
-        locale: evaluationCase.locale,
-        conversationHistory: evaluationCase.conversationHistory,
-        currentPostSlug: evaluationCase.currentPostSlug,
-        assistantProfile: CHAT_PLANNER_EVALUATION_ASSISTANT_PROFILE,
-      })
+      const questionPlan = evaluationCase.questionPlan
 
       expect(questionPlan.needsRetrieval).toBe(evaluationCase.expectedRetrieval)
 

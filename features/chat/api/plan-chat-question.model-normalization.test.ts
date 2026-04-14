@@ -31,45 +31,69 @@ const CHAT_ASSISTANT_PROFILE = {
     '저는 이윤수 님의 챗봇입니다. 블로그 글과 공개된 소개 페이지를 근거로 답변합니다.',
 }
 
-describe('planChatQuestion model normalization', () => {
+describe('planChatQuestion failure handling', () => {
   beforeEach(() => {
     vi.resetModules()
-    process.env.OPENAI_API_KEY = 'test-key'
+    vi.clearAllMocks()
   })
 
   afterEach(() => {
     delete process.env.OPENAI_API_KEY
   })
 
-  it('모델이 current_post로 잘못 계획해도 모호한 사람 지시어는 clarification으로 정규화한다', async () => {
+  it('OPENAI_API_KEY가 없으면 missing_api_key 실패를 반환한다', async () => {
+    delete process.env.OPENAI_API_KEY
+
+    const { planChatQuestion } = await import('./plan-chat-question')
+    const result = await planChatQuestion({
+      question: '안녕?',
+      locale: 'ko',
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      refusalReason: 'missing_api_key',
+    })
+    expect(generateTextMock).not.toHaveBeenCalled()
+  })
+
+  it('planner API 호출이 실패하면 model_error를 반환한다', async () => {
+    process.env.OPENAI_API_KEY = 'test-key'
+    generateTextMock.mockRejectedValueOnce(new Error('timeout'))
+
+    const { planChatQuestion } = await import('./plan-chat-question')
+    const result = await planChatQuestion({
+      question: '안녕?',
+      locale: 'ko',
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      refusalReason: 'model_error',
+    })
+  })
+
+  it('planner가 잘못된 구조화 응답을 주면 model_error를 반환한다', async () => {
+    process.env.OPENAI_API_KEY = 'test-key'
     generateTextMock.mockResolvedValueOnce({
       output: {
-        standaloneQuestion: '이 사람 이름 뭐야',
+        standaloneQuestion: '',
         socialPreamble: false,
-        action: 'answer',
-        scope: 'current_page',
-        deterministicAction: 'none',
-        needsRetrieval: true,
-        retrievalMode: 'current_post',
-        preferredSourceCategories: ['blog'],
-        additionalKeywords: [],
-        needsClarification: false,
-        clarificationQuestion: null,
-        reason: 'model planned current page lookup',
       },
     })
 
     const { planChatQuestion } = await import('./plan-chat-question')
     const result = await planChatQuestion({
-      question: '이 사람 이름 뭐야?',
+      question: '안녕?',
       locale: 'ko',
-      currentPostSlug: 'why-i-built-lee-spec-kit',
       assistantProfile: CHAT_ASSISTANT_PROFILE,
     })
 
-    expect(result.needsClarification).toBe(true)
-    expect(result.needsRetrieval).toBe(false)
-    expect(result.retrievalMode).toBe('none')
-    expect(result.clarificationQuestion).toContain('구체적으로')
+    expect(result).toEqual({
+      ok: false,
+      refusalReason: 'model_error',
+    })
   })
 })

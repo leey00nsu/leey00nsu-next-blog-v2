@@ -19,12 +19,19 @@ export const CHAT_QUESTION_RETRIEVAL_MODES = [
   'corpus',
   'current_post',
 ] as const
+export const CHAT_QUESTION_PLAN_FAILURE_REASONS = [
+  'missing_api_key',
+  'model_error',
+] as const
 
 export const ChatQuestionDeterministicActionSchema = z.enum(
   CHAT_QUESTION_DETERMINISTIC_ACTIONS,
 )
 export const ChatQuestionRetrievalModeSchema = z.enum(
   CHAT_QUESTION_RETRIEVAL_MODES,
+)
+export const ChatQuestionPlanFailureReasonSchema = z.enum(
+  CHAT_QUESTION_PLAN_FAILURE_REASONS,
 )
 
 export const ChatQuestionPlanSchema = z.object({
@@ -44,3 +51,26 @@ export const ChatQuestionPlanSchema = z.object({
 
 export interface ChatQuestionPlan
   extends z.infer<typeof ChatQuestionPlanSchema> {}
+
+export const ChatQuestionPlanSuccessResultSchema = z.object({
+  ok: z.literal(true),
+  questionPlan: ChatQuestionPlanSchema,
+})
+
+export const ChatQuestionPlanFailureResultSchema = z.object({
+  ok: z.literal(false),
+  refusalReason: ChatQuestionPlanFailureReasonSchema,
+})
+
+export const ChatQuestionPlanResultSchema = z.union([
+  ChatQuestionPlanSuccessResultSchema,
+  ChatQuestionPlanFailureResultSchema,
+])
+
+export interface ChatQuestionPlanSuccessResult
+  extends z.infer<typeof ChatQuestionPlanSuccessResultSchema> {}
+
+export interface ChatQuestionPlanFailureResult
+  extends z.infer<typeof ChatQuestionPlanFailureResultSchema> {}
+
+export type ChatQuestionPlanResult = z.infer<typeof ChatQuestionPlanResultSchema>

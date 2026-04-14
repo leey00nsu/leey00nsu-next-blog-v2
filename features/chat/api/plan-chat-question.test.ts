@@ -1,8 +1,23 @@
-import { describe, expect, it } from 'vitest'
-import { planChatQuestion } from '@/features/chat/api/plan-chat-question'
-import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const CHAT_ASSISTANT_PROFILE: ChatAssistantProfile = {
+const generateTextMock = vi.fn()
+
+vi.mock('ai', () => {
+  return {
+    generateText: generateTextMock,
+    Output: {
+      object: ({ schema }: { schema: unknown }) => ({ schema }),
+    },
+  }
+})
+
+vi.mock('@ai-sdk/openai', () => {
+  return {
+    openai: vi.fn(() => 'mock-openai-model'),
+  }
+})
+
+const CHAT_ASSISTANT_PROFILE = {
   title: '블로그 챗봇 안내',
   description: '챗봇 내부 안내 문서',
   chatbotName: '블로그 챗봇',
@@ -11,90 +26,132 @@ const CHAT_ASSISTANT_PROFILE: ChatAssistantProfile = {
     '안녕하세요. 저는 이윤수 님의 블로그 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
   identityAnswer:
     '저는 이윤수 님의 챗봇으로, 블로그 글과 공개된 소개 페이지를 근거로 답변하고 있어요.',
-  aliases: [
-    '누구의 챗봇이야',
-    '이 사람이랑 어떤 관계야',
-    'whose chatbot are you',
-  ],
+  aliases: ['누구의 챗봇이야'],
   content:
     '저는 이윤수 님의 챗봇입니다. 블로그 글과 공개된 소개 페이지를 근거로 답변합니다.',
 }
 
 describe('planChatQuestion', () => {
-  it('인사와 실제 질문이 섞인 문장은 retrieval 질문으로 계획한다', async () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.clearAllMocks()
+    process.env.OPENAI_API_KEY = 'test-key'
+  })
+
+  afterEach(() => {
+    delete process.env.OPENAI_API_KEY
+  })
+
+  it('planner가 mixed-intent 질문 계획을 반환하면 그대로 사용한다', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        standaloneQuestion: 'leesfield 라는 프로젝트 알아?',
+        socialPreamble: true,
+        action: 'answer',
+        scope: 'global',
+        deterministicAction: 'none',
+        needsRetrieval: true,
+        retrievalMode: 'standard',
+        preferredSourceCategories: ['project'],
+        additionalKeywords: ['leesfield'],
+        needsClarification: false,
+        clarificationQuestion: null,
+        reason: 'project lookup after greeting',
+      },
+    })
+
+    const { planChatQuestion } = await import('./plan-chat-question')
     const result = await planChatQuestion({
       question: '안녕 leesfield 라는 프로젝트 알아?',
       locale: 'ko',
       assistantProfile: CHAT_ASSISTANT_PROFILE,
     })
 
-    expect(result.socialPreamble).toBe(true)
-    expect(result.standaloneQuestion).toBe('leesfield 라는 프로젝트 알아')
-    expect(result.needsRetrieval).toBe(true)
-    expect(result.retrievalMode).toBe('standard')
-    expect(result.preferredSourceCategories).toContain('project')
+    expect(result).toEqual({
+      ok: true,
+      questionPlan: {
+        standaloneQuestion: 'leesfield 라는 프로젝트 알아?',
+        socialPreamble: true,
+        action: 'answer',
+        scope: 'global',
+        deterministicAction: 'none',
+        needsRetrieval: true,
+        retrievalMode: 'standard',
+        preferredSourceCategories: ['project'],
+        additionalKeywords: ['leesfield'],
+        needsClarification: false,
+        clarificationQuestion: null,
+        reason: 'project lookup after greeting',
+      },
+    })
   })
 
-  it('assistant 정체 질문은 direct identity가 아니라 retrieval 질문으로 계획한다', async () => {
-    const result = await planChatQuestion({
-      question: '넌 누구야?',
-      locale: 'ko',
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
+  it('planner가 latest_post direct action을 반환하면 그대로 사용한다', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        standaloneQuestion: '최신 글 요약해줘',
+        socialPreamble: false,
+        action: 'summarize',
+        scope: 'global',
+        deterministicAction: 'latest_post',
+        needsRetrieval: false,
+        retrievalMode: 'none',
+        preferredSourceCategories: [],
+        additionalKeywords: [],
+        needsClarification: false,
+        clarificationQuestion: null,
+        reason: 'latest post request',
+      },
     })
 
-    expect(result.deterministicAction).toBe('none')
-    expect(result.needsRetrieval).toBe(true)
-    expect(result.preferredSourceCategories).toEqual(['assistant', 'profile'])
-    expect(result.additionalKeywords).toContain('챗봇')
-  })
-
-  it('맥락 없는 사람 지시어 질문은 clarification으로 계획한다', async () => {
-    const result = await planChatQuestion({
-      question: '이 사람 이름 뭐야?',
-      locale: 'ko',
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
-    })
-
-    expect(result.needsClarification).toBe(true)
-    expect(result.needsRetrieval).toBe(false)
-    expect(result.clarificationQuestion).toContain('구체적으로')
-  })
-
-  it('profile citation 맥락이 있으면 사람 지시어 질문을 profile retrieval로 계획한다', async () => {
-    const result = await planChatQuestion({
-      question: '이 사람 이름 뭐야?',
-      locale: 'ko',
-      conversationHistory: [
-        {
-          question: '이 사람은 어떤 개발자야?',
-          answer: 'React와 Next.js 중심의 개발자입니다.',
-          citations: [
-            {
-              title: 'About Me',
-              url: '/ko/about',
-              sectionTitle: null,
-              sourceCategory: 'profile',
-            },
-          ],
-        },
-      ],
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
-    })
-
-    expect(result.needsClarification).toBe(false)
-    expect(result.needsRetrieval).toBe(true)
-    expect(result.preferredSourceCategories).toContain('profile')
-  })
-
-  it('최신 글 질문은 deterministic action으로 계획한다', async () => {
+    const { planChatQuestion } = await import('./plan-chat-question')
     const result = await planChatQuestion({
       question: '최신 글 요약해줘',
       locale: 'ko',
       assistantProfile: CHAT_ASSISTANT_PROFILE,
     })
 
-    expect(result.deterministicAction).toBe('latest_post')
-    expect(result.action).toBe('summarize')
-    expect(result.needsRetrieval).toBe(false)
+    expect(result).toEqual({
+      ok: true,
+      questionPlan: expect.objectContaining({
+        deterministicAction: 'latest_post',
+        action: 'summarize',
+        needsRetrieval: false,
+      }),
+    })
+  })
+
+  it('planner가 clarification 질문을 반환하면 그대로 사용한다', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        standaloneQuestion: '이 사람 이름 뭐야?',
+        socialPreamble: false,
+        action: 'answer',
+        scope: 'global',
+        deterministicAction: 'none',
+        needsRetrieval: false,
+        retrievalMode: 'none',
+        preferredSourceCategories: [],
+        additionalKeywords: [],
+        needsClarification: true,
+        clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+        reason: 'ambiguous person reference',
+      },
+    })
+
+    const { planChatQuestion } = await import('./plan-chat-question')
+    const result = await planChatQuestion({
+      question: '이 사람 이름 뭐야?',
+      locale: 'ko',
+      assistantProfile: CHAT_ASSISTANT_PROFILE,
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      questionPlan: expect.objectContaining({
+        needsClarification: true,
+        clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+      }),
+    })
   })
 })

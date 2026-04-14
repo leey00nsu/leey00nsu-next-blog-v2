@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import type { Route } from 'next'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { TagList } from '@/features/post/ui/tag-list'
@@ -26,7 +27,7 @@ describe('TagList', () => {
     render(
       <TagList
         tags={['react', 'typescript']}
-        hrefBuilder={(tag) => `/blog?tag=${tag}`}
+        hrefBuilder={(tag) => `/blog?tag=${tag}` as Route}
       />,
     )
 

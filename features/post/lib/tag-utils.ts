@@ -1,5 +1,6 @@
 import { Post } from '@/entities/post/model/types'
 import { DEFAULT_TAG_QUERY_KEY } from '@/shared/config/constants'
+import type { Route } from 'next'
 
 interface SelectVisibleTagsParams {
   tags: string[]
@@ -36,16 +37,16 @@ export function parseSelectedTags(
 export function makeToggleHref(
   basePath: string,
   selectedTags: string[],
-): (tag: string) => string {
+): (tag: string) => Route {
   return (tag: string) => {
     const set = new Set(selectedTags)
     if (set.has(tag)) set.delete(tag)
     else set.add(tag)
 
-    if (set.size === 0) return basePath
+    if (set.size === 0) return basePath as Route
     const sp = new URLSearchParams()
     for (const t of set) sp.append(DEFAULT_TAG_QUERY_KEY, t)
-    return `${basePath}?${sp.toString()}`
+    return `${basePath}?${sp.toString()}` as Route
   }
 }
 

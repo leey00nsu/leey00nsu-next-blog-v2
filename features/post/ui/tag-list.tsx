@@ -2,6 +2,7 @@ import { Badge, badgeVariants } from '@/shared/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/lib/utils'
 import Link from 'next/link'
+import type { Route } from 'next'
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant']
 
@@ -10,7 +11,7 @@ interface TagListProps {
   className?: string
   badgeVariant?: BadgeVariant
   activeVariant?: BadgeVariant
-  hrefBuilder?: (tag: string) => string
+  hrefBuilder?: (tag: string) => Route
   counts?: Record<string, number>
   selectedTags?: string[]
 }

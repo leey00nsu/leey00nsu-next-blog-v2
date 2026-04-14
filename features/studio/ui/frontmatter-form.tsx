@@ -215,7 +215,7 @@ export function FrontmatterForm({
         <div className="md:col-span-2">
           <Label htmlFor="tagsText">{t('tags')}</Label>
           <TagInput
-            value={values.tags}
+            value={values.tags ?? []}
             onChange={(next) => setValue('tags', next, { shouldDirty: true })}
             suggestions={suggestionTags}
           />
@@ -227,7 +227,7 @@ export function FrontmatterForm({
             <select
               id="thumbnailSelect"
               className="bg-background w-full rounded-md border px-3 py-2 text-sm"
-              value={watch('thumbnail') ?? ''}
+              value={thumbnailValue ?? ''}
               onChange={(e) =>
                 setValue(
                   'thumbnail',

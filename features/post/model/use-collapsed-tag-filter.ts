@@ -1,6 +1,6 @@
 'use client'
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { POST_TAG_FILTER } from '@/features/post/config/constants'
 import {
   hasOverflowingTagRows,
@@ -15,7 +15,7 @@ interface UseCollapsedTagFilterParams {
 
 interface UseCollapsedTagFilterResult {
   isDesktopViewport: boolean
-  measurementContainerRef: ReturnType<typeof useRef<HTMLDivElement | null>>
+  measurementContainerRef: RefObject<HTMLDivElement | null>
   shouldShowToggleButton: boolean
   visibleTags: string[]
 }
@@ -83,9 +83,10 @@ export function useCollapsedTagFilter({
   const measurementContainerRef = useRef<HTMLDivElement>(null)
   const [isDesktopViewport, setIsDesktopViewport] = useState(false)
   const [tagRowIndexes, setTagRowIndexes] = useState<number[]>([])
-  const [maximumCollapsedRowCount, setMaximumCollapsedRowCount] = useState(
+  const [maximumCollapsedRowCount, setMaximumCollapsedRowCount] =
+    useState<number>(
     POST_TAG_FILTER.COLLAPSED_ROW_COUNT.MOBILE,
-  )
+    )
 
   useLayoutEffect(() => {
     const mediaQueryList = globalThis.matchMedia(

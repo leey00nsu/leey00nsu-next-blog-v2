@@ -83,7 +83,10 @@ function mockTagRowIndexes(tagRowIndexes: Record<string, number>) {
       return
     }
 
-    delete (HTMLElement.prototype as Partial<HTMLElement>).offsetTop
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      value: 0,
+    })
   }
 }
 

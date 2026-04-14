@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import type { Meta, StoryObj } from '@storybook/react'
 import { TagList } from './tag-list'
 
@@ -40,7 +41,7 @@ export const WithSelectedTags: Story = {
 export const WithLinks: Story = {
     args: {
         tags: ['React', 'TypeScript', 'Next.js'],
-        hrefBuilder: (tag) => `/blog?tag=${tag}`,
+        hrefBuilder: (tag) => `/blog?tag=${tag}` as Route,
     },
 }
 

@@ -349,6 +349,32 @@ export function BlogChatWidget() {
                             </div>
                           )
                         ) : null}
+
+                        {conversationItem.status === 'completed' &&
+                        conversationItem.response.followUpSuggestions &&
+                        conversationItem.response.followUpSuggestions.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                            <p className="text-muted-foreground w-full text-xs">
+                              {t('followUpSuggestions')}
+                            </p>
+                            {conversationItem.response.followUpSuggestions.map(
+                              (followUpSuggestion) => (
+                                <Button
+                                  key={followUpSuggestion}
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-auto max-w-full whitespace-normal text-left"
+                                  onClick={async () => {
+                                    await submitQuestion(followUpSuggestion)
+                                  }}
+                                >
+                                  {followUpSuggestion}
+                                </Button>
+                              ),
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     </>
                   )

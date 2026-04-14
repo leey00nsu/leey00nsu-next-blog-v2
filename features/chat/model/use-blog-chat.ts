@@ -252,8 +252,8 @@ export function useBlogChat({
     )
   }, [conversationItems, locale])
 
-  async function submitQuestion(): Promise<void> {
-    const trimmedQuestion = question.trim()
+  async function submitQuestion(questionOverride?: string): Promise<void> {
+    const trimmedQuestion = (questionOverride ?? question).trim()
 
     if (!trimmedQuestion || isLoading) {
       return
@@ -270,7 +270,9 @@ export function useBlogChat({
         }),
       ]
     })
-    setQuestion('')
+    if (!questionOverride) {
+      setQuestion('')
+    }
     setIsLoading(true)
 
     try {

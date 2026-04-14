@@ -15,6 +15,10 @@ const resolveChatClientKeyMock = vi.fn()
 const consumeChatRequestRateLimitMock = vi.fn()
 const acquireChatConcurrentRequestSlotMock = vi.fn()
 const releaseChatConcurrentRequestSlotMock = vi.fn()
+const findSemanticCachedBlogChatResponseMock = vi.fn()
+const storeSemanticCachedBlogChatResponseMock = vi.fn()
+const recordChatObservabilityEventMock = vi.fn()
+const rerankChatEvidenceMock = vi.fn()
 
 vi.mock('@/entities/post/config/blog-search-records.generated', () => {
   return {
@@ -52,6 +56,23 @@ vi.mock('@/features/chat/config/constants', () => {
       },
       CACHE: {
         TTL_MILLISECONDS: 5 * 60 * 1000,
+      },
+      SEMANTIC_CACHE: {
+        TTL_MILLISECONDS: 10 * 60 * 1000,
+        MAXIMUM_ENTRY_COUNT: 100,
+        MINIMUM_SIMILARITY_SCORE: 0.92,
+      },
+      RERANK: {
+        MAXIMUM_CANDIDATE_COUNT: 5,
+        LONG_QUESTION_MINIMUM_LENGTH: 36,
+        MINIMUM_MATCH_COUNT: 2,
+        MODEL_ID: 'gpt-5.4-mini',
+      },
+      FOLLOW_UP: {
+        MAXIMUM_SUGGESTION_COUNT: 3,
+      },
+      OBSERVABILITY: {
+        MAXIMUM_LOGGED_MATCH_COUNT: 5,
       },
       RATE_LIMIT: {
         WINDOW_MILLISECONDS: 60 * 1000,
@@ -138,6 +159,26 @@ vi.mock('@/features/chat/lib/chat-rate-limit', () => {
     consumeChatRequestRateLimit: consumeChatRequestRateLimitMock,
     acquireChatConcurrentRequestSlot: acquireChatConcurrentRequestSlotMock,
     releaseChatConcurrentRequestSlot: releaseChatConcurrentRequestSlotMock,
+  }
+})
+
+vi.mock('@/features/chat/model/chat-semantic-cache', () => {
+  return {
+    findSemanticCachedBlogChatResponse: findSemanticCachedBlogChatResponseMock,
+    storeSemanticCachedBlogChatResponse:
+      storeSemanticCachedBlogChatResponseMock,
+  }
+})
+
+vi.mock('@/features/chat/model/chat-observability', () => {
+  return {
+    recordChatObservabilityEvent: recordChatObservabilityEventMock,
+  }
+})
+
+vi.mock('@/features/chat/api/rerank-chat-evidence', () => {
+  return {
+    rerankChatEvidence: rerankChatEvidenceMock,
   }
 })
 
@@ -265,6 +306,12 @@ describe('POST /api/chat', () => {
       matches: [],
     })
     analyzeQuestionMock.mockReturnValue(DEFAULT_ANALYSIS_RESULT)
+    findSemanticCachedBlogChatResponseMock.mockImplementation(async () => {})
+    storeSemanticCachedBlogChatResponseMock.mockImplementation(async () => {})
+    recordChatObservabilityEventMock.mockImplementation(async () => {})
+    rerankChatEvidenceMock.mockResolvedValue(
+      resolveChatRequestMock.mock.results[0]?.value?.matches ?? [],
+    )
     resolveChatRequestMock.mockReturnValue({
       normalizedQuestion: 'react stack',
       questionType: 'general',
@@ -326,11 +373,30 @@ describe('POST /api/chat', () => {
     const firstResponse = await POST(createChatRequest('React stack?'))
     const secondResponse = await POST(createChatRequest('React stack?'))
 
-    expect(await firstResponse.json()).toEqual(GROUNDED_RESPONSE)
+    expect(await firstResponse.json()).toEqual(
+      expect.objectContaining(GROUNDED_RESPONSE),
+    )
     expect(await secondResponse.json()).toEqual(DAILY_LIMIT_EXCEEDED_RESPONSE)
     expect(planChatQuestionMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledTimes(1)
     expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('semantic cache hit이면 retrieval과 모델 호출을 건너뛴다', async () => {
+    findSemanticCachedBlogChatResponseMock.mockResolvedValueOnce(
+      GROUNDED_RESPONSE,
+    )
+
+    const { POST } = await importRouteModule()
+    const response = await POST(createChatRequest('React stack?'))
+
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        answer: GROUNDED_RESPONSE.answer,
+      }),
+    )
+    expect(resolveChatRequestMock).not.toHaveBeenCalled()
+    expect(answerBlogQuestionMock).not.toHaveBeenCalled()
   })
 
   it('mixed intent follow-up 질문은 planner의 standalone question으로 분석하고 모델 호출한다', async () => {
@@ -568,7 +634,9 @@ describe('POST /api/chat', () => {
     const { POST } = await importRouteModule()
     const response = await POST(createChatRequest('what is his name'))
 
-    expect(await response.json()).toEqual(GROUNDED_RESPONSE)
+    expect(await response.json()).toEqual(
+      expect.objectContaining(GROUNDED_RESPONSE),
+    )
     expect(runChatRagWorkflowMock).toHaveBeenCalledWith({
       question: 'what is his name',
       locale: 'ko',
@@ -653,7 +721,9 @@ describe('POST /api/chat', () => {
       createChatRequest('이 블로그 전체를 보면 공통된 설계 철학이 뭐야?'),
     )
 
-    expect(await response.json()).toEqual(GROUNDED_RESPONSE)
+    expect(await response.json()).toEqual(
+      expect.objectContaining(GROUNDED_RESPONSE),
+    )
     expect(runChatRagWorkflowMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -667,6 +737,94 @@ describe('POST /api/chat', () => {
         ]),
       }),
     )
+  })
+
+  it('retrieval 후보가 많고 질문이 복합적이면 rerank를 적용한다', async () => {
+    rerankChatEvidenceMock.mockResolvedValueOnce([
+      {
+        id: 'blog',
+        locale: 'ko',
+        slug: 'nivo-chart',
+        title: 'nivo chart로 데이터 시각화하기',
+        url: '/ko/blog/nivo-chart',
+        excerpt: 'nivo',
+        content: 'nivo',
+        sectionTitle: null,
+        tags: ['nivo'],
+        sourceCategory: 'blog' as const,
+      },
+      {
+        id: 'profile',
+        locale: 'ko',
+        slug: 'about',
+        title: 'About Me',
+        url: '/ko/about',
+        excerpt: 'React와 TypeScript를 사용합니다.',
+        content: 'React와 TypeScript를 사용합니다.',
+        sectionTitle: null,
+        tags: ['react', 'typescript'],
+        sourceCategory: 'profile' as const,
+      },
+    ])
+    resolveChatRequestMock.mockReturnValueOnce({
+      normalizedQuestion: '기술 스택과 시각화 경험이 뭐야',
+      questionType: 'general',
+      shouldCallModel: true,
+      matches: [
+        {
+          id: 'profile',
+          locale: 'ko',
+          slug: 'about',
+          title: 'About Me',
+          url: '/ko/about',
+          excerpt: 'React와 TypeScript를 사용합니다.',
+          content: 'React와 TypeScript를 사용합니다.',
+          sectionTitle: null,
+          tags: ['react', 'typescript'],
+          sourceCategory: 'profile' as const,
+        },
+        {
+          id: 'blog',
+          locale: 'ko',
+          slug: 'nivo-chart',
+          title: 'nivo chart로 데이터 시각화하기',
+          url: '/ko/blog/nivo-chart',
+          excerpt: 'nivo',
+          content: 'nivo',
+          sectionTitle: null,
+          tags: ['nivo'],
+          sourceCategory: 'blog' as const,
+        },
+      ],
+    })
+    planChatQuestionMock.mockResolvedValueOnce({
+      ok: true,
+      questionPlan: {
+        ...DEFAULT_QUESTION_PLAN,
+        standaloneQuestion: '기술 스택과 시각화 경험이 뭐야',
+        reason: 'compound retrieval',
+      },
+    })
+
+    const { POST } = await importRouteModule()
+    await POST(createChatRequest('기술 스택과 시각화 경험이 뭐야?'))
+
+    expect(rerankChatEvidenceMock).toHaveBeenCalledTimes(1)
+    expect(answerBlogQuestionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matches: expect.arrayContaining([
+          expect.objectContaining({ url: '/ko/blog/nivo-chart' }),
+        ]),
+      }),
+    )
+  })
+
+  it('grounded 응답은 observability 로그와 semantic cache 저장을 수행한다', async () => {
+    const { POST } = await importRouteModule()
+    await POST(createChatRequest('React stack?'))
+
+    expect(storeSemanticCachedBlogChatResponseMock).toHaveBeenCalledTimes(1)
+    expect(recordChatObservabilityEventMock).toHaveBeenCalledTimes(1)
   })
 
   it('standard retrieval 질문은 현재 글 페이지에서도 semantic current post boost를 전달하지 않는다', async () => {

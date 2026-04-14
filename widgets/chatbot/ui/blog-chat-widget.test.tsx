@@ -497,4 +497,44 @@ describe('BlogChatWidget', () => {
       screen.getByText(koMessages.chatbot.errors.request_failed),
     ).toBeInTheDocument()
   })
+
+  it('후속 질문 추천 버튼을 누르면 해당 질문으로 바로 전송한다', async () => {
+    const submitQuestion = vi.fn()
+
+    usePathnameMock.mockReturnValue('/ko/about')
+    useBlogChatMock.mockReturnValue({
+      conversationItems: [
+        {
+          id: 'completed-item',
+          question: 'nivo 쓴 적 있어?',
+          status: 'completed',
+          response: {
+            grounded: true,
+            answer: '네, 관련 글이 있습니다.',
+            refusalReason: null,
+            citations: [],
+            followUpSuggestions: ['nivo 관련 글도 추천해줘'],
+          },
+        },
+      ],
+      isLoading: false,
+      question: '',
+      setQuestion: vi.fn(),
+      submitQuestion,
+    })
+
+    render(<BlogChatWidget />)
+
+    act(() => {
+      fireEvent.click(
+        screen.getByRole('button', { name: koMessages.chatbot.open }),
+      )
+    })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'nivo 관련 글도 추천해줘' }))
+    })
+
+    expect(submitQuestion).toHaveBeenCalledWith('nivo 관련 글도 추천해줘')
+  })
 })

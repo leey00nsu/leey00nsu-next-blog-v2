@@ -113,6 +113,7 @@
     "you": "나",
     "assistant": "블로그 챗봇",
     "sources": "관련 글",
+    "followUpSuggestions": "이어서 물어보기",
     "sourcesCategory": {
       "blog": "블로그",
       "profile": "소개",

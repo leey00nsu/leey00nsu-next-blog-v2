@@ -191,4 +191,28 @@ describe('useBlogChat', () => {
 
     expect(result.current.conversationItems).toEqual([])
   })
+
+  it('후속 질문 추천 버튼용 override 질문도 바로 전송할 수 있다', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => GROUNDED_RESPONSE,
+    })
+
+    const { result } = renderHook(() => {
+      return useBlogChat({ locale: 'ko' })
+    })
+
+    await act(async () => {
+      await result.current.submitQuestion('추천 질문')
+    })
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/chat',
+        expect.objectContaining({
+          body: expect.stringContaining('"question":"추천 질문"'),
+        }),
+      )
+    })
+  })
 })

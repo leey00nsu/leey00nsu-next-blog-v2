@@ -39,6 +39,10 @@ export const BlogChatResponseSchema = z.object({
   answer: z.string(),
   citations: z.array(BlogChatCitationSchema),
   grounded: z.boolean(),
+  followUpSuggestions: z
+    .array(z.string().trim().min(1).max(120))
+    .max(BLOG_CHAT.FOLLOW_UP.MAXIMUM_SUGGESTION_COUNT)
+    .optional(),
   refusalReason: z
     .enum([
       'insufficient_search_match',

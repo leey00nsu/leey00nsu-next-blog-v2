@@ -53,6 +53,49 @@ export const BLOG_CHAT = {
       5 * 60 * 1000,
     ),
   },
+  SEMANTIC_CACHE: {
+    TTL_MILLISECONDS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_SEMANTIC_CACHE_TTL_MS,
+      10 * 60 * 1000,
+    ),
+    MAXIMUM_ENTRY_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_SEMANTIC_CACHE_MAXIMUM_ENTRY_COUNT,
+      100,
+    ),
+    MINIMUM_SIMILARITY_SCORE: Number(
+      process.env.BLOG_CHAT_SEMANTIC_CACHE_MINIMUM_SIMILARITY_SCORE ?? 0.92,
+    ),
+  },
+  RERANK: {
+    MAXIMUM_CANDIDATE_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RERANK_MAXIMUM_CANDIDATE_COUNT,
+      5,
+    ),
+    LONG_QUESTION_MINIMUM_LENGTH: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RERANK_LONG_QUESTION_MINIMUM_LENGTH,
+      36,
+    ),
+    MINIMUM_MATCH_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RERANK_MINIMUM_MATCH_COUNT,
+      2,
+    ),
+    MODEL_ID:
+      process.env.OPENAI_BLOG_CHAT_RERANK_MODEL ??
+      process.env.OPENAI_BLOG_CHAT_MODEL ??
+      'gpt-5.4-mini',
+  },
+  FOLLOW_UP: {
+    MAXIMUM_SUGGESTION_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_MAXIMUM_FOLLOW_UP_SUGGESTIONS,
+      3,
+    ),
+  },
+  OBSERVABILITY: {
+    MAXIMUM_LOGGED_MATCH_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_MAXIMUM_LOGGED_MATCH_COUNT,
+      5,
+    ),
+  },
   RATE_LIMIT: {
     WINDOW_MILLISECONDS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_RATE_LIMIT_WINDOW_MS,

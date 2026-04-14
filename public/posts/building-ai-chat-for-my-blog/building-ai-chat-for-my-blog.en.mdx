@@ -139,19 +139,19 @@ At first, I vaguely assumed that adding embeddings would automatically make the 
 
 What turned out to matter even more was splitting question types correctly.
 
-Questions like `"hello"`, `"how can I contact you?"`, `"what is the latest post?"`, and `"what is the oldest post?"` are closer to product logic than to retrieval. Questions like `"who are you?"`, `"what kind of developer is this person?"`, `"what is the main tech stack?"`, and `"what design philosophy appears across this blog?"` depend much more on evidence retrieval.
+Questions like `"hello"`, `"how can I contact you?"`, `"what is the latest post?"`, and `"what is the oldest post?"` felt more natural to handle directly than to send through retrieval. Questions like `"who are you?"`, `"what kind of developer is this person?"`, `"what is the main tech stack?"`, and `"what design philosophy appears across this blog?"` depend much more on evidence retrieval.
 
 That is why the current structure now looks less like “send everything to retrieval” and more like “organize the question once before deciding what to do next.”
 
 ![Planner-guided blog chatbot architecture](/public/posts/building-ai-chat-for-my-blog/planner-guided-blog-chatbot-architecture.png)
 
-The `Question Planner` in the middle is not there to force every prompt into one rigid category. It rewrites the question into something clearer, then decides whether the request can be answered directly, needs evidence retrieval, or is vague enough that it should trigger a short clarification first. In the diagram, `Direct Answers` is reserved for cases like pure greetings, contact questions, or latest and oldest post requests, where product logic is more reliable than search.
+The `Question Planner` in the middle is not there to force every prompt into one rigid category. It rewrites the question into something clearer, then decides whether the request can be answered directly, needs evidence retrieval, or is vague enough that it should trigger a short clarification first. In the diagram, `Direct Answers` is reserved for cases like pure greetings, contact questions, or latest and oldest post requests, where answering directly is simple and stable enough. The important part is that this path is not chosen by a fixed rule first. It is only used when the planner decides the question fits that path.
 
 The `Retrieval Path` is where lexical search, PostgreSQL-based embedding retrieval, and shared documents such as the profile page or chatbot guide are brought together and merged into the final evidence set. Going the other way, a reference like `"this person"` is safer to route through `Clarification` than to guess. I also stopped leaning too hard on the current page. That context now only gets extra weight when the user is clearly referring to the post they are looking at.
 
 Only after introducing that separation did the chatbot start to feel more like a real chatbot. Sending every question through RAG often made the result worse, not better.
 
-Another interesting change was that the chatbot's identity is no longer hardcoded directly in application code. Instead, it is managed in an internal MDX document. That document is not publicly exposed, but it defines who the chatbot is, what evidence scope it answers from, and what role constraints keep it from speaking as if it were the author. Lately I have also been keeping a small set of representative questions around projects, the profile page, the assistant guide, the current post, and broader blog-wide summaries, just to make sure the behavior does not drift in odd ways. I also keep a few awkward cases in there, like mixed greeting-plus-question prompts or vague follow-up references. That part is less about implementation and more about operating the system, but it has turned out to matter a lot.
+I also moved the chatbot's identity out of code and into an internal MDX document. It is not public, but it defines who the chatbot is, what evidence scope it should answer from, and how it should avoid speaking as if it were the author. I also keep a small set of representative questions around projects, the profile page, the assistant guide, the current post, and broader blog summaries so I can catch odd drift early. That operational layer turned out to matter more than I expected.
 
 ## Closing Thoughts
 

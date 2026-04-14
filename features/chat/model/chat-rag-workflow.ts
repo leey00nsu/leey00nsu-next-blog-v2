@@ -51,6 +51,10 @@ export interface ChatRagWorkflowResult {
   matches: ChatEvidenceRecord[]
 }
 
+const CHAT_RAG_WORKFLOW_LOG = {
+  FAILURE_MESSAGE: 'Chat RAG workflow failed.',
+} as const
+
 interface RankedGraphRagChunk extends ChatRagSemanticCandidate {
   score: number
 }
@@ -326,7 +330,9 @@ export async function runChatRagWorkflow(params: {
       grounded: result.grounded,
       matches: result.matches,
     }
-  } catch {
+  } catch (error) {
+    console.error(CHAT_RAG_WORKFLOW_LOG.FAILURE_MESSAGE, error)
+
     return {
       grounded: false,
       matches: [],

@@ -259,7 +259,45 @@ function mergeMatches(
     mergedMatchMap.set(match.url, match)
   }
 
-  return [...mergedMatchMap.values()].slice(0, BLOG_CHAT.SEARCH.TOP_K)
+  const mergedMatches = [...mergedMatchMap.values()]
+  const prioritizedMatches = prioritizeBlogEvidence(mergedMatches)
+
+  return prioritizedMatches.slice(0, BLOG_CHAT.SEARCH.TOP_K)
+}
+
+function prioritizeBlogEvidence(
+  matches: ChatEvidenceRecord[],
+): ChatEvidenceRecord[] {
+  const firstBlogMatch = matches.find((match) => {
+    return match.sourceCategory === 'blog'
+  })
+  const hasNonBlogMatch = matches.some((match) => {
+    return match.sourceCategory !== 'blog'
+  })
+
+  if (!firstBlogMatch || !hasNonBlogMatch) {
+    return matches
+  }
+
+  const prioritizedMatches: ChatEvidenceRecord[] = [matches[0]]
+
+  if (firstBlogMatch.url !== matches[0]?.url) {
+    prioritizedMatches.push(firstBlogMatch)
+  }
+
+  for (const match of matches) {
+    if (
+      prioritizedMatches.some((prioritizedMatch) => {
+        return prioritizedMatch.url === match.url
+      })
+    ) {
+      continue
+    }
+
+    prioritizedMatches.push(match)
+  }
+
+  return prioritizedMatches
 }
 
 export function resolveChatRequest({

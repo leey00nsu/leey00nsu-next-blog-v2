@@ -288,6 +288,128 @@ describe('resolveChatRequest', () => {
     expect(result.matches[0]?.url).toBe('/en/about')
   })
 
+  it('기술 사용 여부 질문은 curated 결과가 많아도 blog 근거를 top-k에 유지한다', () => {
+    const projectOnlyCuratedRecords: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/project/leesfield/intro',
+        locale: 'ko',
+        slug: 'leesfield',
+        title: 'Leesfield',
+        url: '/ko/projects/leesfield#프로젝트-소개',
+        excerpt: '프로젝트 소개',
+        content: '이윤수가 프로젝트에서 사용한 기술을 설명합니다.',
+        sectionTitle: '프로젝트 소개',
+        tags: ['project', 'typescript'],
+        searchTerms: [
+          '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+          'project',
+          '프로젝트',
+        ],
+        sourceCategory: 'project',
+      },
+      {
+        id: 'ko/project/lee-spec-kit/problem',
+        locale: 'ko',
+        slug: 'lee-spec-kit',
+        title: 'lee-spec-kit',
+        url: '/ko/projects/lee-spec-kit#problem',
+        excerpt: '문제 정의',
+        content: '프로젝트에서 다루는 문제를 설명합니다.',
+        sectionTitle: 'Problem',
+        tags: ['project', 'typescript'],
+        searchTerms: [
+          '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+          'project',
+          '프로젝트',
+        ],
+        sourceCategory: 'project',
+      },
+      {
+        id: 'ko/project/leemage/stack',
+        locale: 'ko',
+        slug: 'leemage',
+        title: 'Leemage',
+        url: '/ko/projects/leemage#기술-스택',
+        excerpt: '기술 스택',
+        content: '프로젝트에 사용한 기술 스택입니다.',
+        sectionTitle: '기술 스택',
+        tags: ['project', 'typescript'],
+        searchTerms: [
+          '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+          'project',
+          '프로젝트',
+        ],
+        sourceCategory: 'project',
+      },
+    ]
+    const nivoBlogRecords: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/blog/nivo-chart/line-chart',
+        locale: 'ko',
+        slug: 'nivo-chart',
+        title: 'nivo chart로 데이터 시각화하기',
+        url: '/ko/blog/nivo-chart#라인-차트-만들기',
+        excerpt: 'nivo로 라인 차트를 만든 글입니다.',
+        content: 'nivo를 사용해 차트를 구현한 경험을 설명합니다.',
+        sectionTitle: '라인 차트 만들기',
+        tags: ['react', 'nivo', 'chart'],
+        searchTerms: [
+          'nivo',
+          'nivo chart',
+          '차트 라이브러리',
+          '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+        ],
+        sourceCategory: 'blog',
+      },
+    ]
+
+    const result = resolveChatRequest({
+      question: 'nivo라는걸 쓴 적 있나요?',
+      locale: 'ko',
+      blogRecords: nivoBlogRecords,
+      curatedRecords: projectOnlyCuratedRecords,
+      questionAnalysis: {
+        normalizedQuestion:
+          '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+        questionType: 'general',
+        searchQueries: [
+          {
+            question:
+              '이윤수가 블로그나 프로젝트에서 nivo를 사용한 적이 있는지 확인하고 싶습니다.',
+            intent: 'general',
+            additionalKeywords: [
+              'project',
+              'projects',
+              '프로젝트',
+              'nivo',
+              '차트 라이브러리',
+              'react',
+            ],
+            preferredSourceCategories: ['project', 'blog'],
+          },
+        ],
+      },
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        scope: 'global',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(
+      result.matches.some((match) => {
+        return match.sourceCategory === 'blog'
+      }),
+    ).toBe(true)
+    expect(
+      result.matches.some((match) => {
+        return match.slug === 'nivo-chart'
+      }),
+    ).toBe(true)
+  })
+
   it('ko 로케일에서도 영어 이름 질문은 canonical profile source를 찾는다', () => {
     const result = resolveChatRequest({
       question: 'what is his name',

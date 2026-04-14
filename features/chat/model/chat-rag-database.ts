@@ -45,7 +45,15 @@ export interface ChatRagIndexRun {
 
 let chatRagDatabasePoolSingleton: Pool | null = null
 
-function parseJsonArray<T>(jsonValue: string): T[] {
+function parseJsonArray<T>(jsonValue: unknown): T[] {
+  if (Array.isArray(jsonValue)) {
+    return jsonValue as T[]
+  }
+
+  if (typeof jsonValue !== 'string') {
+    return []
+  }
+
   return JSON.parse(jsonValue) as T[]
 }
 
@@ -92,12 +100,12 @@ function mapChunkRowToGraphRagChunk(
     content: String(row.content),
     sectionTitle:
       typeof row.section_title === 'string' ? row.section_title : null,
-    tags: parseJsonArray<string>(String(row.tags_json)),
-    searchTerms: parseJsonArray<string>(String(row.search_terms_json)),
+    tags: parseJsonArray<string>(row.tags_json),
+    searchTerms: parseJsonArray<string>(row.search_terms_json),
     publishedAt:
       typeof row.published_at === 'string' ? row.published_at : null,
     sourceCategory: row.source_category as GraphRagChunk['sourceCategory'],
-    entityIds: parseJsonArray<string>(String(row.entity_ids_json)),
+    entityIds: parseJsonArray<string>(row.entity_ids_json),
   }
 }
 
@@ -110,7 +118,7 @@ function mapEntityRowToGraphRagEntity(
     name: String(row.name),
     normalizedName: String(row.normalized_name),
     kind: row.kind as GraphRagEntity['kind'],
-    chunkIds: parseJsonArray<string>(String(row.chunk_ids_json)),
+    chunkIds: parseJsonArray<string>(row.chunk_ids_json),
   }
 }
 

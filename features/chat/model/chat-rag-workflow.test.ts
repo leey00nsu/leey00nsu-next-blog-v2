@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type {
   ChatRagLocaleSearchData,
   ChatRagSemanticCandidate,
@@ -242,5 +242,28 @@ describe('runChatRagWorkflow', () => {
       '/ko/projects/leesfield#overview',
       '/ko/projects/leemage#overview',
     ])
+  })
+
+  it('semantic retrieval 중 예외가 발생하면 로그를 남기고 빈 결과를 반환한다', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    const result = await runChatRagWorkflow({
+      question: 'nivo가 뭐야',
+      locale: 'ko',
+      embedQuestion: async () => [1, 0],
+      selectSearchData: async () => {
+        throw new Error('semantic retrieval failed')
+      },
+    })
+
+    expect(result).toEqual({
+      grounded: false,
+      matches: [],
+    })
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

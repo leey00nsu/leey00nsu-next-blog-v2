@@ -4,7 +4,8 @@ import {
   parseSelectedTags,
   makeToggleHref,
   filterPostsByTags,
-  selectVisibleTags,
+  hasOverflowingTagRows,
+  selectVisibleTagsByRow,
 } from './tag-utils'
 import type { Post } from '@/entities/post/model/types'
 
@@ -142,9 +143,9 @@ describe('filterPostsByTags', () => {
   })
 })
 
-describe('selectVisibleTags', () => {
-  it('기본 접힘 상태에서는 앞에서부터 지정한 개수만 반환한다', () => {
-    const visibleTags = selectVisibleTags({
+describe('selectVisibleTagsByRow', () => {
+  it('기본 접힘 상태에서는 지정한 행 수 안에 있는 태그만 반환한다', () => {
+    const visibleTags = selectVisibleTagsByRow({
       tags: [
         'react',
         'typescript',
@@ -157,8 +158,9 @@ describe('selectVisibleTags', () => {
         'zod',
         'zustand',
       ],
+      tagRowIndexes: [0, 0, 0, 1, 1, 1, 2, 2, 2, 2],
       selectedTags: [],
-      maximumCollapsedTagCount: 8,
+      maximumCollapsedRowCount: 2,
     })
 
     expect(visibleTags).toEqual([
@@ -168,13 +170,11 @@ describe('selectVisibleTags', () => {
       'tailwind',
       'vitest',
       'playwright',
-      'storybook',
-      'nodejs',
     ])
   })
 
-  it('접힌 상태에서도 선택된 태그는 항상 포함한다', () => {
-    const visibleTags = selectVisibleTags({
+  it('접힌 상태에서도 접힌 행의 선택된 태그는 계속 노출한다', () => {
+    const visibleTags = selectVisibleTagsByRow({
       tags: [
         'react',
         'typescript',
@@ -187,8 +187,9 @@ describe('selectVisibleTags', () => {
         'zod',
         'zustand',
       ],
+      tagRowIndexes: [0, 0, 0, 1, 1, 1, 2, 2, 2, 2],
       selectedTags: ['zustand'],
-      maximumCollapsedTagCount: 8,
+      maximumCollapsedRowCount: 2,
     })
 
     expect(visibleTags).toEqual([
@@ -198,9 +199,27 @@ describe('selectVisibleTags', () => {
       'tailwind',
       'vitest',
       'playwright',
-      'storybook',
-      'nodejs',
       'zustand',
     ])
+  })
+})
+
+describe('hasOverflowingTagRows', () => {
+  it('허용된 행 수를 초과하는 태그가 있으면 true를 반환한다', () => {
+    expect(
+      hasOverflowingTagRows({
+        tagRowIndexes: [0, 0, 1, 1, 2],
+        maximumCollapsedRowCount: 2,
+      }),
+    ).toBe(true)
+  })
+
+  it('모든 태그가 허용된 행 수 안에 있으면 false를 반환한다', () => {
+    expect(
+      hasOverflowingTagRows({
+        tagRowIndexes: [0, 0, 1, 1],
+        maximumCollapsedRowCount: 2,
+      }),
+    ).toBe(false)
   })
 })

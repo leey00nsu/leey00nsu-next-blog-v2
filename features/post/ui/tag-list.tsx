@@ -1,6 +1,7 @@
 import { Badge, badgeVariants } from '@/shared/ui/badge'
 import type { VariantProps } from 'class-variance-authority'
 import { cn } from '@/shared/lib/utils'
+import Link from 'next/link'
 
 type BadgeVariant = VariantProps<typeof badgeVariants>['variant']
 
@@ -42,13 +43,13 @@ export function TagList({
           return (
             <li key={key} className="list-none">
               <Badge variant={variant} asChild>
-                <a
+                <Link
                   href={hrefBuilder(tag)}
                   aria-label={ariaLabel}
                   aria-current={selected ? 'page' : undefined}
                 >
                   {label}
-                </a>
+                </Link>
               </Badge>
             </li>
           )

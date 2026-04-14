@@ -1,5 +1,12 @@
+import { BREAKPOINTS } from '@/shared/config/constants'
+
 export const POST_TAG_FILTER = {
-  MAXIMUM_COLLAPSED_TAG_COUNT: 8,
+  COLLAPSED_ROW_COUNT: {
+    MOBILE: 2,
+    DESKTOP: 2,
+  },
+  DESKTOP_MEDIA_QUERY: `(min-width: ${BREAKPOINTS.DESKTOP}px)`,
+  ROW_OFFSET_TOLERANCE_PX: 1,
 } as const
 
 export const POST_TOC = {

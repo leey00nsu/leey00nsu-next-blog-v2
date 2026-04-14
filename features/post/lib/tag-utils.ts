@@ -3,8 +3,14 @@ import { DEFAULT_TAG_QUERY_KEY } from '@/shared/config/constants'
 
 interface SelectVisibleTagsParams {
   tags: string[]
+  tagRowIndexes: number[]
   selectedTags: string[]
-  maximumCollapsedTagCount: number
+  maximumCollapsedRowCount: number
+}
+
+interface HasOverflowingTagRowsParams {
+  tagRowIndexes: number[]
+  maximumCollapsedRowCount: number
 }
 
 export function getTagCounts(posts: Post[]): Record<string, number> {
@@ -48,20 +54,37 @@ export function filterPostsByTags(posts: Post[], tags: string[]): Post[] {
   return posts.filter((p) => p.tags.some((t) => tags.includes(t)))
 }
 
-export function selectVisibleTags({
+export function selectVisibleTagsByRow({
   tags,
+  tagRowIndexes,
   selectedTags,
-  maximumCollapsedTagCount,
+  maximumCollapsedRowCount,
 }: SelectVisibleTagsParams): string[] {
-  if (tags.length <= maximumCollapsedTagCount) {
+  if (tags.length === 0) {
     return tags
   }
 
-  const initiallyVisibleTags = tags.slice(0, maximumCollapsedTagCount)
+  const maximumVisibleRowIndex = maximumCollapsedRowCount - 1
+  const initiallyVisibleTags = tags.filter((_, index) => {
+    return tagRowIndexes[index] <= maximumVisibleRowIndex
+  })
   const selectedTagSet = new Set(selectedTags)
-  const selectedHiddenTags = tags.slice(maximumCollapsedTagCount).filter((tag) => {
-    return selectedTagSet.has(tag)
+  const selectedHiddenTags = tags.filter((tag, index) => {
+    return (
+      tagRowIndexes[index] > maximumVisibleRowIndex && selectedTagSet.has(tag)
+    )
   })
 
   return [...new Set([...initiallyVisibleTags, ...selectedHiddenTags])]
+}
+
+export function hasOverflowingTagRows({
+  tagRowIndexes,
+  maximumCollapsedRowCount,
+}: HasOverflowingTagRowsParams): boolean {
+  const maximumVisibleRowIndex = maximumCollapsedRowCount - 1
+
+  return tagRowIndexes.some((tagRowIndex) => {
+    return tagRowIndex > maximumVisibleRowIndex
+  })
 }

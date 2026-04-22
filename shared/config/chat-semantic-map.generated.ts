@@ -156,6 +156,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "why-i-gave-up-on-building-an-ai-video-editor",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "ai 비디오 편집기 구현을 포기한 이유"
+      ],
+      "aliases": [
+        "ai 비디오 편집기 구현을 포기한 이유",
+        "vibe cut이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation으로 범위를 좁히게 됐는지 정리한 회고",
+        "ai",
+        "remotion",
+        "capcut",
+        "회고"
+      ],
+      "faqQueries": [
+        "ai 비디오 편집기 구현을 포기한 이유 글 뭐야",
+        "ai 비디오 편집기 구현을 포기한 이유 글 추천해줘",
+        "ai 글 뭐야",
+        "ai 글 추천해줘",
+        "remotion 글 뭐야",
+        "remotion 글 추천해줘"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "building-ai-chat-for-my-blog",
       "sourceCategory": "blog",
       "entityNames": [
@@ -754,6 +778,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what does leemage do",
         "which project uses next.js",
         "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "why-i-gave-up-on-building-an-ai-video-editor",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "why i gave up on building an ai video editor"
+      ],
+      "aliases": [
+        "why i gave up on building an ai video editor",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "ai",
+        "remotion",
+        "capcut",
+        "회고"
+      ],
+      "faqQueries": [
+        "what is why i gave up on building an ai video editor",
+        "post about why i gave up on building an ai video editor",
+        "what is ai",
+        "post about ai",
+        "what is remotion",
+        "post about remotion"
       ]
     },
     {

@@ -335,6 +335,42 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADQAQCdASoQAAgABUB8JQBOgCFw5rqxAAD+4KvWm9hNJMF0sSsT5rxFjs9676IR+nFj6bHYg0ruEZPNDymGAvIgYWAAAA==",
     "isAnimated": false
   },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/agent-editing-contract.webp": {
+    "width": 1672,
+    "height": 941,
+    "base64": "data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAACwAQCdASoQAAkABUB8JQBdgCBz98GwAOA3H9kpZ5AJLPcYNfF5dOqvQV/HdbdMrRxbHEEE8saXSNxZXBHgAA==",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/capcut-automation-screen.webp": {
+    "width": 2092,
+    "height": 3526,
+    "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACwAQCdASoJABAABUB8JZwAAudGPNY4AP7ozWyexLVQSDXU9mQMAAAA",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/code-asset-pipeline.webp": {
+    "width": 1672,
+    "height": 941,
+    "base64": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADQAQCdASoQAAkABUB8JYwC7ACjWr7QAAD+j7fiycdWA8wbUzlmXUxsJWyNOO6Oulc3skKU8oLps2l+siU4/AAA",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/transcript-timing-map.webp": {
+    "width": 1672,
+    "height": 941,
+    "base64": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAACwAQCdASoQAAkABUB8JZQC7AEOumsAAP7qvUuVCYk6w/Zvp7/RvHUtYLGizjB5EwAAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/vibe-cut-editor-design.webp": {
+    "width": 1600,
+    "height": 1280,
+    "base64": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAADwAQCdASoQAA0ABUB8JYwAAvgXZ0qxOAAA/tUNe7as1GUmMkeakPYTSeLfCM/w8LGeYmw1GffrHIBwRc82pZ1YmQa/lgwQQAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/vibe-cut-real-screen.webp": {
+    "width": 3838,
+    "height": 2106,
+    "base64": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoQAAkABUB8JZwAApKfUUoAAP7rHFSE3+vfoq6n2Bv/343K+mX8dEa7FXdKD5eNQVt14EbAAAA=",
+    "isAnimated": false
+  },
   "/public/posts/why-use-react-query/description.webp": {
     "width": 608,
     "height": 862,

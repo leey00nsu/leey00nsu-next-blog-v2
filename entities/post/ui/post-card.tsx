@@ -4,6 +4,27 @@ import { CustomImage } from '@/shared/ui/custom-image'
 import { removePublic } from '@/shared/lib/remove-public'
 
 const THUMBNAIL_SIZE = 160
+const THUMBNAIL_IMAGE_QUALITY = 100
+const THUMBNAIL_CONTAINER_ASPECT_RATIO = 1
+
+function buildThumbnailCoverSizes(params: {
+  width: number
+  height: number
+}): string {
+  const { width, height } = params
+
+  if (width <= 0 || height <= 0) {
+    return `${THUMBNAIL_SIZE}px`
+  }
+
+  const imageAspectRatio = width / height
+  const coverWidth = Math.ceil(
+    THUMBNAIL_SIZE *
+      Math.max(THUMBNAIL_CONTAINER_ASPECT_RATIO, imageAspectRatio),
+  )
+
+  return `${coverWidth}px`
+}
 
 interface PostCardProps {
   post: Post
@@ -38,7 +59,11 @@ export function PostCard({ post, priority = false }: PostCardProps) {
             width={post.width}
             height={post.height}
             base64={post.blurDataURL}
-            sizes={`${THUMBNAIL_SIZE}px`}
+            sizes={buildThumbnailCoverSizes({
+              width: post.width,
+              height: post.height,
+            })}
+            quality={THUMBNAIL_IMAGE_QUALITY}
             priority={priority}
             isAnimated={post.isAnimated}
             className="h-full w-full object-cover object-center transition-all duration-200 group-hover:scale-110"

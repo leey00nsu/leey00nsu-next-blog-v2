@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   pageExtensions: ['js', 'jsx', 'mdx', 'ts', 'tsx'],
   // Optionally, add any other Next.js config below
   typedRoutes: true,
+  images: {
+    qualities: [75, 100],
+  },
 }
 
 const withMDX = createMDX({

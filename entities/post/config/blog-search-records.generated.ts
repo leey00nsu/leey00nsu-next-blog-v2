@@ -221,14 +221,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-mcp를-붙이게-됐다",
+      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-mcphttpsmodelcontextprotocolio를-붙이게-됐다",
       "locale": "ko",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
-      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-mcp를-붙이게-됐다",
+      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-mcphttpsmodelcontextprotocolio를-붙이게-됐다",
       "excerpt": "처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습…",
-      "content": "그래서 MCP를 붙이게 됐다\n처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습니다. 사용자는 Claude, Codex, Gemini처럼 자기가 익숙한 에이전트를 계속 쓰고, 앱은 그 에이전트가 편집기를 안전하게 다루게 해주는 로컬 도구만 제공하는 편이 더 맞았습니다. 그렇다고 UI 자동화로 해결할 수도 없었습니다. 화면을 보고 버튼을 누르는 방식으로는 현재 cue 목록, 선택된 구간, 각 클립의 시작과 끝, 방금 사용자가 바꾼 상태를 안정적으로 맞춰가기 어렵습니다. 쇼츠 편집은 몇 프레임 차이도 결과를 바꾸기 때문에, 에이전트가 “이 부분은 무음이 길어서 빼자”라고 말할 때도 정확히 어떤 프로젝트 상태를 기준으로 한 제안인지 를 먼저 알아야 했습니다. 좋은 프롬프트만으로는 부족했습니다. 예를 들어 에이전트가 12번 cue를 지우자고 제안했는데, 그 사이 제가 타임라인을 직접 수정했다면 그 제안은 다시 봐야 합니다. 에이전트가 어떤 상태를 보고 판단했는지, 지금도 그 상태가 맞는지, 적용 전에 사용자가 동의했는지를 확인해야 했습니다. 그래서 에이전트는 프로젝트 상태를 읽고, 수정안을 preview로 제안하고, 사용자 동의를 받은 뒤에만 적용해야 했습니다. 적용 직전에 상태가 바뀌었으면 revision mismatch로 막고, 모든 변경은 history로 되돌릴 수 있어야 했습니다. 이 흐름이 있어야 사람의 직접 편집과 에이전트 편집이 같은 프로젝트 안에서 같이 돌아갈 수 있었습니다. 그래서 vibe cut은 “에이전트가 UI를 직접 휘두르는 방식”이 아니라, 앱이 로컬 도구를 열어주고, 에이전트는 그 도구를 통해서만 편집하는 쪽으로 정리됐습니다. 그 역할과 경계를 정의하는 방식이 MCP였습니다. 지금 돌아보면 MCP는 편집기와 여러 에이전트가 같은 프로젝트 상태를 안전하게 다루기 위한 규칙 묶음 이었습니다. 사용자 UI, 로컬 도구 계약, 에이전트가 consent와 revision check, history를 통해 연결되는 흐름 다이어그램 이쯤 되자 제가 만들던 건 “AI가…",
-      "sectionTitle": "그래서 MCP를 붙이게 됐다",
+      "content": "그래서 [MCP](https://modelcontextprotocol.io/)를 붙이게 됐다\n처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습니다. 사용자는 Claude, Codex, Gemini처럼 자기가 익숙한 에이전트를 계속 쓰고, 앱은 그 에이전트가 편집기를 안전하게 다루게 해주는 로컬 도구만 제공하는 편이 더 맞았습니다. 그렇다고 UI 자동화로 해결할 수도 없었습니다. 화면을 보고 버튼을 누르는 방식으로는 현재 cue 목록, 선택된 구간, 각 클립의 시작과 끝, 방금 사용자가 바꾼 상태를 안정적으로 맞춰가기 어렵습니다. 쇼츠 편집은 몇 프레임 차이도 결과를 바꾸기 때문에, 에이전트가 “이 부분은 무음이 길어서 빼자”라고 말할 때도 정확히 어떤 프로젝트 상태를 기준으로 한 제안인지 를 먼저 알아야 했습니다. 좋은 프롬프트만으로는 부족했습니다. 예를 들어 에이전트가 12번 cue를 지우자고 제안했는데, 그 사이 제가 타임라인을 직접 수정했다면 그 제안은 다시 봐야 합니다. 에이전트가 어떤 상태를 보고 판단했는지, 지금도 그 상태가 맞는지, 적용 전에 사용자가 동의했는지를 확인해야 했습니다. 그래서 에이전트는 프로젝트 상태를 읽고, 수정안을 preview로 제안하고, 사용자 동의를 받은 뒤에만 적용해야 했습니다. 적용 직전에 상태가 바뀌었으면 revision mismatch로 막고, 모든 변경은 history로 되돌릴 수 있어야 했습니다. 이 흐름이 있어야 사람의 직접 편집과 에이전트 편집이 같은 프로젝트 안에서 같이 돌아갈 수 있었습니다. 그래서 vibe cut은 “에이전트가 UI를 직접 휘두르는 방식”이 아니라, 앱이 로컬 도구를 열어주고, 에이전트는 그 도구를 통해서만 편집하는 쪽으로 정리됐습니다. 그 역할과 경계를 정의하는 방식이 MCP였습니다. 지금 돌아보면 MCP는 편집기와 여러 에이전트가 같은 프로젝트 상태를 안전하게 다루기 위한 규칙 묶음 이었습니다. 사용자 UI, 로컬 도구 계약, 에이전트가 consent와 revision check, history를…",
+      "sectionTitle": "그래서 [MCP](https://modelcontextprotocol.io/)를 붙이게 됐다",
       "tags": [
         "AI",
         "Remotion",
@@ -249,7 +249,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "ai 글 추천해줘",
         "remotion 글 뭐야",
         "remotion 글 추천해줘",
-        "그래서 mcp 를 붙이게 됐다",
+        "그래서 [mcp](https://modelcontextprotocol.io/)를 붙이게 됐다",
         "비디오",
         "편집기",
         "구현을",
@@ -257,10 +257,10 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "이유",
         "그래서",
         "mcp",
+        "https",
+        "modelcontextprotocol.io",
         "붙이게",
-        "됐다",
-        "처음에는",
-        "에이전트가"
+        "됐다"
       ]
     },
     {
@@ -355,8 +355,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#코드-에셋은-생각보다-더-큰-문제였다",
-      "excerpt": "Remotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠…",
-      "content": "`코드 에셋`은 생각보다 더 큰 문제였다\nRemotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠다고 생각했습니다. 그래서 만든 개념이 코드 에셋이었습니다. 코드를 한 번 붙여넣고 끝내는 템플릿이 아니라, 타임라인에 올릴 수 있고, 에디터와 에이전트가 같이 이해할 수 있고, 다시 수정해서 재사용할 수 있는 시각 블록으로 보고 있었습니다. 어떤 건 장면 전체를 담당하는 큰 블록이어야 했고, 어떤 건 장면 안에 들어가는 작은 컴포넌트여야 했습니다. 예쁜 애니메이션 하나를 가져오는 일보다, 그걸 편집 가능한 자산으로 바꾸는 일이 더 컸습니다. 외부 React 애니메이션 레퍼런스를 Remotion safe rewrite를 거쳐 editor native code asset으로 바꾸고 다시 타임라인에서 재사용하는 흐름 다이어그램 여기까지는 아이디어가 꽤 좋아 보였습니다. 문제는 실제로 가져와보면 바로 드러났습니다. 웹에서 자연스럽게 보이는 React 애니메이션이 Remotion에서도 그대로 안전한 건 아니었습니다. CSS transition, animation, in view, mount 시점 상태, setTimeout 같은 패턴은 웹에서는 흔하지만, 영상 편집기에서는 스크럽하거나 되감았을 때 같은 장면이 다시 나와야 합니다. 프리뷰와 최종 렌더도 맞아야 합니다. 외부 코드를 참고하더라도 그대로 넣을 수는 없었습니다. frame 기반으로 다시 쓰고, 어느 시점에서 봐도 같은 결과가 나오게 바꾸고, 편집기에서 조작 가능한 속성도 따로 정의해야 했습니다. 처음에는 “멋있는 애니메이션 컴포넌트를 가져오면 되지 않을까?” 정도였는데, 해볼수록 에셋 분류, 사용 가이드, 변환 규칙, 검수 기준까지 따라붙었습니다. 코드 에셋은 재미있는 개념이었지만, 프로젝트 범위를 크게 키운 이유이기도 했습니다.",
+      "excerpt": "Remotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity UI처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면…",
+      "content": "`코드 에셋`은 생각보다 더 큰 문제였다\nRemotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity UI처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠다고 생각했습니다. 그래서 만든 개념이 코드 에셋이었습니다. 코드를 한 번 붙여넣고 끝내는 템플릿이 아니라, 타임라인에 올릴 수 있고, 에디터와 에이전트가 같이 이해할 수 있고, 다시 수정해서 재사용할 수 있는 시각 블록으로 보고 있었습니다. 어떤 건 장면 전체를 담당하는 큰 블록이어야 했고, 어떤 건 장면 안에 들어가는 작은 컴포넌트여야 했습니다. 예쁜 애니메이션 하나를 가져오는 일보다, 그걸 편집 가능한 자산으로 바꾸는 일이 더 컸습니다. 외부 React 애니메이션 레퍼런스를 Remotion safe rewrite를 거쳐 editor native code asset으로 바꾸고 다시 타임라인에서 재사용하는 흐름 다이어그램 여기까지는 아이디어가 꽤 좋아 보였습니다. 문제는 실제로 가져와보면 바로 드러났습니다. 웹에서 자연스럽게 보이는 React 애니메이션이 Remotion에서도 그대로 안전한 건 아니었습니다. CSS transition, animation, in view, mount 시점 상태, setTimeout 같은 패턴은 웹에서는 흔하지만, 영상 편집기에서는 스크럽하거나 되감았을 때 같은 장면이 다시 나와야 합니다. 프리뷰와 최종 렌더도 맞아야 합니다. 외부 코드를 참고하더라도 그대로 넣을 수는 없었습니다. frame 기반으로 다시 쓰고, 어느 시점에서 봐도 같은 결과가 나오게 바꾸고, 편집기에서 조작 가능한 속성도 따로 정의해야 했습니다. 처음에는 “멋있는 애니메이션 컴포넌트를 가져오면 되지 않을까?” 정도였는데, 해볼수록 에셋 분류, 사용 가이드, 변환 규칙, 검수 기준까지 따라붙었습니다. 코드 에셋은 재미있는 개념이었지만, 프로젝트 범위를 크게 키운 이유이기도 했습니다.",
       "sectionTitle": "`코드 에셋`은 생각보다 더 큰 문제였다",
       "tags": [
         "AI",
@@ -582,7 +582,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -625,7 +625,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -668,7 +668,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -711,7 +711,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -754,7 +754,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -797,7 +797,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -840,7 +840,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -883,7 +883,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -926,7 +926,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -969,7 +969,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -1012,7 +1012,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-08T00:00:00.000Z",
       "searchTerms": [
         "블로그 챗봇은 어떻게 rag 까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql 까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -1328,14 +1328,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "lee-spec-kit",
         "ai",
         "에이전트와",
@@ -1351,7 +1350,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "이야기를",
         "하다",
         "보면",
-        "harness"
+        "harness",
+        "engineering"
       ]
     },
     {
@@ -1368,14 +1368,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "ai 협업에서 더 자주 드는 비용은 컨텍스트 전달 비용이었다",
         "lee-spec-kit",
         "ai",
@@ -1391,7 +1390,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "드는",
         "비용은",
         "컨텍스트",
-        "전달"
+        "전달",
+        "비용이었다"
       ]
     },
     {
@@ -1408,14 +1408,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "그래서 lee-spec-kit 은 문서 흐름을 먼저 만든다",
         "lee-spec-kit",
         "ai",
@@ -1431,7 +1430,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "흐름을",
         "만든다",
         "lee",
-        "spec"
+        "spec",
+        "kit"
       ]
     },
     {
@@ -1448,14 +1448,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "그런데 제 방식에 맞춰야 했다",
         "lee-spec-kit",
         "ai",
@@ -1471,7 +1470,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "다만",
         "방식을",
         "작업에",
-        "맞게"
+        "맞게",
+        "줄여야"
       ]
     },
     {
@@ -1488,14 +1488,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "마무리",
         "lee-spec-kit",
         "ai",
@@ -1511,7 +1510,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "방식도",
         "조금",
         "바뀌었습니다.",
-        "기능을"
+        "기능을",
+        "시작할"
       ]
     },
     {
@@ -1528,14 +1528,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit 을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai 와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit 을 만든 이야기",
         "lee spec kit",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit 을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘",
-        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
         "참고 링크",
         "lee-spec-kit",
         "ai",
@@ -1551,7 +1550,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "lee",
         "spec",
         "kit",
-        "github"
+        "github",
+        "npm"
       ]
     },
     {
@@ -3920,14 +3920,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/that-is-why-i-added-mcp",
+      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/that-is-why-i-added-mcphttpsmodelcontextprotocolio",
       "locale": "en",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
-      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#that-is-why-i-added-mcp",
+      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#that-is-why-i-added-mcphttpsmodelcontextprotocolio",
       "excerpt": "At first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the…",
-      "content": "That Is Why I Added MCP\nAt first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the user already uses? I chose the latter. From the start, this project aimed for a local first desktop editor, and I did not want to lock the product to one model or service provider. It made more sense to let users keep using agents they were already familiar with, such as Claude, Codex, or Gemini, while the app only exposed the local tools needed to let those agents work safely with the editor. UI automation was not enough either. A click the screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” it first has to know which exact project state that proposal is based on . A better prompt was not enough. For example, if the agent suggested deleting cue 12, but I had already edited the timeline by hand, that suggestion needed to be checked…",
-      "sectionTitle": "That Is Why I Added MCP",
+      "content": "That Is Why I Added [MCP](https://modelcontextprotocol.io/)\nAt first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the user already uses? I chose the latter. From the start, this project aimed for a local first desktop editor, and I did not want to lock the product to one model or service provider. It made more sense to let users keep using agents they were already familiar with, such as Claude, Codex, or Gemini, while the app only exposed the local tools needed to let those agents work safely with the editor. UI automation was not enough either. A click the screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” it first has to know which exact project state that proposal is based on . A better prompt was not enough. For example, if the agent suggested deleting cue 12, but I had already edited the timeline by hand,…",
+      "sectionTitle": "That Is Why I Added [MCP](https://modelcontextprotocol.io/)",
       "tags": [
         "AI",
         "Remotion",
@@ -3948,7 +3948,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "post about ai",
         "what is remotion",
         "post about remotion",
-        "that is why i added mcp",
+        "that is why i added [mcp](https://modelcontextprotocol.io/)",
         "why",
         "gave",
         "up",
@@ -3957,9 +3957,9 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "editor",
         "added",
         "mcp",
-        "at",
-        "first",
-        "thought"
+        "https",
+        "modelcontextprotocol.io",
+        "at"
       ]
     },
     {
@@ -4054,8 +4054,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#code-assets-turned-out-to-be-a-bigger-problem-than-i-expected",
-      "excerpt": "Once I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity, and I wanted to reuse id…",
-      "content": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected\nOnce I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene level pieces such as intros or hero titles that could be assembled quickly. That led to the idea I called code assets. I was not thinking of a template you paste once and forget. I wanted visual blocks that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene level blocks, while others had to be smaller components inside a scene. Bringing in one nice animation was not the hard part. Turning it into an editable asset was. A diagram showing external React animation references being rewritten into editor native code assets and reused on a timeline The idea looked good until I tried to bring real examples in. React animations that feel natural on the web are not automatically safe inside Remotion. Patterns like CSS transition, animation, in…",
+      "excerpt": "Once I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity UI, and I wanted to reuse…",
+      "content": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected\nOnce I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity UI, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene level pieces such as intros or hero titles that could be assembled quickly. That led to the idea I called code assets. I was not thinking of a template you paste once and forget. I wanted visual blocks that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene level blocks, while others had to be smaller components inside a scene. Bringing in one nice animation was not the hard part. Turning it into an editable asset was. A diagram showing external React animation references being rewritten into editor native code assets and reused on a timeline The idea looked good until I tried to bring real examples in. React animations that feel natural on the web are not automatically safe inside Remotion. Patterns like CSS transition, animation,…",
       "sectionTitle": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected",
       "tags": [
         "AI",
@@ -5025,14 +5025,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "lee-spec-kit",
         "why",
         "started",
@@ -5048,7 +5047,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "talk",
         "about",
         "software",
-        "agents"
+        "agents",
+        "phrase"
       ]
     },
     {
@@ -5065,14 +5065,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "the part that slowed me down was context transfer",
         "lee-spec-kit",
         "why",
@@ -5088,7 +5087,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "slowed",
         "me",
         "down",
-        "was"
+        "was",
+        "context"
       ]
     },
     {
@@ -5105,14 +5105,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "so lee-spec-kit starts by shaping the documentation flow",
         "lee-spec-kit",
         "why",
@@ -5128,7 +5127,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "starts",
         "by",
         "shaping",
-        "documentation"
+        "documentation",
+        "flow"
       ]
     },
     {
@@ -5145,14 +5145,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "but i wanted it to fit my workflow",
         "lee-spec-kit",
         "why",
@@ -5168,7 +5167,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "wanted",
         "it",
         "fit",
-        "my"
+        "my",
+        "workflow"
       ]
     },
     {
@@ -5185,14 +5185,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "closing thoughts",
         "lee-spec-kit",
         "why",
@@ -5208,7 +5207,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "thoughts",
         "changed",
         "start",
-        "new"
+        "new",
+        "features."
       ]
     },
     {
@@ -5225,14 +5225,13 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ],
       "publishedAt": "2026-03-20T00:00:00.000Z",
       "searchTerms": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit",
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit",
-        "why i started building work structure before asking ai to code",
         "references",
         "lee-spec-kit",
         "why",
@@ -5248,7 +5247,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "spec",
         "kit",
         "github",
-        "npm"
+        "npm",
+        "openspec"
       ]
     },
     {
@@ -5266,7 +5266,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-02-07T00:00:00.000Z",
       "searchTerms": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고",
         "what is surviving one year as an ordinary developer",
         "post about surviving one year as an ordinary developer",
@@ -5306,7 +5306,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-02-07T00:00:00.000Z",
       "searchTerms": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고",
         "what is surviving one year as an ordinary developer",
         "post about surviving one year as an ordinary developer",
@@ -5346,7 +5346,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-02-07T00:00:00.000Z",
       "searchTerms": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고",
         "what is surviving one year as an ordinary developer",
         "post about surviving one year as an ordinary developer",
@@ -5386,7 +5386,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-02-07T00:00:00.000Z",
       "searchTerms": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고",
         "what is surviving one year as an ordinary developer",
         "post about surviving one year as an ordinary developer",
@@ -5426,7 +5426,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-02-07T00:00:00.000Z",
       "searchTerms": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고",
         "what is surviving one year as an ordinary developer",
         "post about surviving one year as an ordinary developer",

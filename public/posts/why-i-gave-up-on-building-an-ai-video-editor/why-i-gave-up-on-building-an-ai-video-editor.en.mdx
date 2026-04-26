@@ -21,9 +21,9 @@ writer: leey00nsu
 
 As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I narrowed the direction to `capcut-automation`.
 
-The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including `AlphaCut`, `OpusClip`, `Klap`, `Vizard`, and `2short.ai`.
+The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including [AlphaCut](https://alphacut.video/), `OpusClip`, `Klap`, [Vizard](https://vizard.ai/), and [2short.ai](https://2short.ai/).
 
-Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open `CapCut`, trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought.
+Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open [CapCut](https://www.capcut.com/), trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought.
 
 `Could I just build this myself?`
 
@@ -69,7 +69,7 @@ The screen already looked like this. There was a text editing area on the left, 
 
 ## Text-Based Editing Turned Out to Be Deeper Than I Expected
 
-What first attracted me was the text-based editing feel of tools like `Vrew`. I wanted to pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks.
+What first attracted me was the text-based editing feel of tools like [Vrew](https://vrew.com/en/). I wanted to pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks.
 
 But once I started building it, showing subtitles and making **text itself become the basis of editing** turned out to be completely different things.
 
@@ -83,7 +83,7 @@ For text-based editing, getting the sentence right is not enough. If the timing 
 
 That meant I could not choose a transcription model in `vibe-cut` based only on “does it transcribe well?” This was a desktop app, and local transcription was part of the premise, so I had to weigh text accuracy, installation cost, execution speed, and whether it actually ran stably on macOS.
 
-I started with a `whisper.cpp` path as the baseline, tuned options like `beam size` and language settings, and compared Whisper variants such as `small`, `base`, and `medium`. A bigger model did not always make the editing result better. If it was heavy to install, slow to run, or unstable on long files, I could not put it into the actual workflow. I also looked through open-source ASR models on Hugging Face, but the bar became “can this keep running on my Mac?”, not “does this model look good on paper?”
+I started with a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) path as the baseline, tuned options like `beam size` and language settings, and compared Whisper variants such as `small`, `base`, and `medium`. A bigger model did not always make the editing result better. If it was heavy to install, slow to run, or unstable on long files, I could not put it into the actual workflow. I also looked through open-source ASR models on Hugging Face, but the bar became “can this keep running on my Mac?”, not “does this model look good on paper?”
 
 The harder part was word-level timing. Even when the transcript text was right, a small drift in word timing made the cut point feel wrong. At first I thought splitting segments more aggressively might help, but the real problem was the habit of dividing a sentence duration evenly across its words.
 
@@ -91,13 +91,13 @@ So I changed the pipeline to read the token-level positions from `whisper.cpp`'s
 
 ![A diagram showing segment split, token offsets, and alignment used to improve transcript timing precision](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/transcript-timing-map.webp)
 
-By the end, I started treating the ASR model and alignment as separate concerns. I kept a Whisper-family model for local execution and speed, narrowed the main path toward `Whisper Turbo`, and used `WhisperX` forced alignment to improve timing precision.
+By the end, I started treating the ASR model and alignment as separate concerns. I kept a Whisper-family model for local execution and speed, narrowed the main path toward `Whisper Turbo`, and used [WhisperX](https://github.com/m-bain/whisperx) forced alignment to improve timing precision.
 
-I also benchmarked Hugging Face models such as `Qwen3-ASR` and related forced aligners locally. Some short samples looked promising, but long audio quickly exposed memory and runtime costs. From that point, I cared less about “which model writes the sentence better?” and more about **which combination runs fast enough locally and gives timing I can edit with**.
+I also benchmarked Hugging Face models such as [Qwen3-ASR](https://huggingface.co/Qwen/Qwen3-ASR-1.7B) and related forced aligners locally. Some short samples looked promising, but long audio quickly exposed memory and runtime costs. From that point, I cared less about “which model writes the sentence better?” and more about **which combination runs fast enough locally and gives timing I can edit with**.
 
 From there, I started looking at laughter, applause, and silence events alongside speech. In shorts editing, speech alone was not enough. Moments where laughter bursts out or long silence appears often line up with real cut points. I was not building a transcript file generator anymore. I was building **a tool that helps editorial judgment by reading text and events together**.
 
-## That Is Why I Added MCP
+## That Is Why I Added [MCP](https://modelcontextprotocol.io/)
 
 At first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: **should the editor embed a specific AI, or should it connect to whatever agent the user already uses?**
 
@@ -154,7 +154,7 @@ This was less about “can it be built?” and more about “does it feel fast e
 
 ## `Code Assets` Turned Out to Be a Bigger Problem Than I Expected
 
-Once I chose `Remotion`, I wanted to treat animation as a React code asset. There were already plenty of React-based animation references on the web, including places like `21st.dev` and `Aceternity`, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene-level pieces such as intros or hero titles that could be assembled quickly.
+Once I chose `Remotion`, I wanted to treat animation as a React code asset. There were already plenty of React-based animation references on the web, including places like [21st.dev](https://21st.dev/) and [Aceternity UI](https://ui.aceternity.com/), and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene-level pieces such as intros or hero titles that could be assembled quickly.
 
 That led to the idea I called `code assets`. I was not thinking of a template you paste once and forget. I wanted visual blocks that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene-level blocks, while others had to be smaller components inside a scene. Bringing in one nice animation was not the hard part. Turning it into an editable asset was.
 

@@ -11,8 +11,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#ai-비디오-편집기-구현을-포기한-이유",
-      "excerpt": "vibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꾸는 과정에서 반복되는 판단과 편집 작업을 줄여보고 싶어서 시작한 프로젝트였습니다. 결론부터 말하면, 제가 정말 만들고 싶었던 건 새 영상 편집기 자체가 아니라 반복되는 편집 판단을 줄여주는 도구였습니다. vibe cut을 만들면서 그 차이를 더 선명하게 보게 됐고, 그래서 지금은 capcut automat…",
-      "content": "AI 비디오 편집기 구현을 포기한 이유\nvibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꾸는 과정에서 반복되는 판단과 편집 작업을 줄여보고 싶어서 시작한 프로젝트였습니다. 결론부터 말하면, 제가 정말 만들고 싶었던 건 새 영상 편집기 자체가 아니라 반복되는 편집 판단을 줄여주는 도구였습니다. vibe cut을 만들면서 그 차이를 더 선명하게 보게 됐고, 그래서 지금은 capcut automation으로 방향을 좁히게 됐습니다. 그때 제가 줄이고 싶었던 건 단순한 노동이 아니라, 계속 같은 기준으로 장면을 고르고 자르고 다시 검토하는 일이었습니다. 그래서 이 작업을 조금 더 편하게 해주는 서비스들인 알파컷, OpusClip, Klap, Vizard, 2short.ai도 조사해봤습니다. 결과가 아주 나쁘지는 않았지만, 제 작업 방식에 딱 맞는 편은 아니었고 결국 마지막에는 제가 다시 많이 손봐야 했습니다. 계속 쓰면 비용도 꽤 쌓였습니다. 그러다 자연스럽게 이런 생각이 들었습니다. 이 정도면 직접 만들어볼 수 있지 않을까? 그렇게 vibe cut을 만들기 시작했습니다. 처음의 질문은 단순했습니다. 영상 편집도, 내가 의도를 말하면 에이전트가 꽤 많은 부분을 대신해줄 수 없을까?",
+      "excerpt": "vibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꿀 때마다 반복되는 판단과 손이 많이 가는 편집을 줄여보고 싶어서 시작했습니다. 만들다 보니 새 편집기보다 제가 진짜 줄이고 싶은 일이 따로 있다는 걸 알게 됐습니다. 영상을 다시 보며 후보를 고르고, 시작 지점을 다듬고, 자막과 컷을 맞추는 쪽이었습니다. 그래서 지금은 capcut automation으로…",
+      "content": "AI 비디오 편집기 구현을 포기한 이유\nvibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꿀 때마다 반복되는 판단과 손이 많이 가는 편집을 줄여보고 싶어서 시작했습니다. 만들다 보니 새 편집기보다 제가 진짜 줄이고 싶은 일이 따로 있다는 걸 알게 됐습니다. 영상을 다시 보며 후보를 고르고, 시작 지점을 다듬고, 자막과 컷을 맞추는 쪽이었습니다. 그래서 지금은 capcut automation으로 방향을 좁혀 두었습니다. 그때 지치던 건 같은 기준으로 장면을 고르고 자르고 다시 확인하는 일이었습니다. 이 작업을 조금 더 편하게 해주는 서비스들인 알파컷, OpusClip, Klap, Vizard, 2short.ai도 같이 찾아봤습니다. 자동으로 후보를 뽑아주는 점은 편했습니다. 다만 결과를 받아보면 제가 다시 손대는 부분이 늘 비슷했습니다. 말이 시작되기 전후가 어색하거나, 도입부로 쓰기에는 맥락이 약하거나, 자막을 그대로 쓰기 어려운 경우가 많았습니다. 그래도 마지막엔 CapCut을 다시 열어 앞뒤를 자르고, 자막을 고치고, 도입 문구를 새로 잡게 됐습니다. 계속 쓰면 비용도 꽤 쌓였습니다. 그러다 이런 생각이 들었습니다. 이 정도면 직접 만들어볼 수 있지 않을까? 그렇게 vibe cut을 만들기 시작했습니다. 처음의 질문은 단순했습니다. 영상 편집도, 내가 의도를 말하면 에이전트가 꽤 많은 부분을 대신해줄 수 없을까?",
       "sectionTitle": "AI 비디오 편집기 구현을 포기한 이유",
       "tags": [
         "AI",
@@ -23,7 +23,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -54,8 +54,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#처음엔-이런-편집기를-만들고-싶었다",
-      "excerpt": "처음부터 제가 그리고 있던 건 작은 자동화 스크립트가 아니었습니다. 평소처럼 사람이 UI로 편집하다가, 필요한 순간에는 에이전트에게 같은 프로젝트를 넘겨서 함께 다루는 편집기를 만들고 싶었습니다. 그러려면 앱은 로컬에서 편집 도구를 열어주고, 에이전트는 그 도구를 통해 프로젝트 상태를 읽고 수정해야 했습니다. 자주 쓰는 흐름은 스킬이나 프리셋처럼 다시 쓸 수 있게 만들고 싶었습니다. 앱 안…",
-      "content": "처음엔 이런 편집기를 만들고 싶었다\n처음부터 제가 그리고 있던 건 작은 자동화 스크립트가 아니었습니다. 평소처럼 사람이 UI로 편집하다가, 필요한 순간에는 에이전트에게 같은 프로젝트를 넘겨서 함께 다루는 편집기를 만들고 싶었습니다. 그러려면 앱은 로컬에서 편집 도구를 열어주고, 에이전트는 그 도구를 통해 프로젝트 상태를 읽고 수정해야 했습니다. 자주 쓰는 흐름은 스킬이나 프리셋처럼 다시 쓸 수 있게 만들고 싶었습니다. 앱 안에 AI를 내장하고 사용량을 과금하는 구조보다, 내가 이미 쓰는 에이전트를 편집 작업에 연결하는 방식 이 더 매력적으로 느껴졌습니다. 쉽게 말하면 이랬습니다. 내가 쓰는 에이전트로, 내 컴퓨터 위에서, 내 파일을 편집한다.",
+      "excerpt": "처음부터 제가 그리고 있던 건 작은 자동화 스크립트가 아니었습니다. 평소처럼 사람이 UI로 편집하다가, 필요한 순간에는 에이전트에게 같은 프로젝트를 넘겨서 함께 다루는 편집기를 만들고 싶었습니다. 그러려면 앱은 로컬에서 편집 도구를 열어주고, 에이전트는 그 도구를 통해 프로젝트 상태를 읽고 수정해야 했습니다. 자주 쓰는 작업은 스킬이나 프리셋처럼 다시 꺼내 쓸 수 있게 만들고 싶었습니다.…",
+      "content": "처음엔 이런 편집기를 만들고 싶었다\n처음부터 제가 그리고 있던 건 작은 자동화 스크립트가 아니었습니다. 평소처럼 사람이 UI로 편집하다가, 필요한 순간에는 에이전트에게 같은 프로젝트를 넘겨서 함께 다루는 편집기를 만들고 싶었습니다. 그러려면 앱은 로컬에서 편집 도구를 열어주고, 에이전트는 그 도구를 통해 프로젝트 상태를 읽고 수정해야 했습니다. 자주 쓰는 작업은 스킬이나 프리셋처럼 다시 꺼내 쓸 수 있게 만들고 싶었습니다. 앱 안에 AI를 내장하고 사용량을 과금하는 구조보다, 내가 이미 쓰는 에이전트를 편집 작업에 연결하는 방식 이 더 매력적으로 느껴졌습니다. 쉽게 말하면 이랬습니다. 내가 쓰는 에이전트로, 내 컴퓨터 위에서, 내 파일을 편집한다.",
       "sectionTitle": "처음엔 이런 편집기를 만들고 싶었다",
       "tags": [
         "AI",
@@ -66,7 +66,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -97,8 +97,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#생각보다-꽤-멀리-갔다",
-      "excerpt": "vibe cut은 금방 아이디어 단계를 지나 편집기 형태를 갖춰가기 시작했습니다. 캡션 생성과 다시 생성, 무음 정리, cue 단위 편집, 프리뷰와 타임라인 연동, 프로젝트 저장과 복원까지 이미 하나의 흐름으로 이어지고 있었습니다. 중요한 건 이게 단순히 “AI가 영상을 잘라준다”는 수준이 아니었다는 점입니다. 애초에 제가 만들고 있던 건, 사람 편집과 에이전트 편집이 같은 프로젝트를 같이…",
-      "content": "생각보다 꽤 멀리 갔다\nvibe cut은 금방 아이디어 단계를 지나 편집기 형태를 갖춰가기 시작했습니다. 캡션 생성과 다시 생성, 무음 정리, cue 단위 편집, 프리뷰와 타임라인 연동, 프로젝트 저장과 복원까지 이미 하나의 흐름으로 이어지고 있었습니다. 중요한 건 이게 단순히 “AI가 영상을 잘라준다”는 수준이 아니었다는 점입니다. 애초에 제가 만들고 있던 건, 사람 편집과 에이전트 편집이 같은 프로젝트를 같이 다루는 편집기 에 가까웠습니다. vibe cut 실제 편집 화면 당시 화면은 이런 형태였습니다. 왼쪽에는 텍스트 작업 영역이 있고, 가운데에는 프리뷰와 타임라인이 있고, 오른쪽에는 에이전트 터미널이 붙어 있었습니다. 아래 영상은 실제로 동작하던 모습입니다. 브라우저가 영상을 지원하지 않습니다.",
+      "excerpt": "vibe cut은 금방 아이디어 단계를 지나 편집기 형태를 갖춰가기 시작했습니다. 캡션 생성과 다시 생성, 무음 정리, cue 단위 편집, 프리뷰와 타임라인 연동, 프로젝트 저장과 복원까지 이미 한 번에 이어져 있었습니다. 처음 생각보다 판이 더 커졌습니다. 제가 만들고 있던 건 “AI가 영상을 잘라준다”는 기능 하나가 아니라, 사람 편집과 에이전트 편집이 같은 프로젝트를 같이 다루는 편집…",
+      "content": "생각보다 꽤 멀리 갔다\nvibe cut은 금방 아이디어 단계를 지나 편집기 형태를 갖춰가기 시작했습니다. 캡션 생성과 다시 생성, 무음 정리, cue 단위 편집, 프리뷰와 타임라인 연동, 프로젝트 저장과 복원까지 이미 한 번에 이어져 있었습니다. 처음 생각보다 판이 더 커졌습니다. 제가 만들고 있던 건 “AI가 영상을 잘라준다”는 기능 하나가 아니라, 사람 편집과 에이전트 편집이 같은 프로젝트를 같이 다루는 편집기 였습니다. vibe cut 실제 편집 화면 당시 화면은 이런 형태였습니다. 왼쪽에는 텍스트 작업 영역이 있고, 가운데에는 프리뷰와 타임라인이 있고, 오른쪽에는 에이전트 터미널이 붙어 있었습니다. 아래 영상은 실제로 동작하던 모습입니다. 브라우저가 영상을 지원하지 않습니다.",
       "sectionTitle": "생각보다 꽤 멀리 갔다",
       "tags": [
         "AI",
@@ -109,7 +109,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -140,8 +140,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#텍스트-기반-편집에서-생각보다-깊은-문제를-만났다",
-      "excerpt": "제가 처음 끌렸던 건 Vrew 같은 텍스트 기반 편집 감각이었습니다. 원본을 고르고, 전사를 만들고, 무음을 정리하고, 결과를 확인한 뒤, 마지막에는 텍스트 블록을 직접 고치는 흐름을 만들고 싶었습니다. 그런데 막상 만들기 시작하니, 이건 생각보다 훨씬 깊은 문제였습니다. 단순히 자막을 보여주는 것과, 텍스트 자체가 편집의 기준이 되게 만드는 것 은 전혀 다른 일이었습니다. 말 그대로 텍스…",
-      "content": "텍스트 기반 편집에서 생각보다 깊은 문제를 만났다\n제가 처음 끌렸던 건 Vrew 같은 텍스트 기반 편집 감각이었습니다. 원본을 고르고, 전사를 만들고, 무음을 정리하고, 결과를 확인한 뒤, 마지막에는 텍스트 블록을 직접 고치는 흐름을 만들고 싶었습니다. 그런데 막상 만들기 시작하니, 이건 생각보다 훨씬 깊은 문제였습니다. 단순히 자막을 보여주는 것과, 텍스트 자체가 편집의 기준이 되게 만드는 것 은 전혀 다른 일이었습니다. 말 그대로 텍스트를 지우면 컷 편집도 함께 따라와야 했고, 타임라인이 바뀌면 텍스트 쪽도 다시 맞아야 했습니다. 결국 “텍스트로 편집한다”는 말은 생각보다 훨씬 많은 동기화 문제를 품고 있었습니다. 이런 과정을 겪다 보니, 자연스럽게 Premiere Pro, AutoCut, CapCut 같은 도구들의 방식을 많이 참고하게 됐습니다.",
+      "excerpt": "제가 처음 끌렸던 건 Vrew 같은 텍스트 기반 편집 감각이었습니다. 원본을 고르고, 전사를 만들고, 무음을 정리하고, 결과를 확인한 뒤, 마지막에는 텍스트 블록을 직접 고치는 방식을 만들고 싶었습니다. 그런데 막상 만들기 시작하니, 자막을 화면에 띄우는 것과 텍스트 자체가 편집의 기준이 되게 만드는 것 은 완전히 다른 일이었습니다. 텍스트를 지우면 컷 편집도 함께 따라와야 했고, 타임라인…",
+      "content": "텍스트 기반 편집에서 생각보다 깊은 문제를 만났다\n제가 처음 끌렸던 건 Vrew 같은 텍스트 기반 편집 감각이었습니다. 원본을 고르고, 전사를 만들고, 무음을 정리하고, 결과를 확인한 뒤, 마지막에는 텍스트 블록을 직접 고치는 방식을 만들고 싶었습니다. 그런데 막상 만들기 시작하니, 자막을 화면에 띄우는 것과 텍스트 자체가 편집의 기준이 되게 만드는 것 은 완전히 다른 일이었습니다. 텍스트를 지우면 컷 편집도 함께 따라와야 했고, 타임라인이 바뀌면 텍스트 쪽도 다시 맞아야 했습니다. “텍스트로 편집한다”는 말 안에 동기화 문제가 꽤 많이 숨어 있었습니다. 이런 과정을 겪다 보니, 자연스럽게 Premiere Pro, AutoCut, CapCut 같은 도구들의 방식을 많이 참고하게 됐습니다.",
       "sectionTitle": "텍스트 기반 편집에서 생각보다 깊은 문제를 만났다",
       "tags": [
         "AI",
@@ -152,7 +152,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -178,14 +178,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/전사에서-중요한-건-텍스트보다-타이밍이었다",
+      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/전사는-텍스트보다-타이밍이-더-까다로웠다",
       "locale": "ko",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
-      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#전사에서-중요한-건-텍스트보다-타이밍이었다",
+      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#전사는-텍스트보다-타이밍이-더-까다로웠다",
       "excerpt": "텍스트 기반 편집을 하려면 문장만 맞는다고 끝나지 않습니다. 어떤 단어가 몇 초에 나오는지가 흔들리면, 텍스트로 자르는 편집 자체가 어색해집니다. 그래서 vibe cut에서는 전사 모델도 “잘 받아쓰는가” 하나만으로 고를 수 없었습니다. 이 프로젝트는 데스크톱 앱이었고 전사를 로컬에서 돌리는 게 전제였기 때문에, 텍스트 정확도뿐 아니라 설치 부담, 실행 속도, macOS에서 실제로 안정적으…",
-      "content": "전사에서 중요한 건 텍스트보다 타이밍이었다\n텍스트 기반 편집을 하려면 문장만 맞는다고 끝나지 않습니다. 어떤 단어가 몇 초에 나오는지가 흔들리면, 텍스트로 자르는 편집 자체가 어색해집니다. 그래서 vibe cut에서는 전사 모델도 “잘 받아쓰는가” 하나만으로 고를 수 없었습니다. 이 프로젝트는 데스크톱 앱이었고 전사를 로컬에서 돌리는 게 전제였기 때문에, 텍스트 정확도뿐 아니라 설치 부담, 실행 속도, macOS에서 실제로 안정적으로 돌아가는지도 같이 봐야 했습니다. 처음에는 whisper.cpp 기반 경로를 기준선으로 두고 beam size, 언어 설정 같은 기본 옵션을 다듬었고, small/base/medium 같은 Whisper 계열 variant도 같이 비교했습니다. 여기서도 모델이 커진다고 항상 결과가 좋아지는 건 아니었고, 설치 비용과 체감 안정성까지 같이 봐야 했습니다. 동시에 허깅페이스에 올라온 오픈소스 ASR 모델도 계속 훑어보면서 어떤 조합이 실제 제품 경로에 들어올 수 있을지를 비교했습니다. 그런데 금방 드러난 건, 전사 텍스트의 정확도와 word level timing의 정확도가 다른 문제라는 점이었습니다. 처음에는 세그먼트를 더 잘게 쪼개는 식의 접근도 봤지만, 결국 더 중요했던 건 단어 시간을 억지로 균등 분배하지 않는 것이었습니다. 그래서 먼저 whisper.cpp가 output json full로 내려주는 token 단위 위치 정보를 직접 읽는 쪽으로 바꿨습니다. 문장 전체 시간을 대충 나눠 단어 시간으로 배분하는 대신, 모델이 뱉은 token 하나하나가 실제 오디오에서 어디쯤 나왔는지에 더 가까운 값을 쓰려는 시도였습니다. 그래도 미세한 오차가 남아서, 다음에는 오디오 신호와 token 순서를 다시 정렬하는 DTW(Dynamic Time Warping) 경로까지 붙여 timestamp를 한 번 더 보정했습니다. 그래도 filler 뒤의 다음 문장이 앞당겨지거나, 단어를 지웠을 때 컷 포인트가 체감상 어긋나는 구간은 끝까지 남았습니다. 전사 텍스트 정확도와 타이밍 정밀도를 맞추기 위해 segment split, token offsets, alignment를 거치는 흐름 다이어그램 전사에서 어려웠던 건 문장 자체보다, 그 문장이 정확히 언제 나오는지를 안정적으로 맞추는 일이었습니다. 그래서 마지막에는 ASR 본체와 alignment를 분리해서 보기 시작했습니다. 전사는 로컬 실행성과…",
-      "sectionTitle": "전사에서 중요한 건 텍스트보다 타이밍이었다",
+      "content": "전사는 텍스트보다 타이밍이 더 까다로웠다\n텍스트 기반 편집을 하려면 문장만 맞는다고 끝나지 않습니다. 어떤 단어가 몇 초에 나오는지가 흔들리면, 텍스트로 자르는 편집 자체가 어색해집니다. 그래서 vibe cut에서는 전사 모델도 “잘 받아쓰는가” 하나만으로 고를 수 없었습니다. 이 프로젝트는 데스크톱 앱이었고 전사를 로컬에서 돌리는 게 전제였기 때문에, 텍스트 정확도뿐 아니라 설치 부담, 실행 속도, macOS에서 실제로 안정적으로 돌아가는지도 같이 봐야 했습니다. 처음 기준선은 whisper.cpp였습니다. beam size, 언어 설정 같은 기본 옵션을 다듬고, small/base/medium 같은 Whisper 계열 variant도 같이 비교했습니다. 여기서 금방 느낀 건 모델이 커진다고 편집하기 좋은 결과가 바로 나오지는 않는다는 점이었습니다. 문장은 조금 더 정확해도 설치가 무겁거나, 실행이 느리거나, 긴 영상에서 안정성이 떨어지면 실제 작업에 넣기 어려웠습니다. 허깅페이스에 올라온 오픈소스 ASR 모델도 같이 훑어봤지만, 기준은 “좋아 보이는 모델”이 아니라 “내 맥에서 계속 돌려도 버티는 조합”이었습니다. 더 까다로웠던 건 word level timing이었습니다. 전사 텍스트가 맞아도 단어 시간이 조금씩 밀리면, 텍스트를 지웠을 때 컷 포인트가 어색해졌습니다. 처음에는 세그먼트를 더 잘게 쪼개면 나아질 거라고 생각했지만, 실제로는 문장 전체 시간을 단어 수로 나눠 배분하는 방식 자체가 문제였습니다. 그래서 먼저 whisper.cpp가 output json full로 내려주는 token 단위 위치 정보를 직접 읽는 쪽으로 바꿨습니다. 문장 시간을 대충 나누는 대신, 모델이 뱉은 token이 오디오에서 어디쯤 나왔는지에 더 가까운 값을 쓰려는 시도였습니다. 그래도 미세한 오차가 남아서, 다음에는 오디오 신호와 token 순서를 다시 맞추는 DTW(Dynamic Time Warping) 경로까지 붙였습니다. 여기까지 해도 filler 뒤의 다음 문장이 앞당겨지거나, 단어를 지웠을 때 컷 포인트가 체감상 어긋나는 구간은 끝까지 남았습니다. 전사 텍스트 정확도와 타이밍 정밀도를 맞추기 위해 segment split, token offsets, alignment를 거치는 흐름 다이어그램 마지막에는 ASR 본체와 alignment를 분리해서 보기 시작했습니다. 전사는 로컬 실행성과 속도 면에서 비교적 안정적…",
+      "sectionTitle": "전사는 텍스트보다 타이밍이 더 까다로웠다",
       "tags": [
         "AI",
         "Remotion",
@@ -195,7 +195,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -206,29 +206,29 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "ai 글 추천해줘",
         "remotion 글 뭐야",
         "remotion 글 추천해줘",
-        "전사에서 중요한 건 텍스트보다 타이밍이었다",
+        "전사는 텍스트보다 타이밍이 더 까다로웠다",
         "비디오",
         "편집기",
         "구현을",
         "포기한",
         "이유",
-        "전사에서",
-        "중요한",
+        "전사는",
         "텍스트보다",
-        "타이밍이었다",
+        "타이밍이",
+        "까다로웠다",
         "텍스트",
         "기반"
       ]
     },
     {
-      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-결국-mcp가-필요해졌다",
+      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-mcp를-붙이게-됐다",
       "locale": "ko",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
-      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-결국-mcp가-필요해졌다",
+      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-mcp를-붙이게-됐다",
       "excerpt": "처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습…",
-      "content": "그래서 결국 MCP가 필요해졌다\n처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습니다. 사용자는 Claude, Codex, Gemini처럼 자기가 익숙한 에이전트를 계속 쓰고, 앱은 그 에이전트가 편집기를 안전하게 다루게 해주는 로컬 도구만 제공하는 편이 더 맞았습니다. 그렇다고 UI 자동화로 해결할 수도 없었습니다. 화면을 보고 버튼을 누르는 방식으로는 현재 cue 목록, 선택된 구간, 각 클립의 시작과 끝, 방금 사용자가 바꾼 상태를 안정적으로 맞춰가기 어렵습니다. 쇼츠 편집은 몇 프레임 차이도 결과를 바꾸기 때문에, 에이전트가 “이 부분은 무음이 길어서 빼자”라고 말할 때도 정확히 어떤 프로젝트 상태를 기준으로 한 제안인지 가 먼저 분명해야 했습니다. 결국 필요했던 건 좋은 프롬프트보다 명확한 상태 계약 이었습니다. 에이전트가 프로젝트 상태를 읽고, 수정안을 preview로 제안하고, 사용자 동의를 받은 뒤에만 적용하고, 적용 직전에 상태가 바뀌었으면 revision mismatch로 막고, 모든 변경은 history로 되돌릴 수 있어야 했습니다. 이 흐름이 있어야 사람의 직접 편집과 에이전트 편집이 같은 프로젝트 안에서 같이 돌아갈 수 있었습니다. 그래서 vibe cut은 “에이전트가 UI를 직접 휘두르는 방식”이 아니라, 앱이 로컬 도구를 열어주고, 에이전트는 그 도구를 통해서만 편집하는 쪽으로 정리됐습니다. 그 역할과 경계를 정의하는 방식이 MCP였습니다. 지금 돌아보면 MCP는 단순 연결 수단이 아니라, 편집기와 여러 에이전트가 같은 프로젝트 상태를 안전하게 공유하기 위한 운영 계약 에 더 가까웠습니다. 사용자 UI, 로컬 도구 계약, 에이전트가 consent와 revision check, history를 통해 연결되는 흐름 다이어그램 결국 필요했던 건 UI 자동화가 아니라, 사람 편집과 에이전트 편집이 같은 프로젝트를 안전하게 공유할 수 있는 도구 계약이었습니다.",
-      "sectionTitle": "그래서 결국 MCP가 필요해졌다",
+      "content": "그래서 MCP를 붙이게 됐다\n처음에는 “에이전트가 편집을 대신해준다” 정도로만 생각했습니다. 그런데 실제로 만들기 시작하니, 먼저 한 가지를 정해야 했습니다. 편집기 안에 특정 AI를 내장할 것인가, 아니면 사용자가 원래 쓰던 에이전트를 그대로 연결할 것인가 하는 문제였습니다. 저는 후자를 택했습니다. 이 프로젝트는 처음부터 로컬 우선 데스크톱 편집기를 지향했고, 모델이나 서비스 사업자까지 같이 고정하고 싶지는 않았습니다. 사용자는 Claude, Codex, Gemini처럼 자기가 익숙한 에이전트를 계속 쓰고, 앱은 그 에이전트가 편집기를 안전하게 다루게 해주는 로컬 도구만 제공하는 편이 더 맞았습니다. 그렇다고 UI 자동화로 해결할 수도 없었습니다. 화면을 보고 버튼을 누르는 방식으로는 현재 cue 목록, 선택된 구간, 각 클립의 시작과 끝, 방금 사용자가 바꾼 상태를 안정적으로 맞춰가기 어렵습니다. 쇼츠 편집은 몇 프레임 차이도 결과를 바꾸기 때문에, 에이전트가 “이 부분은 무음이 길어서 빼자”라고 말할 때도 정확히 어떤 프로젝트 상태를 기준으로 한 제안인지 를 먼저 알아야 했습니다. 좋은 프롬프트만으로는 부족했습니다. 예를 들어 에이전트가 12번 cue를 지우자고 제안했는데, 그 사이 제가 타임라인을 직접 수정했다면 그 제안은 다시 봐야 합니다. 에이전트가 어떤 상태를 보고 판단했는지, 지금도 그 상태가 맞는지, 적용 전에 사용자가 동의했는지를 확인해야 했습니다. 그래서 에이전트는 프로젝트 상태를 읽고, 수정안을 preview로 제안하고, 사용자 동의를 받은 뒤에만 적용해야 했습니다. 적용 직전에 상태가 바뀌었으면 revision mismatch로 막고, 모든 변경은 history로 되돌릴 수 있어야 했습니다. 이 흐름이 있어야 사람의 직접 편집과 에이전트 편집이 같은 프로젝트 안에서 같이 돌아갈 수 있었습니다. 그래서 vibe cut은 “에이전트가 UI를 직접 휘두르는 방식”이 아니라, 앱이 로컬 도구를 열어주고, 에이전트는 그 도구를 통해서만 편집하는 쪽으로 정리됐습니다. 그 역할과 경계를 정의하는 방식이 MCP였습니다. 지금 돌아보면 MCP는 편집기와 여러 에이전트가 같은 프로젝트 상태를 안전하게 다루기 위한 규칙 묶음 이었습니다. 사용자 UI, 로컬 도구 계약, 에이전트가 consent와 revision check, history를 통해 연결되는 흐름 다이어그램 이쯤 되자 제가 만들던 건 “AI가…",
+      "sectionTitle": "그래서 MCP를 붙이게 됐다",
       "tags": [
         "AI",
         "Remotion",
@@ -238,7 +238,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -249,16 +249,16 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "ai 글 추천해줘",
         "remotion 글 뭐야",
         "remotion 글 추천해줘",
-        "그래서 결국 mcp 가 필요해졌다",
+        "그래서 mcp 를 붙이게 됐다",
         "비디오",
         "편집기",
         "구현을",
         "포기한",
         "이유",
         "그래서",
-        "결국",
         "mcp",
-        "필요해졌다",
+        "붙이게",
+        "됐다",
         "처음에는",
         "에이전트가"
       ]
@@ -270,7 +270,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#문제는-내가-풀고-싶은-것보다-만들어야-할-게-너무-많아졌다는-점이었다",
       "excerpt": "여기서부터 프로젝트의 질문이 조금씩 바뀌기 시작했습니다. 처음 질문은 이거였습니다. AI에게 컷 편집을 맡길 수 있을까? 그런데 실제로는 이런 것들을 계속 만들어야 했습니다. 편집기 기본 기능: 타임라인, 프리뷰, 렌더, 미디어 관리 안전한 편집 구조: 저장과 복구, 동의 절차, 되돌리기, 상태 동기화 점점 제품이 되는 요소들: 스킬 구조, 에이전트 연결, 설정, 업데이트 그런데 여기서 한…",
-      "content": "문제는 내가 풀고 싶은 것보다 만들어야 할 게 너무 많아졌다는 점이었다\n여기서부터 프로젝트의 질문이 조금씩 바뀌기 시작했습니다. 처음 질문은 이거였습니다. AI에게 컷 편집을 맡길 수 있을까? 그런데 실제로는 이런 것들을 계속 만들어야 했습니다. 편집기 기본 기능: 타임라인, 프리뷰, 렌더, 미디어 관리 안전한 편집 구조: 저장과 복구, 동의 절차, 되돌리기, 상태 동기화 점점 제품이 되는 요소들: 스킬 구조, 에이전트 연결, 설정, 업데이트 그런데 여기서 한 발 더 나가자, 이미 범위는 기술 검증을 넘어 제품 설계 쪽으로 기울고 있었습니다. 작은 데스크톱 편집기 자체를 만드는 문제에 더해, 스킬 스토어는 물론 로그인과 결제 같은 제품 요소까지 범위 안으로 들어오고 있었습니다. 재미있는 프로젝트였던 건 맞습니다. 다만 어느 순간부터 저는 “AI에게 컷 편집을 맡길 수 있을까?”를 확인하는 게 아니라, 새로운 비디오 편집기 사업을 설계하고 있는 느낌 을 받았습니다. 그때 다시 제 자신에게 물었습니다. 이걸 계속 밀면 기술 검증보다 제품 설계가 먼저가 되겠다는 감각이 분명해졌기 때문입니다. 어디까지 자동화가 가능한지 확인하고 싶은 건지, 아니면 로그인과 결제, 배포와 운영까지 포함한 편집기 제품을 만들고 싶은 건지 더 이상 같은 질문으로 묶어둘 수 없었습니다. 나는 정말 편집기를 만들고 싶은 걸까? 아니면 편집 판단을 자동화하고 싶은 걸까? 이 질문이 꽤 결정적이었습니다.",
+      "content": "문제는 내가 풀고 싶은 것보다 만들어야 할 게 너무 많아졌다는 점이었다\n여기서부터 프로젝트의 질문이 조금씩 바뀌기 시작했습니다. 처음 질문은 이거였습니다. AI에게 컷 편집을 맡길 수 있을까? 그런데 실제로는 이런 것들을 계속 만들어야 했습니다. 편집기 기본 기능: 타임라인, 프리뷰, 렌더, 미디어 관리 안전한 편집 구조: 저장과 복구, 동의 절차, 되돌리기, 상태 동기화 점점 제품이 되는 요소들: 스킬 구조, 에이전트 연결, 설정, 업데이트 그런데 여기서 한 발 더 나가자, 일이 다른 방향으로 커지기 시작했습니다. 작은 데스크톱 편집기 자체를 만드는 것만으로도 충분히 컸는데, 스킬을 어떻게 배포할지, 설정은 어디까지 열어둘지, 나중에 로그인이나 결제까지 붙일지 같은 질문이 자연스럽게 따라왔습니다. 재미있는 프로젝트였던 건 맞습니다. 다만 어느 순간부터 저는 “AI에게 컷 편집을 맡길 수 있을까?”를 확인하는 게 아니라, 새로운 비디오 편집기 사업을 설계하고 있는 느낌 을 받았습니다. 그때 다시 제 자신에게 물었습니다. 제가 확인하고 싶은 건 어디까지 자동화가 가능한지였지, 로그인과 결제, 배포와 운영까지 포함한 편집기 제품을 만드는 일이 아니었습니다. 둘을 더 이상 같은 질문으로 묶어둘 수 없었습니다. 나는 정말 편집기를 만들고 싶은 걸까? 아니면 편집 판단을 자동화하고 싶은 걸까? 이 질문이 꽤 결정적이었습니다.",
       "sectionTitle": "문제는 내가 풀고 싶은 것보다 만들어야 할 게 너무 많아졌다는 점이었다",
       "tags": [
         "AI",
@@ -281,7 +281,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -312,8 +312,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#remotion-기반-편집기는-생각보다-무거웠다",
-      "excerpt": "또 하나 크게 느낀 건 Remotion 기반 편집기의 반응성이었습니다. Remotion은 React 코드로 영상을 구성하고 렌더하는 도구인데, 저는 여전히 좋아하지만 편집기까지 만들려고 하면 이야기가 달라졌습니다. 여기서 문제는 단순히 렌더 속도만이 아니었습니다. 프리뷰와 최종 렌더 결과가 최대한 같아야 했고, 영상을 앞뒤로 움직여 볼 때도 화면이 바로 안정적으로 따라와야 했습니다. 게다가…",
-      "content": "Remotion 기반 편집기는 생각보다 무거웠다\n또 하나 크게 느낀 건 Remotion 기반 편집기의 반응성이었습니다. Remotion은 React 코드로 영상을 구성하고 렌더하는 도구인데, 저는 여전히 좋아하지만 편집기까지 만들려고 하면 이야기가 달라졌습니다. 여기서 문제는 단순히 렌더 속도만이 아니었습니다. 프리뷰와 최종 렌더 결과가 최대한 같아야 했고, 영상을 앞뒤로 움직여 볼 때도 화면이 바로 안정적으로 따라와야 했습니다. 게다가 클립 분할이 많아질수록 렌더 비용도 커졌습니다. 특히 클립을 잘게 쪼갠 뒤 스크럽할 때 프리뷰가 한 템포 늦게 따라오거나, 편집 상태를 조금만 바꿔도 다시 안정적으로 그려질 때까지 기다려야 하는 순간들이 거슬렸습니다. 편집기에서는 이런 짧은 지연도 생각보다 크게 느껴졌습니다. 결국 Remotion은 크로미움이 프레임을 그려서 렌더하는 쪽이라, CapCut 같은 네이티브 편집기가 주는 즉답성과는 차이가 날 수밖에 없었습니다. 실제로는 인코딩보다 렌더 단계에서 병목이 더 크게 느껴졌습니다. 이건 “만들 수 있느냐”보다 “실제로 충분히 빠르게 느껴지느냐”의 문제였고, 편집기라는 형식 자체가 요구하는 반응성에서 이미 어려운 싸움이 시작되고 있었습니다.",
+      "excerpt": "또 하나 크게 느낀 건 Remotion 기반 편집기의 반응성이었습니다. Remotion은 React 코드로 영상을 구성하고 렌더하는 도구인데, 저는 여전히 좋아하지만 편집기까지 만들려고 하면 이야기가 달라졌습니다. 여기서 걸린 건 렌더 속도만이 아니었습니다. 프리뷰와 최종 렌더 결과가 최대한 같아야 했고, 영상을 앞뒤로 움직여 볼 때도 화면이 바로 안정적으로 따라와야 했습니다. 클립을 많이…",
+      "content": "Remotion 기반 편집기는 생각보다 무거웠다\n또 하나 크게 느낀 건 Remotion 기반 편집기의 반응성이었습니다. Remotion은 React 코드로 영상을 구성하고 렌더하는 도구인데, 저는 여전히 좋아하지만 편집기까지 만들려고 하면 이야기가 달라졌습니다. 여기서 걸린 건 렌더 속도만이 아니었습니다. 프리뷰와 최종 렌더 결과가 최대한 같아야 했고, 영상을 앞뒤로 움직여 볼 때도 화면이 바로 안정적으로 따라와야 했습니다. 클립을 많이 쪼갤수록 렌더 비용도 커졌습니다. 특히 클립을 잘게 쪼갠 뒤 스크럽할 때 프리뷰가 한 템포 늦게 따라오거나, 편집 상태를 조금만 바꿔도 다시 안정적으로 그려질 때까지 기다려야 하는 순간들이 거슬렸습니다. 편집기에서는 이런 짧은 지연도 생각보다 크게 느껴졌습니다. Remotion은 크로미움이 프레임을 그려서 렌더하는 쪽이라, CapCut 같은 네이티브 편집기가 주는 즉답성과는 차이가 날 수밖에 없었습니다. 실제로는 인코딩보다 렌더 단계에서 병목이 더 크게 느껴졌습니다. 이건 “만들 수 있느냐”보다 “실제로 빠르게 느껴지느냐”의 문제였습니다. 편집기에서 그 차이는 생각보다 빨리 드러났습니다.",
       "sectionTitle": "Remotion 기반 편집기는 생각보다 무거웠다",
       "tags": [
         "AI",
@@ -324,7 +324,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -356,7 +356,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#코드-에셋은-생각보다-더-큰-문제였다",
       "excerpt": "Remotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠…",
-      "content": "`코드 에셋`은 생각보다 더 큰 문제였다\nRemotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠다고 생각했습니다. 그래서 만든 개념이 코드 에셋이었습니다. 이건 코드를 한 번 붙여넣고 끝내는 템플릿이 아니라, 타임라인에 올릴 수 있고, 에디터와 에이전트가 같이 이해할 수 있고, 다시 수정해서 재사용할 수 있는 시각 블록에 가까웠습니다. 어떤 건 장면 전체를 담당하는 큰 블록이어야 했고, 어떤 건 장면 안에 들어가는 작은 컴포넌트여야 했습니다. 결국 예쁜 애니메이션 하나를 가져오는 문제보다, 그걸 편집 가능한 자산 체계로 바꾸는 문제가 더 커졌습니다. 외부 React 애니메이션 레퍼런스를 Remotion safe rewrite를 거쳐 editor native code asset으로 바꾸고 다시 타임라인에서 재사용하는 흐름 다이어그램 코드 에셋은 외부 예시를 가져오는 문제가 아니라, 그 코드를 편집기 안에서 다시 쓸 수 있는 자산으로 바꾸는 문제에 가까웠습니다. 문제는 웹에서 자연스럽게 보이는 React 애니메이션이 Remotion에서도 그대로 안전한 건 아니라는 점이었습니다. CSS transition, animation, in view, mount 시점 상태, setTimeout 같은 패턴은 웹에서는 흔하지만, 영상 편집기에서는 스크럽, 되감기, 프리뷰, 최종 렌더에서 같은 결과를 보장하기 어렵습니다. 그래서 외부 코드를 참고하더라도, 최종 에셋은 frame 기반이고 deterministic하며 seek safe한 형태로 다시 써야 했습니다. 지금 돌아보면 이건 “멋있는 애니메이션 컴포넌트를 가져온다”는 문제가 아니었습니다. React 생태계의 코드를 편집기 안에서 안전하게 돌 수 있는 자산으로 다시 받아들이는 문제였고, 그 과정에서 에셋 분류, 사용 가이드, 변환 규칙, 검수 기준까지 함께 필요해졌습니다. 코드 에셋은 분명 재미있는 개념이었지만, 그만큼 프로젝트 범위를 크게 키운 축이기도 했습니다.",
+      "content": "`코드 에셋`은 생각보다 더 큰 문제였다\nRemotion을 채택한 이상, 저는 애니메이션도 React 코드 자산처럼 다루고 싶었습니다. 이미 웹에는 21st.dev나 Aceternity처럼 참고할 수 있는 React 기반 애니메이션이 많았고, 그런 결과물을 그대로는 아니더라도 편집기 안에서 재사용 가능한 형태로 가져오고 싶었습니다. 단순한 등장 효과를 넘어서, 인트로나 hero 타이틀 같은 장면 자체를 빠르게 쌓을 수 있으면 좋겠다고 생각했습니다. 그래서 만든 개념이 코드 에셋이었습니다. 코드를 한 번 붙여넣고 끝내는 템플릿이 아니라, 타임라인에 올릴 수 있고, 에디터와 에이전트가 같이 이해할 수 있고, 다시 수정해서 재사용할 수 있는 시각 블록으로 보고 있었습니다. 어떤 건 장면 전체를 담당하는 큰 블록이어야 했고, 어떤 건 장면 안에 들어가는 작은 컴포넌트여야 했습니다. 예쁜 애니메이션 하나를 가져오는 일보다, 그걸 편집 가능한 자산으로 바꾸는 일이 더 컸습니다. 외부 React 애니메이션 레퍼런스를 Remotion safe rewrite를 거쳐 editor native code asset으로 바꾸고 다시 타임라인에서 재사용하는 흐름 다이어그램 여기까지는 아이디어가 꽤 좋아 보였습니다. 문제는 실제로 가져와보면 바로 드러났습니다. 웹에서 자연스럽게 보이는 React 애니메이션이 Remotion에서도 그대로 안전한 건 아니었습니다. CSS transition, animation, in view, mount 시점 상태, setTimeout 같은 패턴은 웹에서는 흔하지만, 영상 편집기에서는 스크럽하거나 되감았을 때 같은 장면이 다시 나와야 합니다. 프리뷰와 최종 렌더도 맞아야 합니다. 외부 코드를 참고하더라도 그대로 넣을 수는 없었습니다. frame 기반으로 다시 쓰고, 어느 시점에서 봐도 같은 결과가 나오게 바꾸고, 편집기에서 조작 가능한 속성도 따로 정의해야 했습니다. 처음에는 “멋있는 애니메이션 컴포넌트를 가져오면 되지 않을까?” 정도였는데, 해볼수록 에셋 분류, 사용 가이드, 변환 규칙, 검수 기준까지 따라붙었습니다. 코드 에셋은 재미있는 개념이었지만, 프로젝트 범위를 크게 키운 이유이기도 했습니다.",
       "sectionTitle": "`코드 에셋`은 생각보다 더 큰 문제였다",
       "tags": [
         "AI",
@@ -367,7 +367,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -398,8 +398,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#실제로-내가-자동화하고-싶었던-건-더-작았다",
-      "excerpt": "제 실제 작업 흐름을 다시 생각해보면 답은 더 단순했습니다. Vrew로 전사를 만들고, 텍스트 기반으로 1차 편집을 하고, 무음을 정리하고, 쇼츠 후보를 고르고, 마지막은 CapCut에서 마무리하는 흐름이 반복되고 있었습니다. 제가 줄이고 싶었던 건 새 편집기가 없다는 문제가 아니었습니다. 어디를 자를지 판단하고, 어떤 구간이 쇼츠가 될지 고르고, 텍스트를 다시 보며 편집 포인트를 찾는 반…",
-      "content": "실제로 내가 자동화하고 싶었던 건 더 작았다\n제 실제 작업 흐름을 다시 생각해보면 답은 더 단순했습니다. Vrew로 전사를 만들고, 텍스트 기반으로 1차 편집을 하고, 무음을 정리하고, 쇼츠 후보를 고르고, 마지막은 CapCut에서 마무리하는 흐름이 반복되고 있었습니다. 제가 줄이고 싶었던 건 새 편집기가 없다는 문제가 아니었습니다. 어디를 자를지 판단하고, 어떤 구간이 쇼츠가 될지 고르고, 텍스트를 다시 보며 편집 포인트를 찾는 반복이 더 힘들었습니다. 즉 제가 줄이고 싶었던 건 도구 자체가 아니라, 판단이 반복되는 구간 이었습니다. 이걸 깨닫고 나니 vibe cut이 왜 이렇게 커지고 있었는지도 더 잘 보이기 시작했습니다. 편집기를 새로 만드는 문제와, 반복되는 판단을 자동화하는 문제는 붙어 있지만 같은 문제는 아니었습니다.",
+      "excerpt": "제 실제 작업을 다시 떠올려보면 훨씬 작았습니다. Vrew로 전사를 만들고, 텍스트 기반으로 1차 편집을 하고, 무음을 정리하고, 쇼츠 후보를 고르고, 마지막은 CapCut에서 마무리하는 식이었습니다. 힘들었던 건 새 편집기가 없어서가 아니었습니다. 같은 영상을 다시 보면서 어디를 자를지 판단하고, 어떤 구간이 쇼츠가 될지 고르고, 텍스트를 다시 읽으며 편집 포인트를 찾는 반복이 더 컸습니…",
+      "content": "실제로 내가 자동화하고 싶었던 건 더 작았다\n제 실제 작업을 다시 떠올려보면 훨씬 작았습니다. Vrew로 전사를 만들고, 텍스트 기반으로 1차 편집을 하고, 무음을 정리하고, 쇼츠 후보를 고르고, 마지막은 CapCut에서 마무리하는 식이었습니다. 힘들었던 건 새 편집기가 없어서가 아니었습니다. 같은 영상을 다시 보면서 어디를 자를지 판단하고, 어떤 구간이 쇼츠가 될지 고르고, 텍스트를 다시 읽으며 편집 포인트를 찾는 반복이 더 컸습니다. 이걸 깨닫고 나니 vibe cut이 왜 이렇게 커지고 있었는지도 보였습니다. 새 편집기를 만드는 일과 반복되는 판단을 줄이는 일은 붙어 있지만, 같은 일은 아니었습니다.",
       "sectionTitle": "실제로 내가 자동화하고 싶었던 건 더 작았다",
       "tags": [
         "AI",
@@ -410,7 +410,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -441,8 +441,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-capcut-automation으로-방향을-좁혔다",
-      "excerpt": "그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 흐름이었습니다. 지금은 전…",
-      "content": "그래서 `capcut-automation`으로 방향을 좁혔다\n그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 흐름이었습니다. 지금은 전사를 직접 넣을 수도 있고, 로컬 전사나 OpenAI 전사로 바로 만드는 쪽도 붙어 있습니다. 즉 capcut automation은 새 영상 편집기라기보다, 제가 손으로 반복하던 쇼츠 제작의 앞단을 자동화하는 도구에 가깝습니다. 어디를 자를지, 어떤 문구로 시작할지, 어떤 후보를 먼저 볼지를 정리해주고, 선택한 구간마다 CapCut 프로젝트 초안을 하나씩 만들어줍니다. 마지막 다듬기와 내보내기는 여전히 CapCut에서 직접 합니다. 이 프로젝트가 별도로 나오게 된 이유도 단순했습니다. 제가 줄이고 싶었던 건 타임라인 자체가 아니라, 전사를 다시 읽고 쇼츠 후보를 고르고 초안을 만드는 반복 작업이었습니다. capcut automation은 바로 그 구간만 겨냥해서 나온 더 작은 프로젝트입니다. capcut automation 후보 생성 화면",
+      "excerpt": "그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전…",
+      "content": "그래서 `capcut-automation`으로 방향을 좁혔다\n그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전사를 직접 넣을 수도 있고, 로컬 전사나 OpenAI 전사로 바로 만드는 쪽도 붙어 있습니다. capcut automation은 어디를 자를지, 어떤 문구로 시작할지, 어떤 후보를 먼저 볼지를 정리해주고, 선택한 구간마다 CapCut 프로젝트 초안을 하나씩 만들어줍니다. 마지막 다듬기와 내보내기는 여전히 CapCut에서 직접 합니다. 새 편집기를 다시 만드는 대신, 제가 손으로 반복하던 쇼츠 제작의 앞부분만 떼어낸 겁니다. capcut automation 후보 생성 화면",
       "sectionTitle": "그래서 `capcut-automation`으로 방향을 좁혔다",
       "tags": [
         "AI",
@@ -453,7 +453,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -484,8 +484,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#멈췄지만-남은-건-있었다",
-      "excerpt": "vibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 이 과정을 통해 제가 정말 풀고 싶었던 문제가 무엇인지 더 분명하게 보이기 시작했습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 하지만 실제로 만들수록, 제가 정말 줄이고 싶었던 건 편집기 전체를 새로 만드는 일이 아니라 그 안에서 반복되는 판단과 선택이라는 점이 선명해졌습니다.…",
-      "content": "멈췄지만 남은 건 있었다\nvibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 이 과정을 통해 제가 정말 풀고 싶었던 문제가 무엇인지 더 분명하게 보이기 시작했습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 하지만 실제로 만들수록, 제가 정말 줄이고 싶었던 건 편집기 전체를 새로 만드는 일이 아니라 그 안에서 반복되는 판단과 선택이라는 점이 선명해졌습니다. 어디를 자를지, 어떤 구간을 쇼츠 후보로 볼지, 어떤 문구로 시작할지를 계속 다시 판단하는 일이 제가 가장 많이 지치던 부분이었습니다. vibe cut은 그걸 확인하기 위해 꼭 필요했던 프로젝트였습니다. 직접 만들어보니, AI가 영상 편집에서 곧바로 가치를 주는 지점과 그렇지 않은 지점이 생각보다 분명했습니다. 처음부터 끝까지 대신 편집하는 범용 도구를 만드는 일보다, 전사와 이벤트를 바탕으로 후보를 추리고 초안을 빠르게 만드는 쪽이 훨씬 현실적이었습니다. 또 하나 크게 배운 건, AI 기반 엔지니어링에서는 처음부터 넓은 문제를 통째로 잡을수록 기능보다 복잡성이 더 빨리 커질 수 있다는 점이었습니다. 편집기를 만들기 시작했지만, 실제로는 타임라인, 프리뷰, 렌더링, 상태 동기화, 복구, 에이전트 인터페이스처럼 원래 풀고 싶었던 문제를 둘러싼 더 큰 구조를 계속 함께 만들어야 했습니다. 만들 수 있느냐와 별개로, 그 복잡성을 감당하는 일이 어느 순간 새로운 핵심 문제가 되어버렸습니다. 그래서 이 프로젝트를 통해 배운 건 단순히 “AI로 영상 편집을 어디까지 할 수 있는가”만이 아니었습니다. 그보다 더 크게 남은 건, 내가 정말 필요한 자동화가 무엇인지 먼저 정확히 좁히는 일이 훨씬 중요하다는 점이었습니다. 지금 돌아보면 capcut automation으로 방향을 바꾼 것도 포기가 아니라, 문제를 더 정확하게 다시 정의한 결과에 가깝습니다. 제가 필요했던 건 새로운 편집기라기보다, 전사를 읽고 쇼츠 후보를 고르고 초안을 만드는 앞단의 반복 작업을 줄여주는 흐름이었습니다. 그래서 지금은 vibe cut을 그대로 밀기보다, 그 안에서 정말 필요했던 핵심만 남긴 더 작고 분명한 자동화에 집중하고 있습니다. 결국 vibe cut은 멈췄지만, 이 프로젝트 덕분에 저는 처음보다 훨씬 더 제가 풀고 싶은 문제가 무엇인지 분명하게 알게 됐습니다. 더 많은 기능을 만드는 일보다, 실제로 가장 자주 반복하는 판단과 작업이…",
+      "excerpt": "vibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 직접 만들어봤기 때문에 제가 지치던 지점이 어디였는지 더 잘 보였습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 그런데 만들수록 제가 힘들어하던 건 편집기 전체가 아니라, 같은 영상을 다시 보면서 “이 구간을 잘라야 하나?”, “이 부분이 쇼츠로 괜찮나?”, “첫 문장은 어떻게 잡…",
+      "content": "멈췄지만 남은 건 있었다\nvibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 직접 만들어봤기 때문에 제가 지치던 지점이 어디였는지 더 잘 보였습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 그런데 만들수록 제가 힘들어하던 건 편집기 전체가 아니라, 같은 영상을 다시 보면서 “이 구간을 잘라야 하나?”, “이 부분이 쇼츠로 괜찮나?”, “첫 문장은 어떻게 잡아야 하나?”를 반복해서 판단하는 일이었습니다. vibe cut은 그걸 확인하기 위해 필요했던 프로젝트였습니다. 직접 만들어보니 AI가 영상 편집에서 바로 가치를 줄 수 있는 부분과, 오히려 새 편집기 전체를 만들어야 해서 일이 커지는 부분이 나뉘어 보였습니다. 타임라인, 프리뷰, 렌더링, 상태 동기화, 복구, 에이전트 인터페이스를 모두 끌고 가다 보면, 어느 순간 컷 편집 자동화보다 편집기 자체를 유지하는 일이 더 큰 문제가 됩니다. 그래서 지금은 vibe cut을 더 붙잡고 있기보다, 전사를 읽고 쇼츠 후보를 고른 뒤 CapCut 초안으로 넘기는 앞부분만 남겨두었습니다. 이름은 바뀌었지만, 그 작업이 제가 실제로 반복하던 일이었습니다. 돌아보면 이 프로젝트에서 제일 크게 배운 건 “AI로 영상 편집을 어디까지 할 수 있는가”보다 더 앞의 질문이었습니다. 내가 줄이고 싶은 일이 정확히 뭔지 먼저 좁히지 않으면, 자동화를 만들다가 금방 다른 제품을 만들게 됩니다. 지금은 기능을 더 붙이기보다, 제가 자주 반복하는 판단을 줄이는 데 맞추고 있습니다.",
       "sectionTitle": "멈췄지만 남은 건 있었다",
       "tags": [
         "AI",
@@ -496,7 +496,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -539,7 +539,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation 으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -3710,8 +3710,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#why-i-gave-up-on-building-an-ai-video-editor",
-      "excerpt": "vibe cut was an AI video editor I had been building. I started it because I wanted to reduce the repeated judgment and editing work involved in turning long form videos into shorts. The short version is this: what I rea…",
-      "content": "Why I Gave Up on Building an AI Video Editor\nvibe cut was an AI video editor I had been building. I started it because I wanted to reduce the repeated judgment and editing work involved in turning long form videos into shorts. The short version is this: what I really wanted was not a brand new video editor, but a tool that reduces repeated editorial judgment. Building vibe cut made that difference much clearer to me, and that is why I eventually narrowed the direction to capcut automation. What I wanted to reduce was not simple labor. It was the repeated act of picking moments, cutting them, and reviewing them again using the same criteria over and over. That is why I also looked into tools like AlphaCut, OpusClip, Klap, Vizard, and 2short.ai. The results were not terrible, but they did not quite fit the way I work, and I still had to do a lot of manual cleanup at the end. The cost also added up if I kept using them. At some point, a simple thought followed naturally. Could I just build this myself? That is how I started building vibe cut. The first question was simple. Could an agent take over a meaningful part of video editing if I just described my intent?",
+      "excerpt": "vibe cut was an AI video editor I had been building. I started it because turning long form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again…",
+      "content": "Why I Gave Up on Building an AI Video Editor\nvibe cut was an AI video editor I had been building. I started it because turning long form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again. As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I narrowed the direction to capcut automation. The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including AlphaCut, OpusClip, Klap, Vizard, and 2short.ai. Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open CapCut, trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought. Could I just build this myself? That is how I sta…",
       "sectionTitle": "Why I Gave Up on Building an AI Video Editor",
       "tags": [
         "AI",
@@ -3722,7 +3722,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3754,7 +3754,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#at-first-this-was-the-editor-i-wanted-to-build",
       "excerpt": "From the beginning, I was not imagining a small automation script. I wanted an editor where a person could edit through the UI as usual, then hand the same project over to an agent when needed and work together inside o…",
-      "content": "At First, This Was the Editor I Wanted to Build\nFrom the beginning, I was not imagining a small automation script. I wanted an editor where a person could edit through the UI as usual, then hand the same project over to an agent when needed and work together inside one editing environment. For that to work, the app had to expose local editing tools, and the agent had to read and modify project state through those tools. I also wanted common flows to be reusable as skills or presets. That felt more compelling to me than building AI directly into the app and charging for usage. I was more interested in connecting the agents I already use to editing work . Put simply, the idea was this: Edit my files, on my machine, with the agent I already use.",
+      "content": "At First, This Was the Editor I Wanted to Build\nFrom the beginning, I was not imagining a small automation script. I wanted an editor where a person could edit through the UI as usual, then hand the same project over to an agent when needed and work together inside one editing environment. For that to work, the app had to expose local editing tools, and the agent had to read and modify project state through those tools. I also wanted common editing steps to be reusable as skills or presets. That felt more compelling to me than building AI directly into the app and charging for usage. I was more interested in connecting the agents I already use to editing work . The idea sounded like this: Edit my files, on my machine, with the agent I already use.",
       "sectionTitle": "At First, This Was the Editor I Wanted to Build",
       "tags": [
         "AI",
@@ -3765,7 +3765,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3797,7 +3797,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#it-went-much-further-than-i-expected",
       "excerpt": "vibe cut moved past the idea stage pretty quickly and started to look like a real editor. Caption generation and regeneration, silence cleanup, cue level editing, preview and timeline syncing, project save and restore w…",
-      "content": "It Went Much Further Than I Expected\nvibe cut moved past the idea stage pretty quickly and started to look like a real editor. Caption generation and regeneration, silence cleanup, cue level editing, preview and timeline syncing, project save and restore were already connected as one flow. What mattered was that this was no longer just “AI cuts a video for you.” What I was actually building was much closer to an editor where human edits and agent edits share the same project . vibe cut real editor screen The screen already looked like this. There was a text editing area on the left, preview and timeline in the middle, and an agent terminal on the right. The video below shows it actually running. Your browser does not support video playback.",
+      "content": "It Went Much Further Than I Expected\nvibe cut moved past the idea stage pretty quickly and started to look like a real editor. Caption generation and regeneration, silence cleanup, cue level editing, preview and timeline syncing, project save and restore were already connected. The project had grown beyond the one feature I first imagined. I was building an editor where human edits and agent edits share the same project . vibe cut real editor screen The screen already looked like this. There was a text editing area on the left, preview and timeline in the middle, and an agent terminal on the right. The video below shows it actually running. Your browser does not support video playback.",
       "sectionTitle": "It Went Much Further Than I Expected",
       "tags": [
         "AI",
@@ -3808,7 +3808,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3839,8 +3839,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#text-based-editing-turned-out-to-be-deeper-than-i-expected",
-      "excerpt": "What first attracted me was the text based editing feel of tools like Vrew. I wanted a flow where I could pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks.…",
-      "content": "Text-Based Editing Turned Out to Be Deeper Than I Expected\nWhat first attracted me was the text based editing feel of tools like Vrew. I wanted a flow where I could pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks. But once I started building it, I realized this was a much deeper problem than I expected. Showing subtitles and making text itself become the basis of editing are completely different things. If I deleted text, the cut had to follow. If the timeline changed, the text side had to realign. In the end, saying “you edit through text” hid a much larger synchronization problem underneath. That process naturally led me to study how tools like Premiere Pro, AutoCut, and CapCut approached the problem.",
+      "excerpt": "What first attracted me was the text based editing feel of tools like Vrew. I wanted to pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks. But once I started…",
+      "content": "Text-Based Editing Turned Out to Be Deeper Than I Expected\nWhat first attracted me was the text based editing feel of tools like Vrew. I wanted to pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks. But once I started building it, showing subtitles and making text itself become the basis of editing turned out to be completely different things. If I deleted text, the cut had to follow. If the timeline changed, the text side had to realign. The phrase “edit through text” was hiding a lot of synchronization work underneath. After running into that, I started studying how tools like Premiere Pro, AutoCut, and CapCut handled text based editing.",
       "sectionTitle": "Text-Based Editing Turned Out to Be Deeper Than I Expected",
       "tags": [
         "AI",
@@ -3851,7 +3851,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3877,14 +3877,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/in-transcription-timing-mattered-more-than-text",
+      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/timing-was-harder-than-the-transcript",
       "locale": "en",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
-      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#in-transcription-timing-mattered-more-than-text",
+      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#timing-was-harder-than-the-transcript",
       "excerpt": "For text based editing, getting the sentence right is not enough. If the timing of each word drifts, cutting through text starts to feel wrong. That meant I could not choose a transcription model in vibe cut based only…",
-      "content": "In Transcription, Timing Mattered More Than Text\nFor text based editing, getting the sentence right is not enough. If the timing of each word drifts, cutting through text starts to feel wrong. That meant I could not choose a transcription model in vibe cut based only on “does it transcribe well?” This was a desktop app, and local transcription was part of the premise, so I had to weigh text accuracy, installation cost, execution speed, and whether it actually ran stably on macOS. I started with a whisper.cpp path as the baseline, tuned options like beam size and language settings, and compared Whisper variants such as small, base, and medium. Even there, a bigger model did not always produce a better overall result, because installation cost and practical stability also mattered. At the same time, I kept looking through open source ASR models on Hugging Face to compare which combinations could realistically fit into a product path. What became clear very quickly was that transcript accuracy and word level timing accuracy were different problems. I looked at approaches that split segments more aggressively, but what mattered more in the end was avoiding fake evenly distributed word…",
-      "sectionTitle": "In Transcription, Timing Mattered More Than Text",
+      "content": "Timing Was Harder Than the Transcript\nFor text based editing, getting the sentence right is not enough. If the timing of each word drifts, cutting through text starts to feel wrong. That meant I could not choose a transcription model in vibe cut based only on “does it transcribe well?” This was a desktop app, and local transcription was part of the premise, so I had to weigh text accuracy, installation cost, execution speed, and whether it actually ran stably on macOS. I started with a whisper.cpp path as the baseline, tuned options like beam size and language settings, and compared Whisper variants such as small, base, and medium. A bigger model did not always make the editing result better. If it was heavy to install, slow to run, or unstable on long files, I could not put it into the actual workflow. I also looked through open source ASR models on Hugging Face, but the bar became “can this keep running on my Mac?”, not “does this model look good on paper?” The harder part was word level timing. Even when the transcript text was right, a small drift in word timing made the cut point feel wrong. At first I thought splitting segments more aggressively might help, but the real prob…",
+      "sectionTitle": "Timing Was Harder Than the Transcript",
       "tags": [
         "AI",
         "Remotion",
@@ -3894,7 +3894,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3905,29 +3905,29 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "post about ai",
         "what is remotion",
         "post about remotion",
-        "in transcription, timing mattered more than text",
+        "timing was harder than the transcript",
         "why",
         "gave",
         "up",
         "building",
         "video",
         "editor",
-        "transcription",
         "timing",
-        "mattered",
-        "more",
-        "than"
+        "was",
+        "harder",
+        "than",
+        "transcript"
       ]
     },
     {
-      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/that-is-why-i-ended-up-needing-mcp",
+      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/that-is-why-i-added-mcp",
       "locale": "en",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
-      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#that-is-why-i-ended-up-needing-mcp",
+      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#that-is-why-i-added-mcp",
       "excerpt": "At first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the…",
-      "content": "That Is Why I Ended Up Needing MCP\nAt first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the user already uses? I chose the latter. From the start, this project aimed for a local first desktop editor, and I did not want to lock the product to one model or service provider. It made more sense to let users keep using agents they were already familiar with, such as Claude, Codex, or Gemini, while the app only exposed the local tools needed to let those agents work safely with the editor. UI automation was not enough either. A click the screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” the exact project state that proposal is based on has to be clear first. In the end, what I needed was not just a better prompt, but a clear state contract . The agent had to read project state, propose a change as preview, apply it…",
-      "sectionTitle": "That Is Why I Ended Up Needing MCP",
+      "content": "That Is Why I Added MCP\nAt first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: should the editor embed a specific AI, or should it connect to whatever agent the user already uses? I chose the latter. From the start, this project aimed for a local first desktop editor, and I did not want to lock the product to one model or service provider. It made more sense to let users keep using agents they were already familiar with, such as Claude, Codex, or Gemini, while the app only exposed the local tools needed to let those agents work safely with the editor. UI automation was not enough either. A click the screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” it first has to know which exact project state that proposal is based on . A better prompt was not enough. For example, if the agent suggested deleting cue 12, but I had already edited the timeline by hand, that suggestion needed to be checked…",
+      "sectionTitle": "That Is Why I Added MCP",
       "tags": [
         "AI",
         "Remotion",
@@ -3937,7 +3937,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3948,18 +3948,18 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "post about ai",
         "what is remotion",
         "post about remotion",
-        "that is why i ended up needing mcp",
+        "that is why i added mcp",
         "why",
         "gave",
         "up",
         "building",
         "video",
         "editor",
-        "ended",
-        "needing",
+        "added",
         "mcp",
         "at",
-        "first"
+        "first",
+        "thought"
       ]
     },
     {
@@ -3969,7 +3969,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#the-problem-was-that-the-scope-kept-growing-beyond-the-question-i-wanted-to-answer",
       "excerpt": "From that point on, the project's question started to shift. At first, the question was this: Can I hand off cut editing to AI? But in practice, I kept having to build things like: basic editor features such as timeline…",
-      "content": "The Problem Was That the Scope Kept Growing Beyond the Question I Wanted to Answer\nFrom that point on, the project's question started to shift. At first, the question was this: Can I hand off cut editing to AI? But in practice, I kept having to build things like: basic editor features such as timeline, preview, render, and media management safe editing structure such as save and recovery, consent flow, undo, and state synchronization increasingly product like layers such as skills, agent connection, configuration, and updates Once I pushed one step further, the scope had already tilted from technical validation toward product design. On top of building a small desktop editor itself, the project was starting to include product concerns like a skill store, login, and billing. It was still a genuinely fun project. But at some point it stopped feeling like I was checking whether “AI can handle cut editing,” and started feeling like I was designing a new video editing business . That is when I had to ask myself again. If I kept pushing, product design would come before technical validation. I could no longer treat “I want to test how far automation can go” and “I want to build a full e…",
+      "content": "The Problem Was That the Scope Kept Growing Beyond the Question I Wanted to Answer\nFrom that point on, the project's question started to shift. At first, the question was this: Can I hand off cut editing to AI? But in practice, I kept having to build things like: basic editor features such as timeline, preview, render, and media management safe editing structure such as save and recovery, consent flow, undo, and state synchronization increasingly product like layers such as skills, agent connection, configuration, and updates Once I pushed one step further, the work started to grow in another direction. Building a small desktop editor was already large enough, but then came questions like how skills should be distributed, how much configuration to expose, and whether login or billing would eventually be needed. It was still a genuinely fun project. But at some point it stopped feeling like I was checking whether “AI can handle cut editing,” and started feeling like I was designing a new video editing business . That is when I had to ask myself again. I wanted to test how far automation could go. I did not want to build a full editor product with login, billing, distribution, and o…",
       "sectionTitle": "The Problem Was That the Scope Kept Growing Beyond the Question I Wanted to Answer",
       "tags": [
         "AI",
@@ -3980,7 +3980,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4012,7 +4012,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#a-remotion-based-editor-was-heavier-than-i-expected",
       "excerpt": "Another thing that stood out to me was the responsiveness of a Remotion based editor. Remotion is a tool for composing and rendering video in React code, and I still like it a lot, but the story changes when you try to…",
-      "content": "A Remotion-Based Editor Was Heavier Than I Expected\nAnother thing that stood out to me was the responsiveness of a Remotion based editor. Remotion is a tool for composing and rendering video in React code, and I still like it a lot, but the story changes when you try to build an editor around it. The problem was not just render speed. The preview and the final render had to match as closely as possible, and when I scrubbed back and forth through the video, the screen had to follow immediately and stably. On top of that, the render cost kept growing as clip splitting increased. What really bothered me was the way the preview sometimes lagged one beat behind after breaking clips into smaller pieces, or how even a small edit could make me wait until the screen became stable again. In an editor, even a short delay feels bigger than it sounds. In the end, Remotion still renders through Chromium drawing frames, so it cannot feel the same as the immediacy of a native editor like CapCut. In practice, the bottleneck felt larger in the render stage than in encoding. This was less about “can it be built?” and more about “can it feel fast enough in real use?” The fight was already difficult b…",
+      "content": "A Remotion-Based Editor Was Heavier Than I Expected\nAnother thing that stood out to me was the responsiveness of a Remotion based editor. Remotion is a tool for composing and rendering video in React code, and I still like it a lot, but the story changes when you try to build an editor around it. Render speed was not the only thing that got in the way. The preview and the final render had to match as closely as possible, and when I scrubbed back and forth through the video, the screen had to follow immediately and stably. The render cost also kept growing as I split clips into smaller pieces. What really bothered me was the way the preview sometimes lagged one beat behind after breaking clips into smaller pieces, or how even a small edit could make me wait until the screen became stable again. In an editor, even a short delay feels bigger than it sounds. Remotion still renders through Chromium drawing frames, so it cannot feel the same as the immediacy of a native editor like CapCut. In practice, the bottleneck felt larger in the render stage than in encoding. This was less about “can it be built?” and more about “does it feel fast enough while editing?” In an editor, that differe…",
       "sectionTitle": "A Remotion-Based Editor Was Heavier Than I Expected",
       "tags": [
         "AI",
@@ -4023,7 +4023,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4055,7 +4055,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#code-assets-turned-out-to-be-a-bigger-problem-than-i-expected",
       "excerpt": "Once I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity, and I wanted to reuse id…",
-      "content": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected\nOnce I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene level pieces such as intros or hero titles that could be assembled quickly. That led to the idea I called code assets. This was not a template you paste once and forget. It was closer to a visual block that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene level blocks, while others had to be smaller components that lived inside a scene. The problem became much bigger than “bring in one nice animation.” It became a question of turning that code into an editable asset system. A diagram showing external React animation references being rewritten into editor native code assets and reused on a timeline The real problem with code assets was not importing examples. It was turning that code into assets the editor could actually reuse. The i…",
+      "content": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected\nOnce I chose Remotion, I wanted to treat animation as a React code asset. There were already plenty of React based animation references on the web, including places like 21st.dev and Aceternity, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene level pieces such as intros or hero titles that could be assembled quickly. That led to the idea I called code assets. I was not thinking of a template you paste once and forget. I wanted visual blocks that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene level blocks, while others had to be smaller components inside a scene. Bringing in one nice animation was not the hard part. Turning it into an editable asset was. A diagram showing external React animation references being rewritten into editor native code assets and reused on a timeline The idea looked good until I tried to bring real examples in. React animations that feel natural on the web are not automatically safe inside Remotion. Patterns like CSS transition, animation, in…",
       "sectionTitle": "`Code Assets` Turned Out to Be a Bigger Problem Than I Expected",
       "tags": [
         "AI",
@@ -4066,7 +4066,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4097,8 +4097,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#what-i-actually-wanted-to-automate-was-smaller",
-      "excerpt": "When I stepped back and looked at my actual workflow, the answer was much simpler. I kept repeating the same flow: make a transcript in Vrew, do a first round of text based editing, clean up silence, choose shorts candi…",
-      "content": "What I Actually Wanted to Automate Was Smaller\nWhen I stepped back and looked at my actual workflow, the answer was much simpler. I kept repeating the same flow: make a transcript in Vrew, do a first round of text based editing, clean up silence, choose shorts candidates, and finish in CapCut. What I wanted to reduce was not the absence of a new editor. The harder part was repeatedly deciding where to cut, which range should become a shorts candidate, and where the edit points were once I read through the text again. What I really wanted to reduce was not the tool itself, but the part where judgment keeps repeating . Once I saw that clearly, it also became easier to understand why vibe cut had grown so large. Building a new editor and automating repeated editorial judgment are related problems, but they are not the same problem.",
+      "excerpt": "When I stepped back and looked at my actual workflow, it was much smaller. I would make a transcript in Vrew, do a first round of text based editing, clean up silence, choose shorts candidates, and finish in CapCut. The…",
+      "content": "What I Actually Wanted to Automate Was Smaller\nWhen I stepped back and looked at my actual workflow, it was much smaller. I would make a transcript in Vrew, do a first round of text based editing, clean up silence, choose shorts candidates, and finish in CapCut. The hard part was not that I lacked a new editor. It was watching the same video again, deciding where to cut, choosing which range could become a short, and rereading the transcript to find edit points. Once I saw that, it became easier to understand why vibe cut had grown so large. Building a new editor and reducing repeated judgment sit next to each other, but they are not the same job.",
       "sectionTitle": "What I Actually Wanted to Automate Was Smaller",
       "tags": [
         "AI",
@@ -4109,7 +4109,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4140,8 +4140,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#so-i-narrowed-the-direction-to-capcut-automation",
-      "excerpt": "That is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the flow o…",
-      "content": "So I Narrowed the Direction to `capcut-automation`\nThat is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the flow of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook text options for each candidate, and producing drafts that can be opened directly in CapCut. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or OpenAI transcription. So capcut automation is not really a new video editor. It is much closer to a tool that automates the front part of the shorts workflow I had been repeating by hand. It organizes where to cut, which hook text to start with, and which candidates to review first, then creates one CapCut project draft per selected range. Final polishing and export still happen manually in CapCut. The reason this became a separate project was simple. What I wanted to reduce was not the timeline itself, but the repeated work of rereading transcripts, picking shorts candidates, and…",
+      "excerpt": "That is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the proces…",
+      "content": "So I Narrowed the Direction to `capcut-automation`\nThat is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the process of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook text options for each candidate, and producing drafts that can be opened directly in CapCut. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or OpenAI transcription. capcut automation organizes where to cut, which hook text to start with, and which candidates to review first, then creates one CapCut project draft per selected range. Final polishing and export still happen manually in CapCut. Instead of rebuilding the editor, it keeps only the front part of the shorts workflow I had been repeating by hand. capcut automation candidate generation screen",
       "sectionTitle": "So I Narrowed the Direction to `capcut-automation`",
       "tags": [
         "AI",
@@ -4152,7 +4152,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4183,8 +4183,8 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#even-after-stopping-something-was-left",
-      "excerpt": "I do not think stopping vibe cut here means the project was wasted. If anything, the process made it much clearer what problem I actually want to solve. At first, I wanted to build an AI video editor. But the more I bui…",
-      "content": "Even After Stopping, Something Was Left\nI do not think stopping vibe cut here means the project was wasted. If anything, the process made it much clearer what problem I actually want to solve. At first, I wanted to build an AI video editor. But the more I built, the clearer it became that what I really wanted to reduce was not the work of creating an editor from scratch. It was the repeated judgment and selection inside that workflow. Repeatedly deciding where to cut, which sections should count as shorts candidates, and what line to open with was the part that exhausted me most. vibe cut was necessary because it let me verify that directly. By building it, I could see much more clearly where AI delivers immediate value in video editing and where it does not. Compared with making a general purpose tool that edits everything from start to finish, extracting candidates and generating drafts quickly from transcripts and events turned out to be much more realistic. Another important thing I learned was that in AI driven engineering, the broader the problem you try to take on from the start, the faster complexity can outgrow the feature itself. I began by building an editor, but in pra…",
+      "excerpt": "I do not think stopping vibe cut here means the project was wasted. Building it made the tiring part of my own workflow easier to see. At first, I wanted to build an AI video editor. But the more I built, the more I saw…",
+      "content": "Even After Stopping, Something Was Left\nI do not think stopping vibe cut here means the project was wasted. Building it made the tiring part of my own workflow easier to see. At first, I wanted to build an AI video editor. But the more I built, the more I saw that the painful part was not the whole editor. It was asking the same questions again and again while watching the same footage: “Should I cut here?”, “Does this part work as a short?”, “What should the first line be?” vibe cut was necessary because it let me check that directly. By building it, I could see where AI could help video editing right away, and where the work ballooned because I was building a whole editor. If I had to keep timeline, preview, rendering, state synchronization, recovery, and the agent interface all moving together, maintaining the editor itself would become larger than the cut editing automation. So now I am not trying to keep vibe cut alive as it was. I am keeping the part where the transcript is read, shorts candidates are selected, and CapCut drafts are created. The name changed, but that is the work I was actually repeating. The biggest thing I took from this project was a question that comes b…",
       "sectionTitle": "Even After Stopping, Something Was Left",
       "tags": [
         "AI",
@@ -4195,7 +4195,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4238,7 +4238,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",

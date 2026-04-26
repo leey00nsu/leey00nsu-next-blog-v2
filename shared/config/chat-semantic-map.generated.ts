@@ -168,7 +168,7 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       ],
       "aliases": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut이라는 ai 기반 영상 편집기를 만들며 어디까지 갔고, 왜 결국 capcut automation으로 범위를 좁히게 됐는지 정리한 회고",
+        "vibe cut이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation으로 범위를 좁혔는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -799,7 +799,7 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       ],
       "aliases": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i eventually narrowed the problem down to capcut automation instead.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
         "ai",
         "remotion",
         "capcut",

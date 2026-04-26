@@ -6,7 +6,7 @@ tags:
   - Remotion
   - CapCut
   - 회고
-description: A retrospective on how far I got with an AI video editor called vibe-cut, and why I eventually narrowed the problem down to capcut-automation instead.
+description: A retrospective on how far I got with an AI video editor called vibe-cut, and why I narrowed the work down to capcut-automation.
 date: 2026-04-21
 section: blog
 series:
@@ -17,13 +17,13 @@ writer: leey00nsu
 
 ## Why I Gave Up on Building an AI Video Editor
 
-`vibe-cut` was an AI video editor I had been building. I started it because I wanted to reduce the repeated judgment and editing work involved in turning long-form videos into shorts.
+`vibe-cut` was an AI video editor I had been building. I started it because turning long-form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again.
 
-The short version is this: what I really wanted was not a brand new video editor, but a tool that reduces repeated editorial judgment. Building `vibe-cut` made that difference much clearer to me, and that is why I eventually narrowed the direction to `capcut-automation`.
+As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I narrowed the direction to `capcut-automation`.
 
-What I wanted to reduce was not simple labor. It was the repeated act of picking moments, cutting them, and reviewing them again using the same criteria over and over. That is why I also looked into tools like `AlphaCut`, `OpusClip`, `Klap`, `Vizard`, and `2short.ai`.
+The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including `AlphaCut`, `OpusClip`, `Klap`, `Vizard`, and `2short.ai`.
 
-The results were not terrible, but they did not quite fit the way I work, and I still had to do a lot of manual cleanup at the end. The cost also added up if I kept using them. At some point, a simple thought followed naturally.
+Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open `CapCut`, trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought.
 
 `Could I just build this myself?`
 
@@ -35,19 +35,19 @@ That is how I started building `vibe-cut`. The first question was simple.
 
 From the beginning, I was not imagining a small automation script. I wanted an editor where a person could edit through the UI as usual, then hand the same project over to an agent when needed and work together inside one editing environment.
 
-For that to work, the app had to expose local editing tools, and the agent had to read and modify project state through those tools. I also wanted common flows to be reusable as skills or presets.
+For that to work, the app had to expose local editing tools, and the agent had to read and modify project state through those tools. I also wanted common editing steps to be reusable as skills or presets.
 
 That felt more compelling to me than building AI directly into the app and charging for usage. I was more interested in **connecting the agents I already use to editing work**.
 
-Put simply, the idea was this:
+The idea sounded like this:
 
 `Edit my files, on my machine, with the agent I already use.`
 
 ## It Went Much Further Than I Expected
 
-`vibe-cut` moved past the idea stage pretty quickly and started to look like a real editor. Caption generation and regeneration, silence cleanup, cue-level editing, preview and timeline syncing, project save and restore were already connected as one flow.
+`vibe-cut` moved past the idea stage pretty quickly and started to look like a real editor. Caption generation and regeneration, silence cleanup, cue-level editing, preview and timeline syncing, project save and restore were already connected.
 
-What mattered was that this was no longer just “AI cuts a video for you.” What I was actually building was much closer to **an editor where human edits and agent edits share the same project**.
+The project had grown beyond the one feature I first imagined. I was building **an editor where human edits and agent edits share the same project**.
 
 ![vibe-cut real editor screen](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/vibe-cut-real-screen.webp)
 
@@ -69,45 +69,51 @@ The screen already looked like this. There was a text editing area on the left, 
 
 ## Text-Based Editing Turned Out to Be Deeper Than I Expected
 
-What first attracted me was the text-based editing feel of tools like `Vrew`. I wanted a flow where I could pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks.
+What first attracted me was the text-based editing feel of tools like `Vrew`. I wanted to pick the source, generate a transcript, clean up silence, review the result, and then directly edit text blocks.
 
-But once I started building it, I realized this was a much deeper problem than I expected. Showing subtitles and making **text itself become the basis of editing** are completely different things.
+But once I started building it, showing subtitles and making **text itself become the basis of editing** turned out to be completely different things.
 
-If I deleted text, the cut had to follow. If the timeline changed, the text side had to realign. In the end, saying “you edit through text” hid a much larger synchronization problem underneath.
+If I deleted text, the cut had to follow. If the timeline changed, the text side had to realign. The phrase “edit through text” was hiding a lot of synchronization work underneath.
 
-That process naturally led me to study how tools like `Premiere Pro`, `AutoCut`, and `CapCut` approached the problem.
+After running into that, I started studying how tools like `Premiere Pro`, `AutoCut`, and `CapCut` handled text-based editing.
 
-## In Transcription, Timing Mattered More Than Text
+## Timing Was Harder Than the Transcript
 
 For text-based editing, getting the sentence right is not enough. If the timing of each word drifts, cutting through text starts to feel wrong.
 
-That meant I could not choose a transcription model in `vibe-cut` based only on “does it transcribe well?” This was a desktop app, and local transcription was part of the premise, so I had to weigh text accuracy, installation cost, execution speed, and whether it actually ran stably on macOS. I started with a `whisper.cpp` path as the baseline, tuned options like `beam size` and language settings, and compared Whisper variants such as `small`, `base`, and `medium`. Even there, a bigger model did not always produce a better overall result, because installation cost and practical stability also mattered. At the same time, I kept looking through open-source ASR models on Hugging Face to compare which combinations could realistically fit into a product path.
+That meant I could not choose a transcription model in `vibe-cut` based only on “does it transcribe well?” This was a desktop app, and local transcription was part of the premise, so I had to weigh text accuracy, installation cost, execution speed, and whether it actually ran stably on macOS.
 
-What became clear very quickly was that transcript accuracy and word-level timing accuracy were different problems. I looked at approaches that split segments more aggressively, but what mattered more in the end was avoiding fake evenly distributed word timings. So I changed the pipeline to read the token-level positions coming from `whisper.cpp`'s `output-json-full` directly. Instead of roughly dividing a sentence duration across words, I wanted to use values closer to where each emitted token actually appeared in the audio. Even then, small errors remained, so I added a `DTW (Dynamic Time Warping)` path to realign the audio signal and token order and correct timestamps once more. Even after that, there were still cases where the sentence after a filler moved too early, or where cut points still felt off after deleting a word.
+I started with a `whisper.cpp` path as the baseline, tuned options like `beam size` and language settings, and compared Whisper variants such as `small`, `base`, and `medium`. A bigger model did not always make the editing result better. If it was heavy to install, slow to run, or unstable on long files, I could not put it into the actual workflow. I also looked through open-source ASR models on Hugging Face, but the bar became “can this keep running on my Mac?”, not “does this model look good on paper?”
+
+The harder part was word-level timing. Even when the transcript text was right, a small drift in word timing made the cut point feel wrong. At first I thought splitting segments more aggressively might help, but the real problem was the habit of dividing a sentence duration evenly across its words.
+
+So I changed the pipeline to read the token-level positions from `whisper.cpp`'s `output-json-full` directly. Instead of roughly dividing a sentence duration across words, I wanted to use values based on where each emitted token appeared in the audio. Small errors still remained, so I added a `DTW (Dynamic Time Warping)` path to realign the audio signal and token order. Even after that, there were still cases where the sentence after a filler moved too early, or where cut points felt off after deleting a word.
 
 ![A diagram showing segment split, token offsets, and alignment used to improve transcript timing precision](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/transcript-timing-map.webp)
 
-The hard part in transcription was not the sentence itself. It was making the timing of that sentence stable enough to edit against.
+By the end, I started treating the ASR model and alignment as separate concerns. I kept a Whisper-family model for local execution and speed, narrowed the main path toward `Whisper Turbo`, and used `WhisperX` forced alignment to improve timing precision.
 
-So by the end, I started treating the ASR model and alignment as separate concerns. I kept a Whisper-family model for local execution and speed, narrowed the main path toward `Whisper Turbo`, and used `WhisperX` forced alignment to improve timing precision. I also benchmarked Hugging Face models such as `Qwen3-ASR` and related forced aligners locally. Some short samples looked promising, but long-audio constraints and runtime cost also had to be considered. Through that process, the more important question became not “which model writes the sentence better?” but **which combination is fast enough locally and gives timing stable enough to edit with?**
+I also benchmarked Hugging Face models such as `Qwen3-ASR` and related forced aligners locally. Some short samples looked promising, but long audio quickly exposed memory and runtime costs. From that point, I cared less about “which model writes the sentence better?” and more about **which combination runs fast enough locally and gives timing I can edit with**.
 
-From there, I started looking at laughter, applause, and silence events alongside speech. In shorts editing, speech is not the only thing that matters. Moments where laughter bursts out or long silence appears often line up with real cut points. So what I was building was not just a transcription tool. It was much closer to **a tool that helps editorial judgment by reading text and events together**.
+From there, I started looking at laughter, applause, and silence events alongside speech. In shorts editing, speech alone was not enough. Moments where laughter bursts out or long silence appears often line up with real cut points. I was not building a transcript file generator anymore. I was building **a tool that helps editorial judgment by reading text and events together**.
 
-## That Is Why I Ended Up Needing MCP
+## That Is Why I Added MCP
 
 At first, I thought of it loosely as “the agent edits for me.” But once I actually started building it, I had to decide one thing first: **should the editor embed a specific AI, or should it connect to whatever agent the user already uses?**
 
 I chose the latter. From the start, this project aimed for a local-first desktop editor, and I did not want to lock the product to one model or service provider. It made more sense to let users keep using agents they were already familiar with, such as `Claude`, `Codex`, or `Gemini`, while the app only exposed the local tools needed to let those agents work safely with the editor.
 
-UI automation was not enough either. A click-the-screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” **the exact project state that proposal is based on** has to be clear first.
+UI automation was not enough either. A click-the-screen approach could not reliably stay in sync with the current cue list, selected ranges, clip boundaries, and the exact state the user had just changed. Shorts editing can change with a few frames, so even when an agent says “this silence is too long, remove it,” it first has to know **which exact project state that proposal is based on**.
 
-In the end, what I needed was not just a better prompt, but **a clear state contract**. The agent had to read project state, propose a change as `preview`, apply it only after user consent, block it with `revision mismatch` if the state had changed right before apply, and keep everything reversible through `history`. Without that flow, direct human edits and agent edits could not safely share the same project.
+A better prompt was not enough. For example, if the agent suggested deleting cue 12, but I had already edited the timeline by hand, that suggestion needed to be checked again. I had to know what state the agent saw, whether that state still matched the project, and whether the user had approved the change.
 
-That is why `vibe-cut` moved away from “the agent directly drives the UI.” The app would expose local tools, and the agent would edit only through those tools. `MCP` was the way to define that role and boundary. Looking back, `MCP` was not just a connection method. It was much closer to **an operating contract for letting multiple agents and the editor share the same project state safely**.
+So the agent had to read project state, propose a change as `preview`, apply it only after user consent, block it with `revision mismatch` if the state had changed right before apply, and keep everything reversible through `history`. That flow was the only way human edits and agent edits could share the same project without stepping on each other.
+
+That is why `vibe-cut` moved away from “the agent directly drives the UI.” The app would expose local tools, and the agent would edit only through those tools. `MCP` was the way to define that role and boundary. In this project, `MCP` became **a set of rules for letting the editor and multiple agents handle the same project state safely**.
 
 ![A diagram showing the user UI, a local tool contract, and an agent connected through consent, revision checks, and history](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/agent-editing-contract.webp)
 
-What I needed in the end was not UI automation, but a tool contract that let human editing and agent editing safely share one project.
+By then, what I was building had moved pretty far away from “AI presses buttons for me.”
 
 ## The Problem Was That the Scope Kept Growing Beyond the Question I Wanted to Answer
 
@@ -123,11 +129,11 @@ But in practice, I kept having to build things like:
 - safe editing structure such as save and recovery, consent flow, undo, and state synchronization
 - increasingly product-like layers such as skills, agent connection, configuration, and updates
 
-Once I pushed one step further, the scope had already tilted from technical validation toward product design. On top of building a small desktop editor itself, the project was starting to include product concerns like a skill store, login, and billing.
+Once I pushed one step further, the work started to grow in another direction. Building a small desktop editor was already large enough, but then came questions like how skills should be distributed, how much configuration to expose, and whether login or billing would eventually be needed.
 
 It was still a genuinely fun project. But at some point it stopped feeling like I was checking whether “AI can handle cut editing,” and started feeling like **I was designing a new video editing business**.
 
-That is when I had to ask myself again. If I kept pushing, product design would come before technical validation. I could no longer treat “I want to test how far automation can go” and “I want to build a full editor product with login, billing, distribution, and operations” as the same question.
+That is when I had to ask myself again. I wanted to test how far automation could go. I did not want to build a full editor product with login, billing, distribution, and operations. I could no longer keep those as the same question.
 
 Do I really want to build an editor?  
 Or do I want to automate editorial judgment?
@@ -138,63 +144,57 @@ That question was decisive.
 
 Another thing that stood out to me was the responsiveness of a [`Remotion`](https://www.remotion.dev/)-based editor. `Remotion` is a tool for composing and rendering video in React code, and I still like it a lot, but the story changes when you try to build an editor around it.
 
-The problem was not just render speed. The preview and the final render had to match as closely as possible, and when I scrubbed back and forth through the video, the screen had to follow immediately and stably. On top of that, the render cost kept growing as clip splitting increased.
+Render speed was not the only thing that got in the way. The preview and the final render had to match as closely as possible, and when I scrubbed back and forth through the video, the screen had to follow immediately and stably. The render cost also kept growing as I split clips into smaller pieces.
 
 What really bothered me was the way the preview sometimes lagged one beat behind after breaking clips into smaller pieces, or how even a small edit could make me wait until the screen became stable again. In an editor, even a short delay feels bigger than it sounds.
 
-In the end, `Remotion` still renders through Chromium drawing frames, so it cannot feel the same as the immediacy of a native editor like `CapCut`. In practice, the bottleneck felt larger in the render stage than in encoding.
+`Remotion` still renders through Chromium drawing frames, so it cannot feel the same as the immediacy of a native editor like `CapCut`. In practice, the bottleneck felt larger in the render stage than in encoding.
 
-This was less about “can it be built?” and more about “can it feel fast enough in real use?” The fight was already difficult because the editor format itself demands a high level of responsiveness.
+This was less about “can it be built?” and more about “does it feel fast enough while editing?” In an editor, that difference shows up quickly.
 
 ## `Code Assets` Turned Out to Be a Bigger Problem Than I Expected
 
 Once I chose `Remotion`, I wanted to treat animation as a React code asset. There were already plenty of React-based animation references on the web, including places like `21st.dev` and `Aceternity`, and I wanted to reuse ideas from that world inside the editor. Not just simple entrance effects, but larger scene-level pieces such as intros or hero titles that could be assembled quickly.
 
-That led to the idea I called `code assets`. This was not a template you paste once and forget. It was closer to a visual block that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene-level blocks, while others had to be smaller components that lived inside a scene. The problem became much bigger than “bring in one nice animation.” It became a question of turning that code into an editable asset system.
+That led to the idea I called `code assets`. I was not thinking of a template you paste once and forget. I wanted visual blocks that could be placed on the timeline, understood by both the editor and the agent, modified again, and reused. Some had to be large scene-level blocks, while others had to be smaller components inside a scene. Bringing in one nice animation was not the hard part. Turning it into an editable asset was.
 
 ![A diagram showing external React animation references being rewritten into editor-native code assets and reused on a timeline](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/code-asset-pipeline.webp)
 
-The real problem with code assets was not importing examples. It was turning that code into assets the editor could actually reuse.
+The idea looked good until I tried to bring real examples in.
 
-The issue was that React animations that feel natural on the web are not automatically safe inside `Remotion`. Patterns like `CSS transition`, `animation`, `in-view`, mount-time state, and `setTimeout` are common on the web, but in a video editor they do not reliably guarantee the same result across scrubbing, rewind, preview, and final render. So even when I borrowed ideas from external code, the final asset still had to be rewritten into a frame-driven, deterministic, seek-safe form.
+React animations that feel natural on the web are not automatically safe inside `Remotion`. Patterns like `CSS transition`, `animation`, `in-view`, mount-time state, and `setTimeout` are common on the web, but in a video editor the same frame has to come back when you scrub or rewind. Preview and final render also have to match.
 
-Looking back, this was never just a problem of “bring in a cool animation component.” It was a problem of re-admitting code from the React ecosystem as assets that could safely run inside an editor. That also meant needing asset categories, usage guides, conversion rules, and review criteria. `Code assets` were a genuinely interesting concept, but they were also one of the biggest forces expanding the project scope.
+Even when I borrowed ideas from external code, I had to rewrite them to be frame-driven, deterministic, and seek-safe. At first this felt like “bring in a cool animation component.” After trying it, it also required asset categories, usage guides, conversion rules, and review criteria. `Code assets` were interesting, but they also widened the project scope a lot.
 
 ## What I Actually Wanted to Automate Was Smaller
 
-When I stepped back and looked at my actual workflow, the answer was much simpler. I kept repeating the same flow: make a transcript in `Vrew`, do a first round of text-based editing, clean up silence, choose shorts candidates, and finish in `CapCut`.
+When I stepped back and looked at my actual workflow, it was much smaller. I would make a transcript in `Vrew`, do a first round of text-based editing, clean up silence, choose shorts candidates, and finish in `CapCut`.
 
-What I wanted to reduce was not the absence of a new editor. The harder part was repeatedly deciding where to cut, which range should become a shorts candidate, and where the edit points were once I read through the text again.
+The hard part was not that I lacked a new editor. It was watching the same video again, deciding where to cut, choosing which range could become a short, and rereading the transcript to find edit points.
 
-What I really wanted to reduce was not the tool itself, but **the part where judgment keeps repeating**. Once I saw that clearly, it also became easier to understand why `vibe-cut` had grown so large. Building a new editor and automating repeated editorial judgment are related problems, but they are not the same problem.
+Once I saw that, it became easier to understand why `vibe-cut` had grown so large. Building a new editor and reducing repeated judgment sit next to each other, but they are not the same job.
 
 ## So I Narrowed the Direction to `capcut-automation`
 
 That is why I changed direction to `capcut-automation`. It is easier to think of it as a separate project that keeps only the part I truly needed from `vibe-cut`.
 
-What I kept was not the editor as a whole. It was the flow of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook-text options for each candidate, and producing drafts that can be opened directly in `CapCut`. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or `OpenAI` transcription.
+What I kept was not the editor as a whole. It was the process of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook-text options for each candidate, and producing drafts that can be opened directly in `CapCut`. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or `OpenAI` transcription.
 
-So `capcut-automation` is not really a new video editor. It is much closer to a tool that automates the front part of the shorts workflow I had been repeating by hand. It organizes where to cut, which hook text to start with, and which candidates to review first, then creates one `CapCut` project draft per selected range. Final polishing and export still happen manually in `CapCut`.
-
-The reason this became a separate project was simple. What I wanted to reduce was not the timeline itself, but the repeated work of rereading transcripts, picking shorts candidates, and preparing drafts. `capcut-automation` is a smaller project aimed only at that exact section of the workflow.
+`capcut-automation` organizes where to cut, which hook text to start with, and which candidates to review first, then creates one `CapCut` project draft per selected range. Final polishing and export still happen manually in `CapCut`. Instead of rebuilding the editor, it keeps only the front part of the shorts workflow I had been repeating by hand.
 
 ![capcut-automation candidate generation screen](/public/posts/why-i-gave-up-on-building-an-ai-video-editor/capcut-automation-screen.webp)
 
 ## Even After Stopping, Something Was Left
 
-I do not think stopping `vibe-cut` here means the project was wasted. If anything, the process made it much clearer what problem I actually want to solve.
+I do not think stopping `vibe-cut` here means the project was wasted. Building it made the tiring part of my own workflow easier to see.
 
-At first, I wanted to build an AI video editor. But the more I built, the clearer it became that what I really wanted to reduce was not the work of creating an editor from scratch. It was the repeated judgment and selection inside that workflow. Repeatedly deciding where to cut, which sections should count as shorts candidates, and what line to open with was the part that exhausted me most.
+At first, I wanted to build an AI video editor. But the more I built, the more I saw that the painful part was not the whole editor. It was asking the same questions again and again while watching the same footage: “Should I cut here?”, “Does this part work as a short?”, “What should the first line be?”
 
-`vibe-cut` was necessary because it let me verify that directly. By building it, I could see much more clearly where AI delivers immediate value in video editing and where it does not. Compared with making a general-purpose tool that edits everything from start to finish, extracting candidates and generating drafts quickly from transcripts and events turned out to be much more realistic.
+`vibe-cut` was necessary because it let me check that directly. By building it, I could see where AI could help video editing right away, and where the work ballooned because I was building a whole editor. If I had to keep timeline, preview, rendering, state synchronization, recovery, and the agent interface all moving together, maintaining the editor itself would become larger than the cut-editing automation.
 
-Another important thing I learned was that in AI-driven engineering, the broader the problem you try to take on from the start, the faster complexity can outgrow the feature itself. I began by building an editor, but in practice I also had to build the larger structure around the original question: timeline, preview, rendering, state synchronization, recovery, and the agent interface. Whether I could build it or not was no longer the only issue. At some point, handling that complexity became a new core problem of its own.
+So now I am not trying to keep `vibe-cut` alive as it was. I am keeping the part where the transcript is read, shorts candidates are selected, and `CapCut` drafts are created. The name changed, but that is the work I was actually repeating.
 
-So what this project taught me was not just “how far can AI go in video editing?” The bigger lesson was that it matters far more to narrow the exact automation I need before anything else.
-
-Looking back, switching to `capcut-automation` was not really giving up. It was closer to redefining the problem more precisely. What I needed was not a new editor, but a flow that reduces the repeated work at the front of the process: reading transcripts, picking shorts candidates, and creating drafts. That is why, instead of pushing `vibe-cut` as-is, I am now focusing on a smaller and clearer automation path that keeps only the part I actually needed.
-
-In the end, `vibe-cut` stopped, but it still left something important behind. I came away knowing much more clearly what I actually want to solve. I also learned that it matters more to identify the judgments and tasks I repeat most often and focus on those, rather than just adding more features.
+The biggest thing I took from this project was a question that comes before “how far can AI go in video editing?” If I do not narrow the work I actually want to remove, automation quickly turns into a different product. For now, I am more interested in reducing the decisions I repeat often than in adding more editor features.
 
 ## References
 

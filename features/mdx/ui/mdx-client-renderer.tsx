@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 import rehypePrettyCode from 'rehype-pretty-code'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
+import { MdxAnchor } from '@/features/mdx/ui/mdx-anchor'
 import { Loader2 } from 'lucide-react'
 import type { PendingImageMap } from '@/features/editor/model/types'
 import { CustomImage } from '@/shared/ui/custom-image'
@@ -102,6 +103,7 @@ export function MdxClientRenderer({ content, pendingImages = {} }: MdxClientRend
             <MDXRemote
                 {...mdxSource}
                 components={{
+                    a: MdxAnchor,
                     figcaption: CustomFigcaption,
                     img: (props) => {
                         // pending 이미지인 경우 objectURL로 변환

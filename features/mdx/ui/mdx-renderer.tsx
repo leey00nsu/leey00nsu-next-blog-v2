@@ -3,12 +3,13 @@ import {
   defaultRemarkPlugins,
   defaultRehypePlugins,
 } from '@/features/mdx/lib/mdx-options'
+import { MdxAnchor } from '@/features/mdx/ui/mdx-anchor'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
 import { CustomImage } from '@/shared/ui/custom-image'
 import type React from 'react'
 
 type MDXRemoteProps = React.ComponentProps<typeof MDXRemote>
-type MDXComponentMap = Record<string, React.ComponentType<unknown>>
+type MDXComponentMap = Record<string, React.ElementType>
 type PluginList = NonNullable<
   NonNullable<
     NonNullable<MDXRemoteProps['options']>['mdxOptions']
@@ -32,6 +33,7 @@ export function MdxRenderer({
     <MDXRemote
       source={content}
       components={{
+        a: MdxAnchor,
         figcaption: CustomFigcaption,
         img: CustomImage,
         ...components,

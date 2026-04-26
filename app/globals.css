@@ -143,6 +143,13 @@
     display: none;
   }
 
+  .prose :where(a code):not(:where([class~='not-prose'] *)) {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+    border-radius: 0;
+  }
+
   [data-rehype-pretty-code-title] {
     background-color: oklch(0.205 0 0);
     @apply rounded-t-lg px-3 py-2 text-sm font-semibold;

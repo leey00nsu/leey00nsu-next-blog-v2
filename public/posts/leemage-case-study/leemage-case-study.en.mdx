@@ -16,27 +16,27 @@ writer: leey00nsu
 
 When building side projects, file uploads usually get pushed to the end.
 
-You start with authentication, deployment, payments, and the core product flow, and only later think, "I should probably support image uploads too." I used to treat uploads as a minor feature as well. But after repeating the same pattern across multiple projects, my perspective changed. The moment image uploads entered the picture, cost became a very practical issue.
+You start with authentication, deployment, payments, and the product flow users see first, and only later think, "I should probably support image uploads too." I used to treat uploads as a minor feature as well. But after repeating the same pattern across multiple projects, my perspective changed. The moment image uploads entered the picture, cost became a very practical issue.
 
-The feature itself looks simple, but depending on the service you choose, fixed costs show up sooner than expected. That makes the problem awkward for side projects. Building it yourself feels tedious, but paying for an external SaaS every time also feels wasteful. Eventually I ended up asking a simple question:
+The feature itself looks small, but depending on the service you choose, fixed costs show up sooner than expected. That makes the problem awkward for side projects. Building it yourself feels tedious, but paying for an external SaaS every time also feels wasteful. At that point, I kept coming back to one question:
 
 > Do I really have to solve this problem with a paid service every single time?
 
-That was when OCI Object Storage and Cloudflare R2 became interesting options. Both provide meaningful free-tier capacity, and at side-project scale they felt realistic enough to build around. So instead of choosing a fully managed service like Cloudinary, I decided to move toward a setup where I could control cost more directly. That decision led to `Leemage`.
+That was when OCI Object Storage and Cloudflare R2 became interesting options. Both provide enough free-tier capacity for the scale I had in mind, and they felt realistic enough to build around. So instead of choosing a fully managed service like Cloudinary, I decided to move toward a setup where I could control cost more directly. That decision led to `Leemage`.
 
-`Leemage` is a self-hosted file management platform designed around cost control. It organizes files by project, converts heavy PNG assets into more efficient formats such as WebP during the upload flow, and exposes both a REST API and an SDK so the same system can be reused across multiple projects instead of staying trapped inside one app.
+`Leemage` is a self-hosted file management platform designed around cost control. It organizes files by project, converts heavy PNG assets into more efficient formats such as WebP during the upload flow, and exposes both a REST API and an SDK so other projects can connect to the same system quickly.
 
 ## It Started as an Upload Feature, but Turned into an Operations Problem
 
 The original goal was straightforward: reduce upload costs while keeping the developer experience practical enough to use in a real project.
 
-Once I started building it, I realized the real problem was not simply storing files. The more painful part was everything that came after storage: management, repeated reuse, and keeping things organized across projects. As more projects accumulate, the important question becomes less about "Can I upload this file?" and more about "Where is it stored, what variants exist, and can I reuse it later?"
+Once I started building it, the painful part was not the moment of storing a file. It was everything after that: management, reuse, and keeping files organized across projects. As more projects accumulated, I spent more time asking, "Where is it stored, what variants exist, and can I reuse it later?"
 
-That is why `Leemage` did not stop at a single upload endpoint. I made files separable by project, used presigned URL uploads to keep the API server lightweight, and added an explicit confirm step so image transformation and variant management could happen after the upload completed. In other words, the architecture spent more time thinking about what happens after storage than before it.
+That is why `Leemage` did not stop at a single upload endpoint. I made files separable by project, used presigned URL uploads to keep the API server lightweight, and added an explicit confirm step so image transformation and variant management could happen after the upload completed. There was more work after storage than before it.
 
 ## Leemage Architecture
 
-The overall flow is fairly simple.
+The overall flow is not complicated.
 
 1. The client first requests a presigned upload URL.
 2. The API creates a pending file record and returns the presigned URL.
@@ -45,21 +45,21 @@ The overall flow is fairly simple.
 5. If the file is an image, `Sharp` generates optimized variants such as WebP and stores them back in object storage.
 6. Finally, the database stores the file metadata and variant references so other projects can consume them through the API or SDK.
 
-What mattered to me here was not the upload itself, but the separation of concerns in the flow. I did not want a heavy upload server, and I did not want storage to be tightly coupled to one provider. If you want to balance cost, performance, and operational convenience, it helps to think of the upload path, storage path, and delivery path as separate layers.
+What I cared about here was the path after upload. I did not want a heavy upload server, and I did not want storage to be tightly coupled to one provider. If you want to balance cost, performance, and operational convenience, it helps to keep the upload path, storage path, and delivery path separate.
 
-Another design choice I cared about was treating `OpenAPI` as a single source of truth instead of just a documentation artifact. In `Leemage`, the web API docs UI, the YAML exposed at `/api/v1/openapi`, and the SDK synchronization flow are all connected around the same OpenAPI spec. I think that matters more in the long run than it first appears, because it prevents the "human-facing docs" and the "actual contract" from slowly drifting apart.
+Another part I cared about was `OpenAPI`. In `Leemage`, the web API docs UI, the YAML exposed at `/api/v1/openapi`, and the SDK synchronization flow all use the same OpenAPI spec. If the "human-facing docs" and the "actual contract" start drifting apart, integration gets annoying very quickly.
 
 ## I Started with Cost, but Ended Up Caring about Performance Too
 
-One of the more interesting parts of building `Leemage` was how quickly cost concerns turned into performance concerns as well. Image conversion is the clearest example. Instead of storing and serving a heavy PNG as-is, converting it to WebP reduces both storage usage and transfer size. That is not just about making an image lighter. It directly affects storage cost, bandwidth cost, and the speed users experience.
+What surprised me while building `Leemage` was how quickly cost concerns turned into performance concerns as well. Image conversion shows this well. Instead of storing and serving a heavy PNG as-is, converting it to WebP reduces both storage usage and transfer size. That change affects storage cost, bandwidth cost, and the speed users experience at the same time.
 
 ![10GB Cost Comparison](/public/posts/leemage-case-study/leemage-cost-comparison.png)
 
-If you imagine storing around 10GB of files, the difference between a typical paid storage setup and a free-tier-centered structure becomes obvious. That gap was the original motivation behind `Leemage`. In side projects, even when traffic is not huge, repeated uploads and a growing image library start creating cost pressure sooner than expected. I wanted a structure where that cost could be managed instead of merely accepted.
+If you imagine storing around 10GB of files, the difference between a typical paid storage setup and a free-tier-centered structure becomes hard to ignore. That gap was the original motivation behind `Leemage`. In side projects, even when traffic is not huge, repeated uploads and a growing image library start creating cost pressure sooner than expected. I wanted a structure where that cost could be managed instead of merely accepted.
 
 ![PNG vs WebP Reduction](/public/posts/leemage-case-study/leemage-webp-reduction.png)
 
-The size reduction from converting PNG to WebP was also meaningful in practice. The [Google WebP documentation](https://developers.google.com/speed/webp) explains that lossless WebP images can be about 26% smaller than PNG. The exact number will always depend on the image itself and the encoding setup, but the pattern matters more than the exact percentage. Once you start thinking of upload as the first step of optimization rather than simple storage, adding CDN delivery and caching strategies becomes much more natural.
+The size reduction from converting PNG to WebP also mattered in practice. The [Google WebP documentation](https://developers.google.com/speed/webp) explains that lossless WebP images can be about 26% smaller than PNG. The exact number depends on the image and encoding setup, but that pattern was enough to care about. Once upload becomes the start of optimization, CDN delivery and caching are easier to think about next.
 
 ## The Moment It Started Feeling Like a Reusable Foundation
 
@@ -67,15 +67,15 @@ The size reduction from converting PNG to WebP was also meaningful in practice. 
 
 Reusing a previously built upload flow makes a bigger difference than it sounds. It means a new project does not have to redesign uploads from scratch, and it can start with storage paths, URL rules, file lifecycle management, and deletion behavior already defined.
 
-In practice, I also used `Leemage` as a storage adapter in another side project called [`leesfield`](https://github.com/leey00nsu/leesfield). That experience changed how I saw the project. Before that, it was closer to "a tool I made because I was personally annoyed." After that, it started feeling more like infrastructure that reduces repeated work. The same upload feature becomes much more valuable when it shortens the startup cost of the next project.
+In practice, I also used `Leemage` as a storage adapter in another side project called [`leesfield`](https://github.com/leey00nsu/leesfield). That was when the benefit felt real. I did not have to choose an upload approach again, define URL rules again, or rebuild deletion behavior from scratch. The same upload feature becomes more useful when it removes things I would otherwise repeat in the next project.
 
-The moment you open an API to outside consumers, documentation quality starts to resemble product quality. That is why I did not want OpenAPI to be treated as a separate documentation chore. Keeping the spec, the web docs, and the SDK sync flow aligned was one of the most important decisions in `Leemage`.
+Once an API is open to outside consumers, even a small mismatch between docs and behavior becomes painful. That is why I did not want OpenAPI to be a separate documentation chore. I kept the spec, the web docs, and the SDK sync flow tied together.
 
 ## Closing Thoughts
 
-Looking back, the most important part of `Leemage` was not a flashy technical choice. It was the decision to recognize file handling as a repeated problem and to avoid solving it in a one-off way.
+What stayed with me from `Leemage` was not a flashy technical choice. It was the habit of asking whether a problem would come back in the next project too.
 
-Even in side projects, I try to focus less on whether I can implement a feature quickly and more on whether that feature represents a recurring problem. If it does, I want to leave behind something reusable. `Leemage` is probably the clearest example of that tendency in my work. It started from cost pressure, but it eventually became a project about operability, extensibility, and reuse.
+Even in side projects, if a problem is likely to repeat, I want to leave behind something reusable. `Leemage` is probably where that tendency shows up most in my work. It started from cost pressure, but while building it I also had to think about operations, extension points, and reuse.
 
 ## References
 

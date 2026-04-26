@@ -192,7 +192,7 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       ],
       "aliases": [
         "블로그 챗봇은 어떻게 rag까지 가게 됐을까",
-        "정적 검색으로 시작해 임베딩 기반 rag, lightning ai, modal, postgresql까지 오며 정리한 블로그 챗봇 설계 기록",
+        "정적 검색에서 시작해 임베딩 기반 rag, lightning ai, modal, postgresql까지 옮겨가며 만든 블로그 챗봇 기록",
         "ai",
         "chatbot",
         "rag",
@@ -231,16 +231,16 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       "slug": "why-i-built-lee-spec-kit",
       "sourceCategory": "blog",
       "entityNames": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit을 만든 이유"
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유"
       ],
       "aliases": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit을 만든 이유",
-        "ai 협업에서 더 중요한 것은 코드 생성 능력보다 작업 구조라는 문제의식에서 출발해 lee spec kit을 만든 이야기",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유",
+        "ai와 개발하면서 반복되는 컨텍스트 전달을 줄이기 위해 lee spec kit을 만든 이야기",
         "lee spec kit"
       ],
       "faqQueries": [
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit을 만든 이유 글 뭐야",
-        "ai 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee spec kit을 만든 이유 글 추천해줘",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 뭐야",
+        "ai 에이전트와 일하면서 작업 구조를 먼저 만들게 된 이유 글 추천해줘",
         "lee spec kit 글 뭐야",
         "lee spec kit 글 추천해줘"
       ]
@@ -862,16 +862,16 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       "slug": "why-i-built-lee-spec-kit",
       "sourceCategory": "blog",
       "entityNames": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit"
+        "why i started building work structure before asking ai to code"
       ],
       "aliases": [
-        "productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "why i built lee spec kit from the belief that ai collaboration depends less on prompt tricks and more on a well structured work environment",
+        "why i started building work structure before asking ai to code",
+        "why i built lee spec kit to reduce repeated context transfer while coding with ai",
         "lee spec kit"
       ],
       "faqQueries": [
-        "what is productivity in the ai era depends more on structure than code: why i built lee spec kit",
-        "post about productivity in the ai era depends more on structure than code: why i built lee spec kit",
+        "what is why i started building work structure before asking ai to code",
+        "post about why i started building work structure before asking ai to code",
         "what is lee spec kit",
         "post about lee spec kit"
       ]
@@ -885,7 +885,7 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
       ],
       "aliases": [
         "surviving one year as an ordinary developer",
-        "a reflection on the first year of work, learning that defining problems and working with a team matter as much as technical skill",
+        "a reflection on the first year of work, where i learned more about defining problems and working inside a team",
         "회고"
       ],
       "faqQueries": [

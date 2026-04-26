@@ -1,9 +1,9 @@
 ---
 slug: why-i-built-lee-spec-kit
-title: "Productivity in the AI Era Depends More on Structure than Code: Why I Built lee-spec-kit"
+title: "Why I Started Building Work Structure Before Asking AI to Code"
 tags:
   - lee-spec-kit
-description: Why I built lee-spec-kit from the belief that AI collaboration depends less on prompt tricks and more on a well-structured work environment
+description: Why I built lee-spec-kit to reduce repeated context transfer while coding with AI
 date: 2026-03-20
 section: blog
 series:
@@ -12,55 +12,55 @@ draft: false
 writer: leey00nsu
 ---
 
-## Productivity in the AI Era Depends More on Structure than Code
+## Why I Started Building Work Structure Before Asking AI to Code
 
 When people talk about building software with AI agents, the phrase [`harness engineering`](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html) comes up more and more often. At first it sounded a little grandiose to me. But after repeatedly working with AI coding assistants, it started to feel like a very precise description.
 
-Productivity is no longer explained only by how well a model can generate code. What matters just as much is the environment the model works inside. If the documentation structure, working rules, current stage, and next action are unclear, the model becomes unstable very quickly. In practice, AI performance depends not only on the model itself, but also on the quality of the harness around it.
+When I work with AI coding assistants, the same model can feel sharp in one repo and lost in another. The difference is often not the model. It is whether the repo tells the assistant where the docs are, what rules to follow, what stage the work is in, and what should happen next. That is why the word `harness` started to make sense to me.
 
 ![AI Harness Structure](/public/posts/why-i-built-lee-spec-kit/ai-harness-structure.png)
 
-I think this connects naturally to [`spec-driven development`](https://specdriven.ai/) as well. Spec-driven development assumes that problems are defined before implementation, decisions are recorded, and work status is made explicit. That approach is useful in human collaboration too, but it becomes even more important with AI. Humans can often fill in blanks on their own. AI works much more reliably when the context is explicit and structured.
+That thought came up again while reading about [`spec-driven development`](https://specdriven.ai/). Defining the problem before implementation, recording decisions, and leaving the work status visible are useful when people work together. With AI, they show up in daily work more quickly. A person can sometimes fill in missing context from experience. An assistant often treats that missing context as room to drift.
 
-`lee-spec-kit` started from that exact problem. I built it as a CLI to quickly create an AI-friendly documentation structure and keep a feature-based workflow consistent. Put more directly, I became more interested in "how to build a project structure that AI can work inside" than in "how to write better prompts," and this tool was the result.
+`lee-spec-kit` started from that problem. I built it as a CLI to create the docs skeleton quickly and keep feature work moving through `spec`, `plan`, `task`, `decision`, and `PR` in the same shape each time. Instead of rewriting a better prompt for every session, I wanted a structure the assistant could keep referring to.
 
-## The Bigger Cost Was Not Code Generation, but Context Transfer
+## The Part That Slowed Me Down Was Context Transfer
 
-When you actually build with AI coding assistants, the biggest cost often is not code generation itself. More often, the recurring cost is context transfer.
+In practice, code generation was not always the slow part. The slower part was telling the assistant the same context again.
 
 This was not a problem I discovered only after I started working with AI. I had seen the same pattern many times while working at a company. The code was there, but the intent behind it was often missing. You could see the final result, but not the planning context or the decision-making process that led to it. In practice, a new developer often needed help from someone who already knew the background in order to truly understand the codebase.
 
 Every project has different docs, different rules, and different ways of expressing progress. When that happens, you end up repeating the same explanations to AI over and over again. Where was this feature discussed? What decisions led here? Are we in the spec stage or the plan stage? What still needs to be checked before a PR? If that information is not organized consistently, humans get confused and AI gets unstable.
 
-Under those conditions, even a very good model struggles to produce stable output. Every new repository effectively begins with the question, "How does this team work?" I did not want to patch that problem with a few extra prompt lines. I wanted to solve it by standardizing documentation structure and workflow itself. Reducing the amount of repeated explanation felt like a more fundamental way to lower the cost of AI collaboration.
+Under those conditions, even a very good model struggles to produce stable output. Every new repository effectively begins with the question, "How does this team work?" I did not want to patch that problem with a few extra prompt lines. I wanted the documentation structure and workflow to carry more of that context from the beginning. Reducing repeated explanation felt like a more direct way to lower the cost of AI collaboration.
 
 ## So lee-spec-kit Starts by Shaping the Documentation Flow
 
-That is why `lee-spec-kit` is designed to quickly bootstrap the basic documentation skeleton of a project and preserve a feature-level flow through `spec`, `plan`, `task`, `decision`, and `PR` stages. The important part is not merely providing many templates. The real goal is to let work context accumulate naturally and to make humans and AI share the same language for project state.
+That is why `lee-spec-kit` is designed to quickly bootstrap the basic documentation skeleton of a project and preserve a feature-level flow through `spec`, `plan`, `task`, `decision`, and `PR` stages. I cared less about adding many templates and more about putting context in predictable places, so humans and AI could talk about project state with the same words.
 
 What was decided, why it was decided, how far the work has progressed, and what should happen next should all remain visible in the document structure itself.
 
 ![Feature Workflow Pipeline](/public/posts/why-i-built-lee-spec-kit/feature-workflow-pipeline.png)
 
-This idea did not appear out of nowhere. I was influenced by the structure of `spec-kit` and `OpenSpec`. Both projects were compelling because they organize work around specifications and preserve the thinking process before implementation. Looking at them made me more confident that this kind of approach becomes even stronger when combined with AI collaboration.
+This idea did not appear out of nowhere. I was influenced by the structure of `spec-kit` and `OpenSpec`. Both projects were compelling because they organize work around specifications and preserve the thinking process before implementation. Seeing those projects made me think this approach would work well with AI collaboration too.
 
-## But I Did Not Want to Copy the Existing Structure as-is
+## But I Wanted It to Fit My Workflow
 
-At the same time, I did not want to adopt that structure unchanged. What I wanted was not to transplant a methodology directly, but to build a CLI that could be applied more lightly and more quickly to the way I actually work. The feature-level flow needed to stay clear, and the documentation structure needed to be lightweight without becoming vague for AI.
+At the same time, I wanted to shrink that idea into something that fit the way I actually work. I needed a CLI that could be applied lightly and quickly. The feature-level flow still had to be visible, and the documentation structure had to stay lightweight without becoming vague for AI.
 
-At this point, a natural question follows: "Why not just use an existing tool?" Someone could reasonably think of options like `oh my opencode`. I think that question is valid. But the problem I wanted to solve was closer to designing a harness for my own working context than simply adopting another general-purpose AI development tool.
+At this point, a natural question follows: "Why not use an existing tool?" Someone could reasonably think of options like `oh my opencode`. That is a fair question. But I wanted to design a harness for my own working context, not adopt another general-purpose AI development tool and stop there.
 
-In other words, I did not want to remain only a user who knows how to use good tools. I wanted to work directly on the question of how to structure my own work system. `lee-spec-kit` is the result of that choice.
+I did not want to remain only a user who knows how to use good tools. I wanted to work directly on the question of how to structure my own work system. `lee-spec-kit` came out of that choice.
 
 ![Tailored Workflow System](/public/posts/why-i-built-lee-spec-kit/tailored-workflow-system.png)
 
 ## Closing Thoughts
 
-There is one thing this project made clearer to me. Productivity in the AI era will be harder and harder to explain through code generation ability alone. The more meaningful differences will likely come from how work is divided, how documentation is structured, how clearly decisions and status are recorded, and how well that environment is designed for both humans and AI to use together.
+Building this changed how I start new features. I now try to write down what I am making, why that direction was chosen, where the work is, and what should happen next before asking an assistant to continue.
 
-That is why I see `lee-spec-kit` not just as a CLI, but as an experiment in designing an AI-friendly development environment. Using a strong model is not enough. You also have to design the structure that the model can work inside. In the long run, software productivity may become less about "how fast can you generate code" and more about "how well can you design the structure of work."
+I do not see `lee-spec-kit` as a grand methodology. It is a small workbench for reducing repeated explanation when working with AI. A strong model helps, but without records and order it still loses the thread quickly.
 
-`lee-spec-kit` is my current answer to that question.
+`lee-spec-kit` is the tool I made to reduce that problem in my own workflow.
 
 ## References
 

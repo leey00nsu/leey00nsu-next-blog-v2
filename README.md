@@ -244,7 +244,7 @@ pnpm run gen:chat-rag-postgres
 
 ### 블로그 Q&A 사용
 
-- 블로그 목록/상세 페이지 우하단의 `블로그 Q&A` 버튼을 클릭
+- 블로그 목록/상세 및 소개 페이지 우하단의 `블로그 Q&A` 버튼을 클릭
 - 질문을 입력하면 서버가 먼저 질문을 라우팅합니다.
 - 인사, 챗봇 정체성, 연락 방법, 최신/가장 오래된 글, 현재 글 질문은 direct path로 처리합니다.
 - 일반 질문은 빌드 시 생성한 lexical 검색 레코드와 curated source(소개/프로젝트/assistant 내부 문서)를 함께 조회합니다.
@@ -302,11 +302,13 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 - 서버는 모델이 반환한 citation URL이 실제 검색 결과 집합에 포함되는지 검증합니다.
 - 검증 실패 시 답변 대신 안전한 거절 응답을 반환합니다.
 
-### 향후 확장 포인트
+### 챗봇 운영 메모
 
-- 현재는 lexical retrieval + Pagefind 인덱스 조합입니다.
-- 이후 필요하면 reranking, query rewrite, embedding/vector DB를 추가할 수 있습니다.
-- 다만 현재 구현은 의도적으로 vector DB/embedding/관리형 RAG 없이 유지됩니다.
+- 현재 검색은 빌드 시 생성한 lexical 검색 레코드, curated source, Postgres(`pgvector`) 기반 Graph-RAG를 함께 사용합니다.
+- Question Planner가 direct response, clarification, lexical/semantic retrieval 경로를 먼저 결정합니다.
+- lexical 후보와 semantic 후보는 하나의 근거 집합으로 병합하고, 필요할 때 rerank를 수행합니다.
+- Postgres RAG 인덱싱이 설정되지 않아도 lexical 검색과 curated source 기반 응답은 계속 동작합니다.
+- exact cache와 semantic cache를 사용해 반복 질문 비용을 줄이고, observability 이벤트로 검색/응답 경로를 기록합니다.
 
 ## 프로젝트 구조
 
@@ -316,8 +318,8 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 ```
 leey00nsu-next-blog-v2/
 ├── app/             # Next.js App Router (라우팅, 레이아웃, API routes)
-├── widgets/         # 여러 feature/entity 조합 페이지 구역 (PostDetail, Layout 등)
-├── features/        # 사용자 행위 단위 (auth, editor, i18n, mdx, pdf, post, studio)
+├── widgets/         # 여러 feature/entity 조합 페이지 구역 (Chatbot, PostDetail, Layout 등)
+├── features/        # 사용자 행위 단위 (auth, chat, editor, i18n, mdx, pdf, post, studio)
 ├── entities/        # 도메인 개체 (about, editor, post, project, studio)
 ├── shared/          # 공용 UI/유틸/설정 (도메인 지식 금지)
 ├── lib/             # 서버사이드 공용 로직

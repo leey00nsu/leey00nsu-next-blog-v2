@@ -1,21 +1,26 @@
 ---
 slug: blog
 title: Blog
-summary: A Next.js blog with multilingual MDX, Studio editor, and GitHub auto-commit
+summary: A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit, and grounded Q&A chatbot
 keyFeatures:
   - Author MDX in Studio and auto-commit to GitHub
   - Multilingual MDX with OpenAI-powered translation
+  - Blog Q&A chatbot powered by lexical search and Postgres RAG
   - Automatic image metadata injection and portfolio PDF generation
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
-  demo: https://leey00nsu.com
+  demo: https://blog2.leey00nsu.com
 period:
   start: 2025-09
-  end: 2026-02
+  end: 2026-04
 techStacks:
   - Next.js
   - TypeScript
-  - OpenAI SDK
+  - OpenAI API
+  - AI SDK
+  - LangGraph.js
+  - PostgreSQL(pgvector)
+  - Modal
   - Tailwind CSS
   - next-intl
   - Tiptap
@@ -33,7 +38,8 @@ GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.co
 Demo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)
 
 This is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.
-**A fully automated blog pipeline from writing to deployment** is a key feature.
+Recently, I added a grounded Q&A chatbot that answers from blog posts, profile content, and project documents, so visitors can ask for context instead of manually browsing every article.
+**An automated blog pipeline from writing and deployment to content discovery** is a key feature.
 
 ## Key Features
 
@@ -42,12 +48,14 @@ This is a technology blog built with Next.js. Articles written in the built-in w
 - GitHub API (Octokit) auto-commit for MDX/images
 - i18n: `next-intl` + OpenAI-powered translation
 - AI image generation from selected text (requires `LEESFIELD_API_KEY`)
+- Blog Q&A chatbot: Question Planner, lexical/curated search, Postgres (`pgvector`) Graph-RAG, citation validation
 - Playwright-based portfolio PDF generation
 
 ## Problem
 
 - **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions
 - **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone
+- **Content discovery overhead**: As posts and projects grow, visitors need a faster way to find the right context
 - **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS
 - **Access control**: Editing capabilities need protection to prevent abuse
 
@@ -57,6 +65,8 @@ This is a technology blog built with Next.js. Articles written in the built-in w
 - Synchronize Korean/English content with OpenAI-powered translation
 - Automate commits to a branch via GitHub API (Octokit) to streamline deployment
 - Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance
+- Generate lexical search records from MDX at build time, then combine curated sources with Postgres (`pgvector`) Graph-RAG for grounded Q&A
+- Use a question router to choose direct response, clarification, or lexical/semantic retrieval first, then restrict answers through citation validation
 - Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach
 - Automate portfolio PDF output with a Playwright-based pipeline
 - Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)
@@ -65,6 +75,7 @@ This is a technology blog built with Next.js. Articles written in the built-in w
 
 - **Lower ops cost**: Less repetitive work thanks to automated translation and deployment
 - **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates
+- **Better discovery**: Visitors can quickly ask about blog posts, profile content, and projects in natural language
 - **Improved web performance**: More stable image rendering contributes to better LCP/CLS
 - **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing
 
@@ -75,5 +86,6 @@ This is a technology blog built with Next.js. Articles written in the built-in w
 - i18n: next-intl
 - Editor: Tiptap
 - Auth: NextAuth
-- AI/Automation: OpenAI SDK, Octokit (GitHub API)
+- AI/Automation: OpenAI API, AI SDK, LangGraph.js, Modal, Octokit (GitHub API)
+- Search/RAG: lexical retrieval, PostgreSQL(`pgvector`)
 - Test/Tooling: Vitest, Playwright, Storybook

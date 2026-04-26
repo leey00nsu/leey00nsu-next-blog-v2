@@ -244,7 +244,7 @@ Open `http://localhost:3000/blog` in your browser
 
 ### Use Blog Q&A
 
-- Click the `Blog Q&A` button at the bottom-right of blog list/detail pages
+- Click the `Blog Q&A` button at the bottom-right of blog list/detail and About pages
 - The server routes the question first
 - Greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
 - Normal grounded questions search both build-generated lexical records and curated sources
@@ -302,11 +302,13 @@ Scans `public/posts/{slug}` and `public/about` to create missing locale MDX file
 - The server validates that returned citation URLs exist in the retrieved result set.
 - If validation fails, the endpoint returns a safe refusal instead of the answer.
 
-### Future Extensions
+### Chat Operations Notes
 
-- The current system uses lexical retrieval plus a Pagefind index.
-- Reranking, query rewrite, embedding, or vector DB can be added later if needed.
-- For now, the implementation intentionally avoids vector DBs, embeddings, and managed RAG.
+- The current search flow combines build-generated lexical records, curated sources, and Postgres (`pgvector`) Graph-RAG.
+- The Question Planner first chooses between direct response, clarification, and lexical/semantic retrieval paths.
+- Lexical and semantic candidates are fused into one evidence set, then reranked when needed.
+- If Postgres RAG indexing is not configured, lexical retrieval and curated-source answers still work.
+- Exact and semantic caches reduce repeated question cost, and observability events record the retrieval/answer path.
 
 ## Project Structure
 
@@ -316,8 +318,8 @@ See [AGENTS.md](./AGENTS.md) for detailed rules.
 ```
 leey00nsu-next-blog-v2/
 ├── app/             # Next.js App Router (routing, layout, API routes)
-├── widgets/         # Page sections composed of multiple features/entities
-├── features/        # User action units (auth, editor, i18n, mdx, pdf, post, studio)
+├── widgets/         # Page sections composed of multiple features/entities (Chatbot, PostDetail, Layout, etc.)
+├── features/        # User action units (auth, chat, editor, i18n, mdx, pdf, post, studio)
 ├── entities/        # Domain objects (about, editor, post, project, studio)
 ├── shared/          # Shared UI/utils/config (no domain knowledge)
 ├── lib/             # Server-side shared logic

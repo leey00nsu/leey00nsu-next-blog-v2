@@ -35,10 +35,11 @@ export const GENERATED_PROJECTS = {
     "blog": {
       "slug": "blog",
       "title": "블로그",
-      "summary": "다국어(MDX), Studio 편집기, GitHub 자동 커밋을 포함한 Next.js 기반 블로그",
+      "summary": "다국어(MDX), Studio 편집기, GitHub 자동 커밋, 근거 기반 Q&A 챗봇을 포함한 Next.js 기반 블로그",
       "keyFeatures": [
         "Studio에서 MDX 작성 후 GitHub로 자동 커밋",
         "다국어(MDX) + OpenAI 기반 자동 번역",
+        "lexical 검색과 Postgres RAG 기반 블로그 Q&A 챗봇",
         "이미지 메타데이터 자동 주입 및 포트폴리오 PDF 생성"
       ],
       "links": {
@@ -47,12 +48,16 @@ export const GENERATED_PROJECTS = {
       },
       "period": {
         "start": "2025-09",
-        "end": "2026-02"
+        "end": "2026-04"
       },
       "techStacks": [
         "Next.js",
         "TypeScript",
-        "OpenAI SDK",
+        "OpenAI API",
+        "AI SDK",
+        "LangGraph.js",
+        "PostgreSQL(pgvector)",
+        "Modal",
         "Tailwind CSS",
         "next-intl",
         "Tiptap",
@@ -63,7 +68,7 @@ export const GENERATED_PROJECTS = {
       "thumbnail": "/public/projects/blog/logo.webp",
       "draft": false,
       "type": "solo",
-      "content": "\n## 프로젝트 소개\n\nGitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)\nDemo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)\n\nNext.js 기반의 기술 블로그입니다. 자체 웹 에디터에서 작성한 글을 AI가 한국어/영어로 자동 번역하고, GitHub API를 통해 브랜치에 직접 커밋하여 배포까지 자동화했습니다.\n**글쓰기부터 배포까지 완전 자동화된 블로그 파이프라인**을 구축한 것이 특징입니다.\n\n## 핵심 기능\n\n- MDX 기반 블로그(코드 하이라이트/이미지 메타데이터 등)\n- Studio 편집기(Tiptap)로 Frontmatter/본문 작성 및 이미지 업로드\n- GitHub API(Octokit)로 MDX/이미지 자동 커밋\n- 다국어(i18n): `next-intl` + OpenAI 자동 번역\n- AI 이미지 생성(에디터에서 텍스트 선택 후 생성, `LEESFIELD_API_KEY` 필요)\n- Playwright 기반 포트폴리오 PDF 자동 생성\n\n## Problem\n\n- **다국어 콘텐츠 운영 부담**: 한국어/영어를 수동으로 관리하면 누락/불일치가 발생하기 쉬움\n- **배포까지의 마찰**: 작성 → 번역 → 커밋 → 배포 과정이 수작업이면 반복 비용이 큼\n- **이미지 성능 이슈**: 이미지 크기/플레이스홀더 정보가 없으면 LCP/CLS가 악화되기 쉬움\n- **보안/권한 문제**: 편집 기능을 공개하면 오남용 위험이 있어 접근 제어가 필요\n\n## Solution\n\n- 웹 기반 에디터로 MDX 작성 플로우를 단일화하고, 글 작성 경험을 표준화\n- OpenAI 기반 자동 번역으로 한국어/영어 문서를 동기화\n- GitHub API(Octokit)로 브랜치에 직접 커밋하여 배포 파이프라인을 자동화\n- 이미지 메타데이터(width/height/LQIP)를 사전 생성하여 렌더링 안정성과 성능을 개선\n- NextAuth 기반 GitHub OAuth로 Studio 접근을 제한하고, 허용 사용자만 편집 가능하도록 구성\n- Playwright 기반 PDF 생성으로 포트폴리오 산출물을 자동화\n- FSD(Feature-Sliced Design) 구조로 모듈을 분리하여 유지보수성을 확보\n\n## Impact\n\n- **운영 비용 절감**: 다국어 문서와 배포가 자동화되어 반복 작업이 크게 감소\n- **품질/일관성 향상**: 문서/코드/배포 흐름이 연결되어 변경 누락을 줄임\n- **웹 성능 개선**: 이미지 렌더링 안정화로 LCP/CLS 개선에 기여\n- **산출물 자동화**: 포트폴리오 PDF를 자동 생성하여 공유/제출이 쉬워짐\n\n## 기술 스택\n\n- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui\n- MDX: next-mdx-remote, remark/rehype\n- i18n: next-intl\n- Editor: Tiptap\n- Auth: NextAuth\n- AI/Automation: OpenAI SDK, Octokit (GitHub API)\n- Test/Tooling: Vitest, Playwright, Storybook\n",
+      "content": "\n## 프로젝트 소개\n\nGitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)\nDemo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)\n\nNext.js 기반의 기술 블로그입니다. 자체 웹 에디터에서 작성한 글을 AI가 한국어/영어로 자동 번역하고, GitHub API를 통해 브랜치에 직접 커밋하여 배포까지 자동화했습니다.\n최근에는 블로그 글, 소개, 프로젝트 문서를 근거로 답하는 Q&A 챗봇을 추가해 방문자가 글을 직접 모두 탐색하지 않아도 블로그의 맥락을 질문으로 찾을 수 있도록 확장했습니다.\n**글쓰기부터 배포, 콘텐츠 탐색까지 이어지는 자동화된 블로그 파이프라인**을 구축한 것이 특징입니다.\n\n## 핵심 기능\n\n- MDX 기반 블로그(코드 하이라이트/이미지 메타데이터 등)\n- Studio 편집기(Tiptap)로 Frontmatter/본문 작성 및 이미지 업로드\n- GitHub API(Octokit)로 MDX/이미지 자동 커밋\n- 다국어(i18n): `next-intl` + OpenAI 자동 번역\n- AI 이미지 생성(에디터에서 텍스트 선택 후 생성, `LEESFIELD_API_KEY` 필요)\n- 블로그 Q&A 챗봇: Question Planner, lexical/curated 검색, Postgres(`pgvector`) 기반 Graph-RAG, citation 검증\n- Playwright 기반 포트폴리오 PDF 자동 생성\n\n## Problem\n\n- **다국어 콘텐츠 운영 부담**: 한국어/영어를 수동으로 관리하면 누락/불일치가 발생하기 쉬움\n- **배포까지의 마찰**: 작성 → 번역 → 커밋 → 배포 과정이 수작업이면 반복 비용이 큼\n- **콘텐츠 탐색 부담**: 글과 프로젝트가 늘어날수록 방문자가 원하는 맥락을 직접 찾기 어려움\n- **이미지 성능 이슈**: 이미지 크기/플레이스홀더 정보가 없으면 LCP/CLS가 악화되기 쉬움\n- **보안/권한 문제**: 편집 기능을 공개하면 오남용 위험이 있어 접근 제어가 필요\n\n## Solution\n\n- 웹 기반 에디터로 MDX 작성 플로우를 단일화하고, 글 작성 경험을 표준화\n- OpenAI 기반 자동 번역으로 한국어/영어 문서를 동기화\n- GitHub API(Octokit)로 브랜치에 직접 커밋하여 배포 파이프라인을 자동화\n- 이미지 메타데이터(width/height/LQIP)를 사전 생성하여 렌더링 안정성과 성능을 개선\n- 빌드 시 MDX를 lexical 검색 레코드로 만들고, curated source와 Postgres(`pgvector`) Graph-RAG를 결합해 근거 기반 Q&A 제공\n- 질문 라우터가 direct response, clarification, lexical/semantic retrieval 경로를 먼저 결정하고 citation 검증으로 답변 근거를 제한\n- NextAuth 기반 GitHub OAuth로 Studio 접근을 제한하고, 허용 사용자만 편집 가능하도록 구성\n- Playwright 기반 PDF 생성으로 포트폴리오 산출물을 자동화\n- FSD(Feature-Sliced Design) 구조로 모듈을 분리하여 유지보수성을 확보\n\n## Impact\n\n- **운영 비용 절감**: 다국어 문서와 배포가 자동화되어 반복 작업이 크게 감소\n- **품질/일관성 향상**: 문서/코드/배포 흐름이 연결되어 변경 누락을 줄임\n- **탐색 경험 개선**: 방문자가 블로그 글, 소개, 프로젝트 정보를 질문 형태로 빠르게 확인 가능\n- **웹 성능 개선**: 이미지 렌더링 안정화로 LCP/CLS 개선에 기여\n- **산출물 자동화**: 포트폴리오 PDF를 자동 생성하여 공유/제출이 쉬워짐\n\n## 기술 스택\n\n- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui\n- MDX: next-mdx-remote, remark/rehype\n- i18n: next-intl\n- Editor: Tiptap\n- Auth: NextAuth\n- AI/Automation: OpenAI API, AI SDK, LangGraph.js, Modal, Octokit (GitHub API)\n- Search/RAG: lexical retrieval, PostgreSQL(`pgvector`)\n- Test/Tooling: Vitest, Playwright, Storybook\n",
       "width": 2048,
       "height": 2048
     },
@@ -226,24 +231,29 @@ export const GENERATED_PROJECTS = {
     "blog": {
       "slug": "blog",
       "title": "Blog",
-      "summary": "A Next.js blog with multilingual MDX, Studio editor, and GitHub auto-commit",
+      "summary": "A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit, and grounded Q&A chatbot",
       "keyFeatures": [
         "Author MDX in Studio and auto-commit to GitHub",
         "Multilingual MDX with OpenAI-powered translation",
+        "Blog Q&A chatbot powered by lexical search and Postgres RAG",
         "Automatic image metadata injection and portfolio PDF generation"
       ],
       "links": {
         "github": "https://github.com/leey00nsu/leey00nsu-next-blog-v2",
-        "demo": "https://leey00nsu.com"
+        "demo": "https://blog2.leey00nsu.com"
       },
       "period": {
         "start": "2025-09",
-        "end": "2026-02"
+        "end": "2026-04"
       },
       "techStacks": [
         "Next.js",
         "TypeScript",
-        "OpenAI SDK",
+        "OpenAI API",
+        "AI SDK",
+        "LangGraph.js",
+        "PostgreSQL(pgvector)",
+        "Modal",
         "Tailwind CSS",
         "next-intl",
         "Tiptap",
@@ -254,7 +264,7 @@ export const GENERATED_PROJECTS = {
       "thumbnail": "/public/projects/blog/logo.webp",
       "draft": false,
       "type": "solo",
-      "content": "\n## Project Overview\n\nGitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)\nDemo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)\n\nThis is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.\n**A fully automated blog pipeline from writing to deployment** is a key feature.\n\n## Key Features\n\n- MDX-based blog (syntax highlighting, image metadata, etc.)\n- Studio editor (Tiptap) for authoring frontmatter/body and uploading images\n- GitHub API (Octokit) auto-commit for MDX/images\n- i18n: `next-intl` + OpenAI-powered translation\n- AI image generation from selected text (requires `LEESFIELD_API_KEY`)\n- Playwright-based portfolio PDF generation\n\n## Problem\n\n- **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions\n- **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone\n- **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS\n- **Access control**: Editing capabilities need protection to prevent abuse\n\n## Solution\n\n- Standardize the authoring flow with a web-based MDX editor\n- Synchronize Korean/English content with OpenAI-powered translation\n- Automate commits to a branch via GitHub API (Octokit) to streamline deployment\n- Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance\n- Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach\n- Automate portfolio PDF output with a Playwright-based pipeline\n- Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)\n\n## Impact\n\n- **Lower ops cost**: Less repetitive work thanks to automated translation and deployment\n- **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates\n- **Improved web performance**: More stable image rendering contributes to better LCP/CLS\n- **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing\n\n## Tech Stack\n\n- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui\n- MDX: next-mdx-remote, remark/rehype\n- i18n: next-intl\n- Editor: Tiptap\n- Auth: NextAuth\n- AI/Automation: OpenAI SDK, Octokit (GitHub API)\n- Test/Tooling: Vitest, Playwright, Storybook\n",
+      "content": "\n## Project Overview\n\nGitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)\nDemo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)\n\nThis is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.\nRecently, I added a grounded Q&A chatbot that answers from blog posts, profile content, and project documents, so visitors can ask for context instead of manually browsing every article.\n**An automated blog pipeline from writing and deployment to content discovery** is a key feature.\n\n## Key Features\n\n- MDX-based blog (syntax highlighting, image metadata, etc.)\n- Studio editor (Tiptap) for authoring frontmatter/body and uploading images\n- GitHub API (Octokit) auto-commit for MDX/images\n- i18n: `next-intl` + OpenAI-powered translation\n- AI image generation from selected text (requires `LEESFIELD_API_KEY`)\n- Blog Q&A chatbot: Question Planner, lexical/curated search, Postgres (`pgvector`) Graph-RAG, citation validation\n- Playwright-based portfolio PDF generation\n\n## Problem\n\n- **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions\n- **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone\n- **Content discovery overhead**: As posts and projects grow, visitors need a faster way to find the right context\n- **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS\n- **Access control**: Editing capabilities need protection to prevent abuse\n\n## Solution\n\n- Standardize the authoring flow with a web-based MDX editor\n- Synchronize Korean/English content with OpenAI-powered translation\n- Automate commits to a branch via GitHub API (Octokit) to streamline deployment\n- Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance\n- Generate lexical search records from MDX at build time, then combine curated sources with Postgres (`pgvector`) Graph-RAG for grounded Q&A\n- Use a question router to choose direct response, clarification, or lexical/semantic retrieval first, then restrict answers through citation validation\n- Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach\n- Automate portfolio PDF output with a Playwright-based pipeline\n- Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)\n\n## Impact\n\n- **Lower ops cost**: Less repetitive work thanks to automated translation and deployment\n- **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates\n- **Better discovery**: Visitors can quickly ask about blog posts, profile content, and projects in natural language\n- **Improved web performance**: More stable image rendering contributes to better LCP/CLS\n- **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing\n\n## Tech Stack\n\n- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui\n- MDX: next-mdx-remote, remark/rehype\n- i18n: next-intl\n- Editor: Tiptap\n- Auth: NextAuth\n- AI/Automation: OpenAI API, AI SDK, LangGraph.js, Modal, Octokit (GitHub API)\n- Search/RAG: lexical retrieval, PostgreSQL(`pgvector`)\n- Test/Tooling: Vitest, Playwright, Storybook\n",
       "width": 2048,
       "height": 2048
     },

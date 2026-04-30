@@ -103,4 +103,16 @@ describe('getTableOfContents', () => {
 
     expect(result[0].text).toBe('공백이 있는 제목')
   })
+
+  it('링크를 포함한 헤딩은 표시 텍스트 기준으로 text와 slug를 만든다', () => {
+    const content =
+      '## 그래서 [MCP](https://modelcontextprotocol.io/)를 붙이게 됐다'
+    const result = getTableOfContents(content)
+
+    expect(result[0]).toEqual({
+      text: '그래서 MCP를 붙이게 됐다',
+      slug: '그래서-mcp를-붙이게-됐다',
+      depth: 2,
+    })
+  })
 })

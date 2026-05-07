@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllProjects } from '@/entities/project/lib/project'
+import type { Project } from '@/entities/project/model/types'
 import { CHAT_ASSISTANT } from '@/features/chat/config/chat-assistant'
 import { buildCuratedChatSourceRecords } from '@/features/chat/lib/chat-curated-source-records'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
@@ -40,10 +41,115 @@ const CROSS_LOCALE_PROFILE_REFERENCE = {
   },
 } as const
 
+const PROFILE_TECH_STACK_SOURCE = {
+  SLUG: 'about',
+  ID_SUFFIX: 'profile-tech-stack',
+  SECTION_TITLE: {
+    ko: '주력 기술 스택',
+    en: 'Primary Tech Stack',
+  },
+  INTRODUCTION: {
+    ko: '프로젝트 전체에서 반복적으로 쓰인 기술 스택입니다.',
+    en: 'Tech stacks repeatedly used across projects.',
+  },
+  COMMON_TECH_STACK_LABEL: {
+    ko: '공통/반복 기술',
+    en: 'Common/repeated technologies',
+  },
+  SEARCH_TERMS: {
+    ko: [
+      '주력 기술 스택',
+      '기술 스택',
+      '주요 기술',
+      '사용 기술',
+      '이윤수 기술 스택',
+      'tech stack',
+      'primary tech stack',
+    ],
+    en: [
+      'primary tech stack',
+      'tech stack',
+      'main technologies',
+      'technology stack',
+      'Yoonsu Lee tech stack',
+      '주력 기술 스택',
+      '기술 스택',
+    ],
+  },
+} as const
+
 function resolveAlternateLocales(locale: SupportedLocale): SupportedLocale[] {
   return LOCALES.SUPPORTED.filter((supportedLocale) => {
     return supportedLocale !== locale
   })
+}
+
+function collectUniqueTechStacks(projects: Project[]): string[] {
+  const techStackMap = new Map<string, string>()
+
+  for (const project of projects) {
+    for (const techStack of project.techStacks) {
+      const normalizedTechStack = techStack.toLowerCase()
+
+      if (techStackMap.has(normalizedTechStack)) {
+        continue
+      }
+
+      techStackMap.set(normalizedTechStack, techStack)
+    }
+  }
+
+  return [...techStackMap.values()]
+}
+
+function buildProjectTechStackLines(projects: Project[]): string[] {
+  return projects.map((project) => {
+    return `- ${project.title}: ${project.techStacks.join(', ')}`
+  })
+}
+
+function buildProfileTechStackSource(params: {
+  locale: SupportedLocale
+  aboutTitle: string
+  projects: Project[]
+}): ChatEvidenceRecord | null {
+  if (params.projects.length === 0) {
+    return null
+  }
+
+  const uniqueTechStacks = collectUniqueTechStacks(params.projects)
+  const searchTerms = [
+    ...PROFILE_TECH_STACK_SOURCE.SEARCH_TERMS[params.locale],
+    ...uniqueTechStacks,
+    ...uniqueTechStacks.map((techStack) => {
+      return techStack.toLowerCase()
+    }),
+    ...params.projects.map((project) => {
+      return project.title
+    }),
+  ]
+
+  return {
+    id: `${params.locale}/about/${PROFILE_TECH_STACK_SOURCE.ID_SUFFIX}`,
+    locale: params.locale,
+    slug: PROFILE_TECH_STACK_SOURCE.SLUG,
+    title: params.aboutTitle,
+    url: buildLocalizedRoutePath(ROUTES.ABOUT, params.locale),
+    excerpt: [
+      PROFILE_TECH_STACK_SOURCE.INTRODUCTION[params.locale],
+      uniqueTechStacks.join(', '),
+    ].join(' '),
+    content: [
+      PROFILE_TECH_STACK_SOURCE.SECTION_TITLE[params.locale],
+      PROFILE_TECH_STACK_SOURCE.INTRODUCTION[params.locale],
+      `${PROFILE_TECH_STACK_SOURCE.COMMON_TECH_STACK_LABEL[params.locale]}: ${uniqueTechStacks.join(', ')}`,
+      ...buildProjectTechStackLines(params.projects),
+    ].join('\n'),
+    sectionTitle: PROFILE_TECH_STACK_SOURCE.SECTION_TITLE[params.locale],
+    tags: [...new Set(searchTerms)],
+    searchTerms: [...new Set(searchTerms)],
+    sourceCategory: 'profile',
+  }
 }
 
 export const getCuratedChatSources = cache(
@@ -144,6 +250,16 @@ export const getCuratedChatSources = cache(
             sourceCategory: 'profile',
           }),
         )
+      }
+
+      const profileTechStackSource = buildProfileTechStackSource({
+        locale,
+        aboutTitle: about.title,
+        projects,
+      })
+
+      if (profileTechStackSource) {
+        curatedSources.push(profileTechStackSource)
       }
     }
 

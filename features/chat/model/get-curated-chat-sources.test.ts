@@ -40,4 +40,24 @@ describe('getCuratedChatSources', () => {
     expect(assistantSectionSource).toBeDefined()
     expect(assistantSectionSource?.url).toContain('#')
   })
+
+  it('프로젝트 전체 기술 스택을 합친 profile source를 포함한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+
+    const profileTechStackSource = curatedChatSources.find((source) => {
+      return source.id === 'ko/about/profile-tech-stack'
+    })
+
+    expect(profileTechStackSource).toBeDefined()
+    expect(profileTechStackSource?.sourceCategory).toBe('profile')
+    expect(profileTechStackSource?.url).toBe('/ko/about')
+    expect(profileTechStackSource?.sectionTitle).toBe('주력 기술 스택')
+    expect(profileTechStackSource?.content).toContain('Leesfield')
+    expect(profileTechStackSource?.content).toContain('Leemage')
+    expect(profileTechStackSource?.content).toContain('Next.js')
+    expect(profileTechStackSource?.content).toContain('TypeScript')
+    expect(profileTechStackSource?.searchTerms).toEqual(
+      expect.arrayContaining(['주력 기술 스택', '기술 스택', 'tech stack']),
+    )
+  })
 })

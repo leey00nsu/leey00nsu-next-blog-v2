@@ -17,6 +17,7 @@ import {
   resolveChatRequest,
   type ResolveChatRequestResult,
 } from '@/features/chat/lib/resolve-chat-request'
+import { selectFinalChatEvidence } from '@/features/chat/lib/select-final-chat-evidence'
 import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
@@ -109,10 +110,14 @@ export async function retrieveBlogChatEvidence({
       retrievalScope,
     })
     semanticMatches = chatRagSearchResult.matches
-    finalMatches =
-      semanticMatches.length > 0
-        ? semanticMatches
-        : resolvedChatRequest.matches
+    finalMatches = selectFinalChatEvidence({
+      question,
+      locale,
+      questionPlan,
+      retrievalScope,
+      lexicalMatches: resolvedChatRequest.matches,
+      semanticMatches,
+    })
   }
 
   const reranked = shouldRerankChatEvidence({

@@ -12,12 +12,12 @@ interface RerankChatEvidenceParams {
 
 const CHAT_RERANK_PROMPT = {
   SYSTEM:
-    'You rerank grounded blog evidence. Prefer evidence that directly answers the user question. Return only URLs from the candidate list in best-first order.',
+    'You rerank grounded blog evidence. Prefer evidence that directly answers the user question. Return only evidence IDs from the candidate list in best-first order.',
 } as const
 
 const ChatEvidenceRankingSchema = Output.object({
   schema: z.object({
-    rankedUrls: z
+    rankedEvidenceIds: z
       .array(z.string().trim().min(1))
       .max(BLOG_CHAT.RERANK.MAXIMUM_CANDIDATE_COUNT),
   }),
@@ -28,6 +28,7 @@ function buildCandidateContext(matches: ChatEvidenceRecord[]): string {
     .slice(0, BLOG_CHAT.RERANK.MAXIMUM_CANDIDATE_COUNT)
     .map((match) => {
       return [
+        `id=${match.id}`,
         `url=${match.url}`,
         `title=${match.title}`,
         `source=${match.sourceCategory}`,
@@ -60,7 +61,8 @@ export async function rerankChatEvidence({
 
     return reorderChatEvidenceMatches({
       matches,
-      rankedUrls: (output as { rankedUrls: string[] }).rankedUrls,
+      rankedEvidenceIds: (output as { rankedEvidenceIds: string[] })
+        .rankedEvidenceIds,
     })
   } catch {
     return matches

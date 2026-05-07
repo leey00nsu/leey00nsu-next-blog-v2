@@ -661,7 +661,7 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('corpus synthesis 질문은 Postgres RAG 후보를 우선 사용한다', async () => {
+  it('corpus synthesis 질문은 lexical 후보와 Postgres RAG 후보를 함께 사용한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
       ok: true,
       questionPlan: {
@@ -735,11 +735,14 @@ describe('POST /api/chat', () => {
     expect(runChatRagWorkflowMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        matches: [
+        matches: expect.arrayContaining([
+          expect.objectContaining({
+            url: '/ko/blog/lee-spec-kit',
+          }),
           expect.objectContaining({
             url: '/ko/projects/lee-spec-kit',
           }),
-        ],
+        ]),
       }),
     )
   })

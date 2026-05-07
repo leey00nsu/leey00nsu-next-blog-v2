@@ -2,32 +2,32 @@ import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 
 interface ReorderChatEvidenceMatchesParams {
   matches: ChatEvidenceRecord[]
-  rankedUrls: string[]
+  rankedEvidenceIds: string[]
 }
 
 export function reorderChatEvidenceMatches({
   matches,
-  rankedUrls,
+  rankedEvidenceIds,
 }: ReorderChatEvidenceMatchesParams): ChatEvidenceRecord[] {
-  if (rankedUrls.length === 0) {
+  if (rankedEvidenceIds.length === 0) {
     return matches
   }
 
   const matchLookup = new Map(
     matches.map((match) => {
-      return [match.url, match] as const
+      return [match.id, match] as const
     }),
   )
-  const reorderedMatches = rankedUrls
-    .map((rankedUrl) => {
-      return matchLookup.get(rankedUrl)
+  const reorderedMatches = rankedEvidenceIds
+    .map((rankedEvidenceId) => {
+      return matchLookup.get(rankedEvidenceId)
     })
     .filter((match): match is ChatEvidenceRecord => {
       return match !== undefined
     })
-  const rankedUrlSet = new Set(rankedUrls)
+  const rankedEvidenceIdSet = new Set(rankedEvidenceIds)
   const remainingMatches = matches.filter((match) => {
-    return !rankedUrlSet.has(match.url)
+    return !rankedEvidenceIdSet.has(match.id)
   })
 
   return [...reorderedMatches, ...remainingMatches]

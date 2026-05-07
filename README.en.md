@@ -247,9 +247,8 @@ Open `http://localhost:3000/blog` in your browser
 - Click the `Blog Q&A` button at the bottom-right of blog list/detail and About pages
 - The server routes the question first
 - Greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
-- Normal grounded questions search both build-generated lexical records and curated sources
-- Whole-blog synthesis questions use Postgres RAG first
-- Normal grounded questions fall back to Postgres RAG when lexical retrieval is weak
+- Grounded questions search build-generated lexical records, curated sources (About, projects, and assistant-internal documents), and Postgres (`pgvector`) semantic candidates together
+- Final evidence is selected again using question tokens, section titles, search terms, and the scope chosen by the planner
 - The model cannot browse, search externally, or call tools
 - Cache keys use the normalized question so repeated requests cost less
 - To protect the free API, the default policy limits each question to 200 characters and the whole service to 100 questions per day in KST
@@ -304,9 +303,12 @@ Scans `public/posts/{slug}` and `public/about` to create missing locale MDX file
 
 ### Chat Operations Notes
 
-- The current search flow combines build-generated lexical records, curated sources, and Postgres (`pgvector`) Graph-RAG.
-- The Question Planner first chooses between direct response, clarification, and lexical/semantic retrieval paths.
-- Lexical and semantic candidates are fused into one evidence set, then reranked when needed.
+- The current search flow is a hybrid RAG structure that combines build-generated lexical records, curated sources, and Postgres (`pgvector`) Graph-RAG.
+- The Question Planner first chooses the direct response, clarification, or retrieval route, plus the retrieval scope.
+- For retrieval questions, lexical/curated candidates and semantic candidates are collected together. A final evidence selector then chooses the best evidence using question tokens, section titles, search terms, source category, and current-source scope.
+- This approach is used because vector search alone can miss direct evidence for exact names, technology names, or section titles. Lexical search alone can miss questions phrased differently, so the chatbot combines both.
+- Curated sources are high-trust evidence for content the chatbot should answer consistently, such as About, project, and assistant-internal documents. They also include aggregated static evidence such as `profile-tech-stack`, which collects `techStacks` across projects.
+- When there are many candidates or the question is compound, an LLM reranker is used. Reranking works by evidence id so section-level evidence under the same URL can still be distinguished.
 - If Postgres RAG indexing is not configured, lexical retrieval and curated-source answers still work.
 - Exact and semantic caches reduce repeated question cost, and observability events record the retrieval/answer path.
 

@@ -247,9 +247,8 @@ pnpm run gen:chat-rag-postgres
 - 블로그 목록/상세 및 소개 페이지 우하단의 `블로그 Q&A` 버튼을 클릭
 - 질문을 입력하면 서버가 먼저 질문을 라우팅합니다.
 - 인사, 챗봇 정체성, 연락 방법, 최신/가장 오래된 글, 현재 글 질문은 direct path로 처리합니다.
-- 일반 질문은 빌드 시 생성한 lexical 검색 레코드와 curated source(소개/프로젝트/assistant 내부 문서)를 함께 조회합니다.
-- 블로그 전체 공통 주제나 여러 글을 가로지르는 질문은 Postgres RAG를 우선 사용합니다.
-- lexical 검색이 부족한 일반 질문은 Postgres RAG를 fallback으로 사용합니다.
+- 근거가 필요한 질문은 빌드 시 생성한 lexical 검색 레코드, curated source(소개/프로젝트/assistant 내부 문서), Postgres(`pgvector`) 기반 semantic 검색 후보를 함께 조회합니다.
+- 최종 근거는 질문 토큰, section title, searchTerms, planner가 정한 scope를 기준으로 다시 선택합니다.
 - 모델은 외부 브라우징/툴 호출 없이 제공된 근거만 사용합니다.
 - 캐시는 질문 정규화 결과 기준으로 적용되어 같은 질문의 반복 비용을 줄임
 - 무료 운영 보호를 위해 질문 길이는 기본 200자로 제한되고, KST 기준 서비스 전체 일일 질문 수도 기본 100회로 제한됨
@@ -304,9 +303,12 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 
 ### 챗봇 운영 메모
 
-- 현재 검색은 빌드 시 생성한 lexical 검색 레코드, curated source, Postgres(`pgvector`) 기반 Graph-RAG를 함께 사용합니다.
-- Question Planner가 direct response, clarification, lexical/semantic retrieval 경로를 먼저 결정합니다.
-- lexical 후보와 semantic 후보는 하나의 근거 집합으로 병합하고, 필요할 때 rerank를 수행합니다.
+- 현재 검색은 빌드 시 생성한 lexical 검색 레코드, curated source, Postgres(`pgvector`) 기반 Graph-RAG를 함께 사용하는 hybrid RAG 구조입니다.
+- Question Planner가 direct response, clarification, retrieval route와 검색 scope를 먼저 결정합니다.
+- retrieval 질문에서는 lexical/curated 후보와 semantic 후보를 함께 모으고, final evidence selector가 질문 토큰, section title, searchTerms, source category, current source scope를 기준으로 최종 근거를 고릅니다.
+- 이 방식을 선택한 이유는 vector search만으로는 고유명사, 기술명, 섹션 제목처럼 정확한 매칭이 중요한 질문에서 직접 근거를 놓칠 수 있기 때문입니다. 반대로 lexical 검색만 쓰면 표현이 다른 질문을 놓칠 수 있어 두 방식을 같이 사용합니다.
+- curated source는 소개/프로젝트/assistant 내부 문서처럼 챗봇이 안정적으로 답해야 하는 고신뢰 근거입니다. 특히 프로젝트들의 `techStacks`를 모은 `profile-tech-stack`처럼 여러 정적 데이터를 집계한 근거도 포함합니다.
+- 후보가 많거나 질문이 복합적이면 LLM rerank를 수행하며, rerank는 같은 URL 안의 section 근거를 구분할 수 있도록 evidence id 기준으로 동작합니다.
 - Postgres RAG 인덱싱이 설정되지 않아도 lexical 검색과 curated source 기반 응답은 계속 동작합니다.
 - exact cache와 semantic cache를 사용해 반복 질문 비용을 줄이고, observability 이벤트로 검색/응답 경로를 기록합니다.
 

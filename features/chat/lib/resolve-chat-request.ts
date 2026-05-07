@@ -24,7 +24,7 @@ interface ResolveChatRequestParams {
   questionRouting?: ChatQuestionRoutingResult
 }
 
-interface ResolveChatRequestResult {
+export interface ResolveChatRequestResult {
   normalizedQuestion: string
   questionType: ChatQuestionAnalysis['questionType']
   shouldCallModel: boolean

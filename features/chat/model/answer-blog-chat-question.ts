@@ -1,25 +1,10 @@
-import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
 import { planChatQuestion } from '@/features/chat/api/plan-chat-question'
-import { rerankChatEvidence } from '@/features/chat/api/rerank-chat-evidence'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { shouldCacheBlogChatResponse } from '@/features/chat/lib/blog-chat-cache'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
-import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
-import {
-  applyQuestionPlanToAnalysis,
-  buildQuestionRoutingFromPlan,
-  resolvePlannerCurrentPostSlug,
-  shouldRunHybridRetrieval,
-} from '@/features/chat/lib/chat-question-plan-routing'
-import {
-  analyzeQuestion,
-  normalizeQuestion,
-  type ChatQuestionAnalysis,
-} from '@/features/chat/lib/question-analysis'
-import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
-import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
+import { normalizeQuestion } from '@/features/chat/lib/question-analysis'
 import {
   cleanupExpiredBlogChatResponseCache,
   getCachedBlogChatResponse,
@@ -35,14 +20,13 @@ import {
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
-import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 import {
   findSemanticCachedBlogChatResponse,
   storeSemanticCachedBlogChatResponse,
 } from '@/features/chat/model/chat-semantic-cache'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
-import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
+import { retrieveBlogChatEvidence } from '@/features/chat/model/retrieve-blog-chat-evidence'
 import {
   BlogChatRequestSchema,
   BlogChatResponseSchema,
@@ -99,19 +83,6 @@ function buildCacheKey(
   currentPostSlug?: string,
 ): string {
   return `${locale}:${currentPostSlug ?? 'global'}:${normalizedQuestion}`
-}
-
-function buildBlogEvidenceRecords(locale: string): ChatEvidenceRecord[] {
-  return (
-    GENERATED_BLOG_SEARCH_RECORDS[
-      locale as keyof typeof GENERATED_BLOG_SEARCH_RECORDS
-    ] ?? []
-  ).map((record) => {
-    return {
-      ...record,
-      sourceCategory: 'blog' as const,
-    }
-  })
 }
 
 function buildRefusalResponse(
@@ -189,18 +160,6 @@ function buildClarificationResponse(params: {
     citations: [],
     grounded: false,
   }
-}
-
-function collectPreferredSourceCategories(
-  questionAnalysis: ChatQuestionAnalysis,
-): ChatEvidenceRecord['sourceCategory'][] {
-  return [
-    ...new Set(
-      questionAnalysis.searchQueries.flatMap((searchQuery) => {
-        return searchQuery.preferredSourceCategories
-      }),
-    ),
-  ]
 }
 
 function buildPlannerFailureResponse(
@@ -532,35 +491,20 @@ export async function answerBlogChatQuestion({
         })
       }
 
-      const resolvedQuestionBaseAnalysis = analyzeQuestion(
-        resolvedQuestion,
-        locale,
-      )
-      const resolvedQuestionAnalysis = applyQuestionPlanToAnalysis({
-        questionAnalysis: resolvedQuestionBaseAnalysis,
-        questionPlan: questionPlan.questionPlan,
-        locale,
-      })
-      const questionRouting = buildQuestionRoutingFromPlan(
-        questionPlan.questionPlan,
-      )
-      const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
-        questionPlan: questionPlan.questionPlan,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-      })
-      const blogRecords = buildBlogEvidenceRecords(locale)
-      const curatedRecords = await getCuratedChatSources(locale)
-      const resolvedChatRequest = resolveChatRequest({
+      const evidenceResult = await retrieveBlogChatEvidence({
         question: resolvedQuestion,
         locale,
-        blogRecords,
-        curatedRecords,
-        currentPostSlug: plannerCurrentPostSlug,
-        questionAnalysis: resolvedQuestionAnalysis,
+        questionPlan: questionPlan.questionPlan,
         contactProfile,
-        questionRouting,
+        currentPostSlug: parsedRequest.data.currentPostSlug,
+        conversationHistoryCount: parsedRequest.data.conversationHistory.length,
       })
-      chatObservabilityState.lexicalMatches = resolvedChatRequest.matches
+      const resolvedChatRequest = evidenceResult.resolvedChatRequest
+      const combinedMatches = evidenceResult.finalMatches
+      chatObservabilityState.lexicalMatches = evidenceResult.lexicalMatches
+      chatObservabilityState.semanticMatches = evidenceResult.semanticMatches
+      chatObservabilityState.finalMatches = evidenceResult.finalMatches
+      chatObservabilityState.reranked = evidenceResult.reranked
 
       if (resolvedChatRequest.directResponse) {
         const validatedDirectResponse = buildResponseWithFollowUpSuggestions({
@@ -568,9 +512,8 @@ export async function answerBlogChatQuestion({
           responseData: BlogChatResponseSchema.parse(
             resolvedChatRequest.directResponse,
           ),
-          matches: resolvedChatRequest.matches,
+          matches: combinedMatches,
         })
-        chatObservabilityState.finalMatches = resolvedChatRequest.matches
 
         cacheResponseIfNeeded({
           cacheKey,
@@ -584,46 +527,6 @@ export async function answerBlogChatQuestion({
           chatObservabilityState,
         })
       }
-
-      const preferredSourceCategories = collectPreferredSourceCategories(
-        resolvedQuestionAnalysis,
-      )
-      let combinedMatches = resolvedChatRequest.matches
-      let semanticMatches: ChatEvidenceRecord[] = []
-
-      if (shouldRunHybridRetrieval(questionPlan.questionPlan)) {
-        const chatRagSearchResult = await runChatRagWorkflow({
-          question: resolvedQuestion,
-          locale,
-          currentPostSlug: plannerCurrentPostSlug,
-        })
-        semanticMatches = chatRagSearchResult.matches
-        chatObservabilityState.semanticMatches = semanticMatches
-
-        combinedMatches = fuseChatRetrievalMatches({
-          lexicalMatches: resolvedChatRequest.matches,
-          semanticMatches,
-          preferredSourceCategories,
-          currentPostSlug: plannerCurrentPostSlug,
-        })
-      }
-
-      if (
-        shouldRerankChatEvidence({
-          question: resolvedQuestion,
-          conversationHistoryCount:
-            parsedRequest.data.conversationHistory.length,
-          matchCount: combinedMatches.length,
-          questionPlan: questionPlan.questionPlan,
-        })
-      ) {
-        combinedMatches = await rerankChatEvidence({
-          question: resolvedQuestion,
-          matches: combinedMatches,
-        })
-        chatObservabilityState.reranked = true
-      }
-      chatObservabilityState.finalMatches = combinedMatches
 
       const shouldCallModel =
         resolvedChatRequest.shouldCallModel || combinedMatches.length > 0

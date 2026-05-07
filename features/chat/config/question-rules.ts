@@ -1,5 +1,4 @@
 export const CHAT_QUESTION_RULES = {
-  GREETING_PATTERNS: ['안녕', '안녕하세요', 'hello', 'hi'],
   SPLIT_PATTERNS: [' 그리고 ', ' 또 ', ' 및 ', ' 하고 ', '했고 '],
   TERM_EXPANSIONS: {
     staletime: ['유효 기간', '유효기간', '캐시', '데이터 유효 기간'],
@@ -26,7 +25,6 @@ export const CHAT_QUESTION_RULES = {
     '짧게 소개',
   ],
 } as const satisfies {
-  GREETING_PATTERNS: string[]
   SPLIT_PATTERNS: string[]
   TERM_EXPANSIONS: Record<string, string[]>
   CONTEXT_QUERY_PATTERNS: string[]

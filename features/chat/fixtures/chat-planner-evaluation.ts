@@ -1,4 +1,4 @@
-import type { ChatConversationHistoryItem } from '@/features/chat/lib/rewrite-chat-question'
+import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 import type { ChatQuestionSelector } from '@/features/chat/model/chat-question-routing'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import type {

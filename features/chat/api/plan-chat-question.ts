@@ -10,7 +10,7 @@ import {
   buildChatQuestionContextSnapshot,
   buildPlannerConversationContextText,
 } from '@/features/chat/lib/chat-question-context'
-import type { ChatConversationHistoryItem } from '@/features/chat/lib/rewrite-chat-question'
+import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 const CHAT_QUESTION_PLANNER_PROMPT = {

@@ -1,5 +1,5 @@
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
-import type { ChatConversationHistoryItem } from '@/features/chat/lib/rewrite-chat-question'
+import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 
 interface BuildChatQuestionContextSnapshotParams {
   conversationHistory?: ChatConversationHistoryItem[]

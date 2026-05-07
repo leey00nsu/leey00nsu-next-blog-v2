@@ -8,13 +8,6 @@ import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import {
-  acquireChatConcurrentRequestSlot,
-  consumeChatRequestRateLimit,
-  releaseChatConcurrentRequestSlot,
-  resolveChatClientKey,
-} from '@/features/chat/lib/chat-rate-limit'
-import { consumeDailyUsage } from '@/features/chat/lib/daily-chat-usage'
-import {
   applyQuestionPlanToAnalysis,
   buildQuestionRoutingFromPlan,
   resolvePlannerCurrentPostSlug,
@@ -27,6 +20,18 @@ import {
 } from '@/features/chat/lib/question-analysis'
 import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
 import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
+import {
+  cleanupExpiredBlogChatResponseCache,
+  getCachedBlogChatResponse,
+  setCachedBlogChatResponse,
+} from '@/features/chat/model/blog-chat-response-cache'
+import {
+  acquireBlogChatConcurrentRequestSlot,
+  consumeBlogChatDailyUsage,
+  consumeBlogChatRequestRateLimit,
+  releaseBlogChatConcurrentRequestSlot,
+  resolveBlogChatClientKey,
+} from '@/features/chat/model/blog-chat-usage-limiter'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
@@ -44,11 +49,6 @@ import {
   type BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
-
-interface CachedBlogChatResponse {
-  createdAt: number
-  data: BlogChatResponse
-}
 
 interface ChatObservabilityState {
   originalQuestion: string
@@ -77,11 +77,6 @@ export interface BlogChatApplicationResult {
   body: BlogChatResponse | Record<string, unknown>
   status?: number
 }
-
-const blogChatResponseCache = new Map<string, CachedBlogChatResponse>()
-const blogChatDailyUsageMap = new Map<string, number>()
-const blogChatRateLimitUsageMap = new Map<string, number[]>()
-const blogChatInFlightMap = new Map<string, number>()
 
 const CHAT_APPLICATION = {
   FALLBACK_SOCIAL_REPLIES: {
@@ -117,16 +112,6 @@ function buildBlogEvidenceRecords(locale: string): ChatEvidenceRecord[] {
       sourceCategory: 'blog' as const,
     }
   })
-}
-
-function cleanupExpiredCache(): void {
-  const now = Date.now()
-
-  for (const [cacheKey, cacheEntry] of blogChatResponseCache.entries()) {
-    if (now - cacheEntry.createdAt > BLOG_CHAT.CACHE.TTL_MILLISECONDS) {
-      blogChatResponseCache.delete(cacheKey)
-    }
-  }
 }
 
 function buildRefusalResponse(
@@ -168,9 +153,9 @@ function cacheResponseIfNeeded(params: {
     return
   }
 
-  blogChatResponseCache.set(params.cacheKey, {
-    createdAt: Date.now(),
-    data: params.responseData,
+  setCachedBlogChatResponse({
+    cacheKey: params.cacheKey,
+    responseData: params.responseData,
   })
 }
 
@@ -353,9 +338,8 @@ export async function answerBlogChatQuestion({
       return buildValidationErrorResult(requestBody)
     }
 
-    const clientKey = resolveChatClientKey(requestHeaders)
-    const rateLimitResult = consumeChatRequestRateLimit({
-      usageMap: blogChatRateLimitUsageMap,
+    const clientKey = resolveBlogChatClientKey(requestHeaders)
+    const rateLimitResult = consumeBlogChatRequestRateLimit({
       clientKey,
       windowMilliseconds: BLOG_CHAT.RATE_LIMIT.WINDOW_MILLISECONDS,
       maximumRequestsPerWindow:
@@ -370,8 +354,7 @@ export async function answerBlogChatQuestion({
       }
     }
 
-    const concurrentRequestResult = acquireChatConcurrentRequestSlot({
-      inFlightMap: blogChatInFlightMap,
+    const concurrentRequestResult = acquireBlogChatConcurrentRequestSlot({
       clientKey,
       maximumConcurrentRequests:
         BLOG_CHAT.RATE_LIMIT.MAXIMUM_CONCURRENT_REQUESTS,
@@ -387,8 +370,7 @@ export async function answerBlogChatQuestion({
 
     try {
       const requestStartedAt = Date.now()
-      const dailyUsageResult = consumeDailyUsage({
-        usageMap: blogChatDailyUsageMap,
+      const dailyUsageResult = consumeBlogChatDailyUsage({
         maximumDailyRequests: BLOG_CHAT.LIMIT.MAXIMUM_DAILY_REQUESTS,
       })
 
@@ -400,7 +382,9 @@ export async function answerBlogChatQuestion({
         }
       }
 
-      cleanupExpiredCache()
+      cleanupExpiredBlogChatResponseCache({
+        ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
+      })
 
       const locale: SupportedLocale =
         parsedRequest.data.locale ?? LOCALES.DEFAULT
@@ -476,14 +460,14 @@ export async function answerBlogChatQuestion({
         locale,
         parsedRequest.data.currentPostSlug,
       )
-      const cachedResponse = blogChatResponseCache.get(cacheKey)
+      const cachedResponse = getCachedBlogChatResponse(cacheKey)
 
       if (cachedResponse) {
         chatObservabilityState.cacheKind = 'exact'
 
         return buildLoggedResult({
           locale,
-          responseData: cachedResponse.data,
+          responseData: cachedResponse,
           requestStartedAt,
           chatObservabilityState,
         })
@@ -686,8 +670,7 @@ export async function answerBlogChatQuestion({
         chatObservabilityState,
       })
     } finally {
-      releaseChatConcurrentRequestSlot({
-        inFlightMap: blogChatInFlightMap,
+      releaseBlogChatConcurrentRequestSlot({
         clientKey,
       })
     }

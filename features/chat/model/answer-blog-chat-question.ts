@@ -405,9 +405,9 @@ export async function answerBlogChatQuestion({
       chatObservabilityState.plannerReason = questionPlan.questionPlan.reason
       chatObservabilityState.plannerAction = questionPlan.questionPlan.action
       chatObservabilityState.plannerRetrievalMode =
-        questionPlan.questionPlan.retrievalMode
+        questionPlan.questionPlan.retrievalScope
       chatObservabilityState.plannerDeterministicAction =
-        questionPlan.questionPlan.deterministicAction
+        questionPlan.questionPlan.directAction
       chatObservabilityState.preferredSourceCategories = [
         ...questionPlan.questionPlan.preferredSourceCategories,
       ]
@@ -432,7 +432,10 @@ export async function answerBlogChatQuestion({
         })
       }
 
-      if (questionPlan.questionPlan.deterministicAction === 'social_reply') {
+      if (
+        questionPlan.questionPlan.route === 'direct' &&
+        questionPlan.questionPlan.directAction === 'social_reply'
+      ) {
         const socialReplyResponse = BlogChatResponseSchema.parse(
           buildSocialReplyResponse({
             locale,
@@ -453,7 +456,7 @@ export async function answerBlogChatQuestion({
         })
       }
 
-      if (questionPlan.questionPlan.needsClarification) {
+      if (questionPlan.questionPlan.route === 'clarify') {
         const clarificationResponse = BlogChatResponseSchema.parse(
           buildClarificationResponse({
             locale,

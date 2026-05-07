@@ -71,15 +71,19 @@ vi.mock('@/features/chat/lib/question-analysis', () => {
 
 const QUESTION_PLAN = {
   standaloneQuestion: 'sample question',
-  socialPreamble: false,
   action: 'answer' as const,
-  scope: 'global' as const,
-  deterministicAction: 'none' as const,
-  needsRetrieval: true,
-  retrievalMode: 'standard' as const,
+  route: 'retrieve' as const,
+  directAction: 'none' as const,
+  retrievalScope: 'entity' as const,
+  referenceTarget: {
+    kind: 'named_entity' as const,
+    sourceCategory: null,
+    slug: null,
+    title: null,
+    confidence: 'medium' as const,
+  },
   preferredSourceCategories: [],
   additionalKeywords: [],
-  needsClarification: false,
   clarificationQuestion: null,
   reason: 'retrieval',
 }

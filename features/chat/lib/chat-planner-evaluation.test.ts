@@ -19,10 +19,10 @@ describe('chat planner evaluation', () => {
     it(`${evaluationCase.id} 질문을 planner rag 경로로 처리한다`, async () => {
       const questionPlan = evaluationCase.questionPlan
 
-      expect(questionPlan.needsRetrieval).toBe(evaluationCase.expectedRetrieval)
+      expect(questionPlan.route).toBe(evaluationCase.expectedRoute)
 
       if (evaluationCase.expectedClarificationQuestion) {
-        expect(questionPlan.needsClarification).toBe(true)
+        expect(questionPlan.route).toBe('clarify')
         expect(questionPlan.clarificationQuestion).toBe(
           evaluationCase.expectedClarificationQuestion,
         )

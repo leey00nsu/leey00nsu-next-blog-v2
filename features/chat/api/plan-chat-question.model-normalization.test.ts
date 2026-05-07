@@ -80,7 +80,6 @@ describe('planChatQuestion failure handling', () => {
     generateTextMock.mockResolvedValueOnce({
       output: {
         standaloneQuestion: '',
-        socialPreamble: false,
       },
     })
 

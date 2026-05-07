@@ -1,11 +1,10 @@
 import { z } from 'zod'
-import {
-  ChatQuestionActionSchema,
-  ChatQuestionScopeSchema,
-} from '@/features/chat/model/chat-question-routing'
+import { ChatQuestionActionSchema } from '@/features/chat/model/chat-question-routing'
 import { ChatSourceCategorySchema } from '@/features/chat/model/chat-evidence'
 
-export const CHAT_QUESTION_DETERMINISTIC_ACTIONS = [
+export const CHAT_QUESTION_ROUTES = ['direct', 'clarify', 'retrieve'] as const
+
+export const CHAT_QUESTION_DIRECT_ACTIONS = [
   'none',
   'social_reply',
   'contact',
@@ -13,38 +12,66 @@ export const CHAT_QUESTION_DETERMINISTIC_ACTIONS = [
   'oldest_post',
 ] as const
 
-export const CHAT_QUESTION_RETRIEVAL_MODES = [
+export const CHAT_QUESTION_RETRIEVAL_SCOPES = [
   'none',
-  'standard',
+  'current_source',
+  'entity',
   'corpus',
-  'current_post',
 ] as const
+
+export const CHAT_REFERENCE_TARGET_KINDS = [
+  'none',
+  'current_source',
+  'profile',
+  'assistant',
+  'named_entity',
+] as const
+
+export const CHAT_REFERENCE_TARGET_CONFIDENCE_VALUES = [
+  'low',
+  'medium',
+  'high',
+] as const
+
 export const CHAT_QUESTION_PLAN_FAILURE_REASONS = [
   'missing_api_key',
   'model_error',
 ] as const
 
-export const ChatQuestionDeterministicActionSchema = z.enum(
-  CHAT_QUESTION_DETERMINISTIC_ACTIONS,
+export const ChatQuestionRouteSchema = z.enum(CHAT_QUESTION_ROUTES)
+export const ChatQuestionDirectActionSchema = z.enum(
+  CHAT_QUESTION_DIRECT_ACTIONS,
 )
-export const ChatQuestionRetrievalModeSchema = z.enum(
-  CHAT_QUESTION_RETRIEVAL_MODES,
+export const ChatQuestionRetrievalScopeSchema = z.enum(
+  CHAT_QUESTION_RETRIEVAL_SCOPES,
+)
+export const ChatReferenceTargetKindSchema = z.enum(
+  CHAT_REFERENCE_TARGET_KINDS,
+)
+export const ChatReferenceTargetConfidenceSchema = z.enum(
+  CHAT_REFERENCE_TARGET_CONFIDENCE_VALUES,
 )
 export const ChatQuestionPlanFailureReasonSchema = z.enum(
   CHAT_QUESTION_PLAN_FAILURE_REASONS,
 )
 
+export const ChatReferenceTargetSchema = z.object({
+  kind: ChatReferenceTargetKindSchema,
+  sourceCategory: ChatSourceCategorySchema.nullable(),
+  slug: z.string().trim().min(1).max(120).nullable(),
+  title: z.string().trim().min(1).max(160).nullable(),
+  confidence: ChatReferenceTargetConfidenceSchema,
+})
+
 export const ChatQuestionPlanSchema = z.object({
   standaloneQuestion: z.string().trim().min(1).max(300),
-  socialPreamble: z.boolean(),
   action: ChatQuestionActionSchema,
-  scope: ChatQuestionScopeSchema,
-  deterministicAction: ChatQuestionDeterministicActionSchema,
-  needsRetrieval: z.boolean(),
-  retrievalMode: ChatQuestionRetrievalModeSchema,
+  route: ChatQuestionRouteSchema,
+  directAction: ChatQuestionDirectActionSchema,
+  retrievalScope: ChatQuestionRetrievalScopeSchema,
+  referenceTarget: ChatReferenceTargetSchema,
   preferredSourceCategories: z.array(ChatSourceCategorySchema).max(4),
   additionalKeywords: z.array(z.string().trim().min(1).max(60)).max(12),
-  needsClarification: z.boolean(),
   clarificationQuestion: z.string().trim().min(1).max(160).nullable(),
   reason: z.string().trim().min(1).max(160),
 })

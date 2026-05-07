@@ -22,7 +22,7 @@ export interface ChatPlannerEvaluationCase {
   currentPostSlug?: string
   semanticMatches?: ChatEvidenceRecord[]
   expectedSelector?: ChatQuestionSelector
-  expectedRetrieval: boolean
+  expectedRoute: ChatQuestionPlan['route']
   expectedClarificationQuestion?: string
   expectedTopMatchUrl?: string
   expectedPreferredSourceCategories?: ChatSourceCategory[]
@@ -30,16 +30,21 @@ export interface ChatPlannerEvaluationCase {
 
 const DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN = {
   action: 'answer',
-  scope: 'global',
-  deterministicAction: 'none',
-  needsRetrieval: true,
-  retrievalMode: 'standard',
+  route: 'retrieve',
+  directAction: 'none',
+  retrievalScope: 'entity',
+  referenceTarget: {
+    kind: 'named_entity',
+    sourceCategory: null,
+    slug: null,
+    title: null,
+    confidence: 'medium',
+  },
   preferredSourceCategories: [],
   additionalKeywords: [],
-  needsClarification: false,
   clarificationQuestion: null,
   reason: 'evaluation plan',
-} satisfies Omit<ChatQuestionPlan, 'standaloneQuestion' | 'socialPreamble'>
+} satisfies Omit<ChatQuestionPlan, 'standaloneQuestion'>
 
 export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
   {
@@ -49,13 +54,19 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: 'leesfield 라는 프로젝트 알아?',
-      socialPreamble: true,
+      referenceTarget: {
+        kind: 'named_entity',
+        sourceCategory: 'project',
+        slug: null,
+        title: 'Leesfield',
+        confidence: 'high',
+      },
       preferredSourceCategories: ['project'],
       additionalKeywords: ['leesfield'],
       reason: 'project lookup after greeting',
     },
     expectedSelector: 'retrieval',
-    expectedRetrieval: true,
+    expectedRoute: 'retrieve',
     expectedTopMatchUrl: '/ko/projects/leesfield',
     expectedPreferredSourceCategories: ['project'],
   },
@@ -66,13 +77,20 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: '넌 누구야?',
-      socialPreamble: false,
+      retrievalScope: 'entity',
+      referenceTarget: {
+        kind: 'assistant',
+        sourceCategory: 'assistant',
+        slug: 'assistant-profile',
+        title: null,
+        confidence: 'high',
+      },
       preferredSourceCategories: ['assistant', 'profile'],
       additionalKeywords: ['챗봇', 'assistant', 'profile'],
       reason: 'assistant identity retrieval',
     },
     expectedSelector: 'retrieval',
-    expectedRetrieval: true,
+    expectedRoute: 'retrieve',
     expectedTopMatchUrl: '/ko/about',
     expectedPreferredSourceCategories: ['assistant', 'profile'],
   },
@@ -83,14 +101,19 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: '이 사람 이름 뭐야?',
-      socialPreamble: false,
-      needsRetrieval: false,
-      retrievalMode: 'none',
-      needsClarification: true,
+      route: 'clarify',
+      retrievalScope: 'none',
+      referenceTarget: {
+        kind: 'none',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+        confidence: 'low',
+      },
       clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
       reason: 'ambiguous person reference',
     },
-    expectedRetrieval: false,
+    expectedRoute: 'clarify',
     expectedClarificationQuestion:
       '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
   },
@@ -101,15 +124,20 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: '이 사람 이름 뭐야?',
-      socialPreamble: false,
-      needsRetrieval: false,
-      retrievalMode: 'none',
-      needsClarification: true,
+      route: 'clarify',
+      retrievalScope: 'none',
+      referenceTarget: {
+        kind: 'none',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+        confidence: 'low',
+      },
       clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
       reason: 'ambiguous person reference on current post',
     },
     currentPostSlug: 'why-i-built-lee-spec-kit',
-    expectedRetrieval: false,
+    expectedRoute: 'clarify',
     expectedClarificationQuestion:
       '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
   },
@@ -120,7 +148,13 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: '이 사람 이름 뭐야?',
-      socialPreamble: false,
+      referenceTarget: {
+        kind: 'profile',
+        sourceCategory: 'profile',
+        slug: 'about',
+        title: null,
+        confidence: 'high',
+      },
       preferredSourceCategories: ['profile'],
       reason: 'profile follow-up reference',
     },
@@ -139,7 +173,7 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       },
     ],
     expectedSelector: 'retrieval',
-    expectedRetrieval: true,
+    expectedRoute: 'retrieve',
     expectedTopMatchUrl: '/ko/about',
     expectedPreferredSourceCategories: ['profile'],
   },
@@ -150,16 +184,21 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     questionPlan: {
       ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
       standaloneQuestion: '이 글에서 구조가 왜 중요해?',
-      socialPreamble: false,
-      scope: 'current_page',
-      retrievalMode: 'current_post',
+      retrievalScope: 'current_source',
+      referenceTarget: {
+        kind: 'current_source',
+        sourceCategory: 'blog',
+        slug: 'why-i-built-lee-spec-kit',
+        title: null,
+        confidence: 'high',
+      },
       preferredSourceCategories: ['blog'],
       additionalKeywords: ['구조'],
       reason: 'explicit current post question',
     },
     currentPostSlug: 'why-i-built-lee-spec-kit',
-    expectedSelector: 'current_post',
-    expectedRetrieval: true,
+    expectedSelector: 'current_source',
+    expectedRoute: 'retrieve',
     expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
     expectedPreferredSourceCategories: ['blog'],
   },

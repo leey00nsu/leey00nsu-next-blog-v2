@@ -32,19 +32,15 @@ export function shouldRerankChatEvidence({
   matchCount,
   questionPlan,
 }: ShouldRerankChatEvidenceParams): boolean {
-  if (!questionPlan.needsRetrieval) {
+  if (questionPlan.route !== 'retrieve') {
     return false
   }
 
-  if (questionPlan.retrievalMode === 'none') {
+  if (questionPlan.retrievalScope === 'none') {
     return false
   }
 
-  if (questionPlan.needsClarification) {
-    return false
-  }
-
-  if (questionPlan.deterministicAction !== 'none') {
+  if (questionPlan.directAction !== 'none') {
     return false
   }
 

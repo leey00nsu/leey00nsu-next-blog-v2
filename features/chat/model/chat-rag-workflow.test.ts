@@ -266,4 +266,46 @@ describe('runChatRagWorkflow', () => {
 
     consoleErrorSpy.mockRestore()
   })
+
+  it('retrieval scope를 semantic search data loader로 전달한다', async () => {
+    const selectSearchDataMock = vi.fn(async () => {
+      return buildSearchData({
+        semanticCandidates: [
+          buildSemanticCandidate({
+            id: 'ko/blog/why-i-built-lee-spec-kit',
+            slug: 'why-i-built-lee-spec-kit',
+            title: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다',
+            url: '/ko/blog/why-i-built-lee-spec-kit',
+            content: '구조가 중요하다고 설명합니다.',
+            searchTerms: ['구조'],
+            semanticSimilarity: 0.95,
+          }),
+        ],
+      })
+    })
+
+    await runChatRagWorkflow({
+      question: '이 글에서 구조가 왜 중요해?',
+      locale: 'ko',
+      retrievalScope: {
+        mode: 'current_source',
+        sourceCategory: 'blog',
+        slug: 'why-i-built-lee-spec-kit',
+        title: null,
+      },
+      embedQuestion: async () => [1, 0],
+      selectSearchData: selectSearchDataMock,
+    })
+
+    expect(selectSearchDataMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        retrievalScope: {
+          mode: 'current_source',
+          sourceCategory: 'blog',
+          slug: 'why-i-built-lee-spec-kit',
+          title: null,
+        },
+      }),
+    )
+  })
 })

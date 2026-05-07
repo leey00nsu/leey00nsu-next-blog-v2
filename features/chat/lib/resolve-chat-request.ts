@@ -234,11 +234,11 @@ function buildCurrentPostMatches(params: {
     .slice(0, BLOG_CHAT.SEARCH.TOP_K)
 }
 
-function resolveCurrentPostSearchSlug(params: {
+function resolveCurrentSourceSearchSlug(params: {
   selector: ChatQuestionSelector | undefined
   currentPostSlug?: string
 }): string | undefined {
-  if (params.selector !== 'current_post') {
+  if (params.selector !== 'current_source') {
     return undefined
   }
 
@@ -315,7 +315,7 @@ export function resolveChatRequest({
   const resolvedQuestionRouting = questionRouting
   const selector = resolvedQuestionRouting?.selector
   const action = resolvedQuestionRouting?.action
-  const currentPostSearchSlug = resolveCurrentPostSearchSlug({
+  const currentPostSearchSlug = resolveCurrentSourceSearchSlug({
     selector,
     currentPostSlug,
   })
@@ -367,7 +367,7 @@ export function resolveChatRequest({
     }
   }
 
-  if (selector === 'current_post') {
+  if (selector === 'current_source') {
     const currentPostMatches = buildCurrentPostMatches({
       currentPostSlug,
       blogRecords,

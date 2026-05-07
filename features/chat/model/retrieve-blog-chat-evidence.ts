@@ -1,12 +1,14 @@
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { rerankChatEvidence } from '@/features/chat/api/rerank-chat-evidence'
-import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import {
   applyQuestionPlanToAnalysis,
   buildQuestionRoutingFromPlan,
-  resolvePlannerCurrentPostSlug,
   shouldRunHybridRetrieval,
 } from '@/features/chat/lib/chat-question-plan-routing'
+import {
+  resolveChatRetrievalScope,
+  resolveScopedCurrentSourceSlug,
+} from '@/features/chat/lib/chat-retrieval-scope'
 import {
   analyzeQuestion,
   type ChatQuestionAnalysis,
@@ -35,7 +37,7 @@ export interface RetrieveBlogChatEvidenceParams {
 export interface RetrieveBlogChatEvidenceResult {
   resolvedChatRequest: ResolveChatRequestResult
   resolvedQuestionAnalysis: ChatQuestionAnalysis
-  plannerCurrentPostSlug?: string
+  scopedCurrentPostSlug?: string
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
   finalMatches: ChatEvidenceRecord[]
@@ -49,18 +51,6 @@ function buildBlogEvidenceRecords(locale: SupportedLocale): ChatEvidenceRecord[]
       sourceCategory: 'blog' as const,
     }
   })
-}
-
-function collectPreferredSourceCategories(
-  questionAnalysis: ChatQuestionAnalysis,
-): ChatEvidenceRecord['sourceCategory'][] {
-  return [
-    ...new Set(
-      questionAnalysis.searchQueries.flatMap((searchQuery) => {
-        return searchQuery.preferredSourceCategories
-      }),
-    ),
-  ]
 }
 
 export async function retrieveBlogChatEvidence({
@@ -78,10 +68,11 @@ export async function retrieveBlogChatEvidence({
     locale,
   })
   const questionRouting = buildQuestionRoutingFromPlan(questionPlan)
-  const plannerCurrentPostSlug = resolvePlannerCurrentPostSlug({
+  const retrievalScope = resolveChatRetrievalScope({
     questionPlan,
     currentPostSlug,
   })
+  const scopedCurrentPostSlug = resolveScopedCurrentSourceSlug(retrievalScope)
   const blogRecords = buildBlogEvidenceRecords(locale)
   const curatedRecords = await getCuratedChatSources(locale)
   const resolvedChatRequest = resolveChatRequest({
@@ -89,7 +80,7 @@ export async function retrieveBlogChatEvidence({
     locale,
     blogRecords,
     curatedRecords,
-    currentPostSlug: plannerCurrentPostSlug,
+    currentPostSlug: scopedCurrentPostSlug,
     questionAnalysis: resolvedQuestionAnalysis,
     contactProfile,
     questionRouting,
@@ -99,7 +90,7 @@ export async function retrieveBlogChatEvidence({
     return {
       resolvedChatRequest,
       resolvedQuestionAnalysis,
-      plannerCurrentPostSlug,
+      scopedCurrentPostSlug,
       lexicalMatches: resolvedChatRequest.matches,
       semanticMatches: [],
       finalMatches: resolvedChatRequest.matches,
@@ -107,9 +98,6 @@ export async function retrieveBlogChatEvidence({
     }
   }
 
-  const preferredSourceCategories = collectPreferredSourceCategories(
-    resolvedQuestionAnalysis,
-  )
   let finalMatches = resolvedChatRequest.matches
   let semanticMatches: ChatEvidenceRecord[] = []
 
@@ -117,15 +105,14 @@ export async function retrieveBlogChatEvidence({
     const chatRagSearchResult = await runChatRagWorkflow({
       question,
       locale,
-      currentPostSlug: plannerCurrentPostSlug,
+      currentPostSlug: scopedCurrentPostSlug,
+      retrievalScope,
     })
     semanticMatches = chatRagSearchResult.matches
-    finalMatches = fuseChatRetrievalMatches({
-      lexicalMatches: resolvedChatRequest.matches,
-      semanticMatches,
-      preferredSourceCategories,
-      currentPostSlug: plannerCurrentPostSlug,
-    })
+    finalMatches =
+      semanticMatches.length > 0
+        ? semanticMatches
+        : resolvedChatRequest.matches
   }
 
   const reranked = shouldRerankChatEvidence({
@@ -145,7 +132,7 @@ export async function retrieveBlogChatEvidence({
   return {
     resolvedChatRequest,
     resolvedQuestionAnalysis,
-    plannerCurrentPostSlug,
+    scopedCurrentPostSlug,
     lexicalMatches: resolvedChatRequest.matches,
     semanticMatches,
     finalMatches,

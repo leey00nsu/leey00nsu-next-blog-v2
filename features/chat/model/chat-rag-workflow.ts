@@ -7,6 +7,7 @@ import {
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { ChatResolvedRetrievalScope } from '@/features/chat/lib/chat-retrieval-scope'
 import {
   getChatRagDatabasePool,
   selectChatRagLocaleSearchData,
@@ -27,6 +28,9 @@ const CHAT_RAG_WORKFLOW_STATE = Annotation.Root({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
   currentPostSlug: Annotation<string | undefined>({
+    reducer: (_previousValue, nextValue) => nextValue,
+  }),
+  retrievalScope: Annotation<ChatResolvedRetrievalScope | undefined>({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
   questionEmbedding: Annotation<number[]>({
@@ -244,6 +248,7 @@ function buildChatRagWorkflow(params: {
   selectSearchData: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
+    retrievalScope?: ChatResolvedRetrievalScope
   }) => Promise<ChatRagLocaleSearchData>
 }) {
   return new StateGraph(CHAT_RAG_WORKFLOW_STATE)
@@ -257,6 +262,7 @@ function buildChatRagWorkflow(params: {
         searchData: await params.selectSearchData({
           locale: state.locale,
           questionEmbedding: state.questionEmbedding,
+          retrievalScope: state.retrievalScope,
         }),
       }
     })
@@ -286,11 +292,13 @@ export async function runChatRagWorkflow(params: {
   question: string
   locale: SupportedLocale
   currentPostSlug?: string
+  retrievalScope?: ChatResolvedRetrievalScope
   databasePool?: Pool
   embedQuestion?: (question: string) => Promise<number[]>
   selectSearchData?: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
+    retrievalScope?: ChatResolvedRetrievalScope
   }) => Promise<ChatRagLocaleSearchData>
 }): Promise<ChatRagWorkflowResult> {
   try {
@@ -302,7 +310,7 @@ export async function runChatRagWorkflow(params: {
       embedQuestion: params.embedQuestion ?? embedChatRagQuestion,
       selectSearchData:
         params.selectSearchData ??
-        (async ({ locale, questionEmbedding }) => {
+        (async ({ locale, questionEmbedding, retrievalScope }) => {
           if (!databasePool) {
             return {
               entities: [],
@@ -317,6 +325,8 @@ export async function runChatRagWorkflow(params: {
             questionEmbedding,
             maximumSemanticCandidates:
               CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
+            sourceCategory: retrievalScope?.sourceCategory,
+            slug: retrievalScope?.slug,
           })
         }),
     })
@@ -324,6 +334,7 @@ export async function runChatRagWorkflow(params: {
       question: params.question,
       locale: params.locale,
       currentPostSlug: params.currentPostSlug,
+      retrievalScope: params.retrievalScope,
     })
 
     return {

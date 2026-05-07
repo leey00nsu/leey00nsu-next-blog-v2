@@ -3,7 +3,10 @@ import { selectChatRagLocaleSearchData } from '@/features/chat/model/chat-rag-da
 
 describe('selectChatRagLocaleSearchData', () => {
   it('Postgres JSONB 배열 응답을 그대로 파싱한다', async () => {
+    const queryTexts: string[] = []
     const queryMock = async (queryText: string) => {
+      queryTexts.push(queryText)
+
       if (queryText.includes('SELECT active_index_version')) {
         return {
           rows: [
@@ -73,6 +76,8 @@ describe('selectChatRagLocaleSearchData', () => {
       locale: 'ko',
       questionEmbedding: [0.1, 0.2, 0.3],
       maximumSemanticCandidates: 8,
+      sourceCategory: 'blog',
+      slug: 'nivo-chart',
     })
 
     expect(result.entities[0]?.chunkIds).toEqual(['ko/nivo-chart/nivo'])
@@ -82,5 +87,7 @@ describe('selectChatRagLocaleSearchData', () => {
       'chart',
     ])
     expect(result.semanticCandidates[0]?.entityIds).toEqual(['ko:term:nivo'])
+    expect(queryTexts.at(-1)).toContain('AND chunks.source_category = $5')
+    expect(queryTexts.at(-1)).toContain('AND chunks.slug = $6')
   })
 })

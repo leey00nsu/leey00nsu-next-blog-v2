@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
+import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import type {
   GraphRagChunk,
   GraphRagEntity,
@@ -543,6 +544,8 @@ export async function selectChatRagLocaleSearchData(params: {
   locale: SupportedLocale
   questionEmbedding: number[]
   maximumSemanticCandidates: number
+  sourceCategory?: ChatSourceCategory | null
+  slug?: string | null
 }): Promise<ChatRagLocaleSearchData> {
   const activeIndexVersion = await selectActiveChatRagIndexVersion({
     databaseClient: params.databaseClient,
@@ -585,6 +588,28 @@ export async function selectChatRagLocaleSearchData(params: {
     }
   }
 
+  const semanticFilterClauses: string[] = []
+  const semanticFilterValues: Array<string | number> = [
+    activeIndexVersion,
+    params.locale,
+    buildVectorLiteral(params.questionEmbedding),
+    params.maximumSemanticCandidates,
+  ]
+
+  if (params.sourceCategory) {
+    semanticFilterValues.push(params.sourceCategory)
+    semanticFilterClauses.push(
+      `AND chunks.source_category = $${semanticFilterValues.length}`,
+    )
+  }
+
+  if (params.slug) {
+    semanticFilterValues.push(params.slug)
+    semanticFilterClauses.push(
+      `AND chunks.slug = $${semanticFilterValues.length}`,
+    )
+  }
+
   const semanticCandidateResult = await params.databaseClient.query(
     `
       SELECT
@@ -608,15 +633,11 @@ export async function selectChatRagLocaleSearchData(params: {
         AND embeddings.chunk_id = chunks.id
       WHERE chunks.index_version = $1
         AND chunks.locale = $2
+        ${semanticFilterClauses.join('\n        ')}
       ORDER BY embeddings.embedding <=> $3::vector ASC
       LIMIT $4
     `,
-    [
-      activeIndexVersion,
-      params.locale,
-      buildVectorLiteral(params.questionEmbedding),
-      params.maximumSemanticCandidates,
-    ],
+    semanticFilterValues,
   )
 
   return {

@@ -20,25 +20,27 @@ Return a structured plan, not the final answer.
 
 Fields:
 - standaloneQuestion: rewrite the user question into a standalone question that keeps the real intent
-- socialPreamble: true if the question starts with a greeting or social preamble
 - action: answer | summarize | explain | recommend | compare
-- scope: global | current_page
-- deterministicAction: none | social_reply | contact | latest_post | oldest_post
-- needsRetrieval: whether evidence retrieval should run
-- retrievalMode: none | standard | corpus | current_post
+- route: direct | clarify | retrieve
+- directAction: none | social_reply | contact | latest_post | oldest_post
+- retrievalScope: none | current_source | entity | corpus
+- referenceTarget: the source or entity the user is referring to
 - preferredSourceCategories: blog | profile | project | assistant
 - additionalKeywords: short retrieval hints or entity terms
-- needsClarification: true if the user reference is ambiguous and should be clarified
 - clarificationQuestion: short follow-up question when clarification is required
 - reason: one short sentence
 
 Rules:
 - If there is any substantive question after a greeting, do not use social_reply.
-- Use deterministicAction only when a direct response is clearly enough.
-- Use current_post only when the user is clearly referring to the current page.
-- Use corpus when the user asks about patterns or themes across multiple posts or the whole blog.
-- If a pronoun or reference target is ambiguous, prefer clarification over guessing.
-- Keep clarificationQuestion null unless needsClarification is true.`,
+- Use route=direct only when a fixed server response is clearly enough.
+- Use route=clarify when a pronoun or reference target is ambiguous.
+- Use route=retrieve when evidence is needed.
+- Use retrievalScope=current_source when the user clearly refers to the current page, this post, this project, here, or equivalent.
+- Use retrievalScope=entity when the user asks about a specific person, project, assistant, or named item.
+- Use retrievalScope=corpus when the user asks about patterns or themes across multiple posts/projects or the whole blog.
+- Keep directAction=none unless route=direct.
+- Keep clarificationQuestion null unless route=clarify.
+- For referenceTarget, use null for sourceCategory, slug, and title when kind=none.`,
 } as const
 
 interface PlanChatQuestionParams {

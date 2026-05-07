@@ -228,15 +228,19 @@ const DEFAULT_ANALYSIS_RESULT = {
 
 const DEFAULT_QUESTION_PLAN = {
   standaloneQuestion: 'React stack',
-  socialPreamble: false,
   action: 'answer' as const,
-  scope: 'global' as const,
-  deterministicAction: 'none' as const,
-  needsRetrieval: true,
-  retrievalMode: 'standard' as const,
+  route: 'retrieve' as const,
+  directAction: 'none' as const,
+  retrievalScope: 'entity' as const,
+  referenceTarget: {
+    kind: 'named_entity' as const,
+    sourceCategory: null,
+    slug: null,
+    title: null,
+    confidence: 'medium' as const,
+  },
   preferredSourceCategories: [] as const,
   additionalKeywords: [] as const,
-  needsClarification: false,
   clarificationQuestion: null,
   reason: 'default retrieval',
 }
@@ -347,9 +351,9 @@ describe('POST /api/chat', () => {
       questionPlan: {
         ...DEFAULT_QUESTION_PLAN,
         standaloneQuestion: '안녕',
-        deterministicAction: 'social_reply',
-        needsRetrieval: false,
-        retrievalMode: 'none',
+        route: 'direct',
+        directAction: 'social_reply',
+        retrievalScope: 'none',
         reason: 'pure social',
       },
     })
@@ -406,7 +410,6 @@ describe('POST /api/chat', () => {
         ...DEFAULT_QUESTION_PLAN,
         standaloneQuestion:
           '대표 프로젝트가 뭐야 lee-spec-kit 그건 왜 그렇게 했어',
-        socialPreamble: true,
         preferredSourceCategories: ['project'],
         additionalKeywords: ['lee-spec-kit'],
         reason: 'follow-up retrieval',
@@ -482,9 +485,8 @@ describe('POST /api/chat', () => {
       questionPlan: {
         ...DEFAULT_QUESTION_PLAN,
         standaloneQuestion: '이 사람 이름 뭐야',
-        needsRetrieval: false,
-        retrievalMode: 'none',
-        needsClarification: true,
+        route: 'clarify',
+        retrievalScope: 'none',
         clarificationQuestion: CLARIFICATION_RESPONSE.answer,
         reason: 'ambiguous person reference',
       },
@@ -641,6 +643,12 @@ describe('POST /api/chat', () => {
       question: 'what is his name',
       locale: 'ko',
       currentPostSlug: undefined,
+      retrievalScope: {
+        mode: 'entity',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
     })
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -653,14 +661,14 @@ describe('POST /api/chat', () => {
     )
   })
 
-  it('corpus synthesis 질문은 lexical과 Postgres RAG 후보를 함께 재정렬한다', async () => {
+  it('corpus synthesis 질문은 Postgres RAG 후보를 우선 사용한다', async () => {
     planChatQuestionMock.mockResolvedValueOnce({
       ok: true,
       questionPlan: {
         ...DEFAULT_QUESTION_PLAN,
         standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야',
         action: 'summarize',
-        retrievalMode: 'corpus',
+        retrievalScope: 'corpus',
         preferredSourceCategories: ['blog'],
         additionalKeywords: ['구조', '재사용성'],
         reason: 'cross-document synthesis',
@@ -727,14 +735,11 @@ describe('POST /api/chat', () => {
     expect(runChatRagWorkflowMock).toHaveBeenCalledTimes(1)
     expect(answerBlogQuestionMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        matches: expect.arrayContaining([
-          expect.objectContaining({
-            url: '/ko/blog/lee-spec-kit',
-          }),
+        matches: [
           expect.objectContaining({
             url: '/ko/projects/lee-spec-kit',
           }),
-        ]),
+        ],
       }),
     )
   })
@@ -868,6 +873,12 @@ describe('POST /api/chat', () => {
       question: '이 사람 이름 뭐야',
       locale: 'ko',
       currentPostSlug: undefined,
+      retrievalScope: {
+        mode: 'entity',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
     })
     expect(releaseChatConcurrentRequestSlotMock).toHaveBeenCalledTimes(1)
   })

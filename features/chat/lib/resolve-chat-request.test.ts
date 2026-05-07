@@ -196,7 +196,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'contact',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -215,9 +214,8 @@ describe('resolveChatRequest', () => {
       curatedRecords: CURATED_CHAT_SOURCES,
       currentPostSlug: 'why-i-built-lee-spec-kit',
       questionRouting: {
-        selector: 'current_post',
+        selector: 'current_source',
         action: 'summarize',
-        scope: 'current_page',
         reason: 'test',
       },
     })
@@ -250,7 +248,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -392,7 +389,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -419,7 +415,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -438,7 +433,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'retrieval',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -457,7 +451,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'latest_post',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -484,7 +477,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'latest_post',
         action: 'answer',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -505,7 +497,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'oldest_post',
         action: 'recommend',
-        scope: 'global',
         reason: 'test',
       },
     })
@@ -532,7 +523,6 @@ describe('resolveChatRequest', () => {
       questionRouting: {
         selector: 'oldest_post',
         action: 'summarize',
-        scope: 'global',
         reason: 'test',
       },
     })

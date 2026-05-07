@@ -37,47 +37,42 @@ function buildSearchQueryFromQuestionPlan(params: {
 export function buildQuestionRoutingFromPlan(
   questionPlan: ChatQuestionPlan,
 ): ChatQuestionRoutingResult {
-  if (questionPlan.deterministicAction === 'contact') {
+  if (questionPlan.directAction === 'contact') {
     return {
       selector: 'contact',
       action: questionPlan.action,
-      scope: questionPlan.scope,
       reason: questionPlan.reason,
     }
   }
 
-  if (questionPlan.deterministicAction === 'latest_post') {
+  if (questionPlan.directAction === 'latest_post') {
     return {
       selector: 'latest_post',
       action: questionPlan.action,
-      scope: questionPlan.scope,
       reason: questionPlan.reason,
     }
   }
 
-  if (questionPlan.deterministicAction === 'oldest_post') {
+  if (questionPlan.directAction === 'oldest_post') {
     return {
       selector: 'oldest_post',
       action: questionPlan.action,
-      scope: questionPlan.scope,
       reason: questionPlan.reason,
     }
   }
 
-  if (questionPlan.retrievalMode === 'current_post') {
+  if (questionPlan.retrievalScope === 'current_source') {
     return {
-      selector: 'current_post',
+      selector: 'current_source',
       action: questionPlan.action,
-      scope: questionPlan.scope,
       reason: questionPlan.reason,
     }
   }
 
-  if (questionPlan.retrievalMode === 'corpus') {
+  if (questionPlan.retrievalScope === 'corpus') {
     return {
       selector: 'corpus',
       action: questionPlan.action,
-      scope: questionPlan.scope,
       reason: questionPlan.reason,
     }
   }
@@ -85,7 +80,6 @@ export function buildQuestionRoutingFromPlan(
   return {
     selector: 'retrieval',
     action: questionPlan.action,
-    scope: questionPlan.scope,
     reason: questionPlan.reason,
   }
 }
@@ -102,7 +96,7 @@ export function applyQuestionPlanToAnalysis(params: {
   const baseSearchQueries =
     params.questionAnalysis.searchQueries.length > 0
       ? params.questionAnalysis.searchQueries
-      : params.questionPlan.needsRetrieval
+      : params.questionPlan.route === 'retrieve'
         ? [fallbackSearchQuery]
         : []
 
@@ -132,19 +126,7 @@ export function shouldRunHybridRetrieval(
   questionPlan: ChatQuestionPlan,
 ): boolean {
   return (
-    questionPlan.needsRetrieval &&
-    (questionPlan.retrievalMode === 'standard' ||
-      questionPlan.retrievalMode === 'corpus')
+    questionPlan.route === 'retrieve' &&
+    questionPlan.retrievalScope !== 'none'
   )
-}
-
-export function resolvePlannerCurrentPostSlug(params: {
-  questionPlan: ChatQuestionPlan
-  currentPostSlug?: string
-}): string | undefined {
-  if (params.questionPlan.retrievalMode !== 'current_post') {
-    return undefined
-  }
-
-  return params.currentPostSlug
 }

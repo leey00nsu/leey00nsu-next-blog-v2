@@ -207,7 +207,6 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     questionRouting: {
       selector: 'retrieval',
       action: 'answer',
-      scope: 'global',
       reason: 'project entity question',
     },
     semanticMatches: [],
@@ -220,7 +219,6 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     questionRouting: {
       selector: 'retrieval',
       action: 'answer',
-      scope: 'global',
       reason: 'profile lookup',
     },
     semanticMatches: [],
@@ -233,7 +231,6 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     questionRouting: {
       selector: 'retrieval',
       action: 'answer',
-      scope: 'global',
       reason: 'assistant grounding',
     },
     semanticMatches: [],
@@ -246,7 +243,6 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     questionRouting: {
       selector: 'retrieval',
       action: 'answer',
-      scope: 'global',
       reason: 'blog post lookup',
     },
     semanticMatches: [],
@@ -257,9 +253,8 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     question: '이 글에서 구조가 왜 중요해?',
     locale: 'ko',
     questionRouting: {
-      selector: 'current_post',
+      selector: 'current_source',
       action: 'explain',
-      scope: 'current_page',
       reason: 'current post context',
     },
     currentPostSlug: 'why-i-built-lee-spec-kit',
@@ -273,7 +268,6 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
     questionRouting: {
       selector: 'corpus',
       action: 'summarize',
-      scope: 'global',
       reason: 'cross document synthesis',
     },
     semanticMatches: [

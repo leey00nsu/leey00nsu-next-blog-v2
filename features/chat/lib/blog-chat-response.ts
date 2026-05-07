@@ -1,6 +1,6 @@
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import { validateChatCitations } from '@/features/chat/lib/validate-chat-citations'
 import type {
-  BlogChatCitation,
   BlogChatModelDraft,
   BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
@@ -25,36 +25,6 @@ const BLOG_CHAT_ANSWER_MARKDOWN_PATTERN = {
   TRAILING_WHITESPACE: /[ \t]+$/gm,
   EXCESSIVE_NEWLINE: /\n{3,}/g,
 } as const
-
-function buildCitationLookup(
-  matches: ChatEvidenceRecord[],
-): Map<string, ChatEvidenceRecord> {
-  return new Map(matches.map((match) => [match.url, match]))
-}
-
-function buildCitations(
-  citationUrls: string[],
-  citationLookup: Map<string, ChatEvidenceRecord>,
-): BlogChatCitation[] {
-  const uniqueCitationUrls = [...new Set(citationUrls)]
-
-  return uniqueCitationUrls.flatMap((citationUrl) => {
-    const matchedRecord = citationLookup.get(citationUrl)
-
-    if (!matchedRecord) {
-      return []
-    }
-
-    return [
-      {
-        title: matchedRecord.title,
-        url: matchedRecord.url,
-        sectionTitle: matchedRecord.sectionTitle,
-        sourceCategory: matchedRecord.sourceCategory,
-      },
-    ]
-  })
-}
 
 function buildRefusalResponse(
   refusalReason: BlogChatResponse['refusalReason'],
@@ -93,8 +63,10 @@ export function finalizeBlogChatResponse({
     return buildRefusalResponse('insufficient_evidence')
   }
 
-  const citationLookup = buildCitationLookup(matches)
-  const citations = buildCitations(draftAnswer.usedCitationUrls, citationLookup)
+  const citations = validateChatCitations({
+    usedCitationUrls: draftAnswer.usedCitationUrls,
+    matches,
+  })
 
   if (citations.length === 0) {
     return buildRefusalResponse('invalid_citations')

@@ -1,6 +1,7 @@
 import createMiddleware from 'next-intl/middleware'
+import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { auth } from '@/features/auth/lib/auth'
+import { getToken } from 'next-auth/jwt'
 import { routing } from '@/i18n/routing'
 import {
   LOCALES,
@@ -51,7 +52,7 @@ function parseSupportedLocaleFromPathname(
   return localeCandidate as SupportedLocale
 }
 
-export const proxy = auth((request) => {
+export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === ROUTES.ROOT) {
     const localeFromCookie = request.cookies.get('locale')?.value ?? null
     const localeFromAcceptLanguage = parseLocaleFromAcceptLanguage(
@@ -88,7 +89,16 @@ export const proxy = auth((request) => {
   const pathnameWithoutLocale = stripLocalePrefix(requestPathname)
   const isStudioRoute = pathnameWithoutLocale.startsWith(ROUTES.STUDIO)
 
-  if (!isStudioRoute || request.auth) {
+  if (!isStudioRoute) {
+    return localeRoutingResponse
+  }
+
+  const sessionToken = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET,
+  })
+
+  if (sessionToken) {
     return localeRoutingResponse
   }
 
@@ -104,7 +114,7 @@ export const proxy = auth((request) => {
   )
 
   return NextResponse.redirect(signInUrl)
-})
+}
 
 export const config = {
   // eslint-disable-next-line unicorn/prefer-string-raw -- Next.js static analyzer requires a string literal here.

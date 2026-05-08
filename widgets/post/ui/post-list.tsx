@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Post } from '@/entities/post/model/types'
 import { PostCard } from '@/entities/post/ui/post-card'
 import {
@@ -24,12 +25,29 @@ interface PostListProps {
   locale: SupportedLocale
 }
 
+let hasPostListEntranceMotionPlayed = false
+
 export function PostList({ posts, locale }: PostListProps) {
   const shouldReduceMotion = Boolean(useReducedMotion())
+  const [shouldPlayEntranceMotion, setShouldPlayEntranceMotion] = useState(
+    !hasPostListEntranceMotionPlayed,
+  )
   const postListAnimationKey = buildPostListAnimationKey(posts)
   const postListContainerVariants =
     buildPostListContainerVariants(shouldReduceMotion)
   const postListItemVariants = buildPostListItemVariants(shouldReduceMotion)
+
+  useEffect(() => {
+    hasPostListEntranceMotionPlayed = true
+  }, [])
+
+  function handlePostListEntranceAnimationComplete() {
+    if (!shouldPlayEntranceMotion) {
+      return
+    }
+
+    setShouldPlayEntranceMotion(false)
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -37,9 +55,10 @@ export function PostList({ posts, locale }: PostListProps) {
         key={postListAnimationKey}
         className="flex flex-col divide-y"
         variants={postListContainerVariants}
-        initial="hidden"
+        initial={shouldPlayEntranceMotion ? 'hidden' : false}
         animate="visible"
         exit="exit"
+        onAnimationComplete={handlePostListEntranceAnimationComplete}
       >
         {posts.map((post, index) => {
           return (

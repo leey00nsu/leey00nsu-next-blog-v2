@@ -39,9 +39,14 @@ vi.mock('motion/react', () => {
         initial,
         animate,
         exit,
+        onAnimationComplete,
         ...properties
       }: MotionDivMockProps) => (
-        <div data-testid="motion-div" {...properties}>
+        <div
+          data-testid="motion-div"
+          data-initial={String(initial)}
+          {...properties}
+        >
           {children}
         </div>
       ),
@@ -84,13 +89,25 @@ const POSTS: Post[] = [
 ]
 
 describe('PostList', () => {
-  it('motion 기반 리스트 래퍼와 카드별 애니메이션 래퍼를 렌더링한다', () => {
-    render(<PostList posts={POSTS} locale="ko" />)
+  it('최초 렌더에서만 리스트 진입 애니메이션을 실행한다', () => {
+    const { unmount } = render(<PostList posts={POSTS} locale="ko" />)
 
     expect(screen.getAllByTestId('motion-div')).toHaveLength(3)
+    expect(screen.getAllByTestId('motion-div')[0]).toHaveAttribute(
+      'data-initial',
+      'hidden',
+    )
     expect(screen.getByRole('link', { name: 'First Post' })).toHaveAttribute(
       'href',
       '/ko/blog/first-post',
+    )
+
+    unmount()
+    render(<PostList posts={POSTS} locale="ko" />)
+
+    expect(screen.getAllByTestId('motion-div')[0]).toHaveAttribute(
+      'data-initial',
+      'false',
     )
   })
 })

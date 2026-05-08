@@ -24,6 +24,14 @@ export function getTagCounts(posts: Post[]): Record<string, number> {
   return counts
 }
 
+export function comparePostTags(leftTag: string, rightTag: string): number {
+  if (leftTag === rightTag) {
+    return 0
+  }
+
+  return leftTag > rightTag ? 1 : -1
+}
+
 export function parseSelectedTags(
   params?: Record<string, string | string[] | undefined>,
 ): string[] {

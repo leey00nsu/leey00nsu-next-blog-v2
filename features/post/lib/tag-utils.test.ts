@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   getTagCounts,
+  comparePostTags,
   parseSelectedTags,
   makeToggleHref,
   filterPostsByTags,
@@ -52,6 +53,18 @@ describe('getTagCounts', () => {
     const counts = getTagCounts(posts)
 
     expect(counts).toEqual({ react: 1 })
+  })
+})
+
+describe('comparePostTags', () => {
+  it('서버와 브라우저 기본 locale 차이에 영향받지 않는 순서로 정렬한다', () => {
+    const tags = ['나만의 수야 수호 만들기', 'AI', 'Remotion']
+
+    expect([...tags].sort(comparePostTags)).toEqual([
+      'AI',
+      'Remotion',
+      '나만의 수야 수호 만들기',
+    ])
   })
 })
 

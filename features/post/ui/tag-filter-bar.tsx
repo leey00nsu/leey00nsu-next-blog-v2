@@ -2,7 +2,10 @@
 
 import { Post } from '@/entities/post/model/types'
 import { ExpandableTagFilterList } from '@/features/post/ui/expandable-tag-filter-list'
-import { getTagCounts } from '@/features/post/lib/tag-utils'
+import {
+  comparePostTags,
+  getTagCounts,
+} from '@/features/post/lib/tag-utils'
 import { ROUTES } from '@/shared/config/constants'
 import { Route } from 'next'
 
@@ -20,7 +23,7 @@ export function TagFilterBar({
   className,
 }: TagFilterBarProps) {
   const counts = getTagCounts(posts)
-  const allTags = Object.keys(counts).sort((a, b) => a.localeCompare(b))
+  const allTags = Object.keys(counts).sort(comparePostTags)
 
   return (
     <ExpandableTagFilterList

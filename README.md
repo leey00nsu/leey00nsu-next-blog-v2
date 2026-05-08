@@ -11,14 +11,14 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D18.18-brightgreen" alt="Node.js">
-  <a href="https://leey00nsu.com"><img src="https://img.shields.io/badge/demo-live-blue" alt="Demo"></a>
+  <a href="https://blog2.leey00nsu.com"><img src="https://img.shields.io/badge/demo-live-blue" alt="Demo"></a>
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> •
   <a href="#주요-기능">주요 기능</a> •
   <a href="#기술-스택">기술 스택</a> •
-  <a href="https://leey00nsu.com">데모</a>
+  <a href="https://blog2.leey00nsu.com">데모</a>
 </p>
 
 <p align="center">

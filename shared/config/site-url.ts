@@ -1,4 +1,4 @@
-const SITE_URL_DEFAULT = 'https://leey00nsu.com'
+const SITE_URL_DEFAULT = 'https://blog2.leey00nsu.com'
 
 function normalizeSiteUrl(rawSiteUrl: string): URL {
   try {

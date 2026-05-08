@@ -157,7 +157,10 @@
 
   figure[data-rehype-pretty-code-figure]:has(> [data-rehype-pretty-code-title])
     pre {
-    @apply !rounded-t-none;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-left-radius: var(--radius) !important;
+    border-bottom-right-radius: var(--radius) !important;
   }
 
   /* MDX 테이블의 컬럼 너비를 고정시켜서 일관된 너비를 유지 */

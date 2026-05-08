@@ -9,11 +9,12 @@ import {
   SITE,
   SupportedLocale,
 } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 
 interface PostPageProps {
-  params: Promise<{ slug: string }>
+  params: Promise<{ locale: SupportedLocale; slug: string }>
 }
+
+export const dynamicParams = false
 
 // 빌드 시점에 모든 포스트의 경로를 미리 생성합니다.
 export async function generateStaticParams() {
@@ -24,8 +25,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
-  const { slug } = await params
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale, slug } = await params
   const post = await getPostBySlug(slug, locale)
 
   if (!post) {
@@ -70,9 +70,7 @@ export async function generateMetadata({
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  const { slug } = await params
-
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale, slug } = await params
   const post = await getPostBySlug(slug, locale)
 
   if (!post) {

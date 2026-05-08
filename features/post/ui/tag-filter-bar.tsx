@@ -1,3 +1,5 @@
+'use client'
+
 import { Post } from '@/entities/post/model/types'
 import { ExpandableTagFilterList } from '@/features/post/ui/expandable-tag-filter-list'
 import { getTagCounts } from '@/features/post/lib/tag-utils'

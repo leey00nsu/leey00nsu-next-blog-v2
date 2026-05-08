@@ -3,17 +3,15 @@ import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { getProjectBySlug } from '@/entities/project/lib/project'
 import { SITE, SupportedLocale } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 
 export const runtime = 'nodejs'
 
 export default async function OpenGraphImage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ locale: SupportedLocale; slug: string }>
 }) {
-  const { slug } = await params
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale, slug } = await params
   const project = await getProjectBySlug(slug, locale)
   const title = project?.title ?? SITE.NAME
   const description = project?.summary ?? SITE.DEFAULT_DESCRIPTION

@@ -4,9 +4,12 @@ import {
   SupportedLocale,
   buildLocalizedRoutePath,
 } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 
-export default async function Home() {
-  const locale = (await getLocale()) as SupportedLocale
+interface HomeProps {
+  params: Promise<{ locale: SupportedLocale }>
+}
+
+export default async function Home({ params }: HomeProps) {
+  const { locale } = await params
   redirect(buildLocalizedRoutePath(ROUTES.BLOG, locale))
 }

@@ -1,11 +1,6 @@
 import type { Metadata } from 'next'
 import { getAllPosts } from '@/entities/post/lib/post'
-import { PostList } from '@/widgets/post/ui/post-list'
-import { TagFilterBar } from '@/features/post/ui/tag-filter-bar'
-import {
-  filterPostsByTags,
-  parseSelectedTags,
-} from '@/features/post/lib/tag-utils'
+import { FilterablePostList } from '@/widgets/post/ui/filterable-post-list'
 import {
   LOCALES,
   ROUTES,
@@ -13,11 +8,9 @@ import {
   SupportedLocale,
   buildLocalizedRoutePath,
 } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 
 interface BlogPageProps {
-  // Next may pass searchParams as a Promise
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
+  params: Promise<{ locale: SupportedLocale }>
 }
 
 const BLOG_LIST_METADATA = {
@@ -32,14 +25,11 @@ const BLOG_LIST_METADATA = {
 } as const
 
 export async function generateMetadata({
-  searchParams,
+  params,
 }: BlogPageProps): Promise<Metadata> {
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale } = await params
   const metadataByLocale = BLOG_LIST_METADATA[locale]
-  const params = (await searchParams) ?? {}
-  const selectedTags = parseSelectedTags(params)
   const localizedBlogPath = buildLocalizedRoutePath(ROUTES.BLOG, locale)
-  const hasSelectedTags = selectedTags.length > 0
 
   return {
     title: metadataByLocale.title,
@@ -66,33 +56,12 @@ export async function generateMetadata({
       description: metadataByLocale.description,
       images: ['/opengraph-image'],
     },
-    robots: hasSelectedTags
-      ? {
-          index: false,
-          follow: true,
-        }
-      : undefined,
   }
 }
 
-export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const params = (await searchParams) ?? {}
-  const selectedTags = parseSelectedTags(params)
-
-  const locale = (await getLocale()) as SupportedLocale
+export default async function BlogPage({ params }: BlogPageProps) {
+  const { locale } = await params
   const allPosts = await getAllPosts(locale)
 
-  const posts = filterPostsByTags(allPosts, selectedTags)
-
-  return (
-    <div className="flex flex-col gap-6">
-      <TagFilterBar
-        posts={allPosts}
-        selectedTags={selectedTags}
-        basePath={buildLocalizedRoutePath(ROUTES.BLOG, locale)}
-        className="mb-2"
-      />
-      <PostList posts={posts} locale={locale} />
-    </div>
-  )
+  return <FilterablePostList posts={allPosts} locale={locale} />
 }

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { getAbout } from '@/entities/about/lib/about'
 import { AboutDetail } from '@/widgets/about/ui/about-detail'
 import { ComingSoon } from '@/shared/ui/coming-soon'
-import { getLocale } from 'next-intl/server'
 import {
   LOCALES,
   ROUTES,
@@ -10,6 +9,10 @@ import {
   SupportedLocale,
   buildLocalizedRoutePath,
 } from '@/shared/config/constants'
+
+interface AboutPageProps {
+  params: Promise<{ locale: SupportedLocale }>
+}
 
 const ABOUT_METADATA_FALLBACK = {
   ko: {
@@ -32,8 +35,10 @@ function getAboutMetadata(locale: SupportedLocale) {
   }
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = (await getLocale()) as SupportedLocale
+export async function generateMetadata({
+  params,
+}: AboutPageProps): Promise<Metadata> {
+  const { locale } = await params
   const aboutMetadata = getAboutMetadata(locale)
   const canonicalUrl = buildLocalizedRoutePath(ROUTES.ABOUT, locale)
 
@@ -65,8 +70,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function AboutPage() {
-  const locale = (await getLocale()) as SupportedLocale
+export default async function AboutPage({ params }: AboutPageProps) {
+  const { locale } = await params
   const about = getAbout(locale)
 
   if (!about) {

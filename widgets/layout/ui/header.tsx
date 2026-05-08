@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { Logo } from '@/shared/ui/logo'
 import {
@@ -7,12 +9,14 @@ import {
 } from '@/shared/config/constants'
 import { ThemeToggle } from '@/shared/ui/theme-toggle'
 import { LocaleSelect } from '@/shared/ui/locale-select'
-import { getTranslations } from 'next-intl/server'
-import { getLocale } from 'next-intl/server'
+import { useTranslations } from 'next-intl'
 
-export async function Header() {
-  const locale = (await getLocale()) as SupportedLocale
-  const t = await getTranslations('navigation')
+interface HeaderProps {
+  locale: SupportedLocale
+}
+
+export function Header({ locale }: HeaderProps) {
+  const t = useTranslations('navigation')
 
   return (
     <nav className="bg-background sticky top-0 z-50 grid grid-cols-4 md:grid-cols-1">

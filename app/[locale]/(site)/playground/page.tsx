@@ -1,15 +1,18 @@
 import { Playground } from '@/widgets/studio/ui/playground'
 import { redirect } from 'next/navigation'
 import { getAllPosts } from '@/entities/post/lib/post'
-import { getLocale } from 'next-intl/server'
 import {
   ROUTES,
   SupportedLocale,
   buildLocalizedRoutePath,
 } from '@/shared/config/constants'
 
-export default async function PlaygroundPage() {
-  const locale = (await getLocale()) as SupportedLocale
+interface PlaygroundPageProps {
+  params: Promise<{ locale: SupportedLocale }>
+}
+
+export default async function PlaygroundPage({ params }: PlaygroundPageProps) {
+  const { locale } = await params
 
   // 개발 환경에서만 접근 가능
   if (process.env.NODE_ENV !== 'development') {

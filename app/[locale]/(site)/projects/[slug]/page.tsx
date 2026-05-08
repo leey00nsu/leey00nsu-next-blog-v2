@@ -12,12 +12,13 @@ import {
   SITE,
   SupportedLocale,
 } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 import { removePublic } from '@/shared/lib/remove-public'
 
 interface ProjectPageProps {
-  params: Promise<{ slug: string }>
+  params: Promise<{ locale: SupportedLocale; slug: string }>
 }
+
+export const dynamicParams = false
 
 export async function generateStaticParams() {
   const projects = await getAllProjects()
@@ -27,8 +28,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: ProjectPageProps): Promise<Metadata> {
-  const { slug } = await params
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale, slug } = await params
   const project = await getProjectBySlug(slug, locale)
 
   if (!project) {
@@ -72,8 +72,7 @@ export async function generateMetadata({
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const { slug } = await params
-  const locale = (await getLocale()) as SupportedLocale
+  const { locale, slug } = await params
   const project = await getProjectBySlug(slug, locale)
 
   if (!project) {

@@ -3,19 +3,17 @@ import { join } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { getPostBySlug } from '@/entities/post/lib/post'
 import { SITE, SupportedLocale } from '@/shared/config/constants'
-import { getLocale } from 'next-intl/server'
 
 export const runtime = 'nodejs'
 
 export default async function OpenGraphImage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ locale: SupportedLocale; slug: string }>
 }) {
-  const { slug } = await params
+  const { locale, slug } = await params
 
   // 슬러그로 포스트 조회 후 제목 도출
-  const locale = (await getLocale()) as SupportedLocale
   const post = await getPostBySlug(slug, locale)
   const title = post?.title ?? SITE.NAME
   const description = post?.description ?? SITE.DEFAULT_DESCRIPTION

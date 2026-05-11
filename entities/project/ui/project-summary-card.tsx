@@ -15,6 +15,20 @@ interface ProjectSummaryCardProps {
   linkVariant?: ProjectSummaryCardLinkVariant
 }
 
+export interface ProjectSummaryCardLabels {
+  inProgressLabel: string
+  periodLabel: string
+  techStackLabel: string
+  typeLabel: string
+  projectTypeLabel: string
+  githubAriaLabel: string
+  detailAriaLabel: string
+}
+
+interface ProjectSummaryCardViewProps extends ProjectSummaryCardProps {
+  labels: ProjectSummaryCardLabels
+}
+
 export type ProjectSummaryCardLinkVariant = 'detail' | 'github'
 
 export async function ProjectSummaryCard({
@@ -28,11 +42,37 @@ export async function ProjectSummaryCard({
   const techStackLabel = t('techStack')
   const typeLabel = t('type.label')
   const projectTypeLabel = t(`type.${project.type}`)
+  const labels = {
+    inProgressLabel,
+    periodLabel,
+    techStackLabel,
+    typeLabel,
+    projectTypeLabel,
+    githubAriaLabel: t('viewGithubAria', { project: project.title }),
+    detailAriaLabel: t('viewDetailAria', { project: project.title }),
+  }
+
+  return (
+    <ProjectSummaryCardView
+      project={project}
+      locale={locale}
+      linkVariant={linkVariant}
+      labels={labels}
+    />
+  )
+}
+
+export function ProjectSummaryCardView({
+  project,
+  locale,
+  linkVariant = 'detail',
+  labels,
+}: ProjectSummaryCardViewProps) {
   const githubUrl = project.links.github
   const shouldLinkToGithub = linkVariant === 'github' && Boolean(githubUrl)
   const ariaLabel = shouldLinkToGithub
-    ? t('viewGithubAria', { project: project.title })
-    : t('viewDetailAria', { project: project.title })
+    ? labels.githubAriaLabel
+    : labels.detailAriaLabel
   const visibleTechStacks = project.techStacks.slice(
     0,
     PROJECT_SUMMARY_CARD.MAX_VISIBLE_TECH_STACK_COUNT,
@@ -87,21 +127,21 @@ export async function ProjectSummaryCard({
 
         <dl className="space-y-2 text-sm">
           <div className="flex flex-col gap-1">
-            <dt className="text-muted-foreground">{typeLabel}</dt>
+            <dt className="text-muted-foreground">{labels.typeLabel}</dt>
             <dd>
               <span className="border-border bg-muted inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
-                {projectTypeLabel}
+                {labels.projectTypeLabel}
               </span>
             </dd>
           </div>
           <div className="flex flex-col gap-1">
-            <dt className="text-muted-foreground">{periodLabel}</dt>
+            <dt className="text-muted-foreground">{labels.periodLabel}</dt>
             <dd className="font-medium">
-              {formatProjectPeriod(project.period, inProgressLabel)}
+              {formatProjectPeriod(project.period, labels.inProgressLabel)}
             </dd>
           </div>
           <div className="flex flex-col gap-1">
-            <dt className="text-muted-foreground">{techStackLabel}</dt>
+            <dt className="text-muted-foreground">{labels.techStackLabel}</dt>
             <dd>
               <ul className="flex flex-wrap gap-2">
                 {visibleTechStacks.map((stack) => (

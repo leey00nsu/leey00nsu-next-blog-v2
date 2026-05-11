@@ -2,28 +2,15 @@ import { Post } from '@/entities/post/model/types'
 
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { getTableOfContents } from '@/shared/lib/toc'
-import { Toc } from '@/features/post/ui/toc'
-import { TocRegister } from '@/features/post/ui/toc-register'
-import { GiscusComments } from '@/features/post/ui/giscus-comments'
-import { TagList } from '@/features/post/ui/tag-list'
-import { ShareButton } from '@/features/post/ui/share-button'
 import {
   SITE,
   SupportedLocale,
   buildBlogOgImagePath,
-  buildBlogTagHref,
   buildBlogPostHref,
 } from '@/shared/config/constants'
-import { JsonLd } from '@/shared/ui/json-ld'
 import { removePublic } from '@/shared/lib/remove-public'
 import { getSiteUrl } from '@/shared/config/site-url'
-import { EntranceMotionBlock } from '@/shared/ui/entrance-motion-block'
-
-const POST_DETAIL_BLOCK_ANIMATION = {
-  HEADER_DELAY_SECONDS: 0,
-  CONTENT_DELAY_SECONDS: 0.06,
-  COMMENTS_DELAY_SECONDS: 0.12,
-} as const
+import { PostDetailView } from '@/widgets/post/ui/post-detail-view'
 
 interface PostDetailProps {
   post: Post
@@ -61,42 +48,13 @@ export function PostDetail({ post, locale }: PostDetailProps) {
   }
 
   return (
-    <div className="relative">
-      <JsonLd data={jsonLdData} />
-      <TocRegister headings={headings} />
-      <article className="prose prose-lg dark:prose-invert mx-auto">
-        <EntranceMotionBlock
-          delaySeconds={POST_DETAIL_BLOCK_ANIMATION.HEADER_DELAY_SECONDS}
-        >
-          <div className="flex items-center gap-2">
-            <span>{post.date.toLocaleDateString('ko-KR')}</span>
-            <span>{post.writer}</span>
-          </div>
-          <h1>{post.title}</h1>
-          <div className="my-4 flex justify-center gap-2">
-            <ShareButton />
-          </div>
-          <TagList
-            tags={post.tags}
-            hrefBuilder={(tag) => buildBlogTagHref(tag, locale)}
-          />
-          <hr />
-          <Toc headings={headings} className="md:hidden" />
-        </EntranceMotionBlock>
-        <EntranceMotionBlock
-          delaySeconds={POST_DETAIL_BLOCK_ANIMATION.CONTENT_DELAY_SECONDS}
-        >
-          <MdxRenderer content={post.content} />
-        </EntranceMotionBlock>
-      </article>
-
-      <EntranceMotionBlock
-        delaySeconds={POST_DETAIL_BLOCK_ANIMATION.COMMENTS_DELAY_SECONDS}
-      >
-        <section className="mx-auto py-8">
-          <GiscusComments />
-        </section>
-      </EntranceMotionBlock>
-    </div>
+    <PostDetailView
+      post={post}
+      locale={locale}
+      headings={headings}
+      jsonLdData={jsonLdData}
+    >
+      <MdxRenderer content={post.content} />
+    </PostDetailView>
   )
 }

@@ -12,7 +12,10 @@ import {
   X,
 } from 'lucide-react'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
-import { useBlogChat } from '@/features/chat/model/use-blog-chat'
+import {
+  type BlogChatConversationItem,
+  useBlogChat,
+} from '@/features/chat/model/use-blog-chat'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
@@ -65,6 +68,20 @@ function resolveCurrentPostSlug(pathname: string): string | undefined {
   return matchedPath?.[2]
 }
 
+interface BlogChatWidgetViewProps {
+  conversationItems: BlogChatConversationItem[]
+  isLoading: boolean
+  isVisible: boolean
+  question: string
+  setQuestion: (nextQuestion: string) => void
+  submitQuestion: (questionOverride?: string) => Promise<void>
+  translate: (
+    key: string,
+    values?: Record<string, string | number>,
+  ) => string
+  initialOpen?: boolean
+}
+
 export function BlogChatWidget() {
   const locale = useLocale() as SupportedLocale
   const pathname = usePathname()
@@ -77,7 +94,32 @@ export function BlogChatWidget() {
     setQuestion,
     submitQuestion,
   } = useBlogChat({ locale, currentPostSlug })
-  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <BlogChatWidgetView
+      conversationItems={conversationItems}
+      isLoading={isLoading}
+      isVisible={BLOG_CHAT_WIDGET_PATH.VISIBLE_PATH_PATTERN.test(pathname)}
+      question={question}
+      setQuestion={setQuestion}
+      submitQuestion={submitQuestion}
+      translate={t}
+    />
+  )
+}
+
+export function BlogChatWidgetView({
+  conversationItems,
+  isLoading,
+  isVisible,
+  question,
+  setQuestion,
+  submitQuestion,
+  translate,
+  initialOpen = false,
+}: BlogChatWidgetViewProps) {
+  const t = translate
+  const [isOpen, setIsOpen] = useState(initialOpen)
   const [isQuestionInputComposing, setIsQuestionInputComposing] = useState(false)
   const latestConversationItemAnchorReference = useRef<HTMLDivElement | null>(
     null,
@@ -90,7 +132,6 @@ export function BlogChatWidget() {
     useState<Set<string>>(() => new Set())
   const shouldReduceMotion = Boolean(useReducedMotion())
 
-  const isVisible = BLOG_CHAT_WIDGET_PATH.VISIBLE_PATH_PATTERN.test(pathname)
   const triggerVariants = buildBlogChatTriggerVariants(shouldReduceMotion)
   const panelVariants = buildBlogChatPanelVariants(shouldReduceMotion)
   const conversationItemVariants =

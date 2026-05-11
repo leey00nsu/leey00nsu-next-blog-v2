@@ -1,12 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import { NextIntlClientProvider } from 'next-intl'
 import { TagFilterBar } from './tag-filter-bar'
 import type { Post } from '@/entities/post/model/types'
+import koMessages from '@/messages/ko.json'
 
-const createMockPost = (tags: string[]): Post => ({
-    slug: `post-${Math.random().toString(36).slice(2)}`,
+const MOCK_POST_DATE = new Date('2025-01-01T00:00:00.000Z')
+
+const createMockPost = (index: number, tags: string[]): Post => ({
+    slug: `post-${index}`,
     title: 'Sample Post',
     description: 'Sample description',
-    date: new Date(),
+    date: MOCK_POST_DATE,
     writer: 'Author',
     tags,
     section: 'blog',
@@ -19,13 +23,13 @@ const createMockPost = (tags: string[]): Post => ({
 })
 
 const mockPosts: Post[] = [
-    createMockPost(['React', 'TypeScript']),
-    createMockPost(['React', 'Next.js']),
-    createMockPost(['TypeScript', 'Node.js']),
-    createMockPost(['React', 'TypeScript', 'Next.js']),
-    createMockPost(['JavaScript']),
-    createMockPost(['React']),
-    createMockPost(['TypeScript']),
+    createMockPost(1, ['React', 'TypeScript']),
+    createMockPost(2, ['React', 'Next.js']),
+    createMockPost(3, ['TypeScript', 'Node.js']),
+    createMockPost(4, ['React', 'TypeScript', 'Next.js']),
+    createMockPost(5, ['JavaScript']),
+    createMockPost(6, ['React']),
+    createMockPost(7, ['TypeScript']),
 ]
 
 const meta: Meta<typeof TagFilterBar> = {
@@ -38,6 +42,15 @@ const meta: Meta<typeof TagFilterBar> = {
             appDirectory: true,
         },
     },
+    decorators: [
+        (Story) => (
+            <NextIntlClientProvider locale="ko" messages={koMessages}>
+                <div className="w-[360px]">
+                    <Story />
+                </div>
+            </NextIntlClientProvider>
+        ),
+    ],
 }
 
 export default meta

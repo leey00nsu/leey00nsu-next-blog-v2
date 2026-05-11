@@ -12,7 +12,7 @@ import {
 
 const CHAT_CONTACT = {
   MAXIMUM_METHOD_COUNT: 4,
-  URL_PROTOCOL: /^https?:\/\//u,
+  SUPPORTED_HREF: /^(?:https?:\/\/|mailto:)/u,
   HTML_PATTERNS: {
     ANCHOR: /<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/giu,
     ALT: /alt="([^"]+)"/iu,
@@ -66,7 +66,7 @@ function extractContactMethodsFromContent(content: string): ChatContactMethod[] 
     const href = anchorMatch[1]?.trim() ?? ''
     const anchorContent = anchorMatch[2] ?? ''
 
-    if (!CHAT_CONTACT.URL_PROTOCOL.test(href)) {
+    if (!CHAT_CONTACT.SUPPORTED_HREF.test(href)) {
       continue
     }
 

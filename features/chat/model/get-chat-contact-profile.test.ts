@@ -17,6 +17,10 @@ describe('getChatContactProfile', () => {
           label: 'LinkedIn',
           url: 'https://www.linkedin.com/in/leey00nsu',
         }),
+        expect.objectContaining({
+          label: 'Email',
+          url: 'mailto:dbstndla1212@naver.com',
+        }),
       ]),
     )
   })

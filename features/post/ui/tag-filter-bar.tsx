@@ -1,16 +1,16 @@
 'use client'
 
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { ExpandableTagFilterList } from '@/features/post/ui/expandable-tag-filter-list'
 import {
   comparePostTags,
   getTagCounts,
 } from '@/features/post/lib/tag-utils'
 import { ROUTES } from '@/shared/config/constants'
-import { Route } from 'next'
+import type { Route } from 'next'
 
 interface TagFilterBarProps {
-  posts: Post[]
+  posts: PostSummary[]
   selectedTags: string[]
   basePath?: Route
   className?: string

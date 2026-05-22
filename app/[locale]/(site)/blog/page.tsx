@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getAllPosts } from '@/entities/post/lib/post'
+import { getAllPostSummaries } from '@/entities/post/lib/post'
 import { FilterablePostList } from '@/widgets/post/ui/filterable-post-list'
 import {
   LOCALES,
@@ -61,7 +61,7 @@ export async function generateMetadata({
 
 export default async function BlogPage({ params }: BlogPageProps) {
   const { locale } = await params
-  const allPosts = await getAllPosts(locale)
+  const allPosts = await getAllPostSummaries(locale)
 
   return <FilterablePostList posts={allPosts} locale={locale} />
 }

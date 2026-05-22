@@ -1,9 +1,9 @@
 import Image from 'next/image'
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { cn } from '@/shared/lib/utils'
 
 interface DefaultThumbnailProps {
-  post: Post
+  post: PostSummary
   className?: string
 }
 

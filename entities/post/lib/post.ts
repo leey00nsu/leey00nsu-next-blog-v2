@@ -1,5 +1,9 @@
 import { cache } from 'react'
-import { Post, PostMetaDataSchema } from '@/entities/post/model/types'
+import {
+  Post,
+  PostMetaDataSchema,
+  PostSummary,
+} from '@/entities/post/model/types'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 import { GENERATED_POSTS } from '@/entities/post/config/posts.generated'
 import type {
@@ -47,6 +51,49 @@ function hydratePost(record: GeneratedPostSerialized | undefined): Post | null {
   }
 }
 
+function hydratePostSummary(
+  record: GeneratedPostSerialized | undefined,
+): PostSummary | null {
+  if (!record) return null
+
+  const { date, width, height, blurDataURL, isAnimated } = record
+
+  try {
+    const frontmatter = PostMetaDataSchema.parse({
+      slug: record.slug,
+      title: record.title,
+      description: record.description,
+      tags: record.tags,
+      section: record.section,
+      series: record.series,
+      thumbnail: record.thumbnail,
+      draft: record.draft,
+      writer: record.writer,
+      date: new Date(date),
+      blurDataURL: blurDataURL || undefined,
+    })
+
+    return {
+      ...frontmatter,
+      width,
+      height,
+      blurDataURL: blurDataURL || undefined,
+      isAnimated: isAnimated || false,
+    }
+  } catch (error) {
+    console.error(`Error hydrating post summary for slug ${record.slug}:`, error)
+    return null
+  }
+}
+
+function sortPostsByNewestDate<TPost extends Pick<PostSummary, 'date'>>(
+  posts: TPost[],
+): TPost[] {
+  return posts.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  )
+}
+
 export const getPostBySlug = async (
   slug: string,
   locale: SupportedLocale = DEFAULT_LOCALE,
@@ -78,8 +125,33 @@ export const getAllPosts = cache(
       posts.push(post)
     }
 
-    return posts.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    )
+    return sortPostsByNewestDate(posts)
+  },
+)
+
+export const getAllPostSummaries = cache(
+  async (locale: SupportedLocale = DEFAULT_LOCALE): Promise<PostSummary[]> => {
+    const localeEntries = GENERATED_POSTS_MAP[locale]
+    const fallbackEntries = GENERATED_POSTS_MAP[DEFAULT_LOCALE]
+
+    if (!localeEntries && !fallbackEntries) {
+      return []
+    }
+
+    const mergedSlugs = new Set<string>([
+      ...Object.keys(localeEntries ?? {}),
+      ...Object.keys(fallbackEntries ?? {}),
+    ])
+
+    const posts: PostSummary[] = []
+
+    for (const slug of mergedSlugs) {
+      const record = resolveGeneratedPost(slug, locale)
+      const post = hydratePostSummary(record)
+      if (!post || post.draft) continue
+      posts.push(post)
+    }
+
+    return sortPostsByNewestDate(posts)
   },
 )

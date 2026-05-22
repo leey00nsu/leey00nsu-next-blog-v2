@@ -1,5 +1,5 @@
 import type { Variants } from 'motion/react'
-import type { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 
 const POST_LIST_MOTION = {
   LIST_KEY_SEPARATOR: '|',
@@ -15,7 +15,7 @@ const POST_LIST_MOTION = {
 } as const
 
 export function buildPostListAnimationKey(
-  posts: ReadonlyArray<Pick<Post, 'slug'>>,
+  posts: ReadonlyArray<Pick<PostSummary, 'slug'>>,
 ): string {
   return posts
     .map((post) => post.slug)

@@ -2,7 +2,6 @@
 
 import { useLocale } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { setLocale } from '@/features/i18n/model/set-locale'
 import { Languages } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import {
@@ -18,7 +17,7 @@ import {
   stripLocalePrefix,
   SupportedLocale,
 } from '@/shared/config/constants'
-import { Route } from 'next'
+import type { Route } from 'next'
 
 const LOCALE_OPTIONS = [
   { value: 'ko', label: '한국어' },
@@ -39,8 +38,12 @@ export function LocaleSelect({ className }: LocaleSelectProps) {
     return LOCALES.SUPPORTED.includes(localeValue as SupportedLocale)
   }
 
-  async function handleChange(nextLocale: string) {
+  function handleChange(nextLocale: string) {
     if (!isSupportedLocale(nextLocale)) {
+      return
+    }
+
+    if (nextLocale === locale) {
       return
     }
 
@@ -55,7 +58,6 @@ export function LocaleSelect({ className }: LocaleSelectProps) {
         ? (`${localizedPathname}?${queryString}` as Route)
         : (localizedPathname as Route)
 
-    await setLocale(nextLocale)
     router.push(localizedPathWithQueryString)
   }
 

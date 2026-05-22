@@ -1,4 +1,4 @@
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { DEFAULT_TAG_QUERY_KEY } from '@/shared/config/constants'
 import type { Route } from 'next'
 
@@ -14,7 +14,7 @@ interface HasOverflowingTagRowsParams {
   maximumCollapsedRowCount: number
 }
 
-export function getTagCounts(posts: Post[]): Record<string, number> {
+export function getTagCounts(posts: PostSummary[]): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const post of posts) {
     for (const t of post.tags) {
@@ -58,7 +58,10 @@ export function makeToggleHref(
   }
 }
 
-export function filterPostsByTags(posts: Post[], tags: string[]): Post[] {
+export function filterPostsByTags(
+  posts: PostSummary[],
+  tags: string[],
+): PostSummary[] {
   if (tags.length === 0) return posts
   return posts.filter((p) => p.tags.some((t) => tags.includes(t)))
 }

@@ -1,4 +1,4 @@
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { DefaultThumbnail } from '@/entities/post/ui/default-thumbnail'
 import { CustomImage } from '@/shared/ui/custom-image'
 import { removePublic } from '@/shared/lib/remove-public'
@@ -27,7 +27,7 @@ function buildThumbnailCoverSizes(params: {
 }
 
 interface PostCardProps {
-  post: Post
+  post: PostSummary
   priority?: boolean
 }
 

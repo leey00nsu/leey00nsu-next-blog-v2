@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { TagFilterBar } from '@/features/post/ui/tag-filter-bar'
 import {
   filterPostsByTags,
@@ -15,7 +15,7 @@ import {
 import { PostList } from '@/widgets/post/ui/post-list'
 
 interface FilterablePostListProps {
-  posts: Post[]
+  posts: PostSummary[]
   locale: SupportedLocale
 }
 

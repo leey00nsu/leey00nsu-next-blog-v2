@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Post } from '@/entities/post/model/types'
+import type { PostSummary } from '@/entities/post/model/types'
 import { PostCard } from '@/entities/post/ui/post-card'
 import {
   SupportedLocale,
@@ -21,7 +21,7 @@ import {
 import Link from 'next/link'
 
 interface PostListProps {
-  posts: Post[]
+  posts: PostSummary[]
   locale: SupportedLocale
 }
 

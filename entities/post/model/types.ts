@@ -25,6 +25,23 @@ export const PostSchema = z.object({
 
 export type Post = z.infer<typeof PostSchema>
 
+export interface PostSummary {
+  slug: string
+  date: Date
+  title: string
+  description: string
+  tags: string[]
+  section: string
+  series: string | null
+  thumbnail: string | null
+  draft: boolean
+  blurDataURL?: string
+  writer: string
+  width: number
+  height: number
+  isAnimated?: boolean
+}
+
 export interface GeneratedPostSerialized {
   slug: string
   date: string

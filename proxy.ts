@@ -14,6 +14,10 @@ import { determineSupportedLocale } from '@/shared/lib/locale/determine-supporte
 
 const localeRoutingMiddleware = createMiddleware(routing)
 
+const AUTH_COOKIE_PROTOCOLS = {
+  SECURE: 'https:',
+} as const
+
 function parseLocaleFromAcceptLanguage(
   acceptLanguageHeader: string | null,
 ): SupportedLocale | null {
@@ -93,9 +97,12 @@ export async function proxy(request: NextRequest) {
     return localeRoutingResponse
   }
 
+  const shouldUseSecureAuthCookie =
+    request.nextUrl.protocol === AUTH_COOKIE_PROTOCOLS.SECURE
   const sessionToken = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
+    secureCookie: shouldUseSecureAuthCookie,
   })
 
   if (sessionToken) {

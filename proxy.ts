@@ -18,6 +18,36 @@ const AUTH_COOKIE_PROTOCOLS = {
   SECURE: 'https:',
 } as const
 
+const AUTH_PROXY_HEADERS = {
+  FORWARDED_PROTOCOL: 'x-forwarded-proto',
+} as const
+
+function isHttpsUrl(urlValue: string): boolean {
+  try {
+    return new URL(urlValue).protocol === AUTH_COOKIE_PROTOCOLS.SECURE
+  } catch {
+    return false
+  }
+}
+
+function shouldUseSecureAuthCookie(request: NextRequest): boolean {
+  const configuredAuthUrl = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL
+
+  if (configuredAuthUrl) {
+    return isHttpsUrl(configuredAuthUrl)
+  }
+
+  const forwardedProtocol = request.headers.get(
+    AUTH_PROXY_HEADERS.FORWARDED_PROTOCOL,
+  )
+
+  if (forwardedProtocol) {
+    return forwardedProtocol === AUTH_COOKIE_PROTOCOLS.SECURE.slice(0, -1)
+  }
+
+  return request.nextUrl.protocol === AUTH_COOKIE_PROTOCOLS.SECURE
+}
+
 function parseLocaleFromAcceptLanguage(
   acceptLanguageHeader: string | null,
 ): SupportedLocale | null {
@@ -97,12 +127,10 @@ export async function proxy(request: NextRequest) {
     return localeRoutingResponse
   }
 
-  const shouldUseSecureAuthCookie =
-    request.nextUrl.protocol === AUTH_COOKIE_PROTOCOLS.SECURE
   const sessionToken = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: shouldUseSecureAuthCookie,
+    secureCookie: shouldUseSecureAuthCookie(request),
   })
 
   if (sessionToken) {

@@ -212,6 +212,7 @@ async function recordAnswerObservability(params: {
   await recordChatObservabilityEvent({
     locale: params.locale,
     originalQuestion: params.chatObservabilityState.originalQuestion,
+    answer: params.responseData.answer,
     resolvedQuestion: params.chatObservabilityState.resolvedQuestion,
     normalizedQuestion: params.chatObservabilityState.normalizedQuestion,
     currentPostSlug: params.chatObservabilityState.currentPostSlug,

@@ -33,6 +33,61 @@
     }
   },
   "studio": {
+    "landing": {
+      "eyebrow": "Studio",
+      "title": "Choose a management task",
+      "description": "Open the writing editor or inspect chatbot logs from one place.",
+      "editor": {
+        "title": "Editor",
+        "description": "Write MDX posts, translate them, and commit them to GitHub.",
+        "meta": "Opens the existing Studio editor screen.",
+        "action": "Open editor"
+      },
+      "logs": {
+        "title": "Log Management",
+        "description": "Review chatbot questions, retrieval results, citations, and latency.",
+        "meta": "Reads chat observability events stored in Postgres.",
+        "action": "View logs"
+      }
+    },
+    "logs": {
+      "title": "Chatbot Logs",
+      "description": "Inspect planner output, retrieval matches, citations, and response time per chatbot request.",
+      "backToStudio": "Back to Studio",
+      "refresh": "Refresh",
+      "summary": "{totalCount} total · page {currentPage}/{pageCount}",
+      "empty": "No chatbot logs have been stored yet.",
+      "databaseUnavailable": "Unable to connect to the log database. Check the Postgres connection settings and runtime status.",
+      "pageSize": {
+        "label": "Rows per page",
+        "option": "{pageSize} rows"
+      },
+      "sort": {
+        "label": "Date sort",
+        "createdAtDescending": "Newest first",
+        "createdAtAscending": "Oldest first"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "pageIndicator": "{currentPage}/{pageCount}",
+      "duration": "{durationMilliseconds}ms",
+      "grounded": {
+        "yes": "Grounded",
+        "no": "Ungrounded"
+      },
+      "columns": {
+        "createdAt": "Created",
+        "locale": "Locale",
+        "originalQuestion": "Question",
+        "answer": "Answer",
+        "cacheKind": "Cache",
+        "plannerAction": "Planner",
+        "sourceCategories": "Sources",
+        "citations": "Citations",
+        "grounded": "Grounded",
+        "durationMilliseconds": "Duration"
+      }
+    },
     "actions": {
       "save": "Save",
       "saving": "Saving",

@@ -67,12 +67,15 @@ export const ROUTES = {
   ABOUT: '/about' as Route,
   PROJECTS: '/projects' as Route,
   STUDIO: '/studio' as Route,
+  STUDIO_EDITOR: '/studio/editor' as Route,
+  STUDIO_LOGS: '/studio/logs' as Route,
   PLAYGROUND: '/playground' as Route,
   AUTH_SIGNIN: '/auth/signin' as Route,
   AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
   API: {
     CHAT: '/api/chat' as Route,
     STUDIO_COMMIT: '/api/studio/commit' as Route,
+    STUDIO_CHAT_LOGS: '/api/studio/chat-logs' as Route,
     STUDIO_SAVE_LOCAL: '/api/studio/save-local' as Route,
   },
 } as const

@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { signIn } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 
 export interface SignInFormProps {
   allowedUsername: string
@@ -12,6 +13,9 @@ export interface SignInFormProps {
 
 export function SignInForm({ allowedUsername, callbackUrl }: SignInFormProps) {
   const t = useTranslations('auth.signIn')
+  const searchParams = useSearchParams()
+  const resolvedCallbackUrl = searchParams.get('callbackUrl') ?? callbackUrl
+
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-6 p-6 text-center">
       <h1 className="text-xl font-semibold">{t('title')}</h1>
@@ -33,7 +37,7 @@ export function SignInForm({ allowedUsername, callbackUrl }: SignInFormProps) {
       </div>
 
       <Button
-        onClick={() => signIn('github', { redirectTo: callbackUrl })}
+        onClick={() => signIn('github', { redirectTo: resolvedCallbackUrl })}
         aria-label={t('signInWithGitHub')}
       >
         {t('signInWithGitHub')}

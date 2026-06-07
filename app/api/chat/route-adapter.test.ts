@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server'
+import { createMockLeeChatRequest } from 'lee-chat-sdk/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const answerBlogChatQuestionMock = vi.fn()
@@ -30,47 +31,42 @@ function createLeeChatRequest(): NextRequest {
       'Content-Type': 'application/json',
       'x-forwarded-for': '203.0.113.10',
     },
-    body: JSON.stringify({
-      appId: 'leey00nsu-next-blog',
-      conversation: {
-        id: 'blog-chat:ko',
-        kind: 'assistant',
-      },
-      participant: {
-        id: 'visitor',
-        kind: 'user',
-      },
-      visitor: {
-        id: 'visitor',
-      },
-      metadata: {
-        locale: 'ko',
-        currentPostSlug: 'building-ai-chat-for-my-blog',
-      },
-      message: {
-        id: 'message-id',
-        senderId: 'visitor',
-        content: 'React stack?',
-        parts: [{ type: 'text', text: 'React stack?' }],
-        createdAt: '2026-06-05T00:00:00.000Z',
-      },
-      history: [
-        {
-          role: 'user',
+    body: JSON.stringify(
+      createMockLeeChatRequest({
+        appId: 'leey00nsu-next-blog',
+        conversation: {
+          id: 'blog-chat:ko',
+          kind: 'assistant',
+        },
+        metadata: {
+          locale: 'ko',
+          currentPostSlug: 'building-ai-chat-for-my-blog',
+        },
+        message: {
+          id: 'message-id',
           senderId: 'visitor',
-          content: '이전 질문',
-          parts: [{ type: 'text', text: '이전 질문' }],
+          content: 'React stack?',
+          parts: [{ type: 'text', text: 'React stack?' }],
           createdAt: '2026-06-05T00:00:00.000Z',
         },
-        {
-          role: 'assistant',
-          senderId: 'assistant',
-          content: '이전 답변',
-          parts: [{ type: 'text', text: '이전 답변' }],
-          createdAt: '2026-06-05T00:00:01.000Z',
-        },
-      ],
-    }),
+        history: [
+          {
+            role: 'user',
+            senderId: 'visitor',
+            content: '이전 질문',
+            parts: [{ type: 'text', text: '이전 질문' }],
+            createdAt: '2026-06-05T00:00:00.000Z',
+          },
+          {
+            role: 'assistant',
+            senderId: 'assistant',
+            content: '이전 답변',
+            parts: [{ type: 'text', text: '이전 답변' }],
+            createdAt: '2026-06-05T00:00:01.000Z',
+          },
+        ],
+      }),
+    ),
   }) as NextRequest
 }
 
@@ -141,6 +137,8 @@ describe('POST /api/chat route adapter', () => {
       message: {
         id: 'message-id:assistant',
         content: 'React와 TypeScript를 사용합니다.',
+        parts: [{ type: 'text', text: 'React와 TypeScript를 사용합니다.' }],
+        createdAt: expect.any(String),
         metadata: {
           blogChatResponse: {
             answer: 'React와 TypeScript를 사용합니다.',

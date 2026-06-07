@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import {
-  type ChatMessage,
+  LEE_CHAT_TEXT_PRESETS,
   LeeChatProvider,
   LeeChatWidget,
 } from 'lee-chat-sdk'
@@ -20,7 +20,6 @@ const BLOG_CHAT_WIDGET_PATH = {
 const BLOG_CHAT_SDK = {
   APP_ID: 'leey00nsu-next-blog',
   CONVERSATION_ID_PREFIX: 'blog-chat',
-  METADATA_RESPONSE_KEY: 'blogChatResponse',
   THEME_PRIMARY_COLOR: '#18181b',
   THEME_RADIUS: '0.5rem',
 } as const
@@ -35,6 +34,10 @@ interface BlogChatWidgetViewProps {
   locale: SupportedLocale
   currentPostSlug?: string
   translate: (key: string) => string
+}
+
+interface BlogChatMessageMetadata {
+  blogChatResponse?: BlogChatResponse
 }
 
 export function BlogChatWidget() {
@@ -64,7 +67,7 @@ export function BlogChatWidgetView({
   const t = translate
 
   return (
-    <LeeChatProvider
+    <LeeChatProvider<BlogChatMessageMetadata>
       config={{
         appId: BLOG_CHAT_SDK.APP_ID,
         endpoint: ROUTES.API.CHAT,
@@ -83,7 +86,13 @@ export function BlogChatWidgetView({
         initialMessage: t('emptyTitle'),
         persistence: 'localStorage',
         position: 'bottom-right',
+        features: {
+          attachments: false,
+          realtime: false,
+          operatorConsole: false,
+        },
         texts: {
+          ...LEE_CHAT_TEXT_PRESETS[locale],
           title: t('title'),
           subtitle: t('subtitle'),
           triggerLabel: t('trigger'),
@@ -104,9 +113,23 @@ export function BlogChatWidgetView({
         },
       }}
     >
-      <LeeChatWidget
-        renderMessage={({ message }) => {
-          return <BlogChatMessage message={message} translate={t} />
+      <LeeChatWidget<BlogChatMessageMetadata>
+        renderAssistantContent={({ message, defaultContent }) => {
+          return (
+            <BlogChatAssistantContent
+              response={message.metadata?.blogChatResponse}
+              defaultContent={defaultContent}
+              translate={t}
+            />
+          )
+        }}
+        renderMessageFooter={({ message }) => {
+          return (
+            <BlogChatMessageFooter
+              response={message.metadata?.blogChatResponse}
+              translate={t}
+            />
+          )
         }}
         renderTrigger={({ label, isOpen, toggle }) => {
           return (
@@ -126,63 +149,59 @@ export function BlogChatWidgetView({
   )
 }
 
-function resolveBlogChatResponse(
-  message: ChatMessage<Record<string, unknown>>,
-): BlogChatResponse | undefined {
-  const response = message.metadata?.[BLOG_CHAT_SDK.METADATA_RESPONSE_KEY]
-
-  return typeof response === 'object' && response !== null
-    ? (response as BlogChatResponse)
-    : undefined
-}
-
-function BlogChatMessage({
-  message,
+function BlogChatAssistantContent({
+  response,
+  defaultContent,
   translate,
 }: {
-  message: ChatMessage<Record<string, unknown>>
+  response?: BlogChatResponse
+  defaultContent: ReactNode
   translate: (key: string) => string
-}): ReactNode {
+}) {
   const t = translate
-  const response = resolveBlogChatResponse(message)
 
-  if (message.role === 'user') {
+  if (response?.refusalReason && !response.grounded) {
     return (
-      <div className="ml-8 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
-        <p className="mb-1 text-xs opacity-80">{t('you')}</p>
-        <p className="whitespace-pre-wrap leading-6">{message.content}</p>
-      </div>
+      <p className="whitespace-pre-wrap leading-6">
+        {t(`refusal.${response.refusalReason}`)}
+      </p>
     )
   }
 
+  return defaultContent
+}
+
+function BlogChatMessageFooter({
+  response,
+  translate,
+}: {
+  response?: BlogChatResponse
+  translate: (key: string) => string
+}) {
+  const t = translate
+
+  if (!response?.citations || response.citations.length === 0) {
+    return null
+  }
+
   return (
-    <div className="mr-8 rounded-2xl border bg-card px-4 py-3 text-sm">
-      <p className="text-muted-foreground mb-2 text-xs">{t('assistant')}</p>
-      <p className="whitespace-pre-wrap leading-6">
-        {response?.refusalReason && !response.grounded
-          ? t(`refusal.${response.refusalReason}`)
-          : message.content}
-      </p>
-      {response?.citations && response.citations.length > 0 ? (
-        <div className="mt-3 flex flex-col gap-2 border-t pt-3">
-          <p className="text-muted-foreground text-xs">{t('sources')}</p>
-          {response.citations.map((citation) => (
-            <a
-              key={citation.url}
-              href={citation.url}
-              className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
-            >
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate font-medium">{citation.title}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {citation.sectionTitle ?? citation.url}
-                </span>
-              </span>
-              <ArrowUpRight className="size-4 shrink-0" />
-            </a>
-          ))}
-        </div>
-      ) : null}
+    <div className="mt-3 flex flex-col gap-2 border-t pt-3">
+      <p className="text-muted-foreground text-xs">{t('sources')}</p>
+      {response.citations.map((citation) => (
+        <a
+          key={citation.url}
+          href={citation.url}
+          className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+        >
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate font-medium">{citation.title}</span>
+            <span className="text-muted-foreground truncate text-xs">
+              {citation.sectionTitle ?? citation.url}
+            </span>
+          </span>
+          <ArrowUpRight className="size-4 shrink-0" />
+        </a>
+      ))}
     </div>
   )
 }

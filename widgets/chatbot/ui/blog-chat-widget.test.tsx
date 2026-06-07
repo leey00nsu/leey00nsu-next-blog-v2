@@ -60,6 +60,38 @@ vi.mock('next/navigation', () => {
 
 vi.mock('lee-chat-sdk', () => {
   return {
+    LEE_CHAT_TEXT_PRESETS: {
+      ko: {
+        title: '채팅',
+        subtitle: '메시지를 보내주세요.',
+        triggerLabel: '채팅 열기',
+        placeholder: '메시지를 입력하세요',
+        send: '보내기',
+        sending: '전송 중',
+        messageSending: '전송 중...',
+        assistantLoading: '답변을 준비하고 있어요...',
+        participantOnline: '온라인',
+        participantTyping: '상대방이 입력 중이에요...',
+        messageRead: '읽음',
+        error: '메시지를 보내지 못했습니다. 다시 시도해주세요.',
+        retry: '다시 시도',
+      },
+      en: {
+        title: 'Chat',
+        subtitle: 'Send us a message.',
+        triggerLabel: 'Open chat',
+        placeholder: 'Type your message',
+        send: 'Send',
+        sending: 'Sending',
+        messageSending: 'Sending...',
+        assistantLoading: 'Assistant is typing...',
+        participantOnline: 'Online',
+        participantTyping: 'Participant is typing...',
+        messageRead: 'Read',
+        error: 'Message failed. Please try again.',
+        retry: 'Retry',
+      },
+    },
     LeeChatProvider: ({
       config,
       children,
@@ -94,6 +126,11 @@ describe('BlogChatWidget', () => {
       expect.objectContaining({
         appId: 'leey00nsu-next-blog',
         endpoint: '/api/chat',
+        features: {
+          attachments: false,
+          realtime: false,
+          operatorConsole: false,
+        },
         persistence: 'localStorage',
       }),
     )
@@ -131,14 +168,15 @@ describe('BlogChatWidget', () => {
     expect(leeChatProviderMock).not.toHaveBeenCalled()
   })
 
-  it('SDK 위젯에 커스텀 메시지 렌더러와 트리거 렌더러를 전달한다', () => {
+  it('SDK 위젯에 assistant content/footer 슬롯과 트리거 렌더러를 전달한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
     render(<BlogChatWidget />)
 
     expect(leeChatWidgetMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        renderMessage: expect.any(Function),
+        renderAssistantContent: expect.any(Function),
+        renderMessageFooter: expect.any(Function),
         renderTrigger: expect.any(Function),
       }),
     )

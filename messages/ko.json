@@ -85,7 +85,27 @@
         "sourceCategories": "소스",
         "citations": "Citation",
         "grounded": "Grounded",
-        "durationMilliseconds": "처리 시간"
+        "durationMilliseconds": "처리 시간",
+        "actions": "작업"
+      },
+      "detail": {
+        "open": "챗봇 로그 상세 보기",
+        "openShort": "전체 보기",
+        "close": "상세 닫기",
+        "title": "챗봇 로그 상세",
+        "createdAt": "생성 시각",
+        "originalQuestion": "질문 전문",
+        "answer": "답변 전문",
+        "resolvedQuestion": "Resolved question",
+        "normalizedQuestion": "Normalized question",
+        "currentPostSlug": "현재 글",
+        "plannerRetrievalMode": "검색 범위",
+        "refusalReason": "거절 사유",
+        "reranked": "Rerank",
+        "booleanYes": "예",
+        "booleanNo": "아니오",
+        "citations": "Citations",
+        "finalMatches": "최종 근거 후보"
       }
     },
     "actions": {

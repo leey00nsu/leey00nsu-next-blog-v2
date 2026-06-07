@@ -85,7 +85,27 @@
         "sourceCategories": "Sources",
         "citations": "Citations",
         "grounded": "Grounded",
-        "durationMilliseconds": "Duration"
+        "durationMilliseconds": "Duration",
+        "actions": "Actions"
+      },
+      "detail": {
+        "open": "View chatbot log detail",
+        "openShort": "View full",
+        "close": "Close detail",
+        "title": "Chatbot Log Detail",
+        "createdAt": "Created",
+        "originalQuestion": "Full question",
+        "answer": "Full answer",
+        "resolvedQuestion": "Resolved question",
+        "normalizedQuestion": "Normalized question",
+        "currentPostSlug": "Current post",
+        "plannerRetrievalMode": "Retrieval scope",
+        "refusalReason": "Refusal reason",
+        "reranked": "Rerank",
+        "booleanYes": "Yes",
+        "booleanNo": "No",
+        "citations": "Citations",
+        "finalMatches": "Final evidence candidates"
       }
     },
     "actions": {

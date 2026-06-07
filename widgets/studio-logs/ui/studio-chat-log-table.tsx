@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table'
-import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, RotateCw, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type {
   ChatObservabilityLogPage,
@@ -39,6 +40,9 @@ const STUDIO_CHAT_LOG_TABLE = {
     CREATED_AT_DESCENDING: 'created_at_desc',
     CREATED_AT_ASCENDING: 'created_at_asc',
   },
+} as const
+const STUDIO_CHAT_LOG_DETAIL = {
+  MAXIMUM_MATCH_PREVIEW_COUNT: 6,
 } as const
 
 interface StudioChatLogTableProps {
@@ -71,6 +75,10 @@ function buildStudioLogHref(params: {
 
 function renderTextList(values: string[]): string {
   return values.length > 0 ? values.join(', ') : '-'
+}
+
+function renderNullableText(value: string | null | undefined): string {
+  return value && value.trim() ? value : '-'
 }
 
 function normalizeSortDirection(sortDirection: string): string {
@@ -188,6 +196,13 @@ export function StudioChatLogTable({
           durationMilliseconds: tableRow.original.durationMilliseconds,
         }),
     },
+    {
+      id: 'actions',
+      header: t('columns.actions'),
+      cell: ({ row: tableRow }) => (
+        <StudioChatLogDetailDialog record={tableRow.original} locale={locale} />
+      ),
+    },
   ]
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table exposes instance methods by design.
   const table = useReactTable({
@@ -277,7 +292,7 @@ export function StudioChatLogTable({
 
       <div className="overflow-hidden rounded-lg border">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[72rem] text-sm">
+          <table className="w-full min-w-[76rem] text-sm">
             <thead className="bg-muted/60">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -378,6 +393,217 @@ export function StudioChatLogTable({
           </Link>
         </Button>
       </div>
+    </section>
+  )
+}
+
+function StudioChatLogDetailDialog({
+  record,
+  locale,
+}: {
+  record: ChatObservabilityLogRecord
+  locale: SupportedLocale
+}) {
+  const t = useTranslations('studio.logs')
+
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label={t('detail.open')}
+        >
+          <Eye aria-hidden="true" className="size-4" />
+          {t('detail.openShort')}
+        </Button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/45" />
+        <Dialog.Content className="bg-background fixed top-1/2 left-1/2 z-[101] flex max-h-[min(46rem,calc(100vh-2rem))] w-[min(56rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border shadow-xl">
+          <div className="flex items-start justify-between gap-4 border-b px-5 py-4">
+            <div className="min-w-0 space-y-1">
+              <Dialog.Title className="text-lg font-semibold">
+                {t('detail.title')}
+              </Dialog.Title>
+              <Dialog.Description className="text-muted-foreground text-sm">
+                {formatCreatedAt(record.createdAt, locale)}
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t('detail.close')}
+              >
+                <X aria-hidden="true" className="size-4" />
+              </Button>
+            </Dialog.Close>
+          </div>
+
+          <div className="overflow-y-auto px-5 py-5">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+              <div className="space-y-5">
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.originalQuestion')}
+                  value={record.originalQuestion}
+                />
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.answer')}
+                  value={record.answer}
+                />
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.resolvedQuestion')}
+                  value={renderNullableText(record.resolvedQuestion)}
+                />
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.normalizedQuestion')}
+                  value={renderNullableText(record.normalizedQuestion)}
+                />
+              </div>
+
+              <aside className="space-y-4">
+                <StudioChatLogDetailMetaGrid record={record} locale={locale} />
+                <StudioChatLogMatchSection
+                  title={t('detail.citations')}
+                  matches={record.citations}
+                />
+                <StudioChatLogMatchSection
+                  title={t('detail.finalMatches')}
+                  matches={record.finalMatches}
+                />
+              </aside>
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  )
+}
+
+function StudioChatLogDetailTextBlock({
+  title,
+  value,
+}: {
+  title: string
+  value: string
+}) {
+  return (
+    <section className="space-y-2">
+      <h3 className="text-sm font-medium">{title}</h3>
+      <p className="bg-muted/50 whitespace-pre-wrap rounded-md border px-3 py-3 text-sm leading-6">
+        {value || '-'}
+      </p>
+    </section>
+  )
+}
+
+function StudioChatLogDetailMetaGrid({
+  record,
+  locale,
+}: {
+  record: ChatObservabilityLogRecord
+  locale: SupportedLocale
+}) {
+  const t = useTranslations('studio.logs')
+  const metaItems = [
+    {
+      label: t('columns.locale'),
+      value: record.locale,
+    },
+    {
+      label: t('columns.cacheKind'),
+      value: record.cacheKind,
+    },
+    {
+      label: t('columns.grounded'),
+      value: record.grounded ? t('grounded.yes') : t('grounded.no'),
+    },
+    {
+      label: t('columns.durationMilliseconds'),
+      value: t('duration', {
+        durationMilliseconds: record.durationMilliseconds,
+      }),
+    },
+    {
+      label: t('detail.currentPostSlug'),
+      value: renderNullableText(record.currentPostSlug),
+    },
+    {
+      label: t('columns.plannerAction'),
+      value: renderNullableText(record.plannerAction),
+    },
+    {
+      label: t('detail.plannerRetrievalMode'),
+      value: renderNullableText(record.plannerRetrievalMode),
+    },
+    {
+      label: t('detail.refusalReason'),
+      value: renderNullableText(record.refusalReason),
+    },
+    {
+      label: t('detail.createdAt'),
+      value: formatCreatedAt(record.createdAt, locale),
+    },
+    {
+      label: t('detail.reranked'),
+      value: record.reranked ? t('detail.booleanYes') : t('detail.booleanNo'),
+    },
+  ]
+
+  return (
+    <dl className="grid gap-2 text-sm">
+      {metaItems.map((metaItem) => (
+        <div
+          key={metaItem.label}
+          className="grid grid-cols-[8rem_minmax(0,1fr)] gap-2 rounded-md border px-3 py-2"
+        >
+          <dt className="text-muted-foreground">{metaItem.label}</dt>
+          <dd className="min-w-0 break-words">{metaItem.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+function StudioChatLogMatchSection({
+  title,
+  matches,
+}: {
+  title: string
+  matches: ChatObservabilityLogRecord['citations']
+}) {
+  const visibleMatches = matches.slice(
+    0,
+    STUDIO_CHAT_LOG_DETAIL.MAXIMUM_MATCH_PREVIEW_COUNT,
+  )
+
+  return (
+    <section className="space-y-2">
+      <h3 className="text-sm font-medium">{title}</h3>
+      {visibleMatches.length > 0 ? (
+        <ul className="space-y-2">
+          {visibleMatches.map((match) => (
+            <li key={`${title}-${match.url}`} className="rounded-md border p-3">
+              <a
+                href={match.url}
+                className="hover:text-primary block text-sm font-medium"
+              >
+                {match.title}
+              </a>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {match.sourceCategory}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground rounded-md border px-3 py-2 text-sm">
+          -
+        </p>
+      )}
     </section>
   )
 }

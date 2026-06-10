@@ -12,6 +12,7 @@ import { usePathname } from 'next/navigation'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { ROUTES } from '@/shared/config/constants'
+import { BlogChatAssistantLoading } from '@/widgets/chatbot/ui/blog-chat-assistant-loading'
 
 const BLOG_CHAT_WIDGET_PATH = {
   VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about)(\/|$)/,
@@ -91,6 +92,9 @@ export function BlogChatWidgetView({
           realtime: false,
           operatorConsole: false,
         },
+        messageStatus: {
+          showSending: false,
+        },
         texts: {
           ...LEE_CHAT_TEXT_PRESETS[locale],
           title: t('title'),
@@ -114,6 +118,11 @@ export function BlogChatWidgetView({
       }}
     >
       <LeeChatWidget<BlogChatMessageMetadata>
+        renderAssistantLoading={() => {
+          return (
+            <BlogChatAssistantLoading>{t('sending')}</BlogChatAssistantLoading>
+          )
+        }}
         renderAssistantContent={({ message, defaultContent }) => {
           return (
             <BlogChatAssistantContent

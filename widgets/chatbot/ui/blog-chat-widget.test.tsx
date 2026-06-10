@@ -131,6 +131,9 @@ describe('BlogChatWidget', () => {
           realtime: false,
           operatorConsole: false,
         },
+        messageStatus: {
+          showSending: false,
+        },
         persistence: 'localStorage',
       }),
     )
@@ -168,17 +171,34 @@ describe('BlogChatWidget', () => {
     expect(leeChatProviderMock).not.toHaveBeenCalled()
   })
 
-  it('SDK 위젯에 assistant content/footer 슬롯과 트리거 렌더러를 전달한다', () => {
+  it('SDK 위젯에 assistant loading/content/footer 슬롯과 트리거 렌더러를 전달한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
     render(<BlogChatWidget />)
 
     expect(leeChatWidgetMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        renderAssistantLoading: expect.any(Function),
         renderAssistantContent: expect.any(Function),
         renderMessageFooter: expect.any(Function),
         renderTrigger: expect.any(Function),
       }),
     )
+  })
+
+  it('assistant loading 슬롯에는 응답 생성 중 문구만 렌더링한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
+      renderAssistantLoading: () => ReactNode
+    }
+
+    render(widgetProps.renderAssistantLoading())
+
+    expect(
+      screen.getByText(koMessages.chatbot.sending),
+    ).toBeInTheDocument()
   })
 })

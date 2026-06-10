@@ -138,8 +138,8 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3
       lee-chat-sdk:
-        specifier: ^0.2.0
-        version: 0.2.0(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: ^0.3.1
+        version: 0.3.1(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -5319,8 +5319,8 @@ packages:
     resolution: {integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==}
     engines: {node: '>=0.10'}
 
-  lee-chat-sdk@0.2.0:
-    resolution: {integrity: sha512-lHl/JiA1CzxMtk49h/X3ofmrNViDECot8m/C+j5vDS7ovY5dw16jQ2q2Gb/9J4o3aI7QqotE0goTuXzieGo6YA==}
+  lee-chat-sdk@0.3.1:
+    resolution: {integrity: sha512-z6CqxOQdufhfdaLaUazARD0ikobUt7ow5DQLfRkXjNcP0xkvyUQLcX1iy2KcNithmC9yXuE0jZ5jeji7tIkFlQ==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -13032,7 +13032,7 @@ snapshots:
     dependencies:
       language-subtag-registry: 0.3.23
 
-  lee-chat-sdk@0.2.0(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  lee-chat-sdk@0.3.1(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     optionalDependencies:

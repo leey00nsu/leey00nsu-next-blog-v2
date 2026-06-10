@@ -73,7 +73,7 @@
     "es-toolkit": "^1.39.10",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
-    "lee-chat-sdk": "^0.2.0",
+    "lee-chat-sdk": "^0.3.1",
     "lowlight": "^3.3.0",
     "lqip-modern": "^2.2.1",
     "lucide-react": "^0.542.0",

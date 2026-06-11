@@ -13,6 +13,7 @@ import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { ROUTES } from '@/shared/config/constants'
 import { BlogChatAssistantLoading } from '@/widgets/chatbot/ui/blog-chat-assistant-loading'
+import { BlogChatSubmitContent } from '@/widgets/chatbot/ui/blog-chat-submit-content'
 
 const BLOG_CHAT_WIDGET_PATH = {
   VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about)(\/|$)/,
@@ -137,6 +138,14 @@ export function BlogChatWidgetView({
             <BlogChatMessageFooter
               response={message.metadata?.blogChatResponse}
               translate={t}
+            />
+          )
+        }}
+        renderSubmitContent={({ isSubmitting, isUploading }) => {
+          return (
+            <BlogChatSubmitContent
+              isSubmitting={isSubmitting}
+              isUploading={isUploading}
             />
           )
         }}

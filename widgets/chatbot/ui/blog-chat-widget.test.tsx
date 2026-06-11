@@ -171,7 +171,7 @@ describe('BlogChatWidget', () => {
     expect(leeChatProviderMock).not.toHaveBeenCalled()
   })
 
-  it('SDK 위젯에 assistant loading/content/footer 슬롯과 트리거 렌더러를 전달한다', () => {
+  it('SDK 위젯에 assistant loading/content/footer, submit 슬롯과 트리거 렌더러를 전달한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
     render(<BlogChatWidget />)
@@ -181,6 +181,7 @@ describe('BlogChatWidget', () => {
         renderAssistantLoading: expect.any(Function),
         renderAssistantContent: expect.any(Function),
         renderMessageFooter: expect.any(Function),
+        renderSubmitContent: expect.any(Function),
         renderTrigger: expect.any(Function),
       }),
     )
@@ -200,5 +201,56 @@ describe('BlogChatWidget', () => {
     expect(
       screen.getByText(koMessages.chatbot.sending),
     ).toBeInTheDocument()
+  })
+
+  it('submit 슬롯은 대기 중에는 전송 아이콘을 렌더링한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
+      renderSubmitContent: (params: {
+        isSubmitting: boolean
+        isUploading: boolean
+        defaultContent: ReactNode
+      }) => ReactNode
+    }
+    const { container } = render(
+      widgetProps.renderSubmitContent({
+        isSubmitting: false,
+        isUploading: false,
+        defaultContent: koMessages.chatbot.send,
+      }),
+    )
+
+    expect(container.querySelector('.lucide-send')).toBeInTheDocument()
+    expect(container.querySelector('.lucide-loader-circle')).toBeNull()
+    expect(screen.queryByText(koMessages.chatbot.send)).not.toBeInTheDocument()
+  })
+
+  it('submit 슬롯은 전송 중에는 스피너를 렌더링한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
+      renderSubmitContent: (params: {
+        isSubmitting: boolean
+        isUploading: boolean
+        defaultContent: ReactNode
+      }) => ReactNode
+    }
+    const { container } = render(
+      widgetProps.renderSubmitContent({
+        isSubmitting: true,
+        isUploading: false,
+        defaultContent: koMessages.chatbot.send,
+      }),
+    )
+
+    expect(container.querySelector('.lucide-loader-circle')).toHaveClass(
+      'animate-spin',
+    )
+    expect(container.querySelector('.lucide-send')).toBeNull()
   })
 })

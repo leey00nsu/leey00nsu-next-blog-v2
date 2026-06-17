@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 
 describe('selectChatSearchMatches', () => {
   it('질문과 직접 맞는 블로그 섹션을 상단에 배치한다', () => {
@@ -306,5 +308,103 @@ describe('selectChatSearchMatches', () => {
 
     expect(result.grounded).toBe(true)
     expect(result.matches[0]?.slug).toBe('leesfield')
+  })
+
+  it('명시 추가 키워드를 포함한 문서는 작성자 프로필 문맥보다 우선 후보에 남긴다', () => {
+    const records: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/profile/about',
+        locale: 'ko',
+        slug: 'about',
+        title: 'About Me',
+        url: '/ko/about#about',
+        excerpt: '블로그 작성자 이윤수 소개',
+        content: '블로그 작성자 이윤수는 React와 Next.js를 사용합니다.',
+        sectionTitle: 'About',
+        tags: ['profile'],
+        searchTerms: ['블로그 작성자 이윤수 사용 경험'],
+        sourceCategory: 'profile',
+      },
+      {
+        id: 'ko/profile/work',
+        locale: 'ko',
+        slug: 'about',
+        title: 'About Me',
+        url: '/ko/about#work',
+        excerpt: '이윤수 업무 경험',
+        content: '이윤수는 TypeScript 기반 업무 경험이 있습니다.',
+        sectionTitle: 'Work',
+        tags: ['profile'],
+        searchTerms: ['작성자 이윤수 경험'],
+        sourceCategory: 'profile',
+      },
+      {
+        id: 'ko/project/blog',
+        locale: 'ko',
+        slug: 'blog',
+        title: '블로그',
+        url: '/ko/projects/blog',
+        excerpt: '블로그 프로젝트',
+        content: '블로그 작성과 배포 자동화를 다룹니다.',
+        sectionTitle: null,
+        tags: ['project'],
+        searchTerms: ['블로그 작성자'],
+        sourceCategory: 'project',
+      },
+      {
+        id: 'ko/blog/vercel',
+        locale: 'ko',
+        slug: 'vercel',
+        title: '내가 더 이상 Vercel 호스팅을 사용하지 않는 이유',
+        url: '/ko/blog/vercel',
+        excerpt: 'Vercel에서 Coolify로 옮긴 이야기',
+        content: '정적 페이지나 Next.js의 경우에는 Vercel을 통해 배포를 하기도 하였습니다.',
+        sectionTitle: null,
+        tags: ['vercel'],
+        searchTerms: ['Vercel 사용 경험'],
+        sourceCategory: 'blog',
+      },
+    ]
+
+    const result = selectChatSearchMatches({
+      question: '블로그 작성자 이윤수는 Vercel을 써봤는지 확인해줘',
+      locale: 'ko',
+      records,
+      additionalKeywords: ['Vercel', '사용 경험', '이윤수'],
+      preferredSourceCategories: ['profile', 'blog', 'project'],
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(result.matches.some((match) => match.url === '/ko/blog/vercel')).toBe(
+      true,
+    )
+  })
+
+  it('generated 데이터에서도 명시 기술 키워드가 있는 Vercel 글을 후보에 포함한다', async () => {
+    const locale = 'ko'
+    const records: ChatEvidenceRecord[] = [
+      ...GENERATED_BLOG_SEARCH_RECORDS[locale].map((record) => {
+        return {
+          ...record,
+          sourceCategory: 'blog' as const,
+        }
+      }),
+      ...(await getCuratedChatSources(locale)),
+    ]
+
+    const result = selectChatSearchMatches({
+      question: '블로그 작성자 이윤수는 Vercel을 써봤는지 확인해줘.',
+      locale,
+      records,
+      additionalKeywords: ['Vercel', '사용 경험', '이윤수'],
+      preferredSourceCategories: ['profile', 'blog', 'project'],
+    })
+
+    expect(result.grounded).toBe(true)
+    expect(
+      result.matches.some((match) => {
+        return match.slug === 'why-i-do-not-use-vercel-anymore'
+      }),
+    ).toBe(true)
   })
 })

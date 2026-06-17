@@ -70,6 +70,70 @@ function createLeeChatRequest(): NextRequest {
   }) as NextRequest
 }
 
+function createLeeChatRequestWithAssistantMetadata(): NextRequest {
+  return new Request('http://localhost/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-forwarded-for': '203.0.113.10',
+    },
+    body: JSON.stringify({
+      appId: 'leey00nsu-next-blog',
+      conversation: {
+        id: 'blog-chat:ko',
+        kind: 'assistant',
+      },
+      participant: {
+        id: 'visitor',
+        kind: 'user',
+      },
+      visitor: {
+        id: 'visitor',
+      },
+      metadata: {
+        locale: 'ko',
+      },
+      message: {
+        id: 'message-id',
+        senderId: 'visitor',
+        content: '블로그 주인',
+        parts: [{ type: 'text', text: '블로그 주인' }],
+        createdAt: '2026-06-05T00:00:02.000Z',
+      },
+      history: [
+        {
+          role: 'user',
+          senderId: 'visitor',
+          content: '이 사람이 Vercel 써봤냐고',
+          parts: [{ type: 'text', text: '이 사람이 Vercel 써봤냐고' }],
+          createdAt: '2026-06-05T00:00:00.000Z',
+        },
+        {
+          role: 'assistant',
+          senderId: 'assistant',
+          content: '누구를 가리키는지 알려주세요.',
+          parts: [{ type: 'text', text: '누구를 가리키는지 알려주세요.' }],
+          createdAt: '2026-06-05T00:00:01.000Z',
+          metadata: {
+            blogChatResponse: {
+              answer: '누구를 가리키는지 알려주세요.',
+              grounded: true,
+              citations: [
+                {
+                  title: 'About Me',
+                  url: '/ko/about',
+                  sectionTitle: null,
+                  sourceCategory: 'profile',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    }),
+  }) as NextRequest
+}
+
 describe('POST /api/chat route adapter', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -147,6 +211,42 @@ describe('POST /api/chat route adapter', () => {
           },
         },
       },
+    })
+  })
+
+  it('SDK assistant metadata의 blogChatResponse citations를 대화 이력에 보존한다', async () => {
+    answerBlogChatQuestionMock.mockResolvedValueOnce({
+      body: {
+        answer: '이윤수는 Vercel 사용 경험이 있습니다.',
+        citations: [],
+        grounded: true,
+      },
+      status: 200,
+    })
+
+    const { POST } = await import('./route')
+
+    await POST(createLeeChatRequestWithAssistantMetadata())
+
+    expect(answerBlogChatQuestionMock).toHaveBeenCalledWith({
+      requestBody: expect.objectContaining({
+        question: '블로그 주인',
+        conversationHistory: [
+          {
+            question: '이 사람이 Vercel 써봤냐고',
+            answer: '누구를 가리키는지 알려주세요.',
+            citations: [
+              {
+                title: 'About Me',
+                url: '/ko/about',
+                sectionTitle: null,
+                sourceCategory: 'profile',
+              },
+            ],
+          },
+        ],
+      }),
+      requestHeaders: expect.any(Headers),
     })
   })
 })

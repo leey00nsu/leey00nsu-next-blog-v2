@@ -37,16 +37,26 @@ const CHRONOLOGICAL_QUERY_PATTERNS = {
   LATEST: ['최신', '최근', 'latest', 'recent'],
   OLDEST: ['오래된', '가장 오래된', '첫 글', '처음 글', 'oldest', 'first post'],
   RETROSPECT: ['회고', 'retrospect'],
+  PUBLISHED_AT: ['언제', '날짜', '게시일', '작성일', 'when', 'date', 'published'],
+} as const
+
+const CHAT_REQUEST_TOKEN_PATTERNS = {
+  WORD: /[\p{L}\p{N}][\p{L}\p{N}+#.-]*/gu,
 } as const
 
 const CHRONOLOGICAL_CHAT_RESPONSES = {
   ko: {
     LATEST: '최신 글은 {title}입니다.',
+    LATEST_WITH_DATE: '최신 글은 {publishedAt}에 게시된 {title}입니다.',
     OLDEST: '가장 오래된 글로는 {title}을 추천할게요.',
+    OLDEST_WITH_DATE:
+      '가장 오래된 글은 {publishedAt}에 게시된 {title}입니다.',
   },
   en: {
     LATEST: 'The latest post is {title}.',
+    LATEST_WITH_DATE: 'The latest post is {title}, published on {publishedAt}.',
     OLDEST: 'If you want the oldest post, I would point you to {title}.',
+    OLDEST_WITH_DATE: 'The oldest post is {title}, published on {publishedAt}.',
   },
 } as const
 
@@ -126,18 +136,31 @@ function buildChronologicalBlogResponse(params: {
   locale: SupportedLocale
   selector: 'latest_post' | 'oldest_post'
   selectedBlogRecord: ChatEvidenceRecord
+  question: string
 }): BlogChatResponse {
   const isLatestQuestion = params.selector === 'latest_post'
-  const uniquePublishedBlogRecords = buildUniquePublishedBlogRecords(
-    [params.selectedBlogRecord],
+  const shouldIncludePublishedAt = includesAnyPattern(
+    params.question.toLowerCase(),
+    CHRONOLOGICAL_QUERY_PATTERNS.PUBLISHED_AT,
   )
-
   const answerTemplate = isLatestQuestion
-    ? CHRONOLOGICAL_CHAT_RESPONSES[params.locale].LATEST
-    : CHRONOLOGICAL_CHAT_RESPONSES[params.locale].OLDEST
+    ? shouldIncludePublishedAt
+      ? CHRONOLOGICAL_CHAT_RESPONSES[params.locale].LATEST_WITH_DATE
+      : CHRONOLOGICAL_CHAT_RESPONSES[params.locale].LATEST
+    : shouldIncludePublishedAt
+      ? CHRONOLOGICAL_CHAT_RESPONSES[params.locale].OLDEST_WITH_DATE
+      : CHRONOLOGICAL_CHAT_RESPONSES[params.locale].OLDEST
 
   return {
-    answer: answerTemplate.replace('{title}', params.selectedBlogRecord.title),
+    answer: answerTemplate
+      .replace('{title}', params.selectedBlogRecord.title)
+      .replace(
+        '{publishedAt}',
+        formatPublishedAt(
+          params.selectedBlogRecord.publishedAt,
+          params.locale,
+        ),
+      ),
     grounded: true,
     citations: [
       {
@@ -148,6 +171,83 @@ function buildChronologicalBlogResponse(params: {
       },
     ],
   }
+}
+
+function formatPublishedAt(
+  publishedAt: string | null | undefined,
+  locale: SupportedLocale,
+): string {
+  if (!publishedAt) {
+    return ''
+  }
+
+  const publishedAtDate = new Date(publishedAt)
+
+  if (Number.isNaN(publishedAtDate.getTime())) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(publishedAtDate)
+}
+
+function normalizeMergeText(text: string): string {
+  return text.toLowerCase()
+}
+
+function tokenizeMergeText(text: string): string[] {
+  return [
+    ...new Set(
+      (normalizeMergeText(text).match(CHAT_REQUEST_TOKEN_PATTERNS.WORD) ?? [])
+        .filter((token) => {
+          return token.length >= 2
+        }),
+    ),
+  ]
+}
+
+function recordMatchesToken(record: ChatEvidenceRecord, token: string): boolean {
+  return normalizeMergeText(
+    [
+      record.title,
+      record.sectionTitle ?? '',
+      record.content,
+      record.tags.join(' '),
+      (record.searchTerms ?? []).join(' '),
+    ].join(' '),
+  ).includes(token)
+}
+
+function buildPrioritizedAdditionalKeywordTokens(params: {
+  matches: ChatEvidenceRecord[]
+  additionalKeywords: string[]
+}): string[] {
+  return tokenizeMergeText(params.additionalKeywords.join(' '))
+    .map((token, tokenIndex) => {
+      return {
+        token,
+        tokenIndex,
+        matchCount: params.matches.filter((match) => {
+          return recordMatchesToken(match, token)
+        }).length,
+      }
+    })
+    .filter((tokenScore) => {
+      return tokenScore.matchCount > 0
+    })
+    .sort((leftTokenScore, rightTokenScore) => {
+      return (
+        leftTokenScore.matchCount - rightTokenScore.matchCount ||
+        leftTokenScore.tokenIndex - rightTokenScore.tokenIndex
+      )
+    })
+    .map((tokenScore) => {
+      return tokenScore.token
+    })
 }
 
 function selectChronologicalBlogRecord(params: {
@@ -248,6 +348,7 @@ function resolveCurrentSourceSearchSlug(params: {
 function mergeMatches(
   previousMatches: ChatEvidenceRecord[],
   nextMatches: ChatEvidenceRecord[],
+  additionalKeywords: string[] = [],
 ): ChatEvidenceRecord[] {
   const mergedMatchMap = new Map<string, ChatEvidenceRecord>()
 
@@ -261,8 +362,26 @@ function mergeMatches(
 
   const mergedMatches = [...mergedMatchMap.values()]
   const prioritizedMatches = prioritizeBlogEvidence(mergedMatches)
+  const preservedMatchMap = new Map<string, ChatEvidenceRecord>()
 
-  return prioritizedMatches.slice(0, BLOG_CHAT.SEARCH.TOP_K)
+  for (const additionalKeywordToken of buildPrioritizedAdditionalKeywordTokens({
+    matches: prioritizedMatches,
+    additionalKeywords,
+  })) {
+    const keywordMatch = prioritizedMatches.find((match) => {
+      return recordMatchesToken(match, additionalKeywordToken)
+    })
+
+    if (keywordMatch) {
+      preservedMatchMap.set(keywordMatch.url, keywordMatch)
+    }
+  }
+
+  for (const prioritizedMatch of prioritizedMatches) {
+    preservedMatchMap.set(prioritizedMatch.url, prioritizedMatch)
+  }
+
+  return [...preservedMatchMap.values()].slice(0, BLOG_CHAT.SEARCH.TOP_K)
 }
 
 function prioritizeBlogEvidence(
@@ -363,6 +482,7 @@ export function resolveChatRequest({
         selector:
           selector === 'oldest_post' ? 'oldest_post' : 'latest_post',
         selectedBlogRecord: selectedChronologicalBlogRecord,
+        question,
       }),
     }
   }
@@ -404,6 +524,7 @@ export function resolveChatRequest({
     mergedMatches = mergeMatches(
       mergedMatches,
       [...curatedSelection.matches, ...blogSelection.matches],
+      searchQuery.additionalKeywords,
     )
   }
 

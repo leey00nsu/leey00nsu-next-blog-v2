@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { resolveChatRequest } from './resolve-chat-request'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
+import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 
 const KO_CHAT_CONTACT_PROFILE: ChatContactProfile = {
   title: 'About Me',
@@ -406,6 +408,147 @@ describe('resolveChatRequest', () => {
     ).toBe(true)
   })
 
+  it('blog 후보가 여러 개여도 명시 기술 키워드가 있는 blog 근거를 병합 결과에 유지한다', () => {
+    const curatedRecords: ChatEvidenceRecord[] = [
+      ...CURATED_CHAT_SOURCES,
+      {
+        id: 'ko/project/blog/impact',
+        locale: 'ko',
+        slug: 'blog',
+        title: '블로그',
+        url: '/ko/projects/blog#impact',
+        excerpt: '블로그 운영 경험',
+        content: '블로그 작성자 이윤수의 프로젝트 운영 경험을 설명합니다.',
+        sectionTitle: 'Impact',
+        tags: ['project'],
+        searchTerms: ['블로그 작성자 이윤수 경험'],
+        sourceCategory: 'project',
+      },
+    ]
+    const blogRecords: ChatEvidenceRecord[] = [
+      {
+        id: 'ko/blog/chat-rag/embedding',
+        locale: 'ko',
+        slug: 'chat-rag',
+        title: '블로그 챗봇은 어떻게 RAG까지 가게 됐을까',
+        url: '/ko/blog/chat-rag#embedding',
+        excerpt: 'RAG 경험',
+        content: '블로그 작성자 이윤수의 RAG 사용 경험을 설명합니다.',
+        sectionTitle: 'Embedding',
+        tags: ['rag'],
+        searchTerms: ['블로그 작성자 이윤수 경험'],
+        sourceCategory: 'blog',
+      },
+      {
+        id: 'ko/blog/chat-rag/question',
+        locale: 'ko',
+        slug: 'chat-rag',
+        title: '블로그 챗봇은 어떻게 RAG까지 가게 됐을까',
+        url: '/ko/blog/chat-rag#question',
+        excerpt: '질문 처리 경험',
+        content: '블로그 작성자 질문 처리 경험을 설명합니다.',
+        sectionTitle: 'Question',
+        tags: ['rag'],
+        searchTerms: ['블로그 작성자 경험'],
+        sourceCategory: 'blog',
+      },
+      {
+        id: 'ko/blog/vercel/intro',
+        locale: 'ko',
+        slug: 'why-i-do-not-use-vercel-anymore',
+        title: '내가 더 이상 Vercel 호스팅을 사용하지 않는 이유',
+        url: '/ko/blog/why-i-do-not-use-vercel-anymore',
+        excerpt: 'Vercel에서 Coolify로 옮긴 이야기',
+        content:
+          '정적 페이지나 Next.js의 경우에는 Vercel을 통해 배포를 하기도 하였습니다.',
+        sectionTitle: null,
+        tags: ['vercel'],
+        searchTerms: ['Vercel 사용 경험'],
+        sourceCategory: 'blog',
+      },
+    ]
+
+    const result = resolveChatRequest({
+      question: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+      locale: 'ko',
+      blogRecords,
+      curatedRecords,
+      questionAnalysis: {
+        normalizedQuestion: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+        questionType: 'general',
+        searchQueries: [
+          {
+            question: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+            intent: 'general',
+            additionalKeywords: ['Vercel', '사용해본 적', '경험'],
+            preferredSourceCategories: ['blog', 'profile'],
+          },
+        ],
+      },
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(
+      result.matches.some((match) => {
+        return match.slug === 'why-i-do-not-use-vercel-anymore'
+      }),
+    ).toBe(true)
+  })
+
+  it('generated 병합 결과에서도 Vercel 핵심 키워드 blog 근거를 유지한다', async () => {
+    const locale = 'ko'
+    const result = resolveChatRequest({
+      question: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+      locale,
+      blogRecords: GENERATED_BLOG_SEARCH_RECORDS[locale].map((record) => {
+        return {
+          ...record,
+          sourceCategory: 'blog' as const,
+        }
+      }),
+      curatedRecords: await getCuratedChatSources(locale),
+      questionAnalysis: {
+        normalizedQuestion: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+        questionType: 'general',
+        searchQueries: [
+          {
+            question: '블로그 작성자 이윤수는 Vercel을 써봤나요?',
+            intent: 'general',
+            additionalKeywords: [
+              'profile',
+              'about',
+              'author',
+              '소개',
+              '프로필',
+              '작성자',
+              'Vercel',
+              '사용해본 적',
+              '경험',
+            ],
+            preferredSourceCategories: ['profile', 'blog'],
+          },
+        ],
+      },
+      questionRouting: {
+        selector: 'retrieval',
+        action: 'answer',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(true)
+    expect(
+      result.matches.some((match) => {
+        return match.slug === 'why-i-do-not-use-vercel-anymore'
+      }),
+    ).toBe(true)
+  })
+
   it('ko 로케일에서도 영어 이름 질문은 canonical profile source를 찾는다', () => {
     const result = resolveChatRequest({
       question: 'what is his name',
@@ -483,6 +626,27 @@ describe('resolveChatRequest', () => {
 
     expect(result.shouldCallModel).toBe(false)
     expect(result.directResponse?.answer).toContain('가장 최신 글')
+    expect(result.directResponse?.citations[0]?.url).toBe(
+      '/ko/blog/latest-post',
+    )
+  })
+
+  it('latest_post 날짜 질문은 최신 글 제목과 게시일을 직접 반환한다', () => {
+    const result = resolveChatRequest({
+      question: '마지막 글 언제야?',
+      locale: 'ko',
+      blogRecords: BLOG_CHAT_SOURCES,
+      curatedRecords: CURATED_CHAT_SOURCES,
+      questionRouting: {
+        selector: 'latest_post',
+        action: 'answer',
+        reason: 'test',
+      },
+    })
+
+    expect(result.shouldCallModel).toBe(false)
+    expect(result.directResponse?.answer).toContain('가장 최신 글')
+    expect(result.directResponse?.answer).toContain('2026년 3월 1일')
     expect(result.directResponse?.citations[0]?.url).toBe(
       '/ko/blog/latest-post',
     )

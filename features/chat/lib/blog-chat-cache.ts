@@ -1,6 +1,8 @@
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 
 const NON_CACHEABLE_REFUSAL_REASONS: ReadonlySet<string> = new Set([
+  'insufficient_search_match',
+  'insufficient_evidence',
   'invalid_citations',
   'missing_api_key',
   'model_error',

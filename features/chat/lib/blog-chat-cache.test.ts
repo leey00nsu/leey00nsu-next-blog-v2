@@ -25,14 +25,14 @@ describe('shouldCacheBlogChatResponse', () => {
     ).toBe(true)
   })
 
-  it('검색 부족/근거 부족 거절도 캐시한다', () => {
+  it('검색 부족/근거 부족 거절은 캐시하지 않는다', () => {
     expect(
       shouldCacheBlogChatResponse(
         buildResponse({
           refusalReason: 'insufficient_search_match',
         }),
       ),
-    ).toBe(true)
+    ).toBe(false)
 
     expect(
       shouldCacheBlogChatResponse(
@@ -40,7 +40,7 @@ describe('shouldCacheBlogChatResponse', () => {
           refusalReason: 'insufficient_evidence',
         }),
       ),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('일일 제한, 모델 오류 같은 응답은 캐시하지 않는다', () => {

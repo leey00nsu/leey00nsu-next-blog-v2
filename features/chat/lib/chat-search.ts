@@ -368,6 +368,44 @@ function limitMatchesPerSlug(
   return limitedMatches
 }
 
+function recordMatchesToken(record: ChatEvidenceRecord, token: string): boolean {
+  const normalizedRecordText = normalizeText(
+    [
+      record.title,
+      record.sectionTitle ?? '',
+      record.content,
+      record.tags.join(' '),
+      (record.searchTerms ?? []).join(' '),
+    ].join(' '),
+  )
+
+  return normalizedRecordText.includes(token)
+}
+
+function preserveAdditionalKeywordMatches(params: {
+  scoredMatches: ScoredChatEvidenceRecord[]
+  limitedMatches: ScoredChatEvidenceRecord[]
+  additionalKeywordTokens: string[]
+}): ScoredChatEvidenceRecord[] {
+  const preservedMatchMap = new Map<string, ScoredChatEvidenceRecord>()
+
+  for (const additionalKeywordToken of params.additionalKeywordTokens) {
+    const keywordMatch = params.scoredMatches.find((scoredMatch) => {
+      return recordMatchesToken(scoredMatch, additionalKeywordToken)
+    })
+
+    if (keywordMatch) {
+      preservedMatchMap.set(keywordMatch.id, keywordMatch)
+    }
+  }
+
+  for (const limitedMatch of params.limitedMatches) {
+    preservedMatchMap.set(limitedMatch.id, limitedMatch)
+  }
+
+  return [...preservedMatchMap.values()].slice(0, BLOG_CHAT.SEARCH.TOP_K)
+}
+
 function selectCurrentPostFallbackMatches(
   currentPostSlug: string,
   records: ChatEvidenceRecord[],
@@ -407,6 +445,7 @@ export function selectChatSearchMatches({
   })
   const normalizedQuestion = normalizeText(normalizedQuery.normalizedSearchQuestion)
   const baseQuestionTokens = normalizedQuery.queryTokens
+  const additionalKeywordTokens = tokenizeText(additionalKeywords.join(' '))
   const questionTokens = buildExpandedTokens(baseQuestionTokens, [
     ...normalizedQuery.additionalKeywords,
     ...additionalKeywords,
@@ -459,10 +498,14 @@ export function selectChatSearchMatches({
       return rightRecord.score - leftRecord.score
     })
 
-  const limitedMatches = limitMatchesPerSlug(scoredMatches).slice(
-    0,
-    BLOG_CHAT.SEARCH.TOP_K,
-  )
+  const limitedMatches = preserveAdditionalKeywordMatches({
+    scoredMatches,
+    limitedMatches: limitMatchesPerSlug(scoredMatches).slice(
+      0,
+      BLOG_CHAT.SEARCH.TOP_K,
+    ),
+    additionalKeywordTokens,
+  })
 
   if (limitedMatches.length === 0) {
     if (currentPostSlug && isContextDrivenQuestion(question)) {

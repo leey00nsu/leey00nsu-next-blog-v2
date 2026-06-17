@@ -11,6 +11,7 @@ import type {
   BlogChatHistoryItem,
   BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
+import { BlogChatResponseSchema } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { LOCALES } from '@/shared/config/constants'
 
@@ -61,9 +62,37 @@ function buildBlogChatConversationHistory(requestBody: unknown) {
       return {
         question: turnHistoryItem.user.content,
         answer: turnHistoryItem.assistant?.content ?? '',
-        citations: [],
+        citations: resolveAssistantBlogChatResponseCitations(
+          requestBody.history.find((historyItem) => {
+            return (
+              historyItem.role === turnHistoryItem.assistant?.role &&
+              historyItem.senderId === turnHistoryItem.assistant.senderId &&
+              historyItem.createdAt === turnHistoryItem.assistant.createdAt
+            )
+          }),
+        ),
       }
     })
+}
+
+function resolveAssistantBlogChatResponseCitations(
+  historyItem: unknown,
+): BlogChatHistoryItem['citations'] {
+  if (
+    !historyItem ||
+    typeof historyItem !== 'object' ||
+    !('metadata' in historyItem) ||
+    typeof historyItem.metadata !== 'object'
+  ) {
+    return []
+  }
+
+  const metadata = historyItem.metadata as BlogChatMessageMetadata
+  const parsedResponse = BlogChatResponseSchema.safeParse(
+    metadata.blogChatResponse,
+  )
+
+  return parsedResponse.success ? parsedResponse.data.citations : []
 }
 
 function buildApplicationRequestBody(requestBody: unknown): unknown {

@@ -1,5 +1,6 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
+import { selectEvidenceCoveringRequiredConcepts } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatResolvedRetrievalScope } from '@/features/chat/lib/chat-retrieval-scope'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
@@ -12,6 +13,8 @@ interface SelectFinalChatEvidenceParams {
   retrievalScope: ChatResolvedRetrievalScope
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
+  requiredConcepts?: string[]
+  optionalConcepts?: string[]
 }
 
 interface RankedChatEvidenceRecord extends ChatEvidenceRecord {
@@ -51,6 +54,7 @@ function buildQuestionTokens(params: {
   question: string
   locale: SupportedLocale
   questionPlan: ChatQuestionPlan
+  optionalConcepts: string[]
 }): string[] {
   const normalizedQuestion = normalizeChatQuery({
     question: params.question,
@@ -61,7 +65,10 @@ function buildQuestionTokens(params: {
     locale: params.locale,
   })
   const normalizedKeywords = normalizeChatQuery({
-    question: params.questionPlan.additionalKeywords.join(' '),
+    question: [
+      ...params.questionPlan.additionalKeywords,
+      ...params.optionalConcepts,
+    ].join(' '),
     locale: params.locale,
   })
 
@@ -157,12 +164,15 @@ export function selectFinalChatEvidence({
   retrievalScope,
   lexicalMatches,
   semanticMatches,
+  requiredConcepts = [],
+  optionalConcepts = [],
 }: SelectFinalChatEvidenceParams): ChatEvidenceRecord[] {
   const rankedMatchMap = new Map<string, RankedChatEvidenceRecord>()
   const questionTokens = buildQuestionTokens({
     question,
     locale,
     questionPlan,
+    optionalConcepts,
   })
   const preferredSourceCategorySet = new Set(
     questionPlan.preferredSourceCategories,
@@ -202,7 +212,7 @@ export function selectFinalChatEvidence({
     })
   }
 
-  return [...rankedMatchMap.values()]
+  const rankedMatches = [...rankedMatchMap.values()]
     .filter((match) => {
       if (
         retrievalScope.mode !== 'current_source' ||
@@ -226,8 +236,13 @@ export function selectFinalChatEvidence({
           (rightMatch.semanticRank ?? Number.MAX_SAFE_INTEGER)
       )
     })
-    .slice(0, BLOG_CHAT.SEARCH.TOP_K)
     .map(({ score, lexicalRank, semanticRank, ...match }) => {
       return match
     })
+
+  return selectEvidenceCoveringRequiredConcepts({
+    matches: rankedMatches,
+    requiredConcepts,
+    locale,
+  }).slice(0, BLOG_CHAT.SEARCH.TOP_K)
 }

@@ -75,4 +75,52 @@ describe('selectFinalChatEvidence', () => {
 
     expect(selectedMatches[0]?.id).toBe('ko/about/profile-tech-stack')
   })
+
+  it('optional 개념은 근거를 제거하지 않고 관련 근거의 순위만 높인다', () => {
+    const profileRecord = createEvidenceRecord({
+      id: 'ko/about/profile',
+      content: '이윤수의 개발자 프로필입니다.',
+    })
+    const vercelRecord = createEvidenceRecord({
+      id: 'ko/blog/vercel',
+      slug: 'vercel',
+      title: 'Vercel 사용 경험',
+      url: '/ko/blog/vercel',
+      sourceCategory: 'blog',
+      content: 'Vercel로 배포했던 경험을 정리했습니다.',
+    })
+
+    const selectedMatches = selectFinalChatEvidence({
+      question: '배포 경험을 알려줘',
+      locale: 'ko',
+      questionPlan: {
+        ...TECH_STACK_QUESTION_PLAN,
+        retrievalScope: 'corpus',
+        referenceTarget: {
+          kind: 'none',
+          sourceCategory: null,
+          slug: null,
+          title: null,
+          confidence: 'high',
+        },
+        preferredSourceCategories: [],
+        additionalKeywords: [],
+      },
+      retrievalScope: {
+        mode: 'corpus',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
+      lexicalMatches: [profileRecord, vercelRecord],
+      semanticMatches: [],
+      requiredConcepts: [],
+      optionalConcepts: ['Vercel'],
+    })
+
+    expect(selectedMatches.map((match) => match.id)).toEqual([
+      'ko/blog/vercel',
+      'ko/about/profile',
+    ])
+  })
 })

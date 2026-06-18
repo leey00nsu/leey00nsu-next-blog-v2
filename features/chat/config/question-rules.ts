@@ -10,6 +10,7 @@ export const CHAT_QUESTION_RULES = {
     하네스: ['harness', 'harness engineering'],
     reactquery: ['react query', 'react-query'],
     nextjs: ['next.js', 'next js'],
+    vercel: ['버셀'],
     기술스택: ['기술 스택', '주로 쓰는 기술'],
   },
   CONTEXT_QUERY_PATTERNS: [

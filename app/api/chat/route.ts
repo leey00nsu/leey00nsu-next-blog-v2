@@ -7,11 +7,17 @@ import {
   isLeeChatRequest,
 } from 'lee-chat-sdk/server'
 import { answerBlogChatQuestion } from '@/features/chat/model/answer-blog-chat-question'
+import {
+  ChatConversationStateSchema,
+  EMPTY_CHAT_CONVERSATION_STATE,
+  type ChatConversationState,
+} from '@/features/chat/model/chat-conversation-state'
 import type {
   BlogChatHistoryItem,
   BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
 import { BlogChatResponseSchema } from '@/features/chat/model/chat-schema'
+import { BlogChatApplicationResponseSchema } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { LOCALES } from '@/shared/config/constants'
 
@@ -30,6 +36,7 @@ interface BlogChatRequestMetadata {
 
 interface BlogChatMessageMetadata {
   blogChatResponse: BlogChatResponse | Record<string, unknown>
+  conversationState?: ChatConversationState | Record<string, unknown>
 }
 
 function resolveRequestLocale(metadata: BlogChatRequestMetadata | undefined) {
@@ -95,6 +102,49 @@ function resolveAssistantBlogChatResponseCitations(
   return parsedResponse.success ? parsedResponse.data.citations : []
 }
 
+function resolveAssistantConversationState(
+  historyItem: unknown,
+): ChatConversationState | null {
+  if (
+    !historyItem ||
+    typeof historyItem !== 'object' ||
+    !('metadata' in historyItem) ||
+    typeof historyItem.metadata !== 'object' ||
+    historyItem.metadata === null ||
+    !('conversationState' in historyItem.metadata)
+  ) {
+    return null
+  }
+
+  const parsedState = ChatConversationStateSchema.safeParse(
+    historyItem.metadata.conversationState,
+  )
+
+  return parsedState.success ? parsedState.data : null
+}
+
+function resolveLatestConversationState(
+  requestBody: Parameters<typeof isLeeChatRequest>[0],
+): ChatConversationState {
+  if (!isLeeChatRequest(requestBody)) {
+    return EMPTY_CHAT_CONVERSATION_STATE
+  }
+
+  for (const historyItem of requestBody.history.toReversed()) {
+    if (historyItem.role !== 'assistant') {
+      continue
+    }
+
+    const conversationState = resolveAssistantConversationState(historyItem)
+
+    if (conversationState) {
+      return conversationState
+    }
+  }
+
+  return EMPTY_CHAT_CONVERSATION_STATE
+}
+
 function buildApplicationRequestBody(requestBody: unknown): unknown {
   if (!isLeeChatRequest(requestBody)) {
     return requestBody
@@ -108,7 +158,30 @@ function buildApplicationRequestBody(requestBody: unknown): unknown {
     locale: resolveRequestLocale(metadata),
     currentPostSlug: resolveCurrentPostSlug(metadata),
     conversationHistory: buildBlogChatConversationHistory(requestBody),
+    conversationState: resolveLatestConversationState(requestBody),
   }
+}
+
+function resolveBlogChatResponse(responseBody: unknown): unknown {
+  const parsedApplicationResponse =
+    BlogChatApplicationResponseSchema.safeParse(responseBody)
+
+  return parsedApplicationResponse.success
+    ? parsedApplicationResponse.data.response
+    : responseBody
+}
+
+function resolveResponseConversationState(params: {
+  responseBody: unknown
+  requestBody: unknown
+}): ChatConversationState {
+  const parsedApplicationResponse = BlogChatApplicationResponseSchema.safeParse(
+    params.responseBody,
+  )
+
+  return parsedApplicationResponse.success
+    ? parsedApplicationResponse.data.conversationState
+    : resolveLatestConversationState(params.requestBody)
 }
 
 function resolveResponseAnswer(responseBody: Record<string, unknown>): string {
@@ -120,16 +193,24 @@ function resolveResponseAnswer(responseBody: Record<string, unknown>): string {
 export async function POST(request: NextRequest) {
   try {
     const requestBody = await request.json()
+    const applicationRequestBody = buildApplicationRequestBody(requestBody)
     const result = await answerBlogChatQuestion({
-      requestBody: buildApplicationRequestBody(requestBody),
+      requestBody: applicationRequestBody,
       requestHeaders: request.headers,
     })
+    const blogChatResponse = resolveBlogChatResponse(result.body)
     const responseBody = isLeeChatRequest(requestBody)
       ? createLeeChatTextResponse<BlogChatMessageMetadata>({
           request: requestBody,
-          content: resolveResponseAnswer(result.body),
+          content: resolveResponseAnswer(
+            blogChatResponse as Record<string, unknown>,
+          ),
           metadata: {
-            blogChatResponse: result.body,
+            blogChatResponse: blogChatResponse as Record<string, unknown>,
+            conversationState: resolveResponseConversationState({
+              responseBody: result.body,
+              requestBody,
+            }),
           },
         })
       : result.body

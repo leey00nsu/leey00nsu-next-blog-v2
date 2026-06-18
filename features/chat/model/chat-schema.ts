@@ -1,5 +1,9 @@
 import { z } from 'zod'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
+import {
+  ChatConversationStateSchema,
+  EMPTY_CHAT_CONVERSATION_STATE,
+} from '@/features/chat/model/chat-conversation-state'
 import { ChatSourceCategorySchema } from '@/features/chat/model/chat-evidence'
 import { LOCALES } from '@/shared/config/constants'
 
@@ -33,6 +37,9 @@ export const BlogChatRequestSchema = z.object({
     .max(2)
     .optional()
     .default([]),
+  conversationState: ChatConversationStateSchema.default(
+    EMPTY_CHAT_CONVERSATION_STATE,
+  ),
 })
 
 export const BlogChatResponseSchema = z.object({
@@ -63,6 +70,11 @@ export const BlogChatModelDraftSchema = z.object({
   refusalReason: z.enum(['insufficient_evidence']).nullable(),
 })
 
+export const BlogChatApplicationResponseSchema = z.object({
+  response: BlogChatResponseSchema,
+  conversationState: ChatConversationStateSchema,
+})
+
 export interface BlogChatCitation
   extends z.infer<typeof BlogChatCitationSchema> {}
 
@@ -74,3 +86,5 @@ export interface BlogChatResponse
 
 export interface BlogChatModelDraft
   extends z.infer<typeof BlogChatModelDraftSchema> {}
+export interface BlogChatApplicationResponse
+  extends z.infer<typeof BlogChatApplicationResponseSchema> {}

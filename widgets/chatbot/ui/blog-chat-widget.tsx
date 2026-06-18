@@ -10,6 +10,7 @@ import { ArrowUpRight, MessageCircleMore } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
+import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { ROUTES } from '@/shared/config/constants'
 import { BlogChatAssistantLoading } from '@/widgets/chatbot/ui/blog-chat-assistant-loading'
@@ -40,6 +41,7 @@ interface BlogChatWidgetViewProps {
 
 interface BlogChatMessageMetadata {
   blogChatResponse?: BlogChatResponse
+  conversationState?: ChatConversationState
 }
 
 export function BlogChatWidget() {

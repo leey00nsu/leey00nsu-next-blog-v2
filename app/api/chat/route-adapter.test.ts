@@ -1,8 +1,23 @@
 import type { NextRequest } from 'next/server'
 import { createMockLeeChatRequest } from 'lee-chat-sdk/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
 const answerBlogChatQuestionMock = vi.fn()
+
+const OWNER_CONVERSATION_STATE = {
+  ...EMPTY_CHAT_CONVERSATION_STATE,
+  resolvedTarget: {
+    kind: 'profile' as const,
+    sourceCategory: 'profile' as const,
+    slug: 'about',
+    title: '이윤수',
+  },
+  requestedFields: ['content' as const],
+  requiredConcepts: ['Vercel'],
+  evidenceScope: 'entity' as const,
+  lastResolvedQuestion: '이윤수가 Vercel을 사용했나요?',
+}
 
 vi.mock('@/features/chat/model/answer-blog-chat-question', () => {
   return {
@@ -115,6 +130,7 @@ function createLeeChatRequestWithAssistantMetadata(): NextRequest {
           parts: [{ type: 'text', text: '누구를 가리키는지 알려주세요.' }],
           createdAt: '2026-06-05T00:00:01.000Z',
           metadata: {
+            conversationState: OWNER_CONVERSATION_STATE,
             blogChatResponse: {
               answer: '누구를 가리키는지 알려주세요.',
               grounded: true,
@@ -193,6 +209,7 @@ describe('POST /api/chat route adapter', () => {
             citations: [],
           },
         ],
+        conversationState: EMPTY_CHAT_CONVERSATION_STATE,
       },
       requestHeaders: expect.any(Headers),
     })
@@ -204,6 +221,7 @@ describe('POST /api/chat route adapter', () => {
         parts: [{ type: 'text', text: 'React와 TypeScript를 사용합니다.' }],
         createdAt: expect.any(String),
         metadata: {
+          conversationState: EMPTY_CHAT_CONVERSATION_STATE,
           blogChatResponse: {
             answer: 'React와 TypeScript를 사용합니다.',
             citations: [],
@@ -245,6 +263,7 @@ describe('POST /api/chat route adapter', () => {
             ],
           },
         ],
+        conversationState: OWNER_CONVERSATION_STATE,
       }),
       requestHeaders: expect.any(Headers),
     })

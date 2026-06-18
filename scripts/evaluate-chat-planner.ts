@@ -222,7 +222,11 @@ async function main(): Promise<void> {
   }
 
   const results = [
-    ...(await Promise.all(CHAT_PLANNER_GOLDEN_CASES.map(evaluatePlannerCase))),
+    ...(await Promise.all(
+      CHAT_PLANNER_GOLDEN_CASES.map((goldenCase) => {
+        return evaluatePlannerCase(goldenCase)
+      }),
+    )),
     await evaluateConversationScenario(),
   ]
   const failures = results.filter((result) => !result.passed)

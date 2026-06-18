@@ -4,7 +4,10 @@ import {
   EMPTY_CHAT_CONVERSATION_STATE,
 } from '@/features/chat/model/chat-conversation-state'
 import type { ChatIntentPlan } from '@/features/chat/model/chat-intent'
-import type { BlogChatRequest } from '@/features/chat/model/chat-schema'
+import type {
+  BlogChatRequest,
+  BlogChatResponse,
+} from '@/features/chat/model/chat-schema'
 import { runStatefulBlogChatPipeline } from '@/features/chat/model/run-stateful-blog-chat-pipeline'
 
 const OWNER_CANDIDATE = {
@@ -16,6 +19,8 @@ const OWNER_CANDIDATE = {
   searchTerms: ['작성자'],
   sourceCategory: 'profile' as const,
 }
+
+const NO_CACHED_RESPONSE: BlogChatResponse | undefined = undefined
 
 const OWNER_PLAN: ChatIntentPlan = {
   standaloneQuestion: '이윤수가 Vercel을 사용했나요?',
@@ -77,8 +82,10 @@ function buildDependencies() {
     answerQuestion: vi.fn(),
     getCachedResponse: vi.fn().mockReturnValue(null),
     setCachedResponse: vi.fn(),
-    findSemanticResponse: vi.fn().mockResolvedValue(undefined),
-    storeSemanticResponse: vi.fn().mockResolvedValue(undefined),
+    findSemanticResponse: vi.fn(() => {
+      return Promise.resolve(NO_CACHED_RESPONSE)
+    }),
+    storeSemanticResponse: vi.fn(() => Promise.resolve()),
   }
 }
 

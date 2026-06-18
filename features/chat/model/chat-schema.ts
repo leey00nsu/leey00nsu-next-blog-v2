@@ -88,3 +88,4 @@ export interface BlogChatModelDraft
   extends z.infer<typeof BlogChatModelDraftSchema> {}
 export interface BlogChatApplicationResponse
   extends z.infer<typeof BlogChatApplicationResponseSchema> {}
+export interface BlogChatRequest extends z.infer<typeof BlogChatRequestSchema> {}

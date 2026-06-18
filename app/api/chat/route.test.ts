@@ -8,6 +8,7 @@ const finalizeBlogChatResponseMock = vi.fn()
 const resolveChatRequestMock = vi.fn()
 const getCuratedChatSourcesMock = vi.fn()
 const planChatQuestionMock = vi.fn()
+const planChatIntentPatchMock = vi.fn()
 const runChatRagWorkflowMock = vi.fn()
 const getChatAssistantProfileMock = vi.fn()
 const getChatContactProfileMock = vi.fn()
@@ -125,6 +126,7 @@ vi.mock('@/features/chat/lib/resolve-chat-request', () => {
 
 vi.mock('@/features/chat/api/plan-chat-question', () => {
   return {
+    planChatIntentPatch: planChatIntentPatchMock,
     planChatQuestion: planChatQuestionMock,
   }
 })

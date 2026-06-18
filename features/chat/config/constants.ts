@@ -16,6 +16,10 @@ export const BLOG_CHAT = {
     process.env.VERCEL_GIT_COMMIT_SHA ??
     process.env.GIT_COMMIT_SHA ??
     'development',
+  PIPELINE: {
+    STATEFUL_RAG_ENABLED:
+      process.env.BLOG_CHAT_STATEFUL_RAG_ENABLED !== 'false',
+  },
   INPUT: {
     MAXIMUM_QUESTION_CHARACTERS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_MAXIMUM_QUESTION_CHARACTERS,

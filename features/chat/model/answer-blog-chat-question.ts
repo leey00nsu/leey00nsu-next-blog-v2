@@ -28,6 +28,11 @@ import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistan
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
 import { retrieveBlogChatEvidence } from '@/features/chat/model/retrieve-blog-chat-evidence'
 import {
+  runStatefulBlogChatPipeline,
+  type StatefulBlogChatPipelineResult,
+} from '@/features/chat/model/run-stateful-blog-chat-pipeline'
+import {
+  type BlogChatApplicationResponse,
   BlogChatRequestSchema,
   BlogChatResponseSchema,
   type BlogChatResponse,
@@ -47,6 +52,14 @@ interface ChatObservabilityState {
   plannerDeterministicAction: string | null
   preferredSourceCategories: string[]
   additionalKeywords: string[]
+  intentOperation: string | null
+  intentTargetKind: string | null
+  intentEvidenceScope: string | null
+  intentTemporalOrder: string | null
+  intentRequestedFields: string[]
+  intentRequiredConcepts: string[]
+  intentOptionalConcepts: string[]
+  plannerFailureKind: string | null
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
   finalMatches: ChatEvidenceRecord[]
@@ -58,7 +71,10 @@ export interface AnswerBlogChatQuestionParams {
 }
 
 export interface BlogChatApplicationResult {
-  body: BlogChatResponse | Record<string, unknown>
+  body:
+    | BlogChatResponse
+    | BlogChatApplicationResponse
+    | Record<string, unknown>
   status?: number
 }
 
@@ -226,6 +242,17 @@ async function recordAnswerObservability(params: {
     preferredSourceCategories:
       params.chatObservabilityState.preferredSourceCategories,
     additionalKeywords: params.chatObservabilityState.additionalKeywords,
+    intentOperation: params.chatObservabilityState.intentOperation,
+    intentTargetKind: params.chatObservabilityState.intentTargetKind,
+    intentEvidenceScope: params.chatObservabilityState.intentEvidenceScope,
+    intentTemporalOrder: params.chatObservabilityState.intentTemporalOrder,
+    intentRequestedFields:
+      params.chatObservabilityState.intentRequestedFields,
+    intentRequiredConcepts:
+      params.chatObservabilityState.intentRequiredConcepts,
+    intentOptionalConcepts:
+      params.chatObservabilityState.intentOptionalConcepts,
+    plannerFailureKind: params.chatObservabilityState.plannerFailureKind,
     lexicalMatches: summarizeMatches(
       params.chatObservabilityState.lexicalMatches,
     ),
@@ -260,6 +287,30 @@ async function buildLoggedResult(params: {
 
   return {
     body: BlogChatResponseSchema.parse(params.responseData),
+  }
+}
+
+async function buildLoggedStatefulResult(params: {
+  locale: SupportedLocale
+  pipelineResult: StatefulBlogChatPipelineResult
+  requestStartedAt: number
+  chatObservabilityState: ChatObservabilityState
+}): Promise<BlogChatApplicationResult> {
+  const responseData = params.pipelineResult.applicationResponse.response
+
+  try {
+    await recordAnswerObservability({
+      locale: params.locale,
+      responseData,
+      requestStartedAt: params.requestStartedAt,
+      chatObservabilityState: params.chatObservabilityState,
+    })
+  } catch (error) {
+    console.error('Failed to record chat observability event.', error)
+  }
+
+  return {
+    body: params.pipelineResult.applicationResponse,
   }
 }
 
@@ -362,12 +413,70 @@ export async function answerBlogChatQuestion({
         plannerDeterministicAction: null,
         preferredSourceCategories: [],
         additionalKeywords: [],
+        intentOperation: null,
+        intentTargetKind: null,
+        intentEvidenceScope: null,
+        intentTemporalOrder: null,
+        intentRequestedFields: [],
+        intentRequiredConcepts: [],
+        intentOptionalConcepts: [],
+        plannerFailureKind: null,
         lexicalMatches: [],
         semanticMatches: [],
         finalMatches: [],
       }
       const assistantProfile = getChatAssistantProfile(locale)
       const contactProfile = getChatContactProfile(locale)
+
+      if (BLOG_CHAT.PIPELINE?.STATEFUL_RAG_ENABLED) {
+        const pipelineResult = await runStatefulBlogChatPipeline({
+          request: parsedRequest.data,
+          assistantProfile,
+          contactProfile,
+        })
+        const intent = pipelineResult.intent
+        const evidenceResult = pipelineResult.execution?.evidenceResult
+
+        chatObservabilityState.cacheKind = pipelineResult.cacheKind
+        chatObservabilityState.resolvedQuestion =
+          intent?.standaloneQuestion ?? null
+        chatObservabilityState.normalizedQuestion = intent
+          ? normalizeQuestion(intent.standaloneQuestion)
+          : null
+        chatObservabilityState.plannerReason = intent?.reason ?? null
+        chatObservabilityState.plannerFailureKind =
+          pipelineResult.plannerFailureKind
+        chatObservabilityState.intentOperation = intent?.operation ?? null
+        chatObservabilityState.intentTargetKind = intent?.target.kind ?? null
+        chatObservabilityState.intentEvidenceScope =
+          intent?.evidenceScope ?? null
+        chatObservabilityState.intentTemporalOrder =
+          intent?.temporalConstraint.order ?? null
+        chatObservabilityState.intentRequestedFields = [
+          ...(intent?.requestedFields ?? []),
+        ]
+        chatObservabilityState.intentRequiredConcepts = [
+          ...(intent?.requiredConcepts ?? []),
+        ]
+        chatObservabilityState.intentOptionalConcepts = [
+          ...(intent?.optionalConcepts ?? []),
+        ]
+        chatObservabilityState.reranked = evidenceResult?.reranked ?? false
+        chatObservabilityState.lexicalMatches =
+          evidenceResult?.lexicalMatches ?? []
+        chatObservabilityState.semanticMatches =
+          evidenceResult?.semanticMatches ?? []
+        chatObservabilityState.finalMatches =
+          evidenceResult?.finalMatches ?? []
+
+        return buildLoggedStatefulResult({
+          locale,
+          pipelineResult,
+          requestStartedAt,
+          chatObservabilityState,
+        })
+      }
+
       const questionPlan = await planChatQuestion({
         question: originalQuestion,
         locale,

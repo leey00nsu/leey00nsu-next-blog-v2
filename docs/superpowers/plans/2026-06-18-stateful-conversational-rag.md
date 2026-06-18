@@ -1,734 +1,440 @@
-# Stateful Conversational RAG Implementation Plan
+# Stateful Conversational RAG Recovery Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the legacy `ChatQuestionPlan` pipeline with a stateful conversational RAG pipeline that preserves normalized intent from planner through execution, retrieval, cache, and SDK persistence.
+**Goal:** Restore the deployed chatbot's answer quality and complete a version 2 stateful conversational RAG pipeline grounded by a dynamic entity catalog.
 
-**Architecture:** The planner produces a `ChatIntentPatch`, a pure reducer combines it with validated client state into a `NormalizedChatIntent`, and executors consume that intent directly. The server remains stateless; `lee-chat-sdk` persists the latest `ChatConversationState` in assistant metadata through its existing localStorage persistence.
+**Architecture:** Build canonical entity candidates from existing post, project, profile, and assistant sources. The planner selects candidate IDs and an explicit context action; a normalizer and invariant validator produce an executable intent, and a reducer persists only minimal version 2 state. Existing retrieval and answer execution remain downstream consumers of `NormalizedChatIntent`.
 
-**Tech Stack:** Next.js 16.1.1, React 19.1, TypeScript, Zod 4.1.5, AI SDK 6.0.149, `@ai-sdk/openai` 3.0.51, LangGraph 1.2.7, `lee-chat-sdk` 0.3.1, Vitest 4
+**Tech Stack:** Next.js 16.1.1, React 19.1, TypeScript 5, Zod 4.1.5, AI SDK 6.0.149, `@ai-sdk/openai` 3.0.51, `lee-chat-sdk` 0.3.1, Vitest 4
 
 ---
 
 ## File Map
 
-### New domain files
+- `features/chat/model/chat-entity-candidate.ts`: candidate schema and catalog-facing domain types.
+- `features/chat/model/get-chat-entity-candidates.ts`: build locale-specific candidates from existing content records.
+- `features/chat/lib/match-chat-entity-candidates.ts`: pure normalized title, slug, and alias matching.
+- `features/chat/model/chat-intent.ts`: version 2 planner and normalized intent schemas.
+- `features/chat/model/normalize-chat-intent-plan.ts`: candidate resolution, scope normalization, and invariant validation.
+- `features/chat/model/chat-conversation-state.ts`: minimal version 2 client state.
+- `features/chat/model/reduce-chat-conversation-state.ts`: explicit `continue`, `reset`, and `resolve_clarification` transitions.
+- `features/chat/api/plan-chat-intent-patch.ts`: rename behavior to candidate-grounded `planChatIntent` while keeping the file path direct.
+- `features/chat/model/run-stateful-blog-chat-pipeline.ts`: candidate lookup, planning, normalization, reduction, and unchanged execution/cache orchestration.
+- `features/chat/fixtures/chat-planner-evaluation.ts`: golden planner and conversation cases.
+- `scripts/evaluate-chat-planner.ts`: live `.env` planner evaluation with non-zero exit on regression.
+- `app/api/chat/route.ts`: version 2 state metadata validation and persistence.
 
-- `features/chat/model/chat-intent.ts`: canonical intent enums, target, patch, normalized intent, and result schemas.
-- `features/chat/model/chat-conversation-state.ts`: versioned client state and pending clarification schemas.
-- `features/chat/model/reduce-chat-conversation-state.ts`: pure state transition and suspended-intent resume rules.
-- `features/chat/model/execute-chat-intent.ts`: executor selection and deterministic response orchestration.
-- `features/chat/lib/chat-intent-cache-key.ts`: stable semantic cache-key serialization.
-- `features/chat/lib/chat-required-concepts.ts`: alias normalization and required-concept evidence filtering.
-
-### Reworked files
-
-- `features/chat/api/plan-chat-question.ts`: replace full-frame/legacy-plan output with patch generation and one retry.
-- `features/chat/model/retrieve-blog-chat-evidence.ts`: accept `NormalizedChatIntent` directly.
-- `features/chat/lib/chat-retrieval-scope.ts`: derive scope from intent, not plan.
-- `features/chat/lib/chat-search.ts`: rank optional concepts without treating them as hard requirements.
-- `features/chat/lib/select-final-chat-evidence.ts`: enforce required concepts before `TOP_K`.
-- `features/chat/lib/should-rerank-chat-evidence.ts`: use intent properties.
-- `features/chat/model/answer-blog-chat-question.ts`: orchestrate state validation, patch reduction, cache, execution, and response state.
-- `features/chat/model/chat-schema.ts`: transport conversation state in request and response.
-- `app/api/chat/route.ts`: read the latest state from SDK assistant metadata and return the next state.
-- `features/chat/model/chat-observability.ts`: log normalized intent fields and planner failure kind.
-- `features/chat/fixtures/chat-planner-evaluation.ts`: express expected normalized intents and state transitions.
-
-### Removed after migration
-
-- `features/chat/model/chat-question-plan.ts`
-- `features/chat/model/chat-question-routing.ts`
-- `features/chat/model/resolve-chat-intent-frame.ts`
-- `features/chat/lib/chat-question-plan-routing.ts`
-- Their colocated tests and all imports of `ChatQuestionPlan`
-
-## Task 1: Define the Canonical Intent and Conversation State Contracts
+## Task 1: Add Golden Planner Regression Cases and Live Evaluator
 
 **Files:**
-- Create: `features/chat/model/chat-intent.ts`
-- Create: `features/chat/model/chat-intent.test.ts`
-- Create: `features/chat/model/chat-conversation-state.ts`
-- Create: `features/chat/model/chat-conversation-state.test.ts`
-- Modify: `features/chat/model/chat-intent-frame.ts`
+- Modify: `features/chat/fixtures/chat-planner-evaluation.ts`
+- Modify: `features/chat/lib/chat-planner-evaluation.test.ts`
+- Create: `scripts/evaluate-chat-planner.ts`
+- Modify: `package.json`
 
-- [ ] **Step 1: Write failing schema tests**
+- [ ] **Step 1: Write failing golden assertions**
 
-Add tests that parse a complete intent, reject an unknown operation, distinguish `preserve` from `clear`, accept state version `1`, and reject a state with more than eight required concepts.
-
-```ts
-const intent = NormalizedChatIntentSchema.parse({
-  standaloneQuestion: '이윤수가 Vercel을 사용한 경험이 있나요?',
-  operation: 'answer',
-  target: {
-    kind: 'profile',
-    sourceCategory: 'profile',
-    slug: 'about',
-    title: '이윤수',
-  },
-  temporalConstraint: { order: 'none' },
-  requestedFields: ['content'],
-  evidenceScope: 'entity',
-  requiredConcepts: ['Vercel'],
-  optionalConcepts: [],
-  missingSlots: [],
-  clarificationQuestion: null,
-  confidence: 'high',
-  reason: 'The target and required concept are explicit.',
-})
-
-expect(intent.requiredConcepts).toEqual(['Vercel'])
-expect(ChatTargetUpdateSchema.parse({ kind: 'preserve' })).toEqual({
-  kind: 'preserve',
-})
-expect(() => ChatConversationStateSchema.parse({
-  ...EMPTY_CHAT_CONVERSATION_STATE,
-  version: 2,
-})).toThrow()
-```
-
-- [ ] **Step 2: Run the schema tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.test.ts`
-
-Expected: FAIL because the new modules do not exist.
-
-- [ ] **Step 3: Implement the schemas and named exports**
-
-Define the following contracts with Zod limits declared as named constants:
+Add cases for these exact questions and assert that none requests clarification:
 
 ```ts
-export const CHAT_OPERATIONS = [
-  'answer',
-  'summarize',
-  'explain',
-  'recommend',
-  'compare',
-  'social_reply',
-  'contact',
+const GOLDEN_QUESTIONS = [
+  'lee-spec-kit을 왜 만들었어?',
+  'Leemage에서 Presigned URL을 사용한 이유가 뭐야?',
+  '최근 프로젝트에서 AI를 어떻게 활용하고 있어?',
 ] as const
-
-export const ChatTargetUpdateSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('preserve') }),
-  z.object({ kind: z.literal('replace'), target: ChatTargetSchema }),
-  z.object({ kind: z.literal('clear') }),
-])
-
-export const ChatIntentPatchSchema = z.object({
-  standaloneQuestion: z.string().trim().min(1).max(300),
-  targetUpdate: ChatTargetUpdateSchema,
-  operation: ChatOperationSchema,
-  temporalConstraint: ChatTemporalConstraintSchema,
-  requestedFields: z.array(ChatRequestedFieldSchema).max(5),
-  evidenceScope: ChatEvidenceScopeSchema,
-  requiredConcepts: z.array(ChatConceptSchema).max(8),
-  optionalConcepts: z.array(ChatConceptSchema).max(8),
-  missingSlots: z.array(ChatMissingSlotSchema).max(4),
-  clarificationQuestion: z.string().trim().min(1).max(160).nullable(),
-  confidence: ChatConfidenceSchema,
-  reason: z.string().trim().min(1).max(160),
-})
 ```
 
-Define `ChatPendingClarificationSchema` with `missingSlots`, `clarificationQuestion`, and `suspendedIntent`. Define `ChatConversationStateSchema`, `EMPTY_CHAT_CONVERSATION_STATE`, and `CHAT_CONVERSATION_STATE_VERSION = 1`. Reuse canonical schemas from `chat-intent.ts` and reduce `chat-intent-frame.ts` to temporary compatibility imports only.
+The first two must select their canonical project candidate and use `entity`; the last must use `corpus`. Add a conversation case for `이 사람 Vercel 써봤어? -> 블로그 주인 -> 왜 그만 썼어? -> Leemage...` and assert the last turn resets the prior clarification.
 
-- [ ] **Step 4: Run schema tests and type checking**
+- [ ] **Step 2: Run tests and verify RED**
 
-Run: `pnpm vitest run features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.test.ts`
+Run: `pnpm vitest run features/chat/lib/chat-planner-evaluation.test.ts`
 
-Expected: PASS.
+Expected: FAIL because version 2 candidate and context-action fields do not exist.
 
-Run: `pnpm exec tsc --noEmit`
+- [ ] **Step 3: Add the live evaluator contract**
 
-Expected: PASS.
+Create an evaluator that loads `.env`, invokes the real planner for every golden case, prints JSON, and sets `process.exitCode = 1` when any expected context action, candidate ID, scope, required concept, or clarification expectation differs. If `OPENAI_API_KEY` is missing, exit non-zero with `missing_api_key`; do not report success.
 
-- [ ] **Step 5: Commit the contracts**
+Add:
+
+```json
+"eval:chat-planner": "tsx scripts/evaluate-chat-planner.ts"
+```
+
+- [ ] **Step 4: Commit regression definitions**
 
 ```bash
-git add features/chat/model/chat-intent.ts features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.ts features/chat/model/chat-conversation-state.test.ts features/chat/model/chat-intent-frame.ts
-git commit -m "feat(chat): define conversational intent state contracts"
+git add features/chat/fixtures/chat-planner-evaluation.ts features/chat/lib/chat-planner-evaluation.test.ts scripts/evaluate-chat-planner.ts package.json
+git commit -m "test(chat): define conversational rag golden baseline"
 ```
 
-## Task 2: Implement Pure Conversation State Reduction
+## Task 2: Build and Match the Dynamic Entity Catalog
 
 **Files:**
-- Create: `features/chat/model/reduce-chat-conversation-state.ts`
-- Create: `features/chat/model/reduce-chat-conversation-state.test.ts`
+- Create: `features/chat/model/chat-entity-candidate.ts`
+- Create: `features/chat/model/get-chat-entity-candidates.ts`
+- Create: `features/chat/model/get-chat-entity-candidates.test.ts`
+- Create: `features/chat/lib/match-chat-entity-candidates.ts`
+- Create: `features/chat/lib/match-chat-entity-candidates.test.ts`
 
-- [ ] **Step 1: Write failing reducer tests**
+- [ ] **Step 1: Write failing catalog tests**
 
-Cover these state transitions:
+Assert that candidates built from injected evidence records:
 
 ```ts
-it('preserves a resolved target while replacing operation concepts', () => {})
-it('clears the target for an independent context reset', () => {})
-it('suspends an intent when a required slot is missing', () => {})
-it('resumes the suspended Vercel question when the owner target is supplied', () => {})
-it('does not carry old concepts into a new independent question', () => {})
-it('ignores a stale or invalid client state by starting from the empty state', () => {})
-it('builds an executable intent from complete state when the planner is unavailable', () => {})
+expect(candidates).toContainEqual(expect.objectContaining({
+  entityId: 'project/leemage',
+  kind: 'project',
+  slug: 'leemage',
+  title: 'Leemage',
+}))
 ```
 
-The resume assertion must require `requiredConcepts: ['Vercel']`, target `이윤수`, no missing slots, and `pendingClarification: null` after the follow-up `블로그 주인`.
+Assert normalized matching finds `project/lee-spec-kit` from `lee-spec-kit을 왜 만들었어?`, `project/leemage` from the Presigned URL question, and returns an empty array for `최근 프로젝트에서 AI를 어떻게 활용하고 있어?`.
 
-- [ ] **Step 2: Run the reducer tests and verify they fail**
+- [ ] **Step 2: Run tests and verify RED**
+
+Run: `pnpm vitest run features/chat/model/get-chat-entity-candidates.test.ts features/chat/lib/match-chat-entity-candidates.test.ts`
+
+Expected: FAIL because the modules do not exist.
+
+- [ ] **Step 3: Implement candidate schemas and pure matching**
+
+Use named exports and these contracts:
+
+```ts
+export interface ChatEntityCandidate {
+  entityId: string
+  kind: 'post' | 'project' | 'profile' | 'assistant'
+  slug: string
+  title: string
+  aliases: string[]
+  searchTerms: string[]
+  sourceCategory: ChatSourceCategory
+}
+
+export function buildChatEntityCandidates(params: {
+  records: ChatEvidenceRecord[]
+}): ChatEntityCandidate[]
+
+export function matchChatEntityCandidates(params: {
+  question: string
+  candidates: ChatEntityCandidate[]
+}): ChatEntityCandidate[]
+```
+
+Group evidence sections by source category and slug, derive project identity from project URLs/categories rather than a hardcoded name list, and deduplicate aliases case-insensitively. Match only title, slug, and aliases; broad search terms must not turn concepts such as `AI` into a project target.
+
+- [ ] **Step 4: Implement the runtime loader**
+
+`getChatEntityCandidates(locale)` combines the existing generated blog records with `getCuratedChatSources(locale)`, then calls the pure builder. Keep content loading in `model`, not `lib`.
+
+- [ ] **Step 5: Verify and commit**
+
+Run: `pnpm vitest run features/chat/model/get-chat-entity-candidates.test.ts features/chat/lib/match-chat-entity-candidates.test.ts`
+
+```bash
+git add features/chat/model/chat-entity-candidate.ts features/chat/model/get-chat-entity-candidates.ts features/chat/model/get-chat-entity-candidates.test.ts features/chat/lib/match-chat-entity-candidates.ts features/chat/lib/match-chat-entity-candidates.test.ts
+git commit -m "feat(chat): build dynamic entity candidate catalog"
+```
+
+## Task 3: Define Version 2 Intent, State, Normalization, and Invariants
+
+**Files:**
+- Modify: `features/chat/model/chat-intent.ts`
+- Modify: `features/chat/model/chat-intent.test.ts`
+- Modify: `features/chat/model/chat-conversation-state.ts`
+- Modify: `features/chat/model/chat-conversation-state.test.ts`
+- Create: `features/chat/model/normalize-chat-intent-plan.ts`
+- Create: `features/chat/model/normalize-chat-intent-plan.test.ts`
+
+- [ ] **Step 1: Write failing schema and invariant tests**
+
+Assert `ChatIntentPlanSchema` accepts:
+
+```ts
+{
+  contextAction: 'reset',
+  targetSelection: { kind: 'candidate', entityId: 'project/leemage' },
+  operation: 'explain',
+  evidenceScope: 'entity',
+}
+```
+
+Assert state version `2` accepts only `focusedTarget`, `lastIntent`, and `pendingClarification`. Assert normalization rejects an unknown candidate, rejects `resolve_clarification` without pending state, rejects evidence operations with `none`, clears pending state on reset, and canonicalizes target-backed scope to `entity`.
+
+- [ ] **Step 2: Run tests and verify RED**
+
+Run: `pnpm vitest run features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.test.ts features/chat/model/normalize-chat-intent-plan.test.ts`
+
+Expected: FAIL on the old `targetUpdate` and version 1 state contract.
+
+- [ ] **Step 3: Implement version 2 schemas**
+
+Replace `ChatTargetUpdateSchema` and `ChatIntentPatchSchema` with:
+
+```ts
+export const ChatContextActionSchema = z.enum([
+  'continue',
+  'reset',
+  'resolve_clarification',
+])
+
+export const ChatTargetSelectionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('candidate'), entityId: z.string().trim().min(1).max(180) }),
+  z.object({ kind: z.literal('preserve') }),
+  z.object({ kind: z.literal('none') }),
+])
+```
+
+`ChatIntentPlanSchema` extends the existing meaning fields. Keep `NormalizedChatIntent` as the downstream execution contract.
+
+Set `CHAT_CONVERSATION_STATE_VERSION = 2` and define:
+
+```ts
+interface ChatConversationState {
+  version: 2
+  focusedTarget: ChatTarget | null
+  lastIntent: NormalizedChatIntent | null
+  pendingClarification: ChatPendingClarification | null
+}
+```
+
+- [ ] **Step 4: Implement normalization and invariants**
+
+Use a discriminated result:
+
+```ts
+export function normalizeChatIntentPlan(params: {
+  intentPlan: ChatIntentPlan
+  candidates: ChatEntityCandidate[]
+  previousState: ChatConversationState
+  currentPostSlug?: string
+}):
+  | { ok: true; intent: NormalizedChatIntent }
+  | { ok: false; failureKind: 'invalid_candidate' | 'invalid_intent_plan' | 'invalid_transition' }
+```
+
+Resolve candidate IDs to canonical targets. Permit clarification only with actual missing slots. Scope normalization may fix `entity`, `current_source`, and `corpus`; it must not invent a missing canonical target or resume stale clarification.
+
+- [ ] **Step 5: Verify and commit**
+
+Run the three test files from Step 2 and `pnpm exec tsc --noEmit`.
+
+```bash
+git add features/chat/model/chat-intent.ts features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.ts features/chat/model/chat-conversation-state.test.ts features/chat/model/normalize-chat-intent-plan.ts features/chat/model/normalize-chat-intent-plan.test.ts
+git commit -m "refactor(chat): define version two intent invariants"
+```
+
+## Task 4: Ground the Planner With Candidate IDs
+
+**Files:**
+- Modify: `features/chat/api/plan-chat-intent-patch.ts`
+- Modify: `features/chat/api/plan-chat-intent-patch.test.ts`
+- Modify: `features/chat/fixtures/chat-planner-evaluation.ts`
+- Modify: `scripts/evaluate-chat-planner.ts`
+
+- [ ] **Step 1: Write failing planner tests**
+
+Mock `generateText` and assert candidates are serialized into the prompt; valid output returns `intentPlan`; schema failure retries once; a second failure returns `invalid_intent_plan`; and no API key returns `planner_unavailable` without mutating state.
+
+- [ ] **Step 2: Run and verify RED**
+
+Run: `pnpm vitest run features/chat/api/plan-chat-intent-patch.test.ts`
+
+Expected: FAIL because the current planner returns `intentPatch` and has no candidates.
+
+- [ ] **Step 3: Implement candidate-grounded planning**
+
+Rename the exported function to `planChatIntent` and its result property to `intentPlan`. Accept `entityCandidates`. The prompt must state that target selection can use only supplied `entityId` values, `reset + candidate` represents an independent named topic, multi-document questions use `corpus`, and unknown non-pronoun terms should search corpus before clarification.
+
+On validation failure, include the prior validation failure summary in the second attempt prompt. Keep the maximum attempt count as a named config constant.
+
+- [ ] **Step 4: Verify and commit**
+
+Run the planner test and golden fixture test.
+
+```bash
+git add features/chat/api/plan-chat-intent-patch.ts features/chat/api/plan-chat-intent-patch.test.ts features/chat/fixtures/chat-planner-evaluation.ts scripts/evaluate-chat-planner.ts
+git commit -m "fix(chat): ground planner with entity candidates"
+```
+
+## Task 5: Replace State Reduction With Explicit Context Actions
+
+**Files:**
+- Modify: `features/chat/model/reduce-chat-conversation-state.ts`
+- Modify: `features/chat/model/reduce-chat-conversation-state.test.ts`
+
+- [ ] **Step 1: Write failing transition tests**
+
+Cover `continue`, `reset`, and `resolve_clarification`. Specifically assert that a new Leemage reset after a pending Vercel clarification uses Leemage and removes the pending state, while `블로그 주인` with `resolve_clarification` resumes the suspended Vercel intent.
+
+- [ ] **Step 2: Run and verify RED**
 
 Run: `pnpm vitest run features/chat/model/reduce-chat-conversation-state.test.ts`
 
-Expected: FAIL because `reduceChatConversationState` is missing.
+Expected: FAIL because the reducer still infers resume from any target replacement.
 
-- [ ] **Step 3: Implement the reducer as a pure domain function**
+- [ ] **Step 3: Implement the pure version 2 reducer**
 
-Use this public contract:
+Accept an already normalized current intent and its context action:
 
 ```ts
-interface ReduceChatConversationStateParams {
+export function reduceChatConversationState(params: {
   previousState: ChatConversationState
-  intentPatch: ChatIntentPatch
-}
-
-export interface ReduceChatConversationStateResult {
+  contextAction: ChatContextAction
   intent: NormalizedChatIntent
-  nextState: ChatConversationState
-}
-
-export function reduceChatConversationState(
-  params: ReduceChatConversationStateParams,
-): ReduceChatConversationStateResult
-
-export function buildIntentFromConversationState(params: {
-  question: string
-  state: ChatConversationState
-}): NormalizedChatIntent | null
+}): ReduceChatConversationStateResult
 ```
 
-Apply `targetUpdate` first. If the previous state has `pendingClarification` and the patch fills every missing slot, merge the suspended operation, temporal constraint, requested fields, and concepts before validation. For a normal independent question, use the patch fields rather than concatenating prior concepts. Deduplicate concepts while preserving order. `buildIntentFromConversationState` returns `null` unless the state has no pending clarification and contains enough target, operation, field, and scope data for deterministic execution.
+Only `resolve_clarification` merges the suspended intent. `reset` never reads old intent fields. `continue` may preserve the focused target already resolved by normalization but does not concatenate concepts. Invalid transitions return a typed failure rather than throwing.
 
-- [ ] **Step 4: Run reducer and schema tests**
+- [ ] **Step 4: Verify and commit**
 
-Run: `pnpm vitest run features/chat/model/reduce-chat-conversation-state.test.ts features/chat/model/chat-intent.test.ts features/chat/model/chat-conversation-state.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit the reducer**
+Run reducer, normalization, and state tests.
 
 ```bash
 git add features/chat/model/reduce-chat-conversation-state.ts features/chat/model/reduce-chat-conversation-state.test.ts
-git commit -m "feat(chat): reduce conversational intent state"
+git commit -m "fix(chat): enforce explicit conversation transitions"
 ```
 
-## Task 3: Replace Planner Output With Intent Patches and Retry
+## Task 6: Connect Catalog, Planner, Reducer, Retrieval, and SDK Metadata
 
 **Files:**
-- Modify: `features/chat/api/plan-chat-question.ts`
-- Modify: `features/chat/api/plan-chat-question.test.ts`
-- Modify: `features/chat/api/plan-chat-question.model-normalization.test.ts`
-- Modify: `features/chat/lib/chat-question-context.ts`
-- Modify: `features/chat/fixtures/chat-planner-evaluation.ts`
-- Modify: `features/chat/lib/chat-planner-evaluation.test.ts`
-
-- [ ] **Step 1: Replace planner tests with patch behavior tests**
-
-Mock AI SDK output and assert:
-
-- `마지막 글 언제야?` produces `order: 'latest'` and `requestedFields: ['title', 'published_at']` without phrase post-processing.
-- A known owner in state produces `targetUpdate: { kind: 'preserve' }` for `이 사람`.
-- A clarification answer produces `replace` and no repeated clarification.
-- First generation failure causes exactly one retry.
-- Two generation failures return `planner_unavailable` internally and public `model_error`.
-
-- [ ] **Step 2: Run planner tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/api/plan-chat-question.test.ts features/chat/api/plan-chat-question.model-normalization.test.ts`
-
-Expected: FAIL because the function still returns `ChatQuestionPlanResult`.
-
-- [ ] **Step 3: Change the planner contract**
-
-Rename the export to `planChatIntentPatch` and accept validated state:
-
-```ts
-interface PlanChatIntentPatchParams {
-  question: string
-  locale: SupportedLocale
-  conversationState: ChatConversationState
-  conversationHistory?: ChatConversationHistoryItem[]
-  currentPostSlug?: string
-  assistantProfile?: ChatAssistantProfile | null
-}
-
-export type PlanChatIntentPatchResult =
-  | { ok: true; intentPatch: ChatIntentPatch }
-  | {
-      ok: false
-      refusalReason: 'missing_api_key' | 'model_error'
-      failureKind: 'planner_unavailable' | 'invalid_intent_patch'
-    }
-```
-
-Use `Output.object({ schema: ChatIntentPatchSchema })`. Put `conversationState` in a delimited JSON section of the prompt and retain only the minimum recent conversation needed to interpret corrections. Execute `generateText` at most twice with the same schema. Delete affirmative-answer arrays, Korean ending arrays, chronological phrase arrays, legacy plan parsing, and `buildQuestionPlanFromPlannerOutput`.
-
-- [ ] **Step 4: Run planner evaluation and type checking**
-
-Run: `pnpm vitest run features/chat/api/plan-chat-question.test.ts features/chat/api/plan-chat-question.model-normalization.test.ts features/chat/lib/chat-planner-evaluation.test.ts`
-
-Expected: PASS.
-
-Run: `pnpm exec tsc --noEmit`
-
-Expected: PASS. Keep a temporary local conversion inside `answer-blog-chat-question.ts` so the existing orchestrator can consume the patch until Task 8. The conversion must stay private to that file and must not introduce a new shared compatibility module.
-
-- [ ] **Step 5: Commit the planner replacement**
-
-```bash
-git add features/chat/api/plan-chat-question.ts features/chat/api/plan-chat-question.test.ts features/chat/api/plan-chat-question.model-normalization.test.ts features/chat/lib/chat-question-context.ts features/chat/fixtures/chat-planner-evaluation.ts features/chat/lib/chat-planner-evaluation.test.ts features/chat/model/answer-blog-chat-question.ts
-git commit -m "refactor(chat): plan conversational intent patches"
-```
-
-## Task 4: Enforce Required Concepts Before Evidence Ranking
-
-**Files:**
-- Create: `features/chat/lib/chat-required-concepts.ts`
-- Create: `features/chat/lib/chat-required-concepts.test.ts`
-- Modify: `features/chat/lib/chat-search.ts`
-- Modify: `features/chat/lib/chat-search.test.ts`
-- Modify: `features/chat/lib/select-final-chat-evidence.ts`
-- Modify: `features/chat/lib/select-final-chat-evidence.test.ts`
-- Modify: `features/chat/lib/question-analysis.ts`
-
-- [ ] **Step 1: Write failing retrieval contract tests**
-
-Add fixtures where profile evidence matches `이윤수` but only a blog record matches `Vercel`. Assert that required-concept filtering retains the Vercel record. Add an optional concept that changes rank but does not remove records. Add an alias fixture such as `버셀 -> vercel` through the existing semantic term expansion configuration.
-
-- [ ] **Step 2: Run focused retrieval tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/lib/chat-required-concepts.test.ts features/chat/lib/chat-search.test.ts features/chat/lib/select-final-chat-evidence.test.ts`
-
-Expected: FAIL because required and optional concepts are still flattened.
-
-- [ ] **Step 3: Implement concept normalization and filtering**
-
-Expose:
-
-```ts
-export function normalizeChatConcepts(params: {
-  concepts: string[]
-  locale: SupportedLocale
-}): string[]
-
-export function selectEvidenceCoveringRequiredConcepts(params: {
-  matches: ChatEvidenceRecord[]
-  requiredConcepts: string[]
-  locale: SupportedLocale
-}): ChatEvidenceRecord[]
-```
-
-Build normalized record text from title, section title, content, tags, and search terms. The selected evidence set qualifies when every required concept group is represented by at least one record, allowing comparison concepts to be covered by different records. Return an empty array if any concept has no supporting record. Place one best record per required concept before the remaining ranked records, deduplicate by evidence id, and only then apply `TOP_K`. Pass optional concepts to lexical scoring only. Remove `preserveAdditionalKeywordMatches` and `buildPrioritizedAdditionalKeywordTokens`, because hard requirements now run before ranking rather than being inserted into ranked output.
-
-- [ ] **Step 4: Run retrieval tests**
-
-Run: `pnpm vitest run features/chat/lib/chat-required-concepts.test.ts features/chat/lib/chat-search.test.ts features/chat/lib/select-final-chat-evidence.test.ts features/chat/lib/chat-retrieval-fusion.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit the retrieval contract**
-
-```bash
-git add features/chat/lib/chat-required-concepts.ts features/chat/lib/chat-required-concepts.test.ts features/chat/lib/chat-search.ts features/chat/lib/chat-search.test.ts features/chat/lib/select-final-chat-evidence.ts features/chat/lib/select-final-chat-evidence.test.ts features/chat/lib/question-analysis.ts
-git commit -m "refactor(chat): separate required and optional evidence concepts"
-```
-
-## Task 5: Implement Intent-Native Retrieval and Executors
-
-**Files:**
-- Create: `features/chat/model/execute-chat-intent.ts`
-- Create: `features/chat/model/execute-chat-intent.test.ts`
-- Modify: `features/chat/model/retrieve-blog-chat-evidence.ts`
-- Modify: `features/chat/model/retrieve-blog-chat-evidence.test.ts`
-- Modify: `features/chat/lib/chat-retrieval-scope.ts`
-- Modify: `features/chat/lib/chat-retrieval-scope.test.ts`
-- Modify: `features/chat/lib/resolve-chat-request.ts`
-- Modify: `features/chat/lib/resolve-chat-request.test.ts`
-- Modify: `features/chat/lib/should-rerank-chat-evidence.ts`
-- Modify: `features/chat/lib/should-rerank-chat-evidence.test.ts`
-- Modify: `features/chat/model/chat-rag-workflow.ts`
-
-- [ ] **Step 1: Write failing executor tests**
-
-Cover the complete execution matrix:
-
-```ts
-it('returns a clarification and next state when missingSlots is non-empty', () => {})
-it('returns the latest title without calling the answer model', () => {})
-it('includes the date only when requestedFields contains published_at', () => {})
-it('selects the latest post and calls the answer model for summarize', () => {})
-it('returns contact data without retrieval', () => {})
-it('retrieves only the current post for current_source scope', () => {})
-it('returns insufficient_search_match when required concepts have no evidence', () => {})
-it('returns unsupported_intent for an invalid operation and field combination', () => {})
-```
-
-- [ ] **Step 2: Run executor and retrieval tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/model/execute-chat-intent.test.ts features/chat/model/retrieve-blog-chat-evidence.test.ts features/chat/lib/resolve-chat-request.test.ts`
-
-Expected: FAIL because retrieval still requires `ChatQuestionPlan`.
-
-- [ ] **Step 3: Convert scope and reranking functions to intent input**
-
-Use these contracts:
-
-```ts
-export function resolveChatRetrievalScope(params: {
-  intent: NormalizedChatIntent
-  currentPostSlug?: string
-}): ChatResolvedRetrievalScope
-
-export function shouldRerankChatEvidence(params: {
-  question: string
-  conversationHistoryCount: number
-  matchCount: number
-  intent: NormalizedChatIntent
-}): boolean
-```
-
-`retrieveBlogChatEvidence` receives `intent` and passes `requiredConcepts` and `optionalConcepts` separately through lexical, semantic, fusion, and reranking stages.
-
-- [ ] **Step 4: Implement executor selection**
-
-Return a discriminated result:
-
-```ts
-export type ExecuteChatIntentResult =
-  | { kind: 'direct'; response: BlogChatResponse; matches: ChatEvidenceRecord[] }
-  | { kind: 'model'; question: string; matches: ChatEvidenceRecord[] }
-  | {
-      kind: 'refusal'
-      refusalReason: 'insufficient_search_match' | 'model_error'
-      failureKind?: 'unsupported_intent'
-    }
-```
-
-Use `requestedFields.includes('published_at')` for date output. Do not inspect Korean or English date phrases. For latest/oldest summarize, explain, and compare operations, select the chronological record and return `kind: 'model'`.
-
-- [ ] **Step 5: Run intent-native execution tests**
-
-Run: `pnpm vitest run features/chat/model/execute-chat-intent.test.ts features/chat/model/retrieve-blog-chat-evidence.test.ts features/chat/lib/chat-retrieval-scope.test.ts features/chat/lib/resolve-chat-request.test.ts features/chat/lib/should-rerank-chat-evidence.test.ts features/chat/model/chat-rag-workflow.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 6: Commit intent-native execution**
-
-```bash
-git add features/chat/model/execute-chat-intent.ts features/chat/model/execute-chat-intent.test.ts features/chat/model/retrieve-blog-chat-evidence.ts features/chat/model/retrieve-blog-chat-evidence.test.ts features/chat/lib/chat-retrieval-scope.ts features/chat/lib/chat-retrieval-scope.test.ts features/chat/lib/resolve-chat-request.ts features/chat/lib/resolve-chat-request.test.ts features/chat/lib/should-rerank-chat-evidence.ts features/chat/lib/should-rerank-chat-evidence.test.ts features/chat/model/chat-rag-workflow.ts
-git commit -m "refactor(chat): execute normalized intents directly"
-```
-
-## Task 6: Build Semantic Cache Keys and Intent Observability
-
-**Files:**
-- Create: `features/chat/lib/chat-intent-cache-key.ts`
-- Create: `features/chat/lib/chat-intent-cache-key.test.ts`
+- Modify: `features/chat/model/run-stateful-blog-chat-pipeline.ts`
+- Modify: `features/chat/model/run-stateful-blog-chat-pipeline.test.ts`
+- Modify: `features/chat/model/answer-blog-chat-question-stateful.test.ts`
+- Modify: `features/chat/model/chat-intent-cache-key.ts`
+- Modify: `features/chat/model/chat-intent-cache-key.test.ts`
 - Modify: `features/chat/model/chat-observability.ts`
 - Modify: `features/chat/model/chat-observability.test.ts`
-- Modify: `features/chat/model/chat-semantic-cache.ts`
-- Modify: `features/chat/model/chat-semantic-cache.test.ts`
-
-- [ ] **Step 1: Write failing cache-key tests**
-
-Assert that two wording variants with equal intents have the same key, while changing target, `published_at`, required concepts, current slug, or evidence version changes the key. Assert stable ordering for concept arrays.
-
-- [ ] **Step 2: Run cache and observability tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/lib/chat-intent-cache-key.test.ts features/chat/model/chat-observability.test.ts features/chat/model/chat-semantic-cache.test.ts`
-
-Expected: FAIL because cache identity is question-based.
-
-- [ ] **Step 3: Implement stable intent serialization**
-
-Use an explicit ordered tuple rather than `JSON.stringify` on the whole object:
-
-```ts
-export function buildChatIntentCacheKey(params: {
-  locale: SupportedLocale
-  intent: NormalizedChatIntent
-  currentPostSlug?: string
-  evidenceVersion: string
-}): string {
-  return [
-    params.locale,
-    params.intent.target.kind,
-    params.intent.target.slug ?? '',
-    params.intent.target.title ?? '',
-    params.intent.operation,
-    params.intent.temporalConstraint.order,
-    [...params.intent.requestedFields].sort().join(','),
-    [...params.intent.requiredConcepts].map(normalizeCachePart).sort().join(','),
-    params.intent.evidenceScope,
-    params.currentPostSlug ?? '',
-    params.evidenceVersion,
-  ].map(encodeURIComponent).join(':')
-}
-```
-
-Add `BLOG_CHAT.EVIDENCE_VERSION`, resolved as `process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? 'development'`, so deployed semantic cache entries are tied to the content-bearing commit. Replace observability plan fields with `operation`, `targetKind`, `evidenceScope`, `temporalOrder`, `requestedFields`, `requiredConcepts`, `optionalConcepts`, and `plannerFailureKind`. Add database columns with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` so existing deployments migrate safely.
-
-- [ ] **Step 4: Run cache and observability tests**
-
-Run: `pnpm vitest run features/chat/lib/chat-intent-cache-key.test.ts features/chat/model/chat-observability.test.ts features/chat/model/chat-semantic-cache.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit cache and observability changes**
-
-```bash
-git add features/chat/lib/chat-intent-cache-key.ts features/chat/lib/chat-intent-cache-key.test.ts features/chat/model/chat-observability.ts features/chat/model/chat-observability.test.ts features/chat/model/chat-semantic-cache.ts features/chat/model/chat-semantic-cache.test.ts features/chat/config/constants.ts
-git commit -m "refactor(chat): key cache and telemetry by normalized intent"
-```
-
-## Task 7: Persist Conversation State Through the SDK Transport
-
-**Files:**
 - Modify: `features/chat/model/chat-schema.ts`
 - Modify: `features/chat/model/chat-schema.test.ts`
 - Modify: `app/api/chat/route.ts`
 - Modify: `app/api/chat/route-adapter.test.ts`
-- Modify: `widgets/chatbot/ui/blog-chat-widget.tsx`
 - Modify: `widgets/chatbot/ui/blog-chat-widget.test.tsx`
 
-- [ ] **Step 1: Write failing transport tests**
+- [ ] **Step 1: Write failing pipeline and route tests**
 
-Assert that:
+Assert the pipeline calls candidate loading before planning, normalizes before reduction, preserves the previous state on planner/normalizer failure, and returns version 2 state in assistant metadata. Assert invalid version 1 metadata falls back to `EMPTY_CHAT_CONVERSATION_STATE`.
 
-- The latest valid assistant metadata state is forwarded as `conversationState` in the application request.
-- Invalid or version `2` metadata is replaced with `EMPTY_CHAT_CONVERSATION_STATE`.
-- The application result state is written to assistant message metadata.
-- Existing citations remain preserved.
+- [ ] **Step 2: Run and verify RED**
 
-- [ ] **Step 2: Run route adapter and widget tests and verify they fail**
+Run: `pnpm vitest run features/chat/model/run-stateful-blog-chat-pipeline.test.ts features/chat/model/answer-blog-chat-question-stateful.test.ts app/api/chat/route-adapter.test.ts widgets/chatbot/ui/blog-chat-widget.test.tsx`
 
-Run: `pnpm vitest run app/api/chat/route-adapter.test.ts widgets/chatbot/ui/blog-chat-widget.test.tsx features/chat/model/chat-schema.test.ts`
+Expected: FAIL on old planner dependency and version 1 metadata.
 
-Expected: FAIL because metadata contains only `blogChatResponse`.
+- [ ] **Step 3: Connect runtime dependencies**
 
-- [ ] **Step 3: Extend request and response contracts**
-
-Add `conversationState` to `BlogChatRequestSchema`. Introduce a transport envelope so factual response and client state are explicit:
+The pipeline order must be:
 
 ```ts
-export const BlogChatApplicationResponseSchema = z.object({
-  response: BlogChatResponseSchema,
-  conversationState: ChatConversationStateSchema,
-})
-```
-
-Keep Lee Chat visible content sourced from `response.answer`. Store both `blogChatResponse: response` and `conversationState` in assistant metadata. Read only the most recent valid assistant state from request history; do not merge multiple client states in the route adapter.
-
-- [ ] **Step 4: Run transport tests**
-
-Run: `pnpm vitest run app/api/chat/route-adapter.test.ts app/api/chat/route.test.ts widgets/chatbot/ui/blog-chat-widget.test.tsx features/chat/model/chat-schema.test.ts`
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit SDK state persistence**
-
-```bash
-git add features/chat/model/chat-schema.ts features/chat/model/chat-schema.test.ts app/api/chat/route.ts app/api/chat/route-adapter.test.ts widgets/chatbot/ui/blog-chat-widget.tsx widgets/chatbot/ui/blog-chat-widget.test.tsx
-git commit -m "feat(chat): persist conversation state in sdk metadata"
-```
-
-## Task 8: Replace the Application Orchestrator
-
-**Files:**
-- Modify: `features/chat/model/answer-blog-chat-question.ts`
-- Modify: `features/chat/model/answer-blog-chat-question.test.ts`
-- Modify: `features/chat/api/answer-blog-question.test.ts`
-- Modify: `features/chat/config/constants.ts`
-- Modify: `features/chat/lib/blog-chat-cache.ts`
-- Modify: `features/chat/lib/blog-chat-cache.test.ts`
-
-- [ ] **Step 1: Write failing end-to-end application tests**
-
-Test these application-level flows with planner and answer model mocks:
-
-```text
-이 사람 Vercel 써봤어? -> clarification state
-블로그 주인 + clarification state -> grounded answer without another clarification
-마지막 글 언제야? -> title and published date
-latest post summarize -> model-backed summary with latest-post evidence
-tampered state -> empty state and safe replanning
-same wording with different targets -> different exact cache entries
-planner first failure then success -> normal answer
-planner double failure with executable state -> deterministic answer
-feature flag disabled -> legacy pipeline during the migration commit
-feature flag enabled -> stateful pipeline
-```
-
-- [ ] **Step 2: Run orchestrator tests and verify they fail**
-
-Run: `pnpm vitest run features/chat/model/answer-blog-chat-question.test.ts features/chat/api/answer-blog-question.test.ts`
-
-Expected: FAIL because orchestration still branches on `route` and `directAction`.
-
-- [ ] **Step 3: Rewrite orchestration around state and intent**
-
-The application sequence must be exactly:
-
-```ts
-function buildFallbackStateResult(params: {
-  question: string
-  previousState: ChatConversationState
-}): ReduceChatConversationStateResult | null {
-  const intent = buildIntentFromConversationState({
-    question: params.question,
-    state: params.previousState,
-  })
-
-  if (!intent) {
-    return null
-  }
-
-  return {
-    intent,
-    nextState: params.previousState,
-  }
-}
-
-const previousState = parseOrResetConversationState(request.conversationState)
-const patchResult = await planChatIntentPatch({
+const candidates = await getEntityCandidates(request.locale)
+const matchingCandidates = matchEntityCandidates({
   question: request.question,
-  locale,
-  conversationState: previousState,
-  conversationHistory: request.conversationHistory,
-  currentPostSlug: request.currentPostSlug,
-  assistantProfile,
+  candidates,
 })
-const reducedState = patchResult.ok
-  ? reduceChatConversationState({
-      previousState,
-      intentPatch: patchResult.intentPatch,
-    })
-  : buildFallbackStateResult({
-      question: request.question,
-      previousState,
-    })
-if (!reducedState) {
-  return buildPlannerFailureApplicationResponse(patchResult)
-}
-const { intent, nextState } = reducedState
-const cacheKey = buildChatIntentCacheKey({
-  locale,
-  intent,
-  currentPostSlug: request.currentPostSlug,
-  evidenceVersion: BLOG_CHAT.EVIDENCE_VERSION,
+const plannerResult = await planIntent({
+  ...request,
+  entityCandidates: matchingCandidates,
 })
-const execution = await executeChatIntent({ intent, locale, currentPostSlug: request.currentPostSlug })
+const normalizedResult = normalizeIntentPlan({
+  intentPlan: plannerResult.intentPlan,
+  candidates: matchingCandidates,
+  previousState: request.conversationState,
+  currentPostSlug: request.currentPostSlug,
+})
 ```
 
-Every return path must return `BlogChatApplicationResponse` containing `nextState`. Do not cache clarification or refusal responses. Keep rate limits, daily limits, citation validation, follow-up suggestions, and concurrent slot release behavior unchanged.
+Then reduce, execute, validate citations, cache only grounded successful responses, and serialize version 2 state. Add context action and failure kinds to observability. Cache keys continue to use normalized execution meaning, not raw state.
 
-Gate the new branch with `BLOG_CHAT.PIPELINE.STATEFUL_RAG_ENABLED`, resolved from `BLOG_CHAT_STATEFUL_RAG_ENABLED !== 'false'`. This flag exists only for the migration commit. Task 9 removes the disabled branch and the flag after regression verification.
+- [ ] **Step 4: Remove obsolete version 1 symbols**
 
-- [ ] **Step 4: Run application and API tests**
-
-Run: `pnpm vitest run features/chat/model/answer-blog-chat-question.test.ts features/chat/api/answer-blog-question.test.ts app/api/chat`
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit the new orchestrator**
+Run:
 
 ```bash
-git add features/chat/model/answer-blog-chat-question.ts features/chat/model/answer-blog-chat-question.test.ts features/chat/api/answer-blog-question.test.ts features/chat/config/constants.ts features/chat/lib/blog-chat-cache.ts features/chat/lib/blog-chat-cache.test.ts
-git commit -m "refactor(chat): orchestrate stateful conversational rag"
+rg 'ChatIntentPatch|ChatTargetUpdate|targetUpdate|resolvedTarget|activeOperation|lastResolvedQuestion' features/chat app/api/chat widgets/chatbot
 ```
 
-## Task 9: Remove Legacy Planning and Complete Regression Verification
+Expected: no production references. Test fixture references must also be migrated rather than retained as compatibility aliases.
+
+- [ ] **Step 5: Verify and commit**
+
+Run all files from Step 2 plus cache, observability, and schema tests.
+
+```bash
+git add features/chat app/api/chat widgets/chatbot
+git commit -m "refactor(chat): connect version two conversational rag"
+```
+
+## Task 7: Full Verification and Runtime Regression Audit
 
 **Files:**
-- Delete: `features/chat/model/chat-question-plan.ts`
-- Delete: `features/chat/model/chat-question-plan.test.ts`
-- Delete: `features/chat/model/chat-question-routing.ts`
-- Delete: `features/chat/model/resolve-chat-intent-frame.ts`
-- Delete: `features/chat/model/resolve-chat-intent-frame.test.ts`
-- Delete: `features/chat/lib/chat-question-plan-routing.ts`
-- Delete: `features/chat/model/chat-intent-frame.ts`
-- Delete: `features/chat/model/chat-intent-frame.test.ts`
-- Modify: all remaining `features/chat/**/*.ts` imports found by `rg`
-- Modify: `scripts/evaluate-chat-retrieval.ts`
-- Modify: `features/chat/fixtures/chat-planner-evaluation.ts`
-- Modify: `features/chat/lib/chat-planner-evaluation.test.ts`
+- Modify only files required by failures discovered during verification.
 
-- [ ] **Step 1: Prove legacy dependencies still exist before deletion**
+- [ ] **Step 1: Run focused chat tests**
 
-Run: `rg -n "ChatQuestionPlan|directAction|retrievalScope|additionalKeywords|CHAT_CONFIRMATION_FOLLOW_UP|CHAT_CHRONOLOGICAL_DIRECT_ROUTING" features/chat app/api/chat scripts`
+Run: `pnpm vitest run features/chat app/api/chat widgets/chatbot`
 
-Expected: Matches remain and define the deletion scope.
+Expected: all tests pass with zero unhandled errors.
 
-- [ ] **Step 2: Remove legacy files and migrate remaining evaluation code**
+- [ ] **Step 2: Run static verification**
 
-Delete the legacy schemas, adapter, routing helpers, phrase lists, migration feature flag, disabled legacy branch, and their implementation-detail tests. Rewrite planner fixtures to store input state, model patch, expected normalized intent, and expected execution kind. Keep retrieval evaluation behavior assertions rather than route-string assertions.
+Run:
 
-- [ ] **Step 3: Confirm legacy symbols are gone**
+```bash
+pnpm exec tsc --noEmit
+pnpm eslint features/chat app/api/chat widgets/chatbot scripts/evaluate-chat-planner.ts
+git diff --check
+```
 
-Run: `rg -n "ChatQuestionPlan|directAction|retrievalScope|additionalKeywords|CHAT_CONFIRMATION_FOLLOW_UP|CHAT_CHRONOLOGICAL_DIRECT_ROUTING" features/chat app/api/chat scripts`
+Expected: exit code 0 for every command.
 
-Expected: No matches. `retrievalScope` may remain only if it is part of a database or LangGraph external contract; rename internal values to `evidenceScope` where controlled by this repository.
-
-- [ ] **Step 4: Run all chat tests**
-
-Run: `pnpm vitest run app/api/chat features/chat widgets/chatbot`
-
-Expected: All tests pass.
-
-- [ ] **Step 5: Run static and repository checks**
-
-Run: `pnpm exec tsc --noEmit`
-
-Expected: PASS.
-
-Run: `pnpm lint`
-
-Expected: PASS.
-
-Run: `git diff --check`
-
-Expected: no output.
-
-- [ ] **Step 6: Run retrieval evaluation**
+- [ ] **Step 3: Run deterministic retrieval evaluation**
 
 Run: `pnpm eval:chat-retrieval`
 
-Expected: all deterministic evaluation cases pass; model-dependent cases report results without schema failures.
+Expected: every golden case has Recall@3 and no failure entries.
 
-- [ ] **Step 7: Run live local scenarios on port 3003**
+- [ ] **Step 4: Run live planner evaluation**
 
-Run: `pnpm dev --port 3003`
+Run: `pnpm eval:chat-planner`
 
-Verify through the UI or API:
+Expected: all golden planner and transition expectations pass. Missing API credentials are a failed verification, not a pass.
+
+- [ ] **Step 5: Run browser scenarios**
+
+Start the worktree app and verify through the local browser:
 
 ```text
-마지막 글 언제야?
-이 사람 Vercel 써봤어? -> 블로그 주인
-최신 글 요약해줘
-이 글에서 핵심이 뭐야? on a blog post page
+lee-spec-kit을 왜 만들었어?
+Leemage에서 Presigned URL을 사용한 이유가 뭐야?
+최근 프로젝트에서 AI를 어떻게 활용하고 있어?
+이 사람 Vercel 써봤어? -> 블로그 주인 -> 왜 그만 썼어?
 ```
 
-Expected: no repeated clarification, dates follow requested fields, responses have valid citations, and a page reload preserves resolved state through localStorage.
+Reload after one answered turn and confirm localStorage restores version 2 state. Ask an independent Leemage question and confirm it resets the previous pending clarification.
 
-- [ ] **Step 8: Commit legacy removal and verification fixes**
+- [ ] **Step 6: Run full project verification**
+
+Run:
 
 ```bash
-git add -A
-git commit -m "refactor(chat): remove legacy question plan pipeline"
+pnpm test:run
+pnpm build
 ```
 
-## Completion Criteria
+Expected: exit code 0.
 
-- `ChatQuestionPlan`, route strings, direct-action strings, and natural-language correction lists no longer exist.
-- `ChatIntentPatch` and `ChatConversationState` are validated at every transport boundary.
-- `NormalizedChatIntent` reaches executor, retrieval, cache, and observability without field flattening.
-- Required concepts filter evidence before ranking; optional concepts only influence rank.
-- Clarification responses suspend and resume the original intent without asking the same question twice.
-- Cache identity includes semantic intent and evidence version.
-- SDK localStorage persists the latest state without adding server-side persistence.
-- Full chat tests, TypeScript, lint, retrieval evaluation, and live scenarios pass.
+- [ ] **Step 7: Commit verification fixes**
+
+If verification required changes, commit them as:
+
+```bash
+git add <only-files-changed-for-verification>
+git commit -m "test(chat): verify conversational rag recovery"
+```
+
+If no files changed, do not create an empty commit.

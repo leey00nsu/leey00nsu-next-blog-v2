@@ -4,7 +4,7 @@ import {
   type ChatConversationState,
 } from '@/features/chat/model/chat-conversation-state'
 import type {
-  ChatIntentPatch,
+  ChatIntentPlan,
   NormalizedChatIntent,
 } from '@/features/chat/model/chat-intent'
 import type { SupportedLocale } from '@/shared/config/constants'
@@ -21,12 +21,24 @@ export interface ChatPlannerEvaluationCase {
   question: string
   locale: SupportedLocale
   inputState: ChatConversationState
-  modelPatch: ChatIntentPatch
+  modelPlan: ChatIntentPlan
   expectedIntent: NormalizedChatIntent
   expectedExecutionKind: 'direct' | 'model'
   conversationHistory?: ChatConversationHistoryItem[]
   currentPostSlug?: string
   expectedTopMatchUrl?: string
+}
+
+export interface ChatPlannerGoldenCase {
+  id: string
+  question: string
+  locale: SupportedLocale
+  expectedContextAction: ChatIntentPlan['contextAction']
+  expectedEntityId: string | null
+  expectedEvidenceScope: NormalizedChatIntent['evidenceScope']
+  expectedRequiredConcepts: string[]
+  expectClarification: boolean
+  modelPlan: ChatIntentPlan
 }
 
 const EMPTY_TARGET = {
@@ -49,16 +61,12 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     question: '안녕 leesfield 라는 프로젝트 알아?',
     locale: 'ko',
     inputState: EMPTY_CHAT_CONVERSATION_STATE,
-    modelPatch: {
+    modelPlan: {
       standaloneQuestion: 'Leesfield라는 프로젝트를 설명해 주세요.',
-      targetUpdate: {
-        kind: 'replace',
-        target: {
-          kind: 'named_entity',
-          sourceCategory: 'project',
-          slug: 'leesfield',
-          title: 'Leesfield',
-        },
+      contextAction: 'reset',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: 'project/leesfield',
       },
       operation: 'answer',
       temporalConstraint: { order: 'none' },
@@ -98,9 +106,10 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     question: '이 사람 이름 뭐야?',
     locale: 'ko',
     inputState: EMPTY_CHAT_CONVERSATION_STATE,
-    modelPatch: {
+    modelPlan: {
       standaloneQuestion: '이 사람의 이름은 무엇인가요?',
-      targetUpdate: { kind: 'clear' },
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
       operation: 'answer',
       temporalConstraint: { order: 'none' },
       requestedFields: ['content'],
@@ -134,11 +143,12 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     locale: 'ko',
     inputState: {
       ...EMPTY_CHAT_CONVERSATION_STATE,
-      resolvedTarget: OWNER_TARGET,
+      focusedTarget: OWNER_TARGET,
     },
-    modelPatch: {
+    modelPlan: {
       standaloneQuestion: '이윤수의 이름을 알려주세요.',
-      targetUpdate: { kind: 'preserve' },
+      contextAction: 'continue',
+      targetSelection: { kind: 'preserve' },
       operation: 'answer',
       temporalConstraint: { order: 'none' },
       requestedFields: ['content'],
@@ -173,17 +183,10 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     locale: 'ko',
     inputState: EMPTY_CHAT_CONVERSATION_STATE,
     currentPostSlug: 'why-i-built-lee-spec-kit',
-    modelPatch: {
+    modelPlan: {
       standaloneQuestion: '현재 글에서 구조가 중요한 이유를 설명해 주세요.',
-      targetUpdate: {
-        kind: 'replace',
-        target: {
-          kind: 'current_source',
-          sourceCategory: 'blog',
-          slug: 'why-i-built-lee-spec-kit',
-          title: null,
-        },
-      },
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
       operation: 'explain',
       temporalConstraint: { order: 'none' },
       requestedFields: ['content'],
@@ -216,5 +219,89 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     },
     expectedExecutionKind: 'model',
     expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
+  },
+]
+
+export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
+  {
+    id: 'why-lee-spec-kit',
+    question: 'lee-spec-kit을 왜 만들었어?',
+    locale: 'ko',
+    expectedContextAction: 'reset',
+    expectedEntityId: 'project/lee-spec-kit',
+    expectedEvidenceScope: 'entity',
+    expectedRequiredConcepts: ['lee-spec-kit'],
+    expectClarification: false,
+    modelPlan: {
+      standaloneQuestion: 'lee-spec-kit을 만든 이유는 무엇인가요?',
+      contextAction: 'reset',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: 'project/lee-spec-kit',
+      },
+      operation: 'explain',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['lee-spec-kit'],
+      optionalConcepts: ['만든 이유'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Explicit project question.',
+    },
+  },
+  {
+    id: 'leemage-presigned-url',
+    question: 'Leemage에서 Presigned URL을 사용한 이유가 뭐야?',
+    locale: 'ko',
+    expectedContextAction: 'reset',
+    expectedEntityId: 'project/leemage',
+    expectedEvidenceScope: 'entity',
+    expectedRequiredConcepts: ['Presigned URL'],
+    expectClarification: false,
+    modelPlan: {
+      standaloneQuestion: 'Leemage에서 Presigned URL을 사용한 이유는?',
+      contextAction: 'reset',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: 'project/leemage',
+      },
+      operation: 'explain',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['Presigned URL'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Explicit project and technology question.',
+    },
+  },
+  {
+    id: 'recent-project-ai-usage',
+    question: '최근 프로젝트에서 AI를 어떻게 활용하고 있어?',
+    locale: 'ko',
+    expectedContextAction: 'reset',
+    expectedEntityId: null,
+    expectedEvidenceScope: 'corpus',
+    expectedRequiredConcepts: ['AI'],
+    expectClarification: false,
+    modelPlan: {
+      standaloneQuestion: '최근 프로젝트에서 AI를 활용한 방식을 설명해 주세요.',
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
+      operation: 'explain',
+      temporalConstraint: { order: 'latest' },
+      requestedFields: ['content'],
+      evidenceScope: 'corpus',
+      requiredConcepts: ['AI'],
+      optionalConcepts: ['프로젝트'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Cross-project aggregate question.',
+    },
   },
 ]

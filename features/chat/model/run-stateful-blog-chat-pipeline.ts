@@ -1,15 +1,17 @@
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
 import {
-  planChatIntentPatch,
-  type PlanChatIntentPatchResult,
+  planChatIntent,
+  type PlanChatIntentResult,
 } from '@/features/chat/api/plan-chat-intent-patch'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { buildChatIntentCacheKey } from '@/features/chat/lib/chat-intent-cache-key'
+import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
 import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import {
   executeChatIntent,
@@ -20,9 +22,13 @@ import {
   setCachedBlogChatResponse,
 } from '@/features/chat/model/blog-chat-response-cache'
 import {
-  buildIntentFromConversationState,
   reduceChatConversationState,
 } from '@/features/chat/model/reduce-chat-conversation-state'
+import { getChatEntityCandidates } from '@/features/chat/model/get-chat-entity-candidates'
+import {
+  normalizeChatIntentPlan,
+  type NormalizeChatIntentPlanFailureKind,
+} from '@/features/chat/model/normalize-chat-intent-plan'
 import {
   findSemanticCachedBlogChatResponse,
   storeSemanticCachedBlogChatResponse,
@@ -43,6 +49,7 @@ interface PlanIntentPatchDependencyParams {
   conversationHistory: BlogChatRequest['conversationHistory']
   currentPostSlug?: string
   assistantProfile?: ChatAssistantProfile | null
+  entityCandidates: ChatEntityCandidate[]
 }
 
 interface AnswerQuestionDependencyResult {
@@ -52,9 +59,10 @@ interface AnswerQuestionDependencyResult {
 }
 
 interface StatefulBlogChatPipelineDependencies {
-  planIntentPatch: (
+  getEntityCandidates: typeof getChatEntityCandidates
+  planIntent: (
     params: PlanIntentPatchDependencyParams,
-  ) => Promise<PlanChatIntentPatchResult>
+  ) => Promise<PlanChatIntentResult>
   executeIntent: typeof executeChatIntent
   answerQuestion: (params: {
     question: string
@@ -81,11 +89,16 @@ export interface StatefulBlogChatPipelineResult {
   intent: NormalizedChatIntent | null
   execution: ExecuteChatIntentResult | null
   cacheKind: 'none' | 'exact' | 'semantic'
-  plannerFailureKind: 'planner_unavailable' | 'invalid_intent_patch' | null
+  plannerFailureKind:
+    | 'planner_unavailable'
+    | 'invalid_intent_plan'
+    | NormalizeChatIntentPlanFailureKind
+    | null
 }
 
 const DEFAULT_DEPENDENCIES: StatefulBlogChatPipelineDependencies = {
-  planIntentPatch: planChatIntentPatch,
+  getEntityCandidates: getChatEntityCandidates,
+  planIntent: planChatIntent,
   executeIntent: executeChatIntent,
   answerQuestion: answerBlogQuestion,
   getCachedResponse: getCachedBlogChatResponse,
@@ -148,29 +161,46 @@ async function buildModelResponse(params: {
 
 function buildIntentAfterPlanning(params: {
   request: BlogChatRequest
-  plannerResult: PlanChatIntentPatchResult
+  plannerResult: PlanChatIntentResult
+  entityCandidates: ChatEntityCandidate[]
 }): {
   intent: NormalizedChatIntent | null
   nextState: BlogChatRequest['conversationState']
+  normalizationFailureKind: NormalizeChatIntentPlanFailureKind | null
 } {
   if (params.plannerResult.ok) {
+    const normalizedResult = normalizeChatIntentPlan({
+      intentPlan: params.plannerResult.intentPlan,
+      candidates: params.entityCandidates,
+      previousState: params.request.conversationState,
+      currentPostSlug: params.request.currentPostSlug,
+    })
+
+    if (!normalizedResult.ok) {
+      return {
+        intent: null,
+        nextState: params.request.conversationState,
+        normalizationFailureKind: normalizedResult.failureKind,
+      }
+    }
+
     const reducedState = reduceChatConversationState({
       previousState: params.request.conversationState,
-      intentPatch: params.plannerResult.intentPatch,
+      contextAction: normalizedResult.contextAction,
+      intent: normalizedResult.intent,
     })
 
     return {
       intent: reducedState.intent,
       nextState: reducedState.nextState,
+      normalizationFailureKind: null,
     }
   }
 
   return {
-    intent: buildIntentFromConversationState({
-      question: params.request.question,
-      state: params.request.conversationState,
-    }),
+    intent: null,
     nextState: params.request.conversationState,
+    normalizationFailureKind: null,
   }
 }
 
@@ -184,19 +214,30 @@ export async function runStatefulBlogChatPipeline({
     ...DEFAULT_DEPENDENCIES,
     ...dependencyOverrides,
   }
-  const plannerResult = await dependencies.planIntentPatch({
+  const allEntityCandidates = await dependencies.getEntityCandidates(
+    request.locale,
+  )
+  const entityCandidates = matchChatEntityCandidates({
+    question: request.question,
+    candidates: allEntityCandidates,
+  })
+  const plannerResult = await dependencies.planIntent({
     question: request.question,
     locale: request.locale,
     conversationState: request.conversationState,
     conversationHistory: request.conversationHistory,
     currentPostSlug: request.currentPostSlug,
     assistantProfile,
+    entityCandidates,
   })
-  const { intent, nextState } = buildIntentAfterPlanning({
+  const { intent, nextState, normalizationFailureKind } = buildIntentAfterPlanning({
     request,
     plannerResult,
+    entityCandidates,
   })
-  const plannerFailureKind = plannerResult.ok ? null : plannerResult.failureKind
+  const plannerFailureKind = plannerResult.ok
+    ? normalizationFailureKind
+    : plannerResult.failureKind
 
   if (!intent) {
     return {

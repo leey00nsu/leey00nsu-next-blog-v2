@@ -6,32 +6,25 @@ import {
 } from '@/features/chat/model/chat-conversation-state'
 
 describe('ChatConversationStateSchema', () => {
-  it('현재 버전의 빈 상태를 파싱한다', () => {
+  it('version 2 최소 상태를 파싱한다', () => {
     const state = ChatConversationStateSchema.parse(
       EMPTY_CHAT_CONVERSATION_STATE,
     )
 
-    expect(state.version).toBe(CHAT_CONVERSATION_STATE_VERSION)
-    expect(state.pendingClarification).toBeNull()
+    expect(state).toEqual({
+      version: 2,
+      focusedTarget: null,
+      lastIntent: null,
+      pendingClarification: null,
+    })
+    expect(CHAT_CONVERSATION_STATE_VERSION).toBe(2)
   })
 
-  it('지원하지 않는 상태 버전을 거부한다', () => {
+  it('구 version 1 상태를 거부한다', () => {
     expect(() => {
       ChatConversationStateSchema.parse({
         ...EMPTY_CHAT_CONVERSATION_STATE,
-        version: 2,
-      })
-    }).toThrow()
-  })
-
-  it('허용 개수를 넘는 필수 개념을 거부한다', () => {
-    expect(() => {
-      ChatConversationStateSchema.parse({
-        ...EMPTY_CHAT_CONVERSATION_STATE,
-        requiredConcepts: Array.from(
-          { length: 9 },
-          (_, conceptIndex) => `concept-${conceptIndex}`,
-        ),
+        version: 1,
       })
     }).toThrow()
   })

@@ -64,10 +64,25 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         },
         conversationState: {
           ...EMPTY_CHAT_CONVERSATION_STATE,
-          temporalConstraint: { order: 'latest' },
-          requestedFields: ['title', 'published_at'],
-          evidenceScope: 'corpus',
-          lastResolvedQuestion: '최신 글은 언제 게시되었나요?',
+          lastIntent: {
+            standaloneQuestion: '최신 글은 언제 게시되었나요?',
+            operation: 'answer',
+            target: {
+              kind: 'none',
+              sourceCategory: null,
+              slug: null,
+              title: null,
+            },
+            temporalConstraint: { order: 'latest' },
+            requestedFields: ['title', 'published_at'],
+            evidenceScope: 'corpus',
+            requiredConcepts: [],
+            optionalConcepts: [],
+            missingSlots: [],
+            clarificationQuestion: null,
+            confidence: 'high',
+            reason: 'Latest post date.',
+          },
         },
       },
       intent: {
@@ -114,7 +129,10 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         answer: '최신 글은 2026년 4월 21일에 게시된 최신 글입니다.',
       },
       conversationState: {
-        requestedFields: ['title', 'published_at'],
+        version: 2,
+        lastIntent: {
+          requestedFields: ['title', 'published_at'],
+        },
       },
     })
   })

@@ -1,68 +1,70 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ChatIntentPatchSchema,
-  ChatTargetUpdateSchema,
+  ChatIntentPlanSchema,
+  ChatTargetSelectionSchema,
   NormalizedChatIntentSchema,
 } from '@/features/chat/model/chat-intent'
 
-const NORMALIZED_INTENT = {
-  standaloneQuestion: '이윤수가 Vercel을 사용한 경험이 있나요?',
-  operation: 'answer',
+export const NORMALIZED_INTENT_FIXTURE = {
+  standaloneQuestion: 'Leemage에서 Presigned URL을 사용한 이유는?',
+  operation: 'explain',
   target: {
-    kind: 'profile',
-    sourceCategory: 'profile',
-    slug: 'about',
-    title: '이윤수',
+    kind: 'named_entity',
+    sourceCategory: 'project',
+    slug: 'leemage',
+    title: 'Leemage',
   },
   temporalConstraint: { order: 'none' },
   requestedFields: ['content'],
   evidenceScope: 'entity',
-  requiredConcepts: ['Vercel'],
+  requiredConcepts: ['Presigned URL'],
   optionalConcepts: [],
   missingSlots: [],
   clarificationQuestion: null,
   confidence: 'high',
-  reason: 'The target and required concept are explicit.',
+  reason: 'The project and concept are explicit.',
 } as const
 
 describe('NormalizedChatIntentSchema', () => {
-  it('실행에 필요한 의미를 손실 없이 파싱한다', () => {
-    const intent = NormalizedChatIntentSchema.parse(NORMALIZED_INTENT)
+  it('실행 의미를 손실 없이 파싱한다', () => {
+    const intent = NormalizedChatIntentSchema.parse(NORMALIZED_INTENT_FIXTURE)
 
-    expect(intent.requiredConcepts).toEqual(['Vercel'])
-    expect(intent.requestedFields).toEqual(['content'])
-  })
-
-  it('지원하지 않는 operation을 거부한다', () => {
-    expect(() => {
-      NormalizedChatIntentSchema.parse({
-        ...NORMALIZED_INTENT,
-        operation: 'count',
-      })
-    }).toThrow()
+    expect(intent.target.slug).toBe('leemage')
+    expect(intent.requiredConcepts).toEqual(['Presigned URL'])
   })
 })
 
-describe('ChatIntentPatchSchema', () => {
-  it('대상 유지와 대상 초기화를 구분한다', () => {
-    expect(ChatTargetUpdateSchema.parse({ kind: 'preserve' })).toEqual({
-      kind: 'preserve',
-    })
-    expect(ChatTargetUpdateSchema.parse({ kind: 'clear' })).toEqual({
-      kind: 'clear',
-    })
-  })
-
-  it('대상 변경을 포함한 patch를 파싱한다', () => {
-    const patch = ChatIntentPatchSchema.parse({
-      ...NORMALIZED_INTENT,
+describe('ChatIntentPlanSchema', () => {
+  it('독립 주제와 새 candidate 선택을 함께 표현한다', () => {
+    const plan = ChatIntentPlanSchema.parse({
+      ...NORMALIZED_INTENT_FIXTURE,
       target: undefined,
-      targetUpdate: {
-        kind: 'replace',
-        target: NORMALIZED_INTENT.target,
+      contextAction: 'reset',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: 'project/leemage',
       },
     })
 
-    expect(patch.targetUpdate.kind).toBe('replace')
+    expect(plan.contextAction).toBe('reset')
+    expect(plan.targetSelection).toEqual({
+      kind: 'candidate',
+      entityId: 'project/leemage',
+    })
+  })
+
+  it('candidate, preserve, none 선택을 구분한다', () => {
+    expect(
+      ChatTargetSelectionSchema.parse({
+        kind: 'candidate',
+        entityId: 'project/leemage',
+      }),
+    ).toEqual({ kind: 'candidate', entityId: 'project/leemage' })
+    expect(ChatTargetSelectionSchema.parse({ kind: 'preserve' })).toEqual({
+      kind: 'preserve',
+    })
+    expect(ChatTargetSelectionSchema.parse({ kind: 'none' })).toEqual({
+      kind: 'none',
+    })
   })
 })

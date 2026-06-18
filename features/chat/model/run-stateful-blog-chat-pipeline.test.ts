@@ -3,23 +3,24 @@ import {
   type ChatConversationState,
   EMPTY_CHAT_CONVERSATION_STATE,
 } from '@/features/chat/model/chat-conversation-state'
-import type { ChatIntentPatch } from '@/features/chat/model/chat-intent'
-import type {
-  BlogChatRequest,
-  BlogChatResponse,
-} from '@/features/chat/model/chat-schema'
+import type { ChatIntentPlan } from '@/features/chat/model/chat-intent'
+import type { BlogChatRequest } from '@/features/chat/model/chat-schema'
 import { runStatefulBlogChatPipeline } from '@/features/chat/model/run-stateful-blog-chat-pipeline'
 
-const OWNER_TARGET = {
-  kind: 'profile',
-  sourceCategory: 'profile',
+const OWNER_CANDIDATE = {
+  entityId: 'profile/about',
+  kind: 'profile' as const,
   slug: 'about',
   title: '이윤수',
-} as const
+  aliases: ['이윤수', '블로그 주인'],
+  searchTerms: ['작성자'],
+  sourceCategory: 'profile' as const,
+}
 
-const BASE_PATCH: ChatIntentPatch = {
+const OWNER_PLAN: ChatIntentPlan = {
   standaloneQuestion: '이윤수가 Vercel을 사용했나요?',
-  targetUpdate: { kind: 'replace', target: OWNER_TARGET },
+  contextAction: 'reset',
+  targetSelection: { kind: 'candidate', entityId: 'profile/about' },
   operation: 'answer',
   temporalConstraint: { order: 'none' },
   requestedFields: ['content'],
@@ -29,7 +30,7 @@ const BASE_PATCH: ChatIntentPatch = {
   missingSlots: [],
   clarificationQuestion: null,
   confidence: 'high',
-  reason: 'Complete author question.',
+  reason: 'Complete owner question.',
 }
 
 function buildRequest(
@@ -44,188 +45,133 @@ function buildRequest(
 }
 
 function buildDependencies() {
-  let semanticCachedResponse: BlogChatResponse | undefined
-
   return {
-    planIntentPatch: vi.fn().mockResolvedValue({
+    getEntityCandidates: vi.fn().mockResolvedValue([OWNER_CANDIDATE]),
+    planIntent: vi.fn().mockResolvedValue({
       ok: true as const,
-      intentPatch: BASE_PATCH,
+      intentPlan: OWNER_PLAN,
     }),
     executeIntent: vi.fn().mockImplementation(({ intent }) => {
-      if (intent.missingSlots.length > 0) {
-        return Promise.resolve({
-          kind: 'direct' as const,
-          response: {
-            answer: intent.clarificationQuestion,
-            grounded: false,
-            citations: [],
-          },
-          matches: [],
-        })
-      }
-
-      return Promise.resolve({
-        kind: 'direct' as const,
-        response: {
-          answer: '이윤수는 Vercel 사용 경험이 있습니다.',
-          grounded: true,
-          citations: [
-            {
-              title: 'Vercel 사용 경험',
-              url: '/ko/blog/vercel',
-              sectionTitle: null,
-              sourceCategory: 'blog' as const,
+      return Promise.resolve(
+        intent.missingSlots.length > 0
+          ? {
+              kind: 'direct' as const,
+              response: {
+                answer: intent.clarificationQuestion,
+                grounded: false,
+                citations: [],
+              },
+              matches: [],
+            }
+          : {
+              kind: 'direct' as const,
+              response: {
+                answer: '근거가 있는 답변',
+                grounded: true,
+                citations: [],
+              },
+              matches: [],
             },
-          ],
-        },
-        matches: [],
-      })
+      )
     }),
     answerQuestion: vi.fn(),
     getCachedResponse: vi.fn().mockReturnValue(null),
     setCachedResponse: vi.fn(),
-    findSemanticResponse: vi.fn(() => Promise.resolve(semanticCachedResponse)),
-    storeSemanticResponse: vi.fn(() => Promise.resolve()),
+    findSemanticResponse: vi.fn().mockResolvedValue(undefined),
+    storeSemanticResponse: vi.fn().mockResolvedValue(undefined),
   }
 }
 
 describe('runStatefulBlogChatPipeline', () => {
-  it('필수 target이 없으면 pending clarification 상태를 반환한다', async () => {
+  it('catalog에서 질문 후보를 찾고 planner에 전달한다', async () => {
     const dependencies = buildDependencies()
-    dependencies.planIntentPatch.mockResolvedValueOnce({
-      ok: true,
-      intentPatch: {
-        ...BASE_PATCH,
-        targetUpdate: { kind: 'clear' },
-        missingSlots: ['target'],
-        clarificationQuestion: '누구를 가리키는지 알려주세요.',
-        confidence: 'low',
-        reason: 'The target is missing.',
-      },
-    })
 
-    const result = await runStatefulBlogChatPipeline({
+    await runStatefulBlogChatPipeline({
       request: buildRequest(),
-      assistantProfile: null,
-      contactProfile: null,
       dependencies,
     })
 
-    expect(result.applicationResponse.response.answer).toBe(
-      '누구를 가리키는지 알려주세요.',
+    expect(dependencies.getEntityCandidates).toHaveBeenCalledWith('ko')
+    expect(dependencies.planIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ entityCandidates: [OWNER_CANDIDATE] }),
     )
-    expect(
-      result.applicationResponse.conversationState.pendingClarification,
-    ).toMatchObject({
-      missingSlots: ['target'],
-      suspendedIntent: { requiredConcepts: ['Vercel'] },
-    })
-    expect(dependencies.setCachedResponse).not.toHaveBeenCalled()
   })
 
-  it('target 답변이 들어오면 중단된 Intent를 재개해 executor에 전달한다', async () => {
+  it('planner 실패 시 이전 상태를 유지하고 실행하지 않는다', async () => {
     const dependencies = buildDependencies()
-    const clarificationState: ChatConversationState = {
+    const previousState = {
       ...EMPTY_CHAT_CONVERSATION_STATE,
-      pendingClarification: {
-        missingSlots: ['target'],
-        clarificationQuestion: '누구를 가리키는지 알려주세요.',
-        suspendedIntent: {
-          standaloneQuestion: '블로그 작성자가 Vercel을 사용했나요?',
-          operation: 'answer',
-          target: {
-            kind: 'none',
-            sourceCategory: null,
-            slug: null,
-            title: null,
-          },
-          temporalConstraint: { order: 'none' },
-          requestedFields: ['content'],
-          evidenceScope: 'entity',
-          requiredConcepts: ['Vercel'],
-          optionalConcepts: [],
-          missingSlots: ['target'],
-          clarificationQuestion: '누구를 가리키는지 알려주세요.',
-          confidence: 'low',
-          reason: 'The target is missing.',
-        },
+      focusedTarget: {
+        kind: 'profile' as const,
+        sourceCategory: 'profile' as const,
+        slug: 'about',
+        title: '이윤수',
       },
     }
-
-    const result = await runStatefulBlogChatPipeline({
-      request: buildRequest(clarificationState),
-      assistantProfile: null,
-      contactProfile: null,
-      dependencies,
-    })
-
-    expect(dependencies.executeIntent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        intent: expect.objectContaining({
-          standaloneQuestion: '블로그 작성자가 Vercel을 사용했나요?',
-          target: OWNER_TARGET,
-          requiredConcepts: ['Vercel'],
-          missingSlots: [],
-        }),
-      }),
-    )
-    expect(
-      result.applicationResponse.conversationState.pendingClarification,
-    ).toBeNull()
-  })
-
-  it('planner가 실패해도 완전한 상태에서 Intent를 복원한다', async () => {
-    const dependencies = buildDependencies()
-    const resolvedState: ChatConversationState = {
-      ...EMPTY_CHAT_CONVERSATION_STATE,
-      resolvedTarget: OWNER_TARGET,
-      activeOperation: 'answer',
-      requestedFields: ['content'],
-      requiredConcepts: ['Vercel'],
-      evidenceScope: 'entity',
-      lastResolvedQuestion: '이윤수가 Vercel을 사용했나요?',
-    }
-    dependencies.planIntentPatch.mockResolvedValueOnce({
+    dependencies.planIntent.mockResolvedValueOnce({
       ok: false,
       refusalReason: 'model_error',
       failureKind: 'planner_unavailable',
     })
 
+    const result = await runStatefulBlogChatPipeline({
+      request: buildRequest(previousState),
+      dependencies,
+    })
+
+    expect(result.applicationResponse.conversationState).toEqual(previousState)
+    expect(dependencies.executeIntent).not.toHaveBeenCalled()
+  })
+
+  it('명확화 답변은 pending intent를 명시적으로 재개한다', async () => {
+    const dependencies = buildDependencies()
+    const suspendedIntent = {
+      standaloneQuestion: '블로그 주인이 Vercel을 사용했나요?',
+      operation: 'answer' as const,
+      target: {
+        kind: 'none' as const,
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
+      temporalConstraint: { order: 'none' as const },
+      requestedFields: ['content' as const],
+      evidenceScope: 'none' as const,
+      requiredConcepts: ['Vercel'],
+      optionalConcepts: [],
+      missingSlots: ['target' as const],
+      clarificationQuestion: '누구를 가리키는지 알려주세요.',
+      confidence: 'low' as const,
+      reason: 'Missing target.',
+    }
+    const pendingState: ChatConversationState = {
+      ...EMPTY_CHAT_CONVERSATION_STATE,
+      pendingClarification: {
+        missingSlots: ['target'],
+        clarificationQuestion: '누구를 가리키는지 알려주세요.',
+        suspendedIntent,
+      },
+    }
+    dependencies.planIntent.mockResolvedValueOnce({
+      ok: true,
+      intentPlan: {
+        ...OWNER_PLAN,
+        contextAction: 'resolve_clarification',
+      },
+    })
+
     await runStatefulBlogChatPipeline({
-      request: buildRequest(resolvedState),
-      assistantProfile: null,
-      contactProfile: null,
+      request: buildRequest(pendingState),
       dependencies,
     })
 
     expect(dependencies.executeIntent).toHaveBeenCalledWith(
       expect.objectContaining({
         intent: expect.objectContaining({
-          target: OWNER_TARGET,
+          standaloneQuestion: suspendedIntent.standaloneQuestion,
           requiredConcepts: ['Vercel'],
+          missingSlots: [],
         }),
-      }),
-    )
-  })
-
-  it('grounded 응답만 의미 기반 cache에 저장한다', async () => {
-    const dependencies = buildDependencies()
-
-    await runStatefulBlogChatPipeline({
-      request: buildRequest(),
-      assistantProfile: null,
-      contactProfile: null,
-      dependencies,
-    })
-
-    expect(dependencies.setCachedResponse).toHaveBeenCalledWith(
-      expect.objectContaining({
-        responseData: expect.objectContaining({ grounded: true }),
-      }),
-    )
-    expect(dependencies.storeSemanticResponse).toHaveBeenCalledWith(
-      expect.objectContaining({
-        intentCacheKey: expect.any(String),
       }),
     )
   })

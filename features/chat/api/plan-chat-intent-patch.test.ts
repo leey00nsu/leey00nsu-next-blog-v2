@@ -1,70 +1,41 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  type ChatConversationState,
-  EMPTY_CHAT_CONVERSATION_STATE,
-} from '@/features/chat/model/chat-conversation-state'
+import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
 const generateTextMock = vi.fn()
 
-vi.mock('ai', () => {
-  return {
-    generateText: generateTextMock,
-    Output: {
-      object: ({ schema }: { schema: unknown }) => ({ schema }),
-    },
-  }
-})
+vi.mock('ai', () => ({
+  generateText: generateTextMock,
+  Output: { object: ({ schema }: { schema: unknown }) => ({ schema }) },
+}))
+vi.mock('@ai-sdk/openai', () => ({ openai: vi.fn(() => 'mock-model') }))
 
-vi.mock('@ai-sdk/openai', () => {
-  return {
-    openai: vi.fn(() => 'mock-openai-model'),
-  }
-})
-
-const CHAT_ASSISTANT_PROFILE = {
-  title: '블로그 챗봇 안내',
-  description: '챗봇 내부 안내 문서',
-  chatbotName: '블로그 챗봇',
-  ownerName: '이윤수',
-  greetingAnswer: '안녕하세요.',
-  identityAnswer: '저는 블로그 챗봇입니다.',
-  aliases: [],
-  content: '이윤수의 블로그 챗봇입니다.',
+const LEEMAGE_CANDIDATE = {
+  entityId: 'project/leemage',
+  kind: 'project' as const,
+  slug: 'leemage',
+  title: 'Leemage',
+  aliases: ['Leemage'],
+  searchTerms: ['Presigned URL'],
+  sourceCategory: 'project' as const,
 }
 
-const LATEST_POST_PATCH = {
-  standaloneQuestion: '블로그의 최신 글은 언제 게시되었나요?',
-  targetUpdate: { kind: 'clear' },
-  operation: 'answer',
-  temporalConstraint: { order: 'latest' },
-  requestedFields: ['title', 'published_at'],
-  evidenceScope: 'corpus',
-  requiredConcepts: [],
+const LEEMAGE_PLAN = {
+  standaloneQuestion: 'Leemage에서 Presigned URL을 사용한 이유는?',
+  contextAction: 'reset',
+  targetSelection: { kind: 'candidate', entityId: 'project/leemage' },
+  operation: 'explain',
+  temporalConstraint: { order: 'none' },
+  requestedFields: ['content'],
+  evidenceScope: 'entity',
+  requiredConcepts: ['Presigned URL'],
   optionalConcepts: [],
   missingSlots: [],
   clarificationQuestion: null,
   confidence: 'high',
-  reason: 'The user asks for the latest post publication date.',
+  reason: 'Explicit project question.',
 } as const
 
-function buildOwnerState(): ChatConversationState {
-  return {
-    ...EMPTY_CHAT_CONVERSATION_STATE,
-    resolvedTarget: {
-      kind: 'profile',
-      sourceCategory: 'profile',
-      slug: 'about',
-      title: '이윤수',
-    },
-    activeOperation: 'answer',
-    requestedFields: ['content'],
-    requiredConcepts: ['Vercel'],
-    evidenceScope: 'entity',
-    lastResolvedQuestion: '이윤수가 Vercel을 사용했나요?',
-  }
-}
-
-describe('planChatIntentPatch', () => {
+describe('planChatIntent', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
@@ -75,133 +46,60 @@ describe('planChatIntentPatch', () => {
     delete process.env.OPENAI_API_KEY
   })
 
-  it('최신 글 질문의 시간 조건과 요청 필드를 보존한다', async () => {
-    generateTextMock.mockResolvedValueOnce({ output: LATEST_POST_PATCH })
-    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
+  it('candidate 목록을 prompt에 전달하고 plan을 반환한다', async () => {
+    generateTextMock.mockResolvedValueOnce({ output: LEEMAGE_PLAN })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
 
-    const result = await planChatIntentPatch({
-      question: '마지막 글 언제야?',
+    const result = await planChatIntent({
+      question: LEEMAGE_PLAN.standaloneQuestion,
       locale: 'ko',
       conversationState: EMPTY_CHAT_CONVERSATION_STATE,
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
+      entityCandidates: [LEEMAGE_CANDIDATE],
     })
 
-    expect(result).toEqual({
-      ok: true,
-      intentPatch: LATEST_POST_PATCH,
-    })
-  })
-
-  it('확정된 작성자 상태를 prompt에 전달하고 target preserve patch를 받는다', async () => {
-    generateTextMock.mockResolvedValueOnce({
-      output: {
-        ...LATEST_POST_PATCH,
-        standaloneQuestion: '이윤수가 Vercel을 사용했나요?',
-        targetUpdate: { kind: 'preserve' },
-        temporalConstraint: { order: 'none' },
-        requestedFields: ['content'],
-        evidenceScope: 'entity',
-        requiredConcepts: ['Vercel'],
-        reason: 'The resolved owner target should be preserved.',
-      },
-    })
-    const conversationState = buildOwnerState()
-    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
-
-    const result = await planChatIntentPatch({
-      question: '이 사람 Vercel 써봤어?',
-      locale: 'ko',
-      conversationState,
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
-    })
-
-    expect(result).toMatchObject({
-      ok: true,
-      intentPatch: {
-        targetUpdate: { kind: 'preserve' },
-        requiredConcepts: ['Vercel'],
-      },
-    })
+    expect(result).toEqual({ ok: true, intentPlan: LEEMAGE_PLAN })
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining(JSON.stringify(conversationState)),
+        prompt: expect.stringContaining(JSON.stringify([LEEMAGE_CANDIDATE])),
       }),
     )
   })
 
-  it('명확화 답변에서 작성자 대상으로 교체하는 patch를 반환한다', async () => {
-    generateTextMock.mockResolvedValueOnce({
-      output: {
-        ...LATEST_POST_PATCH,
-        standaloneQuestion: '블로그 주인은 이윤수입니다.',
-        targetUpdate: {
-          kind: 'replace',
-          target: {
-            kind: 'profile',
-            sourceCategory: 'profile',
-            slug: 'about',
-            title: '이윤수',
-          },
-        },
-        temporalConstraint: { order: 'none' },
-        requestedFields: ['content'],
-        evidenceScope: 'entity',
-        reason: 'The user supplied the missing owner target.',
-      },
-    })
-    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
-
-    const result = await planChatIntentPatch({
-      question: '블로그 주인',
-      locale: 'ko',
-      conversationState: EMPTY_CHAT_CONVERSATION_STATE,
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
-    })
-
-    expect(result).toMatchObject({
-      ok: true,
-      intentPatch: {
-        targetUpdate: {
-          kind: 'replace',
-          target: { title: '이윤수' },
-        },
-      },
-    })
-  })
-
-  it('첫 planner 호출이 실패하면 한 번 재시도한다', async () => {
+  it('schema 오류를 전달해 한 번 재시도한다', async () => {
     generateTextMock
-      .mockRejectedValueOnce(new Error('temporary timeout'))
-      .mockResolvedValueOnce({ output: LATEST_POST_PATCH })
-    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
+      .mockResolvedValueOnce({ output: { operation: 'answer' } })
+      .mockResolvedValueOnce({ output: LEEMAGE_PLAN })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
 
-    const result = await planChatIntentPatch({
-      question: '마지막 글 언제야?',
+    const result = await planChatIntent({
+      question: LEEMAGE_PLAN.standaloneQuestion,
       locale: 'ko',
       conversationState: EMPTY_CHAT_CONVERSATION_STATE,
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
+      entityCandidates: [LEEMAGE_CANDIDATE],
     })
 
     expect(result.ok).toBe(true)
     expect(generateTextMock).toHaveBeenCalledTimes(2)
+    expect(generateTextMock.mock.calls[1]?.[0].prompt).toContain(
+      'previousValidationFailure=',
+    )
   })
 
-  it('두 번 모두 실패하면 planner_unavailable 사유를 반환한다', async () => {
-    generateTextMock.mockRejectedValue(new Error('timeout'))
-    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
+  it('두 번의 schema 오류를 invalid_intent_plan으로 반환한다', async () => {
+    generateTextMock.mockResolvedValue({ output: { operation: 'answer' } })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
 
-    const result = await planChatIntentPatch({
-      question: '마지막 글 언제야?',
+    const result = await planChatIntent({
+      question: '질문',
       locale: 'ko',
       conversationState: EMPTY_CHAT_CONVERSATION_STATE,
-      assistantProfile: CHAT_ASSISTANT_PROFILE,
+      entityCandidates: [],
     })
 
     expect(result).toEqual({
       ok: false,
       refusalReason: 'model_error',
-      failureKind: 'planner_unavailable',
+      failureKind: 'invalid_intent_plan',
     })
-    expect(generateTextMock).toHaveBeenCalledTimes(2)
   })
 })

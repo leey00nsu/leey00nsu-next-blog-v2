@@ -44,6 +44,11 @@ export const CHAT_MISSING_SLOTS = [
 ] as const
 
 export const CHAT_CONFIDENCE_VALUES = ['low', 'medium', 'high'] as const
+export const CHAT_CONTEXT_ACTIONS = [
+  'continue',
+  'reset',
+  'resolve_clarification',
+] as const
 
 const CHAT_INTENT_LIMITS = {
   MAXIMUM_QUESTION_CHARACTERS: 300,
@@ -55,6 +60,7 @@ const CHAT_INTENT_LIMITS = {
   MAXIMUM_MISSING_SLOT_COUNT: 4,
   MAXIMUM_CLARIFICATION_CHARACTERS: 160,
   MAXIMUM_REASON_CHARACTERS: 160,
+  MAXIMUM_ENTITY_IDENTIFIER_CHARACTERS: 180,
 } as const
 
 export const ChatOperationSchema = z.enum(CHAT_OPERATIONS)
@@ -64,6 +70,7 @@ export const ChatRequestedFieldSchema = z.enum(CHAT_REQUESTED_FIELDS)
 export const ChatEvidenceScopeSchema = z.enum(CHAT_EVIDENCE_SCOPES)
 export const ChatMissingSlotSchema = z.enum(CHAT_MISSING_SLOTS)
 export const ChatConfidenceSchema = z.enum(CHAT_CONFIDENCE_VALUES)
+export const ChatContextActionSchema = z.enum(CHAT_CONTEXT_ACTIONS)
 
 export const ChatConceptSchema = z
   .string()
@@ -92,10 +99,17 @@ export const ChatTemporalConstraintSchema = z.object({
   order: ChatTemporalOrderSchema,
 })
 
-export const ChatTargetUpdateSchema = z.discriminatedUnion('kind', [
+export const ChatTargetSelectionSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('candidate'),
+    entityId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(CHAT_INTENT_LIMITS.MAXIMUM_ENTITY_IDENTIFIER_CHARACTERS),
+  }),
   z.object({ kind: z.literal('preserve') }),
-  z.object({ kind: z.literal('replace'), target: ChatTargetSchema }),
-  z.object({ kind: z.literal('clear') }),
+  z.object({ kind: z.literal('none') }),
 ])
 
 const ChatIntentMeaningSchema = z.object({
@@ -133,8 +147,9 @@ const ChatIntentMeaningSchema = z.object({
     .max(CHAT_INTENT_LIMITS.MAXIMUM_REASON_CHARACTERS),
 })
 
-export const ChatIntentPatchSchema = ChatIntentMeaningSchema.extend({
-  targetUpdate: ChatTargetUpdateSchema,
+export const ChatIntentPlanSchema = ChatIntentMeaningSchema.extend({
+  contextAction: ChatContextActionSchema,
+  targetSelection: ChatTargetSelectionSchema,
 })
 
 export const NormalizedChatIntentSchema = ChatIntentMeaningSchema.extend({
@@ -144,8 +159,7 @@ export const NormalizedChatIntentSchema = ChatIntentMeaningSchema.extend({
 export interface ChatTarget extends z.infer<typeof ChatTargetSchema> {}
 export interface ChatTemporalConstraint
   extends z.infer<typeof ChatTemporalConstraintSchema> {}
-export interface ChatIntentPatch
-  extends z.infer<typeof ChatIntentPatchSchema> {}
+export interface ChatIntentPlan extends z.infer<typeof ChatIntentPlanSchema> {}
 export interface NormalizedChatIntent
   extends z.infer<typeof NormalizedChatIntentSchema> {}
 export type ChatOperation = z.infer<typeof ChatOperationSchema>
@@ -153,4 +167,5 @@ export type ChatRequestedField = z.infer<typeof ChatRequestedFieldSchema>
 export type ChatEvidenceScope = z.infer<typeof ChatEvidenceScopeSchema>
 export type ChatMissingSlot = z.infer<typeof ChatMissingSlotSchema>
 export type ChatConfidence = z.infer<typeof ChatConfidenceSchema>
-export type ChatTargetUpdate = z.infer<typeof ChatTargetUpdateSchema>
+export type ChatContextAction = z.infer<typeof ChatContextActionSchema>
+export type ChatTargetSelection = z.infer<typeof ChatTargetSelectionSchema>

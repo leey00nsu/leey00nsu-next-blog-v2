@@ -44,6 +44,14 @@ export interface ChatObservabilityEvent {
   plannerAction: string | null
   plannerRetrievalMode: string | null
   plannerDeterministicAction: string | null
+  intentOperation?: string | null
+  intentTargetKind?: string | null
+  intentEvidenceScope?: string | null
+  intentTemporalOrder?: string | null
+  intentRequestedFields?: string[]
+  intentRequiredConcepts?: string[]
+  intentOptionalConcepts?: string[]
+  plannerFailureKind?: string | null
   preferredSourceCategories: string[]
   additionalKeywords: string[]
   lexicalMatches: ChatObservabilityMatchSummary[]
@@ -145,6 +153,33 @@ function mapChatObservabilityRow(
       typeof row.planner_deterministic_action === 'string'
         ? row.planner_deterministic_action
         : null,
+    intentOperation:
+      typeof row.intent_operation === 'string' ? row.intent_operation : null,
+    intentTargetKind:
+      typeof row.intent_target_kind === 'string'
+        ? row.intent_target_kind
+        : null,
+    intentEvidenceScope:
+      typeof row.intent_evidence_scope === 'string'
+        ? row.intent_evidence_scope
+        : null,
+    intentTemporalOrder:
+      typeof row.intent_temporal_order === 'string'
+        ? row.intent_temporal_order
+        : null,
+    intentRequestedFields: parseJsonArray<string>(
+      row.intent_requested_fields_json,
+    ),
+    intentRequiredConcepts: parseJsonArray<string>(
+      row.intent_required_concepts_json,
+    ),
+    intentOptionalConcepts: parseJsonArray<string>(
+      row.intent_optional_concepts_json,
+    ),
+    plannerFailureKind:
+      typeof row.planner_failure_kind === 'string'
+        ? row.planner_failure_kind
+        : null,
     preferredSourceCategories: parseJsonArray<string>(
       row.preferred_source_categories_json,
     ),
@@ -189,6 +224,14 @@ export async function initializeChatObservabilityDatabase(
       planner_action TEXT,
       planner_retrieval_mode TEXT,
       planner_deterministic_action TEXT,
+      intent_operation TEXT,
+      intent_target_kind TEXT,
+      intent_evidence_scope TEXT,
+      intent_temporal_order TEXT,
+      intent_requested_fields_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      intent_required_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      intent_optional_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      planner_failure_kind TEXT,
       preferred_source_categories_json JSONB NOT NULL,
       additional_keywords_json JSONB NOT NULL,
       lexical_matches_json JSONB NOT NULL,
@@ -202,6 +245,30 @@ export async function initializeChatObservabilityDatabase(
 
     ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
     ADD COLUMN IF NOT EXISTS answer TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_operation TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_target_kind TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_evidence_scope TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_temporal_order TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_requested_fields_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_required_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS intent_optional_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS planner_failure_kind TEXT;
 
     CREATE INDEX IF NOT EXISTS chat_observability_events_created_at_index
     ON ${CHAT_OBSERVABILITY.TABLE}(created_at DESC);
@@ -229,6 +296,14 @@ export async function insertChatObservabilityEvent(params: {
         planner_action,
         planner_retrieval_mode,
         planner_deterministic_action,
+        intent_operation,
+        intent_target_kind,
+        intent_evidence_scope,
+        intent_temporal_order,
+        intent_requested_fields_json,
+        intent_required_concepts_json,
+        intent_optional_concepts_json,
+        planner_failure_kind,
         preferred_source_categories_json,
         additional_keywords_json,
         lexical_matches_json,
@@ -241,8 +316,9 @@ export async function insertChatObservabilityEvent(params: {
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb, $18::jsonb,
-        $19, $20, $21
+        $13, $14, $15, $16, $17::jsonb, $18::jsonb, $19::jsonb, $20,
+        $21::jsonb, $22::jsonb, $23::jsonb, $24::jsonb, $25::jsonb, $26::jsonb,
+        $27, $28, $29
       )
     `,
     [
@@ -258,6 +334,14 @@ export async function insertChatObservabilityEvent(params: {
       event.plannerAction,
       event.plannerRetrievalMode,
       event.plannerDeterministicAction,
+      event.intentOperation ?? null,
+      event.intentTargetKind ?? null,
+      event.intentEvidenceScope ?? null,
+      event.intentTemporalOrder ?? null,
+      JSON.stringify(event.intentRequestedFields ?? []),
+      JSON.stringify(event.intentRequiredConcepts ?? []),
+      JSON.stringify(event.intentOptionalConcepts ?? []),
+      event.plannerFailureKind ?? null,
       JSON.stringify(event.preferredSourceCategories),
       JSON.stringify(event.additionalKeywords),
       JSON.stringify(event.lexicalMatches),
@@ -348,6 +432,14 @@ export async function selectChatObservabilityLogPage(params: {
         planner_action,
         planner_retrieval_mode,
         planner_deterministic_action,
+        intent_operation,
+        intent_target_kind,
+        intent_evidence_scope,
+        intent_temporal_order,
+        intent_requested_fields_json,
+        intent_required_concepts_json,
+        intent_optional_concepts_json,
+        planner_failure_kind,
         preferred_source_categories_json,
         additional_keywords_json,
         lexical_matches_json,

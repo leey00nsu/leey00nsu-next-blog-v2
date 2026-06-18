@@ -83,4 +83,40 @@ describe('chat-semantic-cache', () => {
 
     expect(cachedResponse).toBeUndefined()
   })
+
+  it('질문이 유사해도 intent cache key가 다르면 응답을 공유하지 않는다', async () => {
+    const { findSemanticCachedBlogChatResponse, storeSemanticCachedBlogChatResponse } =
+      await import('@/features/chat/model/chat-semantic-cache')
+    const groundedResponse: BlogChatResponse = {
+      answer: '이윤수는 Vercel 사용 경험이 있습니다.',
+      grounded: true,
+      citations: [
+        {
+          title: 'Vercel 사용 경험',
+          url: '/ko/blog/vercel',
+          sectionTitle: null,
+          sourceCategory: 'blog',
+        },
+      ],
+    }
+
+    embedChatRagQuestionMock
+      .mockResolvedValueOnce([1, 0, 0])
+      .mockResolvedValueOnce([1, 0, 0])
+
+    await storeSemanticCachedBlogChatResponse({
+      locale: 'ko',
+      question: '이 사람 Vercel 써봤어?',
+      intentCacheKey: 'owner:vercel',
+      response: groundedResponse,
+    })
+
+    const cachedResponse = await findSemanticCachedBlogChatResponse({
+      locale: 'ko',
+      question: '이 사람 Vercel 써봤어?',
+      intentCacheKey: 'another-person:vercel',
+    })
+
+    expect(cachedResponse).toBeUndefined()
+  })
 })

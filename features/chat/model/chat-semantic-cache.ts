@@ -7,6 +7,7 @@ interface SemanticCacheEntry {
   createdAt: number
   locale: SupportedLocale
   currentPostSlug?: string
+  intentCacheKey?: string
   questionEmbedding: number[]
   response: BlogChatResponse
 }
@@ -15,6 +16,7 @@ interface FindSemanticCachedBlogChatResponseParams {
   locale: SupportedLocale
   question: string
   currentPostSlug?: string
+  intentCacheKey?: string
 }
 
 interface StoreSemanticCachedBlogChatResponseParams
@@ -68,6 +70,7 @@ export async function findSemanticCachedBlogChatResponse({
   locale,
   question,
   currentPostSlug,
+  intentCacheKey,
 }: FindSemanticCachedBlogChatResponseParams): Promise<
   BlogChatResponse | undefined
 > {
@@ -88,6 +91,10 @@ export async function findSemanticCachedBlogChatResponse({
       continue
     }
 
+    if ((cacheEntry.intentCacheKey ?? null) !== (intentCacheKey ?? null)) {
+      continue
+    }
+
     if (
       calcCosineSimilarity(questionEmbedding, cacheEntry.questionEmbedding) >=
       BLOG_CHAT.SEMANTIC_CACHE.MINIMUM_SIMILARITY_SCORE
@@ -103,6 +110,7 @@ export async function storeSemanticCachedBlogChatResponse({
   locale,
   question,
   currentPostSlug,
+  intentCacheKey,
   response,
 }: StoreSemanticCachedBlogChatResponseParams): Promise<void> {
   cleanupExpiredSemanticCacheEntries()
@@ -117,6 +125,7 @@ export async function storeSemanticCachedBlogChatResponse({
     createdAt: Date.now(),
     locale,
     currentPostSlug,
+    intentCacheKey,
     questionEmbedding,
     response,
   })

@@ -12,6 +12,10 @@ function parseIntegerEnvironmentValue(
 }
 
 export const BLOG_CHAT = {
+  EVIDENCE_VERSION:
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    process.env.GIT_COMMIT_SHA ??
+    'development',
   INPUT: {
     MAXIMUM_QUESTION_CHARACTERS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_MAXIMUM_QUESTION_CHARACTERS,

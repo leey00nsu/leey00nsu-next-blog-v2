@@ -18,6 +18,11 @@ describe('chat-observability', () => {
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('ADD COLUMN IF NOT EXISTS answer TEXT'),
     )
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'ADD COLUMN IF NOT EXISTS intent_operation TEXT',
+      ),
+    )
   })
 
   it('observability 이벤트를 JSONB payload와 함께 저장한다', async () => {
@@ -41,6 +46,14 @@ describe('chat-observability', () => {
         plannerAction: 'answer',
         plannerRetrievalMode: 'standard',
         plannerDeterministicAction: 'none',
+        intentOperation: 'answer',
+        intentTargetKind: 'profile',
+        intentEvidenceScope: 'entity',
+        intentTemporalOrder: 'none',
+        intentRequestedFields: ['content'],
+        intentRequiredConcepts: ['nivo'],
+        intentOptionalConcepts: ['chart'],
+        plannerFailureKind: null,
         preferredSourceCategories: ['blog'],
         additionalKeywords: ['nivo'],
         lexicalMatches: [

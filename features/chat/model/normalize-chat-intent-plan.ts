@@ -126,6 +126,13 @@ function normalizeContextAction(params: {
   target: ChatTarget
 }): ChatContextAction {
   if (
+    params.intentPlan.contextAction === 'resolve_clarification' &&
+    !params.previousState.pendingClarification
+  ) {
+    return 'reset'
+  }
+
+  if (
     params.intentPlan.contextAction === 'continue' &&
     !params.previousState.focusedTarget &&
     !params.previousState.pendingClarification
@@ -183,13 +190,6 @@ export function normalizeChatIntentPlan(params: {
   previousState: ChatConversationState
   currentPostSlug?: string
 }): NormalizeChatIntentPlanResult {
-  if (
-    params.intentPlan.contextAction === 'resolve_clarification' &&
-    !params.previousState.pendingClarification
-  ) {
-    return { ok: false, failureKind: 'invalid_transition' }
-  }
-
   if (
     params.intentPlan.contextAction === 'reset' &&
     params.intentPlan.targetSelection.kind === 'preserve'

@@ -61,7 +61,7 @@ describe('normalizeChatIntentPlan', () => {
     expect(result).toEqual({ ok: false, failureKind: 'invalid_candidate' })
   })
 
-  it('pending clarification 없이 resolve transition을 거부한다', () => {
+  it('pending clarification 없는 resolve transition을 새 질문 reset으로 교정한다', () => {
     const result = normalizeChatIntentPlan({
       intentPlan: {
         ...BASE_PLAN,
@@ -71,7 +71,10 @@ describe('normalizeChatIntentPlan', () => {
       previousState: EMPTY_CHAT_CONVERSATION_STATE,
     })
 
-    expect(result).toEqual({ ok: false, failureKind: 'invalid_transition' })
+    expect(result).toMatchObject({
+      ok: true,
+      contextAction: 'reset',
+    })
   })
 
   it('누락 slot 없이 clarification을 생성하는 plan을 거부한다', () => {

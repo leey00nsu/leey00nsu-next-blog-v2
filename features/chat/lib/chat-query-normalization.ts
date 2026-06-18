@@ -1,15 +1,12 @@
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
-import {
-  LOCALES,
-  type SupportedLocale,
-} from '@/shared/config/constants'
+import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 import { SEMANTIC_SEARCH } from '@/shared/config/search-terms'
 
 export interface ChatQueryNormalizationResult {
   normalizedQuestion: string
   normalizedSearchQuestion: string
   queryTokens: string[]
-  additionalKeywords: string[]
+  rankingConcepts: string[]
   preferredSourceCategories: ChatSourceCategory[]
 }
 
@@ -72,15 +69,13 @@ function resolveTokenStopWords(locale: SupportedLocale): Set<string> {
   ])
 }
 
-function tokenizeSearchText(
-  text: string,
-  locale: SupportedLocale,
-): string[] {
+function tokenizeSearchText(text: string, locale: SupportedLocale): string[] {
   const stopWords = resolveTokenStopWords(locale)
 
-  return (normalizeSearchText(text)
-    .toLowerCase()
-    .match(CHAT_QUERY_NORMALIZATION.NORMALIZATION_PATTERNS.WORD) ?? []
+  return (
+    normalizeSearchText(text)
+      .toLowerCase()
+      .match(CHAT_QUERY_NORMALIZATION.NORMALIZATION_PATTERNS.WORD) ?? []
   ).filter((token) => {
     return token.length >= 2 && !stopWords.has(token)
   })
@@ -123,7 +118,7 @@ function resolvePreferredSourceCategories(params: {
   })
 }
 
-function buildAdditionalKeywords(
+function buildRankingConcepts(
   preferredSourceCategories: ChatSourceCategory[],
 ): string[] {
   return [
@@ -156,7 +151,10 @@ function buildNormalizedSearchQuestion(params: {
 export function normalizeQuestionText(question: string): string {
   return question
     .trim()
-    .replaceAll(CHAT_QUERY_NORMALIZATION.NORMALIZATION_PATTERNS.PUNCTUATION, ' ')
+    .replaceAll(
+      CHAT_QUERY_NORMALIZATION.NORMALIZATION_PATTERNS.PUNCTUATION,
+      ' ',
+    )
     .replaceAll(CHAT_QUERY_NORMALIZATION.NORMALIZATION_PATTERNS.WHITESPACE, ' ')
     .trim()
 }
@@ -182,7 +180,7 @@ export function normalizeChatQuery(params: {
     queryTokens: [
       ...new Set(tokenizeSearchText(normalizedSearchQuestion, locale)),
     ],
-    additionalKeywords: buildAdditionalKeywords(preferredSourceCategories),
+    rankingConcepts: buildRankingConcepts(preferredSourceCategories),
     preferredSourceCategories,
   }
 }

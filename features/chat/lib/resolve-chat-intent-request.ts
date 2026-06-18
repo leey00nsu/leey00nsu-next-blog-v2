@@ -38,9 +38,11 @@ const INTENT_CHAT_RESPONSES = {
   },
   en: {
     LATEST_TITLE: 'The latest post is {title}.',
-    LATEST_TITLE_WITH_DATE: 'The latest post is {title}, published on {publishedAt}.',
+    LATEST_TITLE_WITH_DATE:
+      'The latest post is {title}, published on {publishedAt}.',
     OLDEST_TITLE: 'The oldest post is {title}.',
-    OLDEST_TITLE_WITH_DATE: 'The oldest post is {title}, published on {publishedAt}.',
+    OLDEST_TITLE_WITH_DATE:
+      'The oldest post is {title}, published on {publishedAt}.',
     CONTACT_INTRO: 'The public contact channels are:',
     CONTACT_OUTRO: 'You can find the details on the About page.',
   },
@@ -103,7 +105,8 @@ function buildChronologicalResponse(params: {
   record: ChatEvidenceRecord
 }): BlogChatResponse {
   const isLatest = params.intent.temporalConstraint.order === 'latest'
-  const includesPublishedAt = params.intent.requestedFields.includes('published_at')
+  const includesPublishedAt =
+    params.intent.requestedFields.includes('published_at')
   const responses = INTENT_CHAT_RESPONSES[params.locale]
   const template = isLatest
     ? includesPublishedAt
@@ -279,14 +282,14 @@ export function resolveChatIntentRequest({
     question: intent.standaloneQuestion,
     locale,
     records: curatedRecords,
-    additionalKeywords: searchKeywords,
+    rankingConcepts: searchKeywords,
     preferredSourceCategories,
   })
   const blogSelection = selectChatSearchMatches({
     question: intent.standaloneQuestion,
     locale,
     records: blogRecords,
-    additionalKeywords: searchKeywords,
+    rankingConcepts: searchKeywords,
   })
   const matches = selectEvidenceCoveringRequiredConcepts({
     matches: mergeUniqueMatches([

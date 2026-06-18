@@ -19,9 +19,7 @@ describe('chat-observability', () => {
       expect.stringContaining('ADD COLUMN IF NOT EXISTS answer TEXT'),
     )
     expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'ADD COLUMN IF NOT EXISTS intent_operation TEXT',
-      ),
+      expect.stringContaining('ADD COLUMN IF NOT EXISTS intent_operation TEXT'),
     )
   })
 
@@ -37,15 +35,13 @@ describe('chat-observability', () => {
         locale: 'ko',
         originalQuestion: 'nivo라는걸 쓴 적 있나요?',
         answer: 'nivo chart 관련 글에서 사용 경험을 확인할 수 있습니다.',
-        resolvedQuestion: '이윤수님이 블로그에서 nivo를 사용한 적이 있는지 확인해 주세요.',
+        resolvedQuestion:
+          '이윤수님이 블로그에서 nivo를 사용한 적이 있는지 확인해 주세요.',
         normalizedQuestion: 'nivo라는걸 쓴 적 있나요',
         currentPostSlug: 'building-ai-chat-for-my-blog',
         cacheKind: 'semantic',
         reranked: true,
         plannerReason: 'technology experience lookup',
-        plannerAction: 'answer',
-        plannerRetrievalMode: 'standard',
-        plannerDeterministicAction: 'none',
         intentOperation: 'answer',
         intentTargetKind: 'profile',
         intentEvidenceScope: 'entity',
@@ -54,8 +50,6 @@ describe('chat-observability', () => {
         intentRequiredConcepts: ['nivo'],
         intentOptionalConcepts: ['chart'],
         plannerFailureKind: null,
-        preferredSourceCategories: ['blog'],
-        additionalKeywords: ['nivo'],
         lexicalMatches: [
           {
             url: '/ko/blog/nivo-chart',
@@ -115,11 +109,6 @@ describe('chat-observability', () => {
             cache_kind: 'none',
             reranked: false,
             planner_reason: 'log inspection',
-            planner_action: 'answer',
-            planner_retrieval_mode: 'standard',
-            planner_deterministic_action: 'none',
-            preferred_source_categories_json: ['blog'],
-            additional_keywords_json: ['로그'],
             lexical_matches_json: [
               {
                 url: '/ko/blog/building-ai-chat-for-my-blog',
@@ -162,7 +151,6 @@ describe('chat-observability', () => {
           createdAt: '2026-05-29T03:00:00.000Z',
           originalQuestion: '블로그 챗봇은 어떤 로그를 남기나요?',
           answer: '질문과 답변, 검색 결과, citation, 처리 시간을 저장합니다.',
-          preferredSourceCategories: ['blog'],
           grounded: true,
           durationMilliseconds: 120,
         },

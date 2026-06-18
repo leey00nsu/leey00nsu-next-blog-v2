@@ -4,10 +4,7 @@ import {
   normalizeQuestionText,
 } from '@/features/chat/lib/chat-query-normalization'
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
-import {
-  LOCALES,
-  type SupportedLocale,
-} from '@/shared/config/constants'
+import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 
 export const CHAT_QUESTION_TYPES = ['general'] as const
 
@@ -18,7 +15,7 @@ export type ChatSearchIntent = 'general'
 export interface ChatSearchQuery {
   question: string
   intent: ChatSearchIntent
-  additionalKeywords: string[]
+  rankingConcepts: string[]
   preferredSourceCategories: ChatSourceCategory[]
 }
 
@@ -73,9 +70,8 @@ export function analyzeQuestion(
         return {
           question: normalizedClause.normalizedSearchQuestion,
           intent: 'general',
-          additionalKeywords: normalizedClause.additionalKeywords,
-          preferredSourceCategories:
-            normalizedClause.preferredSourceCategories,
+          rankingConcepts: normalizedClause.rankingConcepts,
+          preferredSourceCategories: normalizedClause.preferredSourceCategories,
         }
       }),
     }
@@ -93,7 +89,7 @@ export function analyzeQuestion(
       {
         question: normalizedSearchQuery.normalizedSearchQuestion,
         intent: 'general',
-        additionalKeywords: normalizedSearchQuery.additionalKeywords,
+        rankingConcepts: normalizedSearchQuery.rankingConcepts,
         preferredSourceCategories:
           normalizedSearchQuery.preferredSourceCategories,
       },

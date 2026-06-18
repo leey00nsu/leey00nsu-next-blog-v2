@@ -73,10 +73,6 @@ function buildStudioLogHref(params: {
   return `${buildLocalizedRoutePath(ROUTES.STUDIO_LOGS, params.locale)}?${searchParams.toString()}` as Route
 }
 
-function renderTextList(values: string[]): string {
-  return values.length > 0 ? values.join(', ') : '-'
-}
-
 function renderNullableText(value: string | null | undefined): string {
   return value && value.trim() ? value : '-'
 }
@@ -164,15 +160,14 @@ export function StudioChatLogTable({
       cell: ({ row: tableRow }) => tableRow.original.cacheKind,
     },
     {
-      accessorKey: 'plannerAction',
-      header: t('columns.plannerAction'),
-      cell: ({ row: tableRow }) => tableRow.original.plannerAction ?? '-',
+      accessorKey: 'intentOperation',
+      header: t('columns.intentOperation'),
+      cell: ({ row: tableRow }) => tableRow.original.intentOperation ?? '-',
     },
     {
-      accessorKey: 'preferredSourceCategories',
-      header: t('columns.sourceCategories'),
-      cell: ({ row: tableRow }) =>
-        renderTextList(tableRow.original.preferredSourceCategories),
+      accessorKey: 'intentEvidenceScope',
+      header: t('columns.intentEvidenceScope'),
+      cell: ({ row: tableRow }) => tableRow.original.intentEvidenceScope ?? '-',
     },
     {
       accessorKey: 'citations',
@@ -268,7 +263,9 @@ export function StudioChatLogTable({
                 {t('sort.createdAtDescending')}
               </SelectItem>
               <SelectItem
-                value={STUDIO_CHAT_LOG_TABLE.SORT_DIRECTIONS.CREATED_AT_ASCENDING}
+                value={
+                  STUDIO_CHAT_LOG_TABLE.SORT_DIRECTIONS.CREATED_AT_ASCENDING
+                }
               >
                 {t('sort.createdAtAscending')}
               </SelectItem>
@@ -493,7 +490,7 @@ function StudioChatLogDetailTextBlock({
   return (
     <section className="space-y-2">
       <h3 className="text-sm font-medium">{title}</h3>
-      <p className="bg-muted/50 whitespace-pre-wrap rounded-md border px-3 py-3 text-sm leading-6">
+      <p className="bg-muted/50 rounded-md border px-3 py-3 text-sm leading-6 whitespace-pre-wrap">
         {value || '-'}
       </p>
     </section>
@@ -532,12 +529,12 @@ function StudioChatLogDetailMetaGrid({
       value: renderNullableText(record.currentPostSlug),
     },
     {
-      label: t('columns.plannerAction'),
-      value: renderNullableText(record.plannerAction),
+      label: t('columns.intentOperation'),
+      value: renderNullableText(record.intentOperation),
     },
     {
-      label: t('detail.plannerRetrievalMode'),
-      value: renderNullableText(record.plannerRetrievalMode),
+      label: t('columns.intentEvidenceScope'),
+      value: renderNullableText(record.intentEvidenceScope),
     },
     {
       label: t('detail.refusalReason'),

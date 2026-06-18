@@ -1,13 +1,8 @@
-import {
-  Annotation,
-  END,
-  START,
-  StateGraph,
-} from '@langchain/langgraph'
+import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatResolvedRetrievalScope } from '@/features/chat/lib/chat-retrieval-scope'
+import type { ChatResolvedEvidenceScope } from '@/features/chat/lib/chat-retrieval-scope'
 import {
   getChatRagDatabasePool,
   selectChatRagLocaleSearchData,
@@ -15,7 +10,10 @@ import {
   type ChatRagSemanticCandidate,
 } from '@/features/chat/model/chat-rag-database'
 import { embedChatRagQuestion } from '@/features/chat/model/chat-rag-embedding-provider'
-import type { GraphRagEntity, GraphRagRelation } from '@/features/chat/model/graph-rag'
+import type {
+  GraphRagEntity,
+  GraphRagRelation,
+} from '@/features/chat/model/graph-rag'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { collectSearchTerms } from '@/shared/lib/search-terms'
 
@@ -30,7 +28,7 @@ const CHAT_RAG_WORKFLOW_STATE = Annotation.Root({
   currentPostSlug: Annotation<string | undefined>({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
-  retrievalScope: Annotation<ChatResolvedRetrievalScope | undefined>({
+  evidenceScope: Annotation<ChatResolvedEvidenceScope | undefined>({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
   questionEmbedding: Annotation<number[]>({
@@ -159,10 +157,7 @@ function buildRankedChunks(params: {
   const questionTerms = collectSearchTerms({
     texts: [params.question],
   }).map((questionTerm) => normalizeText(questionTerm))
-  const matchedEntityIds = buildMatchedEntityIds(
-    params.entities,
-    questionTerms,
-  )
+  const matchedEntityIds = buildMatchedEntityIds(params.entities, questionTerms)
   const relatedEntityScoreMap = buildRelatedEntityScoreMap(
     params.relations,
     matchedEntityIds,
@@ -223,24 +218,22 @@ function buildSelectedMatches(
     selectedChunks.push(rankedChunk)
   }
 
-  return selectedChunks
-    .slice(0, CHAT_RAG.SEARCH.TOP_K)
-    .map((chunk) => {
-      return {
-        id: chunk.id,
-        locale: chunk.locale,
-        slug: chunk.slug,
-        title: chunk.title,
-        url: chunk.url,
-        excerpt: chunk.excerpt,
-        content: chunk.content,
-        sectionTitle: chunk.sectionTitle,
-        tags: chunk.tags,
-        publishedAt: chunk.publishedAt,
-        searchTerms: chunk.searchTerms,
-        sourceCategory: chunk.sourceCategory,
-      }
-    })
+  return selectedChunks.slice(0, CHAT_RAG.SEARCH.TOP_K).map((chunk) => {
+    return {
+      id: chunk.id,
+      locale: chunk.locale,
+      slug: chunk.slug,
+      title: chunk.title,
+      url: chunk.url,
+      excerpt: chunk.excerpt,
+      content: chunk.content,
+      sectionTitle: chunk.sectionTitle,
+      tags: chunk.tags,
+      publishedAt: chunk.publishedAt,
+      searchTerms: chunk.searchTerms,
+      sourceCategory: chunk.sourceCategory,
+    }
+  })
 }
 
 function buildChatRagWorkflow(params: {
@@ -248,7 +241,7 @@ function buildChatRagWorkflow(params: {
   selectSearchData: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
-    retrievalScope?: ChatResolvedRetrievalScope
+    evidenceScope?: ChatResolvedEvidenceScope
   }) => Promise<ChatRagLocaleSearchData>
 }) {
   return new StateGraph(CHAT_RAG_WORKFLOW_STATE)
@@ -262,7 +255,7 @@ function buildChatRagWorkflow(params: {
         searchData: await params.selectSearchData({
           locale: state.locale,
           questionEmbedding: state.questionEmbedding,
-          retrievalScope: state.retrievalScope,
+          evidenceScope: state.evidenceScope,
         }),
       }
     })
@@ -292,13 +285,13 @@ export async function runChatRagWorkflow(params: {
   question: string
   locale: SupportedLocale
   currentPostSlug?: string
-  retrievalScope?: ChatResolvedRetrievalScope
+  evidenceScope?: ChatResolvedEvidenceScope
   databasePool?: Pool
   embedQuestion?: (question: string) => Promise<number[]>
   selectSearchData?: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
-    retrievalScope?: ChatResolvedRetrievalScope
+    evidenceScope?: ChatResolvedEvidenceScope
   }) => Promise<ChatRagLocaleSearchData>
 }): Promise<ChatRagWorkflowResult> {
   try {
@@ -310,7 +303,7 @@ export async function runChatRagWorkflow(params: {
       embedQuestion: params.embedQuestion ?? embedChatRagQuestion,
       selectSearchData:
         params.selectSearchData ??
-        (async ({ locale, questionEmbedding, retrievalScope }) => {
+        (async ({ locale, questionEmbedding, evidenceScope }) => {
           if (!databasePool) {
             return {
               entities: [],
@@ -325,8 +318,8 @@ export async function runChatRagWorkflow(params: {
             questionEmbedding,
             maximumSemanticCandidates:
               CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
-            sourceCategory: retrievalScope?.sourceCategory,
-            slug: retrievalScope?.slug,
+            sourceCategory: evidenceScope?.sourceCategory,
+            slug: evidenceScope?.slug,
           })
         }),
     })
@@ -334,7 +327,7 @@ export async function runChatRagWorkflow(params: {
       question: params.question,
       locale: params.locale,
       currentPostSlug: params.currentPostSlug,
-      retrievalScope: params.retrievalScope,
+      evidenceScope: params.evidenceScope,
     })
 
     return {

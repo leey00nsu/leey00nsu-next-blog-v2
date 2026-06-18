@@ -77,7 +77,7 @@ describe('planChatIntentPatch', () => {
 
   it('최신 글 질문의 시간 조건과 요청 필드를 보존한다', async () => {
     generateTextMock.mockResolvedValueOnce({ output: LATEST_POST_PATCH })
-    const { planChatIntentPatch } = await import('./plan-chat-question')
+    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntentPatch({
       question: '마지막 글 언제야?',
@@ -106,7 +106,7 @@ describe('planChatIntentPatch', () => {
       },
     })
     const conversationState = buildOwnerState()
-    const { planChatIntentPatch } = await import('./plan-chat-question')
+    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntentPatch({
       question: '이 사람 Vercel 써봤어?',
@@ -149,7 +149,7 @@ describe('planChatIntentPatch', () => {
         reason: 'The user supplied the missing owner target.',
       },
     })
-    const { planChatIntentPatch } = await import('./plan-chat-question')
+    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntentPatch({
       question: '블로그 주인',
@@ -173,7 +173,7 @@ describe('planChatIntentPatch', () => {
     generateTextMock
       .mockRejectedValueOnce(new Error('temporary timeout'))
       .mockResolvedValueOnce({ output: LATEST_POST_PATCH })
-    const { planChatIntentPatch } = await import('./plan-chat-question')
+    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntentPatch({
       question: '마지막 글 언제야?',
@@ -188,7 +188,7 @@ describe('planChatIntentPatch', () => {
 
   it('두 번 모두 실패하면 planner_unavailable 사유를 반환한다', async () => {
     generateTextMock.mockRejectedValue(new Error('timeout'))
-    const { planChatIntentPatch } = await import('./plan-chat-question')
+    const { planChatIntentPatch } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntentPatch({
       question: '마지막 글 언제야?',

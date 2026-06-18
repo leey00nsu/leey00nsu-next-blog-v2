@@ -1,14 +1,13 @@
 import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatQuestionRoutingResult } from '@/features/chat/model/chat-question-routing'
+import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 export interface ChatRetrievalEvaluationCase {
   id: string
-  question: string
   locale: SupportedLocale
-  questionRouting: ChatQuestionRoutingResult
+  intent: NormalizedChatIntent
   currentPostSlug?: string
   semanticMatches: ChatEvidenceRecord[]
   expectedTopMatchUrl?: string
@@ -49,8 +48,7 @@ export const CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS: ChatEvidenceRecord[] = [
     title: '블로그 챗봇 안내',
     url: '/ko/about',
     excerpt: '이 챗봇이 어떤 근거 범위에서 답하는지 설명합니다.',
-    content:
-      '저는 블로그 글과 공개된 소개 페이지를 근거로 답변합니다.',
+    content: '저는 블로그 글과 공개된 소개 페이지를 근거로 답변합니다.',
     sectionTitle: null,
     tags: ['assistant', 'chatbot'],
     searchTerms: ['블로그 챗봇', '답변 근거'],
@@ -136,8 +134,7 @@ export const CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS: ChatEvidenceRecord[] = [
     title: 'lee-spec-kit',
     url: '/ko/projects/lee-spec-kit',
     excerpt: 'AI 에이전트 기반 개발을 위한 프로젝트 문서 구조 생성 CLI입니다.',
-    content:
-      'lee-spec-kit은 문서 구조와 워크플로우를 표준화하는 CLI입니다.',
+    content: 'lee-spec-kit은 문서 구조와 워크플로우를 표준화하는 CLI입니다.',
     sectionTitle: null,
     tags: ['project', 'cli', 'ai'],
     searchTerms: ['lee-spec-kit', 'project', 'cli', '문서 구조'],
@@ -150,7 +147,8 @@ export const CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS: ChatEvidenceRecord[] = [
     id: 'ko/blog/why-i-built-lee-spec-kit',
     locale: 'ko',
     slug: 'why-i-built-lee-spec-kit',
-    title: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee-spec-kit을 만든 이유',
+    title:
+      'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee-spec-kit을 만든 이유',
     url: '/ko/blog/why-i-built-lee-spec-kit',
     excerpt: 'lee-spec-kit을 만든 이유를 설명합니다.',
     content:
@@ -165,7 +163,8 @@ export const CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS: ChatEvidenceRecord[] = [
     id: 'ko/blog/why-i-built-lee-spec-kit/structure',
     locale: 'ko',
     slug: 'why-i-built-lee-spec-kit',
-    title: 'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee-spec-kit을 만든 이유',
+    title:
+      'AI 시대의 개발 생산성은 코드보다 구조에 달려 있다: lee-spec-kit을 만든 이유',
     url: '/ko/blog/why-i-built-lee-spec-kit#structure',
     excerpt: '구조의 중요성을 설명합니다.',
     content:
@@ -182,7 +181,8 @@ export const CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS: ChatEvidenceRecord[] = [
     slug: 'common-philosophy',
     title: '이 블로그 전체에서 공통된 설계 철학은 구조와 재사용성이다',
     url: '/ko/blog/common-philosophy',
-    excerpt: '이 블로그 전체에서 공통된 설계 철학으로 구조와 재사용성을 강조합니다.',
+    excerpt:
+      '이 블로그 전체에서 공통된 설계 철학으로 구조와 재사용성을 강조합니다.',
     content:
       '이 블로그 전체에서 공통된 설계 철학은 구조와 재사용성이라고 설명합니다.',
     sectionTitle: null,
@@ -202,11 +202,24 @@ export const CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS: ChatEvidenceRecord[] = [
 export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   {
     id: 'project-name',
-    question: 'leesfield 알아?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'retrieval',
-      action: 'answer',
+    intent: {
+      standaloneQuestion: 'leesfield 알아?',
+      operation: 'answer',
+      target: {
+        kind: 'named_entity',
+        sourceCategory: 'project',
+        slug: 'leesfield',
+        title: 'Leesfield',
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['leesfield'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'project entity question',
     },
     semanticMatches: [],
@@ -214,11 +227,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   },
   {
     id: 'profile-english-name',
-    question: '영어 이름 뭐야?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'retrieval',
-      action: 'answer',
+    intent: {
+      standaloneQuestion: '영어 이름 뭐야?',
+      operation: 'answer',
+      target: {
+        kind: 'profile',
+        sourceCategory: 'profile',
+        slug: 'about',
+        title: 'About Me',
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['영어 이름'],
+      optionalConcepts: ['Yoonsu Lee'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'profile lookup',
     },
     semanticMatches: [],
@@ -226,11 +252,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   },
   {
     id: 'assistant-grounding',
-    question: '블로그 챗봇 답변 근거 범위가 뭐야?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'retrieval',
-      action: 'answer',
+    intent: {
+      standaloneQuestion: '블로그 챗봇 답변 근거 범위가 뭐야?',
+      operation: 'answer',
+      target: {
+        kind: 'assistant',
+        sourceCategory: 'assistant',
+        slug: 'assistant-profile',
+        title: '블로그 챗봇 안내',
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['답변 근거 범위'],
+      optionalConcepts: ['챗봇'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'assistant grounding',
     },
     semanticMatches: [],
@@ -238,11 +277,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   },
   {
     id: 'blog-reason',
-    question: 'lee-spec-kit 만든 이유가 뭐야?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'retrieval',
-      action: 'answer',
+    intent: {
+      standaloneQuestion: 'lee-spec-kit 만든 이유가 뭐야?',
+      operation: 'answer',
+      target: {
+        kind: 'named_entity',
+        sourceCategory: 'blog',
+        slug: 'why-i-built-lee-spec-kit',
+        title: 'lee-spec-kit을 만든 이유',
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['lee-spec-kit'],
+      optionalConcepts: ['만든 이유'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'blog post lookup',
     },
     semanticMatches: [],
@@ -250,24 +302,50 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   },
   {
     id: 'current-post',
-    question: '이 글에서 구조가 왜 중요해?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'current_source',
-      action: 'explain',
+    intent: {
+      standaloneQuestion: '이 글에서 구조가 왜 중요해?',
+      operation: 'explain',
+      target: {
+        kind: 'current_source',
+        sourceCategory: 'blog',
+        slug: 'why-i-built-lee-spec-kit',
+        title: null,
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'current_source',
+      requiredConcepts: ['구조'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'current post context',
     },
     currentPostSlug: 'why-i-built-lee-spec-kit',
     semanticMatches: [],
-    expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
+    expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit#structure',
   },
   {
     id: 'corpus-philosophy',
-    question: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야?',
     locale: 'ko',
-    questionRouting: {
-      selector: 'corpus',
-      action: 'summarize',
+    intent: {
+      standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야?',
+      operation: 'summarize',
+      target: {
+        kind: 'none',
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['summary'],
+      evidenceScope: 'corpus',
+      requiredConcepts: ['구조'],
+      optionalConcepts: ['재사용성', '설계 철학'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
       reason: 'cross document synthesis',
     },
     semanticMatches: [
@@ -278,8 +356,7 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
         title: 'lee-spec-kit',
         url: '/ko/projects/lee-spec-kit',
         excerpt: '문서 구조와 워크플로우를 표준화하는 CLI입니다.',
-        content:
-          '문서 구조와 워크플로우를 표준화하는 CLI입니다.',
+        content: '문서 구조와 워크플로우를 표준화하는 CLI입니다.',
         sectionTitle: null,
         tags: ['project', 'cli', 'ai'],
         searchTerms: ['문서 구조', '워크플로우'],

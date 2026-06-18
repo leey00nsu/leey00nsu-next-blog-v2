@@ -8,7 +8,7 @@ interface SelectChatSearchMatchesParams {
   question: string
   locale: SupportedLocale
   records: ChatEvidenceRecord[]
-  additionalKeywords?: string[]
+  rankingConcepts?: string[]
   preferredSourceCategories?: ChatEvidenceRecord['sourceCategory'][]
   currentPostSlug?: string
 }
@@ -73,11 +73,14 @@ function containsQueryPattern(
 
 function buildExpandedTokens(
   baseTokens: string[],
-  additionalKeywords: string[],
+  rankingConcepts: string[],
 ): string[] {
   const expandedTokens = new Set(baseTokens)
 
-  for (const token of [...baseTokens, ...tokenizeText(additionalKeywords.join(' '))]) {
+  for (const token of [
+    ...baseTokens,
+    ...tokenizeText(rankingConcepts.join(' ')),
+  ]) {
     expandedTokens.add(token)
 
     const aliases =
@@ -140,7 +143,9 @@ function buildFieldMatchMultiplier(
   const normalizedSectionTitle = normalizeText(record.sectionTitle ?? '')
   const normalizedContent = normalizeText(record.content)
   const normalizedTags = normalizeText(record.tags.join(' '))
-  const normalizedSearchTerms = normalizeText((record.searchTerms ?? []).join(' '))
+  const normalizedSearchTerms = normalizeText(
+    (record.searchTerms ?? []).join(' '),
+  )
 
   if (normalizedSectionTitle.includes(token)) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.SECTION
@@ -190,7 +195,10 @@ function buildExactTitleMatchBoost(params: {
 
   const titleTokens = tokenizeText(params.record.title)
 
-  if (titleTokens.length === 0 || titleTokens.length > params.baseQuestionTokens.length) {
+  if (
+    titleTokens.length === 0 ||
+    titleTokens.length > params.baseQuestionTokens.length
+  ) {
     return 0
   }
 
@@ -203,13 +211,13 @@ function buildExactTitleMatchBoost(params: {
 
 function resolveMinimumMatchedTokenCount(params: {
   questionTokens: string[]
-  additionalKeywords: string[]
+  rankingConcepts: string[]
   preferredSourceCategories: ChatEvidenceRecord['sourceCategory'][]
   normalizedQuestion: string
 }): number {
   const {
     questionTokens,
-    additionalKeywords,
+    rankingConcepts,
     preferredSourceCategories,
     normalizedQuestion,
   } = params
@@ -228,10 +236,7 @@ function resolveMinimumMatchedTokenCount(params: {
     return 1
   }
 
-  if (
-    additionalKeywords.length > 0 ||
-    preferredSourceCategories.length > 0
-  ) {
+  if (rankingConcepts.length > 0 || preferredSourceCategories.length > 0) {
     return 1
   }
 
@@ -309,7 +314,10 @@ function scoreRecord(
   )
 
   const score = questionTokens.reduce((totalScore, questionToken) => {
-    const fieldMatchMultiplier = buildFieldMatchMultiplier(record, questionToken)
+    const fieldMatchMultiplier = buildFieldMatchMultiplier(
+      record,
+      questionToken,
+    )
 
     if (fieldMatchMultiplier === 0) {
       return totalScore
@@ -368,7 +376,10 @@ function limitMatchesPerSlug(
   return limitedMatches
 }
 
-function recordMatchesToken(record: ChatEvidenceRecord, token: string): boolean {
+function recordMatchesToken(
+  record: ChatEvidenceRecord,
+  token: string,
+): boolean {
   const normalizedRecordText = normalizeText(
     [
       record.title,
@@ -385,13 +396,13 @@ function recordMatchesToken(record: ChatEvidenceRecord, token: string): boolean 
 function preserveAdditionalKeywordMatches(params: {
   scoredMatches: ScoredChatEvidenceRecord[]
   limitedMatches: ScoredChatEvidenceRecord[]
-  additionalKeywordTokens: string[]
+  rankingConceptTokens: string[]
 }): ScoredChatEvidenceRecord[] {
   const preservedMatchMap = new Map<string, ScoredChatEvidenceRecord>()
 
-  for (const additionalKeywordToken of params.additionalKeywordTokens) {
+  for (const rankingConceptToken of params.rankingConceptTokens) {
     const keywordMatch = params.scoredMatches.find((scoredMatch) => {
-      return recordMatchesToken(scoredMatch, additionalKeywordToken)
+      return recordMatchesToken(scoredMatch, rankingConceptToken)
     })
 
     if (keywordMatch) {
@@ -412,16 +423,20 @@ function selectCurrentPostFallbackMatches(
 ): ChatEvidenceRecord[] {
   return records
     .filter((record) => {
-      return (
-        record.slug === currentPostSlug && record.sourceCategory === 'blog'
-      )
+      return record.slug === currentPostSlug && record.sourceCategory === 'blog'
     })
     .sort((leftRecord, rightRecord) => {
-      if (leftRecord.sectionTitle === null && rightRecord.sectionTitle !== null) {
+      if (
+        leftRecord.sectionTitle === null &&
+        rightRecord.sectionTitle !== null
+      ) {
         return -1
       }
 
-      if (leftRecord.sectionTitle !== null && rightRecord.sectionTitle === null) {
+      if (
+        leftRecord.sectionTitle !== null &&
+        rightRecord.sectionTitle === null
+      ) {
         return 1
       }
 
@@ -434,7 +449,7 @@ export function selectChatSearchMatches({
   question,
   locale,
   records,
-  additionalKeywords = [],
+  rankingConcepts = [],
   preferredSourceCategories = [],
   currentPostSlug,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
@@ -443,23 +458,25 @@ export function selectChatSearchMatches({
     question,
     locale,
   })
-  const normalizedQuestion = normalizeText(normalizedQuery.normalizedSearchQuestion)
+  const normalizedQuestion = normalizeText(
+    normalizedQuery.normalizedSearchQuestion,
+  )
   const baseQuestionTokens = normalizedQuery.queryTokens
-  const additionalKeywordTokens = tokenizeText(additionalKeywords.join(' '))
+  const rankingConceptTokens = tokenizeText(rankingConcepts.join(' '))
   const questionTokens = buildExpandedTokens(baseQuestionTokens, [
-    ...normalizedQuery.additionalKeywords,
-    ...additionalKeywords,
+    ...normalizedQuery.rankingConcepts,
+    ...rankingConcepts,
   ])
   const minimumMatchedTokenCount = resolveMinimumMatchedTokenCount({
     questionTokens: baseQuestionTokens,
-    additionalKeywords: [
-      ...normalizedQuery.additionalKeywords,
-      ...additionalKeywords,
-    ],
+    rankingConcepts: [...normalizedQuery.rankingConcepts, ...rankingConcepts],
     preferredSourceCategories,
     normalizedQuestion,
   })
-  const minimumScore = resolveMinimumScore(baseQuestionTokens, normalizedQuestion)
+  const minimumScore = resolveMinimumScore(
+    baseQuestionTokens,
+    normalizedQuestion,
+  )
   const documentFrequencyMap = buildDocumentFrequencyMap(
     questionTokens,
     scopedRecords,
@@ -504,7 +521,7 @@ export function selectChatSearchMatches({
       0,
       BLOG_CHAT.SEARCH.TOP_K,
     ),
-    additionalKeywordTokens,
+    rankingConceptTokens,
   })
 
   if (limitedMatches.length === 0) {

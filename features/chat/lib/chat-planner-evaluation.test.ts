@@ -5,76 +5,40 @@ import {
   CHAT_PLANNER_EVALUATION_CONTACT_PROFILE,
   CHAT_PLANNER_EVALUATION_CURATED_RECORDS,
 } from '@/features/chat/fixtures/chat-planner-evaluation'
-import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
-import {
-  applyQuestionPlanToAnalysis,
-  buildQuestionRoutingFromPlan,
-  shouldRunHybridRetrieval,
-} from '@/features/chat/lib/chat-question-plan-routing'
-import { analyzeQuestion } from '@/features/chat/lib/question-analysis'
-import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
+import { resolveChatIntentRequest } from '@/features/chat/lib/resolve-chat-intent-request'
+import { reduceChatConversationState } from '@/features/chat/model/reduce-chat-conversation-state'
 
 describe('chat planner evaluation', () => {
   for (const evaluationCase of CHAT_PLANNER_EVALUATION_CASES) {
-    it(`${evaluationCase.id} 질문을 planner rag 경로로 처리한다`, async () => {
-      const questionPlan = evaluationCase.questionPlan
+    it(`${evaluationCase.id} patch를 normalized intent로 실행한다`, () => {
+      const reduction = reduceChatConversationState({
+        previousState: evaluationCase.inputState,
+        intentPatch: evaluationCase.modelPatch,
+      })
 
-      expect(questionPlan.route).toBe(evaluationCase.expectedRoute)
+      expect(reduction.intent).toEqual(evaluationCase.expectedIntent)
 
-      if (evaluationCase.expectedClarificationQuestion) {
-        expect(questionPlan.route).toBe('clarify')
-        expect(questionPlan.clarificationQuestion).toBe(
-          evaluationCase.expectedClarificationQuestion,
-        )
-
+      if (reduction.intent.missingSlots.length > 0) {
+        expect(evaluationCase.expectedExecutionKind).toBe('direct')
         return
       }
 
-      const questionAnalysis = applyQuestionPlanToAnalysis({
-        questionAnalysis: analyzeQuestion(
-          questionPlan.standaloneQuestion,
-          evaluationCase.locale,
-        ),
-        questionPlan,
-        locale: evaluationCase.locale,
-      })
-      const questionRouting = buildQuestionRoutingFromPlan(questionPlan)
-      const resolvedChatRequest = resolveChatRequest({
-        question: questionPlan.standaloneQuestion,
+      const resolvedRequest = resolveChatIntentRequest({
+        intent: reduction.intent,
         locale: evaluationCase.locale,
         blogRecords: CHAT_PLANNER_EVALUATION_BLOG_RECORDS,
         curatedRecords: CHAT_PLANNER_EVALUATION_CURATED_RECORDS,
         currentPostSlug: evaluationCase.currentPostSlug,
-        questionAnalysis,
         contactProfile: CHAT_PLANNER_EVALUATION_CONTACT_PROFILE,
-        questionRouting,
       })
-      const combinedMatches = shouldRunHybridRetrieval(questionPlan)
-        ? fuseChatRetrievalMatches({
-            lexicalMatches: resolvedChatRequest.matches,
-            semanticMatches: evaluationCase.semanticMatches ?? [],
-            preferredSourceCategories: [
-              ...new Set(
-                questionAnalysis.searchQueries.flatMap((searchQuery) => {
-                  return searchQuery.preferredSourceCategories
-                }),
-              ),
-            ],
-            currentPostSlug: evaluationCase.currentPostSlug,
-          })
-        : resolvedChatRequest.matches
+      const executionKind = resolvedRequest.directResponse ? 'direct' : 'model'
 
-      expect(questionRouting.selector).toBe(evaluationCase.expectedSelector)
-      expect(resolvedChatRequest.directResponse).toBeUndefined()
-
-      if (evaluationCase.expectedPreferredSourceCategories) {
-        expect(questionAnalysis.searchQueries[0]?.preferredSourceCategories).toEqual(
-          expect.arrayContaining(evaluationCase.expectedPreferredSourceCategories),
-        )
-      }
+      expect(executionKind).toBe(evaluationCase.expectedExecutionKind)
 
       if (evaluationCase.expectedTopMatchUrl) {
-        expect(combinedMatches[0]?.url).toBe(evaluationCase.expectedTopMatchUrl)
+        expect(resolvedRequest.matches[0]?.url).toBe(
+          evaluationCase.expectedTopMatchUrl,
+        )
       }
     })
   }

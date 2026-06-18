@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
-import { retrieveBlogChatEvidenceByIntent } from '@/features/chat/model/retrieve-blog-chat-evidence'
+import { retrieveBlogChatEvidence } from '@/features/chat/model/retrieve-blog-chat-evidence'
 
 const {
   getCuratedChatSourcesMock,
   resolveChatIntentRequestMock,
   runChatRagWorkflowMock,
-  selectFinalChatEvidenceForIntentMock,
-  shouldRerankChatIntentEvidenceMock,
+  selectFinalChatEvidenceMock,
+  shouldRerankChatEvidenceMock,
 } = vi.hoisted(() => {
   return {
     getCuratedChatSourcesMock: vi.fn(),
     resolveChatIntentRequestMock: vi.fn(),
     runChatRagWorkflowMock: vi.fn(),
-    selectFinalChatEvidenceForIntentMock: vi.fn(),
-    shouldRerankChatIntentEvidenceMock: vi.fn(),
+    selectFinalChatEvidenceMock: vi.fn(),
+    shouldRerankChatEvidenceMock: vi.fn(),
   }
 })
 
@@ -58,15 +58,13 @@ vi.mock('@/features/chat/model/chat-rag-workflow', () => {
 
 vi.mock('@/features/chat/lib/select-final-chat-evidence', () => {
   return {
-    selectFinalChatEvidence: vi.fn(),
-    selectFinalChatEvidenceForIntent: selectFinalChatEvidenceForIntentMock,
+    selectFinalChatEvidence: selectFinalChatEvidenceMock,
   }
 })
 
 vi.mock('@/features/chat/lib/should-rerank-chat-evidence', () => {
   return {
-    shouldRerankChatEvidence: vi.fn(() => false),
-    shouldRerankChatIntentEvidence: shouldRerankChatIntentEvidenceMock,
+    shouldRerankChatEvidence: shouldRerankChatEvidenceMock,
   }
 })
 
@@ -103,13 +101,13 @@ const LEXICAL_MATCH = {
   sourceCategory: 'blog' as const,
 }
 
-describe('retrieveBlogChatEvidenceByIntent', () => {
+describe('retrieveBlogChatEvidence', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getCuratedChatSourcesMock.mockResolvedValue([])
     runChatRagWorkflowMock.mockResolvedValue({ matches: [] })
-    shouldRerankChatIntentEvidenceMock.mockReturnValue(false)
-    selectFinalChatEvidenceForIntentMock.mockImplementation(
+    shouldRerankChatEvidenceMock.mockReturnValue(false)
+    selectFinalChatEvidenceMock.mockImplementation(
       ({ lexicalMatches }: { lexicalMatches: unknown[] }) => lexicalMatches,
     )
   })
@@ -122,7 +120,7 @@ describe('retrieveBlogChatEvidenceByIntent', () => {
       matches: [LEXICAL_MATCH],
     })
 
-    const result = await retrieveBlogChatEvidenceByIntent({
+    const result = await retrieveBlogChatEvidence({
       intent: INTENT,
       locale: 'ko',
       conversationHistoryCount: 0,
@@ -131,7 +129,7 @@ describe('retrieveBlogChatEvidenceByIntent', () => {
     expect(resolveChatIntentRequestMock).toHaveBeenCalledWith(
       expect.objectContaining({ intent: INTENT }),
     )
-    expect(selectFinalChatEvidenceForIntentMock).toHaveBeenCalledWith(
+    expect(selectFinalChatEvidenceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         intent: INTENT,
         lexicalMatches: [LEXICAL_MATCH],
@@ -152,12 +150,9 @@ describe('retrieveBlogChatEvidenceByIntent', () => {
       matches: [LEXICAL_MATCH],
     })
     runChatRagWorkflowMock.mockResolvedValue({ matches: [semanticMatch] })
-    selectFinalChatEvidenceForIntentMock.mockReturnValue([
-      LEXICAL_MATCH,
-      semanticMatch,
-    ])
+    selectFinalChatEvidenceMock.mockReturnValue([LEXICAL_MATCH, semanticMatch])
 
-    const result = await retrieveBlogChatEvidenceByIntent({
+    const result = await retrieveBlogChatEvidence({
       intent: INTENT,
       locale: 'ko',
       conversationHistoryCount: 1,

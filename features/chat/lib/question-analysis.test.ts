@@ -11,7 +11,7 @@ describe('analyzeQuestion', () => {
       {
         question: '안녕 너 뭐 하는 챗봇이야',
         intent: 'general',
-        additionalKeywords: ['assistant', 'chatbot', '챗봇'],
+        rankingConcepts: ['assistant', 'chatbot', '챗봇'],
         preferredSourceCategories: ['assistant'],
       },
     ])
@@ -25,7 +25,7 @@ describe('analyzeQuestion', () => {
       {
         question: '넌',
         intent: 'general',
-        additionalKeywords: [],
+        rankingConcepts: [],
         preferredSourceCategories: [],
       },
     ])
@@ -39,7 +39,7 @@ describe('analyzeQuestion', () => {
       {
         question: '넌 이 사람이랑 어떤 관계야',
         intent: 'general',
-        additionalKeywords: [],
+        rankingConcepts: [],
         preferredSourceCategories: [],
       },
     ])
@@ -55,7 +55,7 @@ describe('analyzeQuestion', () => {
       {
         question: '이 사람은 어떤 개발자고 대표 프로젝트는',
         intent: 'general',
-        additionalKeywords: [
+        rankingConcepts: [
           'profile',
           'about',
           'author',
@@ -112,7 +112,7 @@ describe('analyzeQuestion', () => {
       {
         question: 'Which project uses TypeScript',
         intent: 'general',
-        additionalKeywords: [],
+        rankingConcepts: [],
         preferredSourceCategories: [],
       },
     ])

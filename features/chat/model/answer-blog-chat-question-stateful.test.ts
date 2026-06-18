@@ -1,27 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
-const {
-  runStatefulBlogChatPipelineMock,
-  planChatQuestionMock,
-  recordChatObservabilityEventMock,
-} = vi.hoisted(() => {
-  return {
-    runStatefulBlogChatPipelineMock: vi.fn(),
-    planChatQuestionMock: vi.fn(),
-    recordChatObservabilityEventMock: vi.fn(),
-  }
-})
+const { runStatefulBlogChatPipelineMock, recordChatObservabilityEventMock } =
+  vi.hoisted(() => {
+    return {
+      runStatefulBlogChatPipelineMock: vi.fn(),
+      recordChatObservabilityEventMock: vi.fn(),
+    }
+  })
 
 vi.mock('@/features/chat/model/run-stateful-blog-chat-pipeline', () => {
   return {
     runStatefulBlogChatPipeline: runStatefulBlogChatPipelineMock,
-  }
-})
-
-vi.mock('@/features/chat/api/plan-chat-question', () => {
-  return {
-    planChatQuestion: planChatQuestionMock,
   }
 })
 
@@ -65,7 +55,6 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    process.env.BLOG_CHAT_STATEFUL_RAG_ENABLED = 'true'
     runStatefulBlogChatPipelineMock.mockResolvedValue({
       applicationResponse: {
         response: {
@@ -106,11 +95,7 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
     })
   })
 
-  afterEach(() => {
-    delete process.env.BLOG_CHAT_STATEFUL_RAG_ENABLED
-  })
-
-  it('feature flag가 켜지면 stateful response envelope을 반환한다', async () => {
+  it('stateful response envelope을 반환한다', async () => {
     const { answerBlogChatQuestion } = await import(
       '@/features/chat/model/answer-blog-chat-question'
     )
@@ -124,7 +109,6 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
     })
 
     expect(runStatefulBlogChatPipelineMock).toHaveBeenCalledOnce()
-    expect(planChatQuestionMock).not.toHaveBeenCalled()
     expect(result.body).toMatchObject({
       response: {
         answer: '최신 글은 2026년 4월 21일에 게시된 최신 글입니다.',

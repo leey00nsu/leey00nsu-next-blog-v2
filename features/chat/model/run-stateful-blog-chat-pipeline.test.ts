@@ -4,7 +4,10 @@ import {
   EMPTY_CHAT_CONVERSATION_STATE,
 } from '@/features/chat/model/chat-conversation-state'
 import type { ChatIntentPatch } from '@/features/chat/model/chat-intent'
-import type { BlogChatRequest } from '@/features/chat/model/chat-schema'
+import type {
+  BlogChatRequest,
+  BlogChatResponse,
+} from '@/features/chat/model/chat-schema'
 import { runStatefulBlogChatPipeline } from '@/features/chat/model/run-stateful-blog-chat-pipeline'
 
 const OWNER_TARGET = {
@@ -41,6 +44,8 @@ function buildRequest(
 }
 
 function buildDependencies() {
+  let semanticCachedResponse: BlogChatResponse | undefined
+
   return {
     planIntentPatch: vi.fn().mockResolvedValue({
       ok: true as const,
@@ -79,8 +84,8 @@ function buildDependencies() {
     answerQuestion: vi.fn(),
     getCachedResponse: vi.fn().mockReturnValue(null),
     setCachedResponse: vi.fn(),
-    findSemanticResponse: vi.fn().mockResolvedValue(),
-    storeSemanticResponse: vi.fn().mockResolvedValue(),
+    findSemanticResponse: vi.fn(() => Promise.resolve(semanticCachedResponse)),
+    storeSemanticResponse: vi.fn(() => Promise.resolve()),
   }
 }
 
@@ -164,7 +169,9 @@ describe('runStatefulBlogChatPipeline', () => {
         }),
       }),
     )
-    expect(result.applicationResponse.conversationState.pendingClarification).toBeNull()
+    expect(
+      result.applicationResponse.conversationState.pendingClarification,
+    ).toBeNull()
   })
 
   it('planner가 실패해도 완전한 상태에서 Intent를 복원한다', async () => {

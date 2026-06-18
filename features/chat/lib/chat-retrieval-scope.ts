@@ -1,73 +1,31 @@
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 
-export interface ChatResolvedRetrievalScope {
+export interface ChatResolvedEvidenceScope {
   mode: 'none' | 'current_source' | 'entity' | 'corpus'
   sourceCategory: ChatSourceCategory | null
   slug: string | null
   title: string | null
 }
 
-export function resolveChatRetrievalScope(params: {
-  questionPlan: ChatQuestionPlan
-  currentPostSlug?: string
-}): ChatResolvedRetrievalScope {
-  if (
-    params.questionPlan.route !== 'retrieve' ||
-    params.questionPlan.retrievalScope === 'none'
-  ) {
-    return {
-      mode: 'none',
-      sourceCategory: null,
-      slug: null,
-      title: null,
-    }
-  }
-
-  if (params.questionPlan.retrievalScope === 'corpus') {
-    return {
-      mode: 'corpus',
-      sourceCategory: null,
-      slug: null,
-      title: null,
-    }
-  }
-
-  const sourceCategory = params.questionPlan.referenceTarget.sourceCategory
-  const fallbackCurrentSlug =
-    params.questionPlan.retrievalScope === 'current_source' &&
-    sourceCategory === 'blog'
-      ? params.currentPostSlug ?? null
-      : null
-  const slug = params.questionPlan.referenceTarget.slug ?? fallbackCurrentSlug
-
-  return {
-    mode: params.questionPlan.retrievalScope,
-    sourceCategory,
-    slug,
-    title: params.questionPlan.referenceTarget.title,
-  }
-}
-
 export function resolveScopedCurrentSourceSlug(
-  retrievalScope: ChatResolvedRetrievalScope,
+  evidenceScope: ChatResolvedEvidenceScope,
 ): string | undefined {
   if (
-    retrievalScope.mode !== 'current_source' ||
-    retrievalScope.sourceCategory !== 'blog' ||
-    !retrievalScope.slug
+    evidenceScope.mode !== 'current_source' ||
+    evidenceScope.sourceCategory !== 'blog' ||
+    !evidenceScope.slug
   ) {
     return undefined
   }
 
-  return retrievalScope.slug
+  return evidenceScope.slug
 }
 
-export function resolveChatIntentRetrievalScope(params: {
+export function resolveChatEvidenceScope(params: {
   intent: NormalizedChatIntent
   currentPostSlug?: string
-}): ChatResolvedRetrievalScope {
+}): ChatResolvedEvidenceScope {
   if (params.intent.evidenceScope === 'none') {
     return {
       mode: 'none',
@@ -91,7 +49,7 @@ export function resolveChatIntentRetrievalScope(params: {
     target.slug ??
     (params.intent.evidenceScope === 'current_source' &&
     target.sourceCategory === 'blog'
-      ? params.currentPostSlug ?? null
+      ? (params.currentPostSlug ?? null)
       : null)
 
   return {

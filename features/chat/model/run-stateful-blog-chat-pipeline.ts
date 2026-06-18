@@ -2,7 +2,7 @@ import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
 import {
   planChatIntentPatch,
   type PlanChatIntentPatchResult,
-} from '@/features/chat/api/plan-chat-question'
+} from '@/features/chat/api/plan-chat-intent-patch'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
@@ -196,9 +196,7 @@ export async function runStatefulBlogChatPipeline({
     request,
     plannerResult,
   })
-  const plannerFailureKind = plannerResult.ok
-    ? null
-    : plannerResult.failureKind
+  const plannerFailureKind = plannerResult.ok ? null : plannerResult.failureKind
 
   if (!intent) {
     return {

@@ -1,15 +1,6 @@
-import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
-import { planChatQuestion } from '@/features/chat/api/plan-chat-question'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
-import { shouldCacheBlogChatResponse } from '@/features/chat/lib/blog-chat-cache'
-import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
-import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { normalizeQuestion } from '@/features/chat/lib/question-analysis'
-import {
-  cleanupExpiredBlogChatResponseCache,
-  getCachedBlogChatResponse,
-  setCachedBlogChatResponse,
-} from '@/features/chat/model/blog-chat-response-cache'
+import { cleanupExpiredBlogChatResponseCache } from '@/features/chat/model/blog-chat-response-cache'
 import {
   acquireBlogChatConcurrentRequestSlot,
   consumeBlogChatDailyUsage,
@@ -19,14 +10,8 @@ import {
 } from '@/features/chat/model/blog-chat-usage-limiter'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
-import {
-  findSemanticCachedBlogChatResponse,
-  storeSemanticCachedBlogChatResponse,
-} from '@/features/chat/model/chat-semantic-cache'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
-import { retrieveBlogChatEvidence } from '@/features/chat/model/retrieve-blog-chat-evidence'
 import {
   runStatefulBlogChatPipeline,
   type StatefulBlogChatPipelineResult,
@@ -47,11 +32,6 @@ interface ChatObservabilityState {
   cacheKind: 'none' | 'exact' | 'semantic'
   reranked: boolean
   plannerReason: string | null
-  plannerAction: string | null
-  plannerRetrievalMode: string | null
-  plannerDeterministicAction: string | null
-  preferredSourceCategories: string[]
-  additionalKeywords: string[]
   intentOperation: string | null
   intentTargetKind: string | null
   intentEvidenceScope: string | null
@@ -71,35 +51,16 @@ export interface AnswerBlogChatQuestionParams {
 }
 
 export interface BlogChatApplicationResult {
-  body:
-    | BlogChatResponse
-    | BlogChatApplicationResponse
-    | Record<string, unknown>
+  body: BlogChatResponse | BlogChatApplicationResponse | Record<string, unknown>
   status?: number
 }
 
 const CHAT_APPLICATION = {
-  FALLBACK_SOCIAL_REPLIES: {
-    ko: '안녕하세요. 무엇을 찾고 계신가요?',
-    en: 'Hi there. What are you looking for?',
-  },
-  FALLBACK_CLARIFICATION_QUESTIONS: {
-    ko: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
-    en: 'Please clarify who you mean a bit more specifically.',
-  },
   VALIDATION_ERROR_MESSAGE:
     '요청 내용을 확인하는 중 문제가 있었어요. 입력한 내용을 한 번만 다시 확인해주세요.',
   UNEXPECTED_ERROR_MESSAGE:
     '답변을 준비하는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.',
 } as const
-
-function buildCacheKey(
-  normalizedQuestion: string,
-  locale: string,
-  currentPostSlug?: string,
-): string {
-  return `${locale}:${currentPostSlug ?? 'global'}:${normalizedQuestion}`
-}
 
 function buildRefusalResponse(
   refusalReason: BlogChatResponse['refusalReason'],
@@ -110,103 +71,6 @@ function buildRefusalResponse(
     grounded: false,
     refusalReason,
   }
-}
-
-async function buildModelBackedResponse(params: {
-  question: string
-  matches: ChatEvidenceRecord[]
-}): Promise<BlogChatResponse> {
-  const answerResult = await answerBlogQuestion({
-    question: params.question,
-    matches: params.matches,
-  })
-
-  const responseData =
-    answerResult.ok && answerResult.draftAnswer
-      ? finalizeBlogChatResponse({
-          draftAnswer: answerResult.draftAnswer,
-          matches: params.matches,
-        })
-      : buildRefusalResponse(answerResult.refusalReason ?? 'model_error')
-
-  return BlogChatResponseSchema.parse(responseData)
-}
-
-function cacheResponseIfNeeded(params: {
-  cacheKey: string
-  responseData: BlogChatResponse
-}): void {
-  if (!shouldCacheBlogChatResponse(params.responseData)) {
-    return
-  }
-
-  setCachedBlogChatResponse({
-    cacheKey: params.cacheKey,
-    responseData: params.responseData,
-  })
-}
-
-function buildSocialReplyResponse(params: {
-  locale: string
-  assistantProfile: ReturnType<typeof getChatAssistantProfile>
-}): BlogChatResponse {
-  return {
-    answer:
-      params.assistantProfile?.greetingAnswer ??
-      CHAT_APPLICATION.FALLBACK_SOCIAL_REPLIES[
-        params.locale as keyof typeof CHAT_APPLICATION.FALLBACK_SOCIAL_REPLIES
-      ] ??
-      CHAT_APPLICATION.FALLBACK_SOCIAL_REPLIES[LOCALES.DEFAULT],
-    citations: [],
-    grounded: false,
-  }
-}
-
-function buildClarificationResponse(params: {
-  locale: string
-  questionPlan: ChatQuestionPlan
-}): BlogChatResponse {
-  return {
-    answer:
-      params.questionPlan.clarificationQuestion ??
-      CHAT_APPLICATION.FALLBACK_CLARIFICATION_QUESTIONS[
-        params.locale as keyof typeof CHAT_APPLICATION.FALLBACK_CLARIFICATION_QUESTIONS
-      ] ??
-      CHAT_APPLICATION.FALLBACK_CLARIFICATION_QUESTIONS[LOCALES.DEFAULT],
-    citations: [],
-    grounded: false,
-  }
-}
-
-function buildPlannerFailureResponse(
-  refusalReason: Extract<
-    BlogChatResponse['refusalReason'],
-    'missing_api_key' | 'model_error'
-  >,
-): BlogChatResponse {
-  return buildRefusalResponse(refusalReason)
-}
-
-function buildResponseWithFollowUpSuggestions(params: {
-  locale: SupportedLocale
-  responseData: BlogChatResponse
-  matches: ChatEvidenceRecord[]
-}): BlogChatResponse {
-  if (
-    !params.responseData.grounded ||
-    params.responseData.citations.length === 0
-  ) {
-    return params.responseData
-  }
-
-  return BlogChatResponseSchema.parse({
-    ...params.responseData,
-    followUpSuggestions: buildFollowUpSuggestions({
-      locale: params.locale,
-      citations: params.responseData.citations,
-      matches: params.matches,
-    }),
-  })
 }
 
 function summarizeMatches(matches: ChatEvidenceRecord[]) {
@@ -235,19 +99,11 @@ async function recordAnswerObservability(params: {
     cacheKind: params.chatObservabilityState.cacheKind,
     reranked: params.chatObservabilityState.reranked,
     plannerReason: params.chatObservabilityState.plannerReason,
-    plannerAction: params.chatObservabilityState.plannerAction,
-    plannerRetrievalMode: params.chatObservabilityState.plannerRetrievalMode,
-    plannerDeterministicAction:
-      params.chatObservabilityState.plannerDeterministicAction,
-    preferredSourceCategories:
-      params.chatObservabilityState.preferredSourceCategories,
-    additionalKeywords: params.chatObservabilityState.additionalKeywords,
     intentOperation: params.chatObservabilityState.intentOperation,
     intentTargetKind: params.chatObservabilityState.intentTargetKind,
     intentEvidenceScope: params.chatObservabilityState.intentEvidenceScope,
     intentTemporalOrder: params.chatObservabilityState.intentTemporalOrder,
-    intentRequestedFields:
-      params.chatObservabilityState.intentRequestedFields,
+    intentRequestedFields: params.chatObservabilityState.intentRequestedFields,
     intentRequiredConcepts:
       params.chatObservabilityState.intentRequiredConcepts,
     intentOptionalConcepts:
@@ -273,35 +129,16 @@ async function recordAnswerObservability(params: {
   })
 }
 
-async function buildLoggedResult(params: {
-  locale: SupportedLocale
-  responseData: BlogChatResponse
-  requestStartedAt: number
-  chatObservabilityState: ChatObservabilityState
-}): Promise<BlogChatApplicationResult> {
-  try {
-    await recordAnswerObservability(params)
-  } catch (error) {
-    console.error('Failed to record chat observability event.', error)
-  }
-
-  return {
-    body: BlogChatResponseSchema.parse(params.responseData),
-  }
-}
-
 async function buildLoggedStatefulResult(params: {
   locale: SupportedLocale
   pipelineResult: StatefulBlogChatPipelineResult
   requestStartedAt: number
   chatObservabilityState: ChatObservabilityState
 }): Promise<BlogChatApplicationResult> {
-  const responseData = params.pipelineResult.applicationResponse.response
-
   try {
     await recordAnswerObservability({
       locale: params.locale,
-      responseData,
+      responseData: params.pipelineResult.applicationResponse.response,
       requestStartedAt: params.requestStartedAt,
       chatObservabilityState: params.chatObservabilityState,
     })
@@ -335,6 +172,38 @@ function buildValidationErrorResult(requestBody: unknown) {
       details: parsedRequest.success ? null : parsedRequest.error.flatten(),
     },
     status: 400,
+  }
+}
+
+function buildChatObservabilityState(params: {
+  originalQuestion: string
+  currentPostSlug?: string
+  pipelineResult: StatefulBlogChatPipelineResult
+}): ChatObservabilityState {
+  const intent = params.pipelineResult.intent
+  const evidenceResult = params.pipelineResult.execution?.evidenceResult
+
+  return {
+    originalQuestion: params.originalQuestion,
+    resolvedQuestion: intent?.standaloneQuestion ?? null,
+    normalizedQuestion: intent
+      ? normalizeQuestion(intent.standaloneQuestion)
+      : null,
+    currentPostSlug: params.currentPostSlug,
+    cacheKind: params.pipelineResult.cacheKind,
+    reranked: evidenceResult?.reranked ?? false,
+    plannerReason: intent?.reason ?? null,
+    intentOperation: intent?.operation ?? null,
+    intentTargetKind: intent?.target.kind ?? null,
+    intentEvidenceScope: intent?.evidenceScope ?? null,
+    intentTemporalOrder: intent?.temporalConstraint.order ?? null,
+    intentRequestedFields: [...(intent?.requestedFields ?? [])],
+    intentRequiredConcepts: [...(intent?.requiredConcepts ?? [])],
+    intentOptionalConcepts: [...(intent?.optionalConcepts ?? [])],
+    plannerFailureKind: params.pipelineResult.plannerFailureKind,
+    lexicalMatches: evidenceResult?.lexicalMatches ?? [],
+    semanticMatches: evidenceResult?.semanticMatches ?? [],
+    finalMatches: evidenceResult?.finalMatches ?? [],
   }
 }
 
@@ -399,296 +268,25 @@ export async function answerBlogChatQuestion({
 
       const locale: SupportedLocale =
         parsedRequest.data.locale ?? LOCALES.DEFAULT
-      const originalQuestion = parsedRequest.data.question
-      const chatObservabilityState: ChatObservabilityState = {
-        originalQuestion,
-        resolvedQuestion: null,
-        normalizedQuestion: null,
+      const pipelineResult = await runStatefulBlogChatPipeline({
+        request: parsedRequest.data,
+        assistantProfile: getChatAssistantProfile(locale),
+        contactProfile: getChatContactProfile(locale),
+      })
+      const chatObservabilityState = buildChatObservabilityState({
+        originalQuestion: parsedRequest.data.question,
         currentPostSlug: parsedRequest.data.currentPostSlug,
-        cacheKind: 'none',
-        reranked: false,
-        plannerReason: null,
-        plannerAction: null,
-        plannerRetrievalMode: null,
-        plannerDeterministicAction: null,
-        preferredSourceCategories: [],
-        additionalKeywords: [],
-        intentOperation: null,
-        intentTargetKind: null,
-        intentEvidenceScope: null,
-        intentTemporalOrder: null,
-        intentRequestedFields: [],
-        intentRequiredConcepts: [],
-        intentOptionalConcepts: [],
-        plannerFailureKind: null,
-        lexicalMatches: [],
-        semanticMatches: [],
-        finalMatches: [],
-      }
-      const assistantProfile = getChatAssistantProfile(locale)
-      const contactProfile = getChatContactProfile(locale)
-
-      if (BLOG_CHAT.PIPELINE?.STATEFUL_RAG_ENABLED) {
-        const pipelineResult = await runStatefulBlogChatPipeline({
-          request: parsedRequest.data,
-          assistantProfile,
-          contactProfile,
-        })
-        const intent = pipelineResult.intent
-        const evidenceResult = pipelineResult.execution?.evidenceResult
-
-        chatObservabilityState.cacheKind = pipelineResult.cacheKind
-        chatObservabilityState.resolvedQuestion =
-          intent?.standaloneQuestion ?? null
-        chatObservabilityState.normalizedQuestion = intent
-          ? normalizeQuestion(intent.standaloneQuestion)
-          : null
-        chatObservabilityState.plannerReason = intent?.reason ?? null
-        chatObservabilityState.plannerFailureKind =
-          pipelineResult.plannerFailureKind
-        chatObservabilityState.intentOperation = intent?.operation ?? null
-        chatObservabilityState.intentTargetKind = intent?.target.kind ?? null
-        chatObservabilityState.intentEvidenceScope =
-          intent?.evidenceScope ?? null
-        chatObservabilityState.intentTemporalOrder =
-          intent?.temporalConstraint.order ?? null
-        chatObservabilityState.intentRequestedFields = [
-          ...(intent?.requestedFields ?? []),
-        ]
-        chatObservabilityState.intentRequiredConcepts = [
-          ...(intent?.requiredConcepts ?? []),
-        ]
-        chatObservabilityState.intentOptionalConcepts = [
-          ...(intent?.optionalConcepts ?? []),
-        ]
-        chatObservabilityState.reranked = evidenceResult?.reranked ?? false
-        chatObservabilityState.lexicalMatches =
-          evidenceResult?.lexicalMatches ?? []
-        chatObservabilityState.semanticMatches =
-          evidenceResult?.semanticMatches ?? []
-        chatObservabilityState.finalMatches =
-          evidenceResult?.finalMatches ?? []
-
-        return buildLoggedStatefulResult({
-          locale,
-          pipelineResult,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const questionPlan = await planChatQuestion({
-        question: originalQuestion,
-        locale,
-        conversationHistory: parsedRequest.data.conversationHistory,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-        assistantProfile,
+        pipelineResult,
       })
 
-      if (!questionPlan.ok) {
-        chatObservabilityState.plannerReason = questionPlan.refusalReason
-        const plannerFailureResponse = BlogChatResponseSchema.parse(
-          buildPlannerFailureResponse(questionPlan.refusalReason),
-        )
-
-        cacheResponseIfNeeded({
-          cacheKey: buildCacheKey(
-            normalizeQuestion(originalQuestion),
-            locale,
-            parsedRequest.data.currentPostSlug,
-          ),
-          responseData: plannerFailureResponse,
-        })
-
-        return buildLoggedResult({
-          locale,
-          responseData: plannerFailureResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const resolvedQuestion = questionPlan.questionPlan.standaloneQuestion
-      const normalizedQuestion = normalizeQuestion(resolvedQuestion)
-      chatObservabilityState.resolvedQuestion = resolvedQuestion
-      chatObservabilityState.normalizedQuestion = normalizedQuestion
-      chatObservabilityState.plannerReason = questionPlan.questionPlan.reason
-      chatObservabilityState.plannerAction = questionPlan.questionPlan.action
-      chatObservabilityState.plannerRetrievalMode =
-        questionPlan.questionPlan.retrievalScope
-      chatObservabilityState.plannerDeterministicAction =
-        questionPlan.questionPlan.directAction
-      chatObservabilityState.preferredSourceCategories = [
-        ...questionPlan.questionPlan.preferredSourceCategories,
-      ]
-      chatObservabilityState.additionalKeywords = [
-        ...questionPlan.questionPlan.additionalKeywords,
-      ]
-      const cacheKey = buildCacheKey(
-        normalizedQuestion,
+      return buildLoggedStatefulResult({
         locale,
-        parsedRequest.data.currentPostSlug,
-      )
-      const cachedResponse = getCachedBlogChatResponse(cacheKey)
-
-      if (cachedResponse) {
-        chatObservabilityState.cacheKind = 'exact'
-
-        return buildLoggedResult({
-          locale,
-          responseData: cachedResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      if (
-        questionPlan.questionPlan.route === 'direct' &&
-        questionPlan.questionPlan.directAction === 'social_reply'
-      ) {
-        const socialReplyResponse = BlogChatResponseSchema.parse(
-          buildSocialReplyResponse({
-            locale,
-            assistantProfile,
-          }),
-        )
-
-        cacheResponseIfNeeded({
-          cacheKey,
-          responseData: socialReplyResponse,
-        })
-
-        return buildLoggedResult({
-          locale,
-          responseData: socialReplyResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      if (questionPlan.questionPlan.route === 'clarify') {
-        const clarificationResponse = BlogChatResponseSchema.parse(
-          buildClarificationResponse({
-            locale,
-            questionPlan: questionPlan.questionPlan,
-          }),
-        )
-
-        cacheResponseIfNeeded({
-          cacheKey,
-          responseData: clarificationResponse,
-        })
-
-        return buildLoggedResult({
-          locale,
-          responseData: clarificationResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const semanticCachedResponse = await findSemanticCachedBlogChatResponse({
-        locale,
-        question: resolvedQuestion,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-      })
-
-      if (semanticCachedResponse) {
-        chatObservabilityState.cacheKind = 'semantic'
-
-        return buildLoggedResult({
-          locale,
-          responseData: semanticCachedResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const evidenceResult = await retrieveBlogChatEvidence({
-        question: resolvedQuestion,
-        locale,
-        questionPlan: questionPlan.questionPlan,
-        contactProfile,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-        conversationHistoryCount: parsedRequest.data.conversationHistory.length,
-      })
-      const resolvedChatRequest = evidenceResult.resolvedChatRequest
-      const combinedMatches = evidenceResult.finalMatches
-      chatObservabilityState.lexicalMatches = evidenceResult.lexicalMatches
-      chatObservabilityState.semanticMatches = evidenceResult.semanticMatches
-      chatObservabilityState.finalMatches = evidenceResult.finalMatches
-      chatObservabilityState.reranked = evidenceResult.reranked
-
-      if (resolvedChatRequest.directResponse) {
-        const validatedDirectResponse = buildResponseWithFollowUpSuggestions({
-          locale,
-          responseData: BlogChatResponseSchema.parse(
-            resolvedChatRequest.directResponse,
-          ),
-          matches: combinedMatches,
-        })
-
-        cacheResponseIfNeeded({
-          cacheKey,
-          responseData: validatedDirectResponse,
-        })
-
-        return buildLoggedResult({
-          locale,
-          responseData: validatedDirectResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const shouldCallModel =
-        resolvedChatRequest.shouldCallModel || combinedMatches.length > 0
-
-      if (!shouldCallModel || combinedMatches.length === 0) {
-        const refusalResponse = BlogChatResponseSchema.parse(
-          buildRefusalResponse(
-            resolvedChatRequest.refusalReason ?? 'insufficient_search_match',
-          ),
-        )
-
-        return buildLoggedResult({
-          locale,
-          responseData: refusalResponse,
-          requestStartedAt,
-          chatObservabilityState,
-        })
-      }
-
-      const responseData = buildResponseWithFollowUpSuggestions({
-        locale,
-        responseData: await buildModelBackedResponse({
-          question: resolvedQuestion,
-          matches: combinedMatches,
-        }),
-        matches: combinedMatches,
-      })
-
-      cacheResponseIfNeeded({
-        cacheKey,
-        responseData,
-      })
-      await storeSemanticCachedBlogChatResponse({
-        locale,
-        question: resolvedQuestion,
-        currentPostSlug: parsedRequest.data.currentPostSlug,
-        response: responseData,
-      })
-
-      return buildLoggedResult({
-        locale,
-        responseData,
+        pipelineResult,
         requestStartedAt,
         chatObservabilityState,
       })
     } finally {
-      releaseBlogChatConcurrentRequestSlot({
-        clientKey,
-      })
+      releaseBlogChatConcurrentRequestSlot({ clientKey })
     }
   } catch {
     return {

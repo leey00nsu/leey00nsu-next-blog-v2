@@ -20,7 +20,7 @@ describe('normalizeChatQuery', () => {
     })
 
     expect(result.preferredSourceCategories).toEqual(['project'])
-    expect(result.additionalKeywords).toEqual(
+    expect(result.rankingConcepts).toEqual(
       expect.arrayContaining(['project', 'projects', '프로젝트']),
     )
     expect(result.normalizedSearchQuestion).toBe('lee-spec-kit 프로젝트')
@@ -33,7 +33,7 @@ describe('normalizeChatQuery', () => {
     })
 
     expect(result.preferredSourceCategories).toEqual(['blog'])
-    expect(result.additionalKeywords).toEqual(
+    expect(result.rankingConcepts).toEqual(
       expect.arrayContaining(['blog', 'post', 'posts']),
     )
   })

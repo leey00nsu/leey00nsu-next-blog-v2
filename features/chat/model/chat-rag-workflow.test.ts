@@ -287,7 +287,7 @@ describe('runChatRagWorkflow', () => {
     await runChatRagWorkflow({
       question: '이 글에서 구조가 왜 중요해?',
       locale: 'ko',
-      retrievalScope: {
+      evidenceScope: {
         mode: 'current_source',
         sourceCategory: 'blog',
         slug: 'why-i-built-lee-spec-kit',
@@ -299,7 +299,7 @@ describe('runChatRagWorkflow', () => {
 
     expect(selectSearchDataMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        retrievalScope: {
+        evidenceScope: {
           mode: 'current_source',
           sourceCategory: 'blog',
           slug: 'why-i-built-lee-spec-kit',

@@ -42,7 +42,7 @@ function buildEvidenceResult(params: {
     grounded: boolean
     citations: []
   }
-  matches?: typeof MATCH[]
+  matches?: (typeof MATCH)[]
   refusalReason?: 'insufficient_search_match'
 }) {
   const matches = params.matches ?? []
@@ -56,7 +56,7 @@ function buildEvidenceResult(params: {
       directResponse: params.directResponse,
       refusalReason: params.refusalReason,
     },
-    retrievalScope: {
+    evidenceScope: {
       mode: 'entity' as const,
       sourceCategory: 'profile' as const,
       slug: 'about',

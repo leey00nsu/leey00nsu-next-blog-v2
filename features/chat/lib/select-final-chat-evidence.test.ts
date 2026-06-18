@@ -1,28 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import {
-  selectFinalChatEvidence,
-  selectFinalChatEvidenceForIntent,
-} from '@/features/chat/lib/select-final-chat-evidence'
+import { selectFinalChatEvidence } from '@/features/chat/lib/select-final-chat-evidence'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 
-const TECH_STACK_QUESTION_PLAN: ChatQuestionPlan = {
+const TECH_STACK_INTENT: NormalizedChatIntent = {
   standaloneQuestion: '이윤수의 주력 기술 스택은 무엇인가요?',
-  action: 'answer',
-  route: 'retrieve',
-  directAction: 'none',
-  retrievalScope: 'entity',
-  referenceTarget: {
+  operation: 'answer',
+  target: {
     kind: 'profile',
     sourceCategory: 'profile',
     slug: 'about',
     title: 'About Me',
-    confidence: 'high',
   },
-  preferredSourceCategories: ['profile', 'project'],
-  additionalKeywords: ['주력 기술 스택', '기술 스택'],
+  temporalConstraint: { order: 'none' },
+  requestedFields: ['content'],
+  evidenceScope: 'entity',
+  requiredConcepts: [],
+  optionalConcepts: ['주력 기술 스택', '기술 스택'],
+  missingSlots: [],
   clarificationQuestion: null,
+  confidence: 'high',
   reason: '사용자의 기술 스택을 묻는 프로필 질문입니다.',
 }
 
@@ -47,7 +44,8 @@ const VERCEL_INTENT: NormalizedChatIntent = {
 }
 
 function createEvidenceRecord(
-  record: Partial<ChatEvidenceRecord> & Pick<ChatEvidenceRecord, 'id' | 'content'>,
+  record: Partial<ChatEvidenceRecord> &
+    Pick<ChatEvidenceRecord, 'id' | 'content'>,
 ): ChatEvidenceRecord {
   return {
     locale: 'ko',
@@ -86,8 +84,8 @@ describe('selectFinalChatEvidence', () => {
     const selectedMatches = selectFinalChatEvidence({
       question: '이윤수의 주력 기술 스택은 뭐야?',
       locale: 'ko',
-      questionPlan: TECH_STACK_QUESTION_PLAN,
-      retrievalScope: {
+      intent: TECH_STACK_INTENT,
+      evidenceScope: {
         mode: 'entity',
         sourceCategory: 'profile',
         slug: 'about',
@@ -117,20 +115,18 @@ describe('selectFinalChatEvidence', () => {
     const selectedMatches = selectFinalChatEvidence({
       question: '배포 경험을 알려줘',
       locale: 'ko',
-      questionPlan: {
-        ...TECH_STACK_QUESTION_PLAN,
-        retrievalScope: 'corpus',
-        referenceTarget: {
+      intent: {
+        ...TECH_STACK_INTENT,
+        evidenceScope: 'corpus',
+        target: {
           kind: 'none',
           sourceCategory: null,
           slug: null,
           title: null,
-          confidence: 'high',
         },
-        preferredSourceCategories: [],
-        additionalKeywords: [],
+        optionalConcepts: ['Vercel'],
       },
-      retrievalScope: {
+      evidenceScope: {
         mode: 'corpus',
         sourceCategory: null,
         slug: null,
@@ -138,8 +134,6 @@ describe('selectFinalChatEvidence', () => {
       },
       lexicalMatches: [profileRecord, vercelRecord],
       semanticMatches: [],
-      requiredConcepts: [],
-      optionalConcepts: ['Vercel'],
     })
 
     expect(selectedMatches.map((match) => match.id)).toEqual([
@@ -162,11 +156,11 @@ describe('selectFinalChatEvidence', () => {
       content: 'Vercel을 통해 Next.js를 배포했습니다.',
     })
 
-    const selectedMatches = selectFinalChatEvidenceForIntent({
+    const selectedMatches = selectFinalChatEvidence({
       question: '이 사람 Vercel 써봤어?',
       locale: 'ko',
       intent: VERCEL_INTENT,
-      retrievalScope: {
+      evidenceScope: {
         mode: 'entity',
         sourceCategory: 'profile',
         slug: 'about',

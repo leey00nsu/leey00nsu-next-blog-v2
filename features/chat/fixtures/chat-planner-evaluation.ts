@@ -1,11 +1,14 @@
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
-import type { ChatQuestionSelector } from '@/features/chat/model/chat-question-routing'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
+import {
+  EMPTY_CHAT_CONVERSATION_STATE,
+  type ChatConversationState,
+} from '@/features/chat/model/chat-conversation-state'
 import type {
-  ChatSourceCategory,
-  ChatEvidenceRecord,
-} from '@/features/chat/model/chat-evidence'
+  ChatIntentPatch,
+  NormalizedChatIntent,
+} from '@/features/chat/model/chat-intent'
 import type { SupportedLocale } from '@/shared/config/constants'
+
 export {
   CHAT_RETRIEVAL_EVALUATION_ASSISTANT_PROFILE as CHAT_PLANNER_EVALUATION_ASSISTANT_PROFILE,
   CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS as CHAT_PLANNER_EVALUATION_BLOG_RECORDS,
@@ -17,189 +20,201 @@ export interface ChatPlannerEvaluationCase {
   id: string
   question: string
   locale: SupportedLocale
-  questionPlan: ChatQuestionPlan
+  inputState: ChatConversationState
+  modelPatch: ChatIntentPatch
+  expectedIntent: NormalizedChatIntent
+  expectedExecutionKind: 'direct' | 'model'
   conversationHistory?: ChatConversationHistoryItem[]
   currentPostSlug?: string
-  semanticMatches?: ChatEvidenceRecord[]
-  expectedSelector?: ChatQuestionSelector
-  expectedRoute: ChatQuestionPlan['route']
-  expectedClarificationQuestion?: string
   expectedTopMatchUrl?: string
-  expectedPreferredSourceCategories?: ChatSourceCategory[]
 }
 
-const DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN = {
-  action: 'answer',
-  route: 'retrieve',
-  directAction: 'none',
-  retrievalScope: 'entity',
-  referenceTarget: {
-    kind: 'named_entity',
-    sourceCategory: null,
-    slug: null,
-    title: null,
-    confidence: 'medium',
-  },
-  preferredSourceCategories: [],
-  additionalKeywords: [],
-  clarificationQuestion: null,
-  reason: 'evaluation plan',
-} satisfies Omit<ChatQuestionPlan, 'standaloneQuestion'>
+const EMPTY_TARGET = {
+  kind: 'none',
+  sourceCategory: null,
+  slug: null,
+  title: null,
+} as const
+
+const OWNER_TARGET = {
+  kind: 'profile',
+  sourceCategory: 'profile',
+  slug: 'about',
+  title: '이윤수',
+} as const
 
 export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
   {
     id: 'mixed-greeting-project',
     question: '안녕 leesfield 라는 프로젝트 알아?',
     locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: 'leesfield 라는 프로젝트 알아?',
-      referenceTarget: {
+    inputState: EMPTY_CHAT_CONVERSATION_STATE,
+    modelPatch: {
+      standaloneQuestion: 'Leesfield라는 프로젝트를 설명해 주세요.',
+      targetUpdate: {
+        kind: 'replace',
+        target: {
+          kind: 'named_entity',
+          sourceCategory: 'project',
+          slug: 'leesfield',
+          title: 'Leesfield',
+        },
+      },
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['Leesfield'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Project lookup after greeting.',
+    },
+    expectedIntent: {
+      standaloneQuestion: 'Leesfield라는 프로젝트를 설명해 주세요.',
+      target: {
         kind: 'named_entity',
         sourceCategory: 'project',
-        slug: null,
+        slug: 'leesfield',
         title: 'Leesfield',
-        confidence: 'high',
       },
-      preferredSourceCategories: ['project'],
-      additionalKeywords: ['leesfield'],
-      reason: 'project lookup after greeting',
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['Leesfield'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Project lookup after greeting.',
     },
-    expectedSelector: 'retrieval',
-    expectedRoute: 'retrieve',
+    expectedExecutionKind: 'model',
     expectedTopMatchUrl: '/ko/projects/leesfield',
-    expectedPreferredSourceCategories: ['project'],
-  },
-  {
-    id: 'assistant-identity-retrieval',
-    question: '넌 누구야?',
-    locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: '넌 누구야?',
-      retrievalScope: 'entity',
-      referenceTarget: {
-        kind: 'assistant',
-        sourceCategory: 'assistant',
-        slug: 'assistant-profile',
-        title: null,
-        confidence: 'high',
-      },
-      preferredSourceCategories: ['assistant', 'profile'],
-      additionalKeywords: ['챗봇', 'assistant', 'profile'],
-      reason: 'assistant identity retrieval',
-    },
-    expectedSelector: 'retrieval',
-    expectedRoute: 'retrieve',
-    expectedTopMatchUrl: '/ko/about',
-    expectedPreferredSourceCategories: ['assistant', 'profile'],
   },
   {
     id: 'ambiguous-person-reference',
     question: '이 사람 이름 뭐야?',
     locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: '이 사람 이름 뭐야?',
-      route: 'clarify',
-      retrievalScope: 'none',
-      referenceTarget: {
-        kind: 'none',
-        sourceCategory: null,
-        slug: null,
-        title: null,
-        confidence: 'low',
-      },
-      clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
-      reason: 'ambiguous person reference',
+    inputState: EMPTY_CHAT_CONVERSATION_STATE,
+    modelPatch: {
+      standaloneQuestion: '이 사람의 이름은 무엇인가요?',
+      targetUpdate: { kind: 'clear' },
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'none',
+      requiredConcepts: [],
+      optionalConcepts: [],
+      missingSlots: ['target'],
+      clarificationQuestion: '누구를 가리키는지 알려주세요.',
+      confidence: 'low',
+      reason: 'The target is missing.',
     },
-    expectedRoute: 'clarify',
-    expectedClarificationQuestion:
-      '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
+    expectedIntent: {
+      standaloneQuestion: '이 사람의 이름은 무엇인가요?',
+      target: EMPTY_TARGET,
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'none',
+      requiredConcepts: [],
+      optionalConcepts: [],
+      missingSlots: ['target'],
+      clarificationQuestion: '누구를 가리키는지 알려주세요.',
+      confidence: 'low',
+      reason: 'The target is missing.',
+    },
+    expectedExecutionKind: 'direct',
   },
   {
-    id: 'ambiguous-person-reference-on-current-post',
+    id: 'resolved-profile-reference',
     question: '이 사람 이름 뭐야?',
     locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: '이 사람 이름 뭐야?',
-      route: 'clarify',
-      retrievalScope: 'none',
-      referenceTarget: {
-        kind: 'none',
-        sourceCategory: null,
-        slug: null,
-        title: null,
-        confidence: 'low',
-      },
-      clarificationQuestion: '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
-      reason: 'ambiguous person reference on current post',
+    inputState: {
+      ...EMPTY_CHAT_CONVERSATION_STATE,
+      resolvedTarget: OWNER_TARGET,
     },
-    currentPostSlug: 'why-i-built-lee-spec-kit',
-    expectedRoute: 'clarify',
-    expectedClarificationQuestion:
-      '누구를 가리키는지 조금 더 구체적으로 적어주세요.',
-  },
-  {
-    id: 'profile-follow-up-reference',
-    question: '이 사람 이름 뭐야?',
-    locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: '이 사람 이름 뭐야?',
-      referenceTarget: {
-        kind: 'profile',
-        sourceCategory: 'profile',
-        slug: 'about',
-        title: null,
-        confidence: 'high',
-      },
-      preferredSourceCategories: ['profile'],
-      reason: 'profile follow-up reference',
+    modelPatch: {
+      standaloneQuestion: '이윤수의 이름을 알려주세요.',
+      targetUpdate: { kind: 'preserve' },
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['이윤수'],
+      optionalConcepts: ['이름'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Use the resolved owner target.',
     },
-    conversationHistory: [
-      {
-        question: '이 사람은 어떤 개발자야?',
-        answer: 'React와 Next.js 중심의 개발자입니다.',
-        citations: [
-          {
-            title: 'About Me',
-            url: '/ko/about',
-            sectionTitle: null,
-            sourceCategory: 'profile',
-          },
-        ],
-      },
-    ],
-    expectedSelector: 'retrieval',
-    expectedRoute: 'retrieve',
+    expectedIntent: {
+      standaloneQuestion: '이윤수의 이름을 알려주세요.',
+      target: OWNER_TARGET,
+      operation: 'answer',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'entity',
+      requiredConcepts: ['이윤수'],
+      optionalConcepts: ['이름'],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Use the resolved owner target.',
+    },
+    expectedExecutionKind: 'model',
     expectedTopMatchUrl: '/ko/about',
-    expectedPreferredSourceCategories: ['profile'],
   },
   {
     id: 'current-post-question',
     question: '이 글에서 구조가 왜 중요해?',
     locale: 'ko',
-    questionPlan: {
-      ...DEFAULT_CHAT_PLANNER_EVALUATION_QUESTION_PLAN,
-      standaloneQuestion: '이 글에서 구조가 왜 중요해?',
-      retrievalScope: 'current_source',
-      referenceTarget: {
+    inputState: EMPTY_CHAT_CONVERSATION_STATE,
+    currentPostSlug: 'why-i-built-lee-spec-kit',
+    modelPatch: {
+      standaloneQuestion: '현재 글에서 구조가 중요한 이유를 설명해 주세요.',
+      targetUpdate: {
+        kind: 'replace',
+        target: {
+          kind: 'current_source',
+          sourceCategory: 'blog',
+          slug: 'why-i-built-lee-spec-kit',
+          title: null,
+        },
+      },
+      operation: 'explain',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'current_source',
+      requiredConcepts: ['구조'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Current post explanation.',
+    },
+    expectedIntent: {
+      standaloneQuestion: '현재 글에서 구조가 중요한 이유를 설명해 주세요.',
+      target: {
         kind: 'current_source',
         sourceCategory: 'blog',
         slug: 'why-i-built-lee-spec-kit',
         title: null,
-        confidence: 'high',
       },
-      preferredSourceCategories: ['blog'],
-      additionalKeywords: ['구조'],
-      reason: 'explicit current post question',
+      operation: 'explain',
+      temporalConstraint: { order: 'none' },
+      requestedFields: ['content'],
+      evidenceScope: 'current_source',
+      requiredConcepts: ['구조'],
+      optionalConcepts: [],
+      missingSlots: [],
+      clarificationQuestion: null,
+      confidence: 'high',
+      reason: 'Current post explanation.',
     },
-    currentPostSlug: 'why-i-built-lee-spec-kit',
-    expectedSelector: 'current_source',
-    expectedRoute: 'retrieve',
+    expectedExecutionKind: 'model',
     expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
-    expectedPreferredSourceCategories: ['blog'],
   },
 ]

@@ -41,9 +41,6 @@ export interface ChatObservabilityEvent {
   cacheKind: 'none' | 'exact' | 'semantic'
   reranked: boolean
   plannerReason: string | null
-  plannerAction: string | null
-  plannerRetrievalMode: string | null
-  plannerDeterministicAction: string | null
   intentOperation?: string | null
   intentTargetKind?: string | null
   intentEvidenceScope?: string | null
@@ -52,8 +49,6 @@ export interface ChatObservabilityEvent {
   intentRequiredConcepts?: string[]
   intentOptionalConcepts?: string[]
   plannerFailureKind?: string | null
-  preferredSourceCategories: string[]
-  additionalKeywords: string[]
   lexicalMatches: ChatObservabilityMatchSummary[]
   semanticMatches: ChatObservabilityMatchSummary[]
   finalMatches: ChatObservabilityMatchSummary[]
@@ -143,16 +138,6 @@ function mapChatObservabilityRow(
     reranked: Boolean(row.reranked),
     plannerReason:
       typeof row.planner_reason === 'string' ? row.planner_reason : null,
-    plannerAction:
-      typeof row.planner_action === 'string' ? row.planner_action : null,
-    plannerRetrievalMode:
-      typeof row.planner_retrieval_mode === 'string'
-        ? row.planner_retrieval_mode
-        : null,
-    plannerDeterministicAction:
-      typeof row.planner_deterministic_action === 'string'
-        ? row.planner_deterministic_action
-        : null,
     intentOperation:
       typeof row.intent_operation === 'string' ? row.intent_operation : null,
     intentTargetKind:
@@ -180,10 +165,6 @@ function mapChatObservabilityRow(
       typeof row.planner_failure_kind === 'string'
         ? row.planner_failure_kind
         : null,
-    preferredSourceCategories: parseJsonArray<string>(
-      row.preferred_source_categories_json,
-    ),
-    additionalKeywords: parseJsonArray<string>(row.additional_keywords_json),
     lexicalMatches: parseJsonArray<ChatObservabilityMatchSummary>(
       row.lexical_matches_json,
     ),
@@ -315,10 +296,10 @@ export async function insertChatObservabilityEvent(params: {
         duration_milliseconds
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        $13, $14, $15, $16, $17::jsonb, $18::jsonb, $19::jsonb, $20,
-        $21::jsonb, $22::jsonb, $23::jsonb, $24::jsonb, $25::jsonb, $26::jsonb,
-        $27, $28, $29
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, NULL,
+        $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16::jsonb, $17,
+        '[]'::jsonb, '[]'::jsonb, $18::jsonb, $19::jsonb, $20::jsonb,
+        $21::jsonb, $22, $23, $24
       )
     `,
     [
@@ -331,9 +312,6 @@ export async function insertChatObservabilityEvent(params: {
       event.cacheKind,
       event.reranked,
       event.plannerReason,
-      event.plannerAction,
-      event.plannerRetrievalMode,
-      event.plannerDeterministicAction,
       event.intentOperation ?? null,
       event.intentTargetKind ?? null,
       event.intentEvidenceScope ?? null,
@@ -342,8 +320,6 @@ export async function insertChatObservabilityEvent(params: {
       JSON.stringify(event.intentRequiredConcepts ?? []),
       JSON.stringify(event.intentOptionalConcepts ?? []),
       event.plannerFailureKind ?? null,
-      JSON.stringify(event.preferredSourceCategories),
-      JSON.stringify(event.additionalKeywords),
       JSON.stringify(event.lexicalMatches),
       JSON.stringify(event.semanticMatches),
       JSON.stringify(event.finalMatches),
@@ -407,8 +383,7 @@ export async function selectChatObservabilityLogPage(params: {
     params.sortDirection,
   )
   const orderDirection =
-    sortDirection ===
-    CHAT_OBSERVABILITY.SORT_DIRECTIONS.CREATED_AT_ASCENDING
+    sortDirection === CHAT_OBSERVABILITY.SORT_DIRECTIONS.CREATED_AT_ASCENDING
       ? 'ASC'
       : 'DESC'
   const offset = (page - CHAT_OBSERVABILITY.MINIMUM_PAGE) * pageSize

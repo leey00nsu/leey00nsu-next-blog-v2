@@ -1,28 +1,16 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 import { selectEvidenceCoveringRequiredConcepts } from '@/features/chat/lib/chat-required-concepts'
-import type { ChatResolvedRetrievalScope } from '@/features/chat/lib/chat-retrieval-scope'
+import type { ChatResolvedEvidenceScope } from '@/features/chat/lib/chat-retrieval-scope'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 interface SelectFinalChatEvidenceParams {
   question: string
   locale: SupportedLocale
-  questionPlan: ChatQuestionPlan
-  retrievalScope: ChatResolvedRetrievalScope
-  lexicalMatches: ChatEvidenceRecord[]
-  semanticMatches: ChatEvidenceRecord[]
-  requiredConcepts?: string[]
-  optionalConcepts?: string[]
-}
-
-interface SelectFinalChatEvidenceForIntentParams {
-  question: string
-  locale: SupportedLocale
   intent: NormalizedChatIntent
-  retrievalScope: ChatResolvedRetrievalScope
+  evidenceScope: ChatResolvedEvidenceScope
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
 }
@@ -31,7 +19,7 @@ interface SelectFinalChatEvidenceByMeaningParams {
   question: string
   standaloneQuestion: string
   locale: SupportedLocale
-  retrievalScope: ChatResolvedRetrievalScope
+  evidenceScope: ChatResolvedEvidenceScope
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
   preferredSourceCategories: ChatEvidenceRecord['sourceCategory'][]
@@ -123,21 +111,21 @@ function buildLexicalQualityScore(params: {
 
 function buildTargetScore(params: {
   match: ChatEvidenceRecord
-  retrievalScope: ChatResolvedRetrievalScope
+  evidenceScope: ChatResolvedEvidenceScope
 }): number {
   const sourceCategoryScore =
-    params.retrievalScope.sourceCategory &&
-    params.match.sourceCategory === params.retrievalScope.sourceCategory
+    params.evidenceScope.sourceCategory &&
+    params.match.sourceCategory === params.evidenceScope.sourceCategory
       ? FINAL_EVIDENCE_SELECTION.TARGET_SOURCE_CATEGORY_BOOST
       : 0
   const slugScore =
-    params.retrievalScope.slug && params.match.slug === params.retrievalScope.slug
+    params.evidenceScope.slug && params.match.slug === params.evidenceScope.slug
       ? FINAL_EVIDENCE_SELECTION.TARGET_SLUG_BOOST
       : 0
   const titleScore =
-    params.retrievalScope.title &&
+    params.evidenceScope.title &&
     normalizeText(params.match.title).includes(
-      normalizeText(params.retrievalScope.title),
+      normalizeText(params.evidenceScope.title),
     )
       ? FINAL_EVIDENCE_SELECTION.TARGET_TITLE_BOOST
       : 0
@@ -180,7 +168,7 @@ function selectFinalChatEvidenceByMeaning({
   question,
   standaloneQuestion,
   locale,
-  retrievalScope,
+  evidenceScope,
   lexicalMatches,
   semanticMatches,
   preferredSourceCategories,
@@ -204,7 +192,7 @@ function selectFinalChatEvidenceByMeaning({
         FINAL_EVIDENCE_SELECTION.SEMANTIC_BASE_SCORE -
         rank +
         buildLexicalQualityScore({ match, questionTokens }) +
-        buildTargetScore({ match, retrievalScope }) +
+        buildTargetScore({ match, evidenceScope }) +
         (preferredSourceCategorySet.has(match.sourceCategory)
           ? FINAL_EVIDENCE_SELECTION.PREFERRED_SOURCE_CATEGORY_BOOST
           : 0),
@@ -221,7 +209,7 @@ function selectFinalChatEvidenceByMeaning({
         FINAL_EVIDENCE_SELECTION.LEXICAL_BASE_SCORE -
         rank +
         buildLexicalQualityScore({ match, questionTokens }) +
-        buildTargetScore({ match, retrievalScope }) +
+        buildTargetScore({ match, evidenceScope }) +
         (preferredSourceCategorySet.has(match.sourceCategory)
           ? FINAL_EVIDENCE_SELECTION.PREFERRED_SOURCE_CATEGORY_BOOST
           : 0),
@@ -233,16 +221,16 @@ function selectFinalChatEvidenceByMeaning({
   const rankedMatches = [...rankedMatchMap.values()]
     .filter((match) => {
       if (
-        retrievalScope.mode !== 'current_source' ||
-        !retrievalScope.slug ||
-        !retrievalScope.sourceCategory
+        evidenceScope.mode !== 'current_source' ||
+        !evidenceScope.slug ||
+        !evidenceScope.sourceCategory
       ) {
         return true
       }
 
       return (
-        match.slug === retrievalScope.slug &&
-        match.sourceCategory === retrievalScope.sourceCategory
+        match.slug === evidenceScope.slug &&
+        match.sourceCategory === evidenceScope.sourceCategory
       )
     })
     .sort((leftMatch, rightMatch) => {
@@ -268,51 +256,22 @@ function selectFinalChatEvidenceByMeaning({
 export function selectFinalChatEvidence({
   question,
   locale,
-  questionPlan,
-  retrievalScope,
-  lexicalMatches,
-  semanticMatches,
-  requiredConcepts = [],
-  optionalConcepts = [],
-}: SelectFinalChatEvidenceParams): ChatEvidenceRecord[] {
-  return selectFinalChatEvidenceByMeaning({
-    question,
-    standaloneQuestion: questionPlan.standaloneQuestion,
-    locale,
-    retrievalScope,
-    lexicalMatches,
-    semanticMatches,
-    preferredSourceCategories: questionPlan.preferredSourceCategories,
-    rankingConcepts: [
-      ...questionPlan.additionalKeywords,
-      ...optionalConcepts,
-    ],
-    requiredConcepts,
-  })
-}
-
-export function selectFinalChatEvidenceForIntent({
-  question,
-  locale,
   intent,
-  retrievalScope,
+  evidenceScope,
   lexicalMatches,
   semanticMatches,
-}: SelectFinalChatEvidenceForIntentParams): ChatEvidenceRecord[] {
+}: SelectFinalChatEvidenceParams): ChatEvidenceRecord[] {
   return selectFinalChatEvidenceByMeaning({
     question,
     standaloneQuestion: intent.standaloneQuestion,
     locale,
-    retrievalScope,
+    evidenceScope,
     lexicalMatches,
     semanticMatches,
     preferredSourceCategories: intent.target.sourceCategory
       ? [intent.target.sourceCategory]
       : [],
-    rankingConcepts: [
-      ...intent.requiredConcepts,
-      ...intent.optionalConcepts,
-    ],
+    rankingConcepts: [...intent.requiredConcepts, ...intent.optionalConcepts],
     requiredConcepts: intent.requiredConcepts,
   })
 }

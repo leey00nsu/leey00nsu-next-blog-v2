@@ -44,7 +44,9 @@ describe('selectChatSearchMatches', () => {
     })
 
     expect(result.grounded).toBe(true)
-    expect(result.matches[0]?.url).toBe('/ko/blog/react-query-guide#staletime-설정')
+    expect(result.matches[0]?.url).toBe(
+      '/ko/blog/react-query-guide#staletime-설정',
+    )
   })
 
   it('관련성이 낮으면 grounded를 false로 반환한다', () => {
@@ -358,7 +360,8 @@ describe('selectChatSearchMatches', () => {
         title: '내가 더 이상 Vercel 호스팅을 사용하지 않는 이유',
         url: '/ko/blog/vercel',
         excerpt: 'Vercel에서 Coolify로 옮긴 이야기',
-        content: '정적 페이지나 Next.js의 경우에는 Vercel을 통해 배포를 하기도 하였습니다.',
+        content:
+          '정적 페이지나 Next.js의 경우에는 Vercel을 통해 배포를 하기도 하였습니다.',
         sectionTitle: null,
         tags: ['vercel'],
         searchTerms: ['Vercel 사용 경험'],
@@ -370,14 +373,14 @@ describe('selectChatSearchMatches', () => {
       question: '블로그 작성자 이윤수는 Vercel을 써봤는지 확인해줘',
       locale: 'ko',
       records,
-      additionalKeywords: ['Vercel', '사용 경험', '이윤수'],
+      rankingConcepts: ['Vercel', '사용 경험', '이윤수'],
       preferredSourceCategories: ['profile', 'blog', 'project'],
     })
 
     expect(result.grounded).toBe(true)
-    expect(result.matches.some((match) => match.url === '/ko/blog/vercel')).toBe(
-      true,
-    )
+    expect(
+      result.matches.some((match) => match.url === '/ko/blog/vercel'),
+    ).toBe(true)
   })
 
   it('generated 데이터에서도 명시 기술 키워드가 있는 Vercel 글을 후보에 포함한다', async () => {
@@ -396,7 +399,7 @@ describe('selectChatSearchMatches', () => {
       question: '블로그 작성자 이윤수는 Vercel을 써봤는지 확인해줘.',
       locale,
       records,
-      additionalKeywords: ['Vercel', '사용 경험', '이윤수'],
+      rankingConcepts: ['Vercel', '사용 경험', '이윤수'],
       preferredSourceCategories: ['profile', 'blog', 'project'],
     })
 

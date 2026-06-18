@@ -3,16 +3,16 @@ import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import {
-  retrieveBlogChatEvidenceByIntent,
-  type RetrieveBlogChatEvidenceByIntentParams,
-  type RetrieveBlogChatEvidenceByIntentResult,
+  retrieveBlogChatEvidence,
+  type RetrieveBlogChatEvidenceParams,
+  type RetrieveBlogChatEvidenceResult,
 } from '@/features/chat/model/retrieve-blog-chat-evidence'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 type RetrieveEvidence = (
-  params: RetrieveBlogChatEvidenceByIntentParams,
-) => Promise<RetrieveBlogChatEvidenceByIntentResult>
+  params: RetrieveBlogChatEvidenceParams,
+) => Promise<RetrieveBlogChatEvidenceResult>
 
 interface ExecuteChatIntentParams {
   intent: NormalizedChatIntent
@@ -28,21 +28,21 @@ interface DirectChatIntentExecution {
   kind: 'direct'
   response: BlogChatResponse
   matches: ChatEvidenceRecord[]
-  evidenceResult?: RetrieveBlogChatEvidenceByIntentResult
+  evidenceResult?: RetrieveBlogChatEvidenceResult
 }
 
 interface ModelChatIntentExecution {
   kind: 'model'
   question: string
   matches: ChatEvidenceRecord[]
-  evidenceResult: RetrieveBlogChatEvidenceByIntentResult
+  evidenceResult: RetrieveBlogChatEvidenceResult
 }
 
 interface RefusedChatIntentExecution {
   kind: 'refusal'
   refusalReason: 'insufficient_search_match' | 'model_error'
   failureKind?: 'unsupported_intent'
-  evidenceResult: RetrieveBlogChatEvidenceByIntentResult
+  evidenceResult: RetrieveBlogChatEvidenceResult
 }
 
 export type ExecuteChatIntentResult =
@@ -94,7 +94,7 @@ export async function executeChatIntent({
   assistantProfile,
   contactProfile,
   currentPostSlug,
-  retrieveEvidence = retrieveBlogChatEvidenceByIntent,
+  retrieveEvidence = retrieveBlogChatEvidence,
 }: ExecuteChatIntentParams): Promise<ExecuteChatIntentResult> {
   if (intent.missingSlots.length > 0) {
     return {

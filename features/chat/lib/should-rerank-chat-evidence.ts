@@ -1,13 +1,5 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
-import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
-
-interface ShouldRerankChatEvidenceParams {
-  question: string
-  conversationHistoryCount: number
-  matchCount: number
-  questionPlan: ChatQuestionPlan
-}
 
 const CHAT_RERANK_PATTERNS = {
   COMPOUND_QUERY: ['그리고', ' and ', '또는'],
@@ -27,36 +19,7 @@ function hasCompoundQuery(question: string): boolean {
   )
 }
 
-export function shouldRerankChatEvidence({
-  question,
-  conversationHistoryCount,
-  matchCount,
-  questionPlan,
-}: ShouldRerankChatEvidenceParams): boolean {
-  if (questionPlan.route !== 'retrieve') {
-    return false
-  }
-
-  if (questionPlan.retrievalScope === 'none') {
-    return false
-  }
-
-  if (questionPlan.directAction !== 'none') {
-    return false
-  }
-
-  if (matchCount < BLOG_CHAT.RERANK.MINIMUM_MATCH_COUNT) {
-    return false
-  }
-
-  return (
-    question.length >= BLOG_CHAT.RERANK.LONG_QUESTION_MINIMUM_LENGTH ||
-    conversationHistoryCount > 0 ||
-    hasCompoundQuery(question)
-  )
-}
-
-export function shouldRerankChatIntentEvidence(params: {
+export function shouldRerankChatEvidence(params: {
   question: string
   conversationHistoryCount: number
   matchCount: number

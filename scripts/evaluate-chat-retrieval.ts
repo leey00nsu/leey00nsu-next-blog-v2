@@ -4,23 +4,14 @@ import {
   CHAT_RETRIEVAL_EVALUATION_CONTACT_PROFILE,
   CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS,
 } from '@/features/chat/fixtures/chat-retrieval-evaluation'
-import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
-import { analyzeQuestion } from '@/features/chat/lib/question-analysis'
-import { resolveChatRequest } from '@/features/chat/lib/resolve-chat-request'
+import { resolveChatIntentRequest } from '@/features/chat/lib/resolve-chat-intent-request'
+import { resolveChatEvidenceScope } from '@/features/chat/lib/chat-retrieval-scope'
+import { selectFinalChatEvidence } from '@/features/chat/lib/select-final-chat-evidence'
 
-function collectPreferredSourceCategories(question: string, locale: 'ko' | 'en') {
-  const questionAnalysis = analyzeQuestion(question, locale)
-
-  return [
-    ...new Set(
-      questionAnalysis.searchQueries.flatMap((searchQuery) => {
-        return searchQuery.preferredSourceCategories
-      }),
-    ),
-  ]
-}
-
-function buildReciprocalRank(matchUrls: string[], expectedMatchUrls: string[]): number {
+function buildReciprocalRank(
+  matchUrls: string[],
+  expectedMatchUrls: string[],
+): number {
   for (const expectedMatchUrl of expectedMatchUrls) {
     const foundIndex = matchUrls.indexOf(expectedMatchUrl)
 
@@ -33,30 +24,27 @@ function buildReciprocalRank(matchUrls: string[], expectedMatchUrls: string[]): 
 }
 
 const results = CHAT_RETRIEVAL_EVALUATION_CASES.map((evaluationCase) => {
-  const questionAnalysis = analyzeQuestion(
-    evaluationCase.question,
-    evaluationCase.locale,
-  )
-  const lexicalResult = resolveChatRequest({
-    question: evaluationCase.question,
+  const lexicalResult = resolveChatIntentRequest({
+    intent: evaluationCase.intent,
     locale: evaluationCase.locale,
     blogRecords: CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS,
     curatedRecords: CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS,
     currentPostSlug: evaluationCase.currentPostSlug,
-    questionAnalysis,
     contactProfile: CHAT_RETRIEVAL_EVALUATION_CONTACT_PROFILE,
-    questionRouting: evaluationCase.questionRouting,
   })
-  const fusedMatches = fuseChatRetrievalMatches({
-    lexicalMatches: lexicalResult.matches,
-    semanticMatches: evaluationCase.semanticMatches,
-    preferredSourceCategories: collectPreferredSourceCategories(
-      evaluationCase.question,
-      evaluationCase.locale,
-    ),
+  const evidenceScope = resolveChatEvidenceScope({
+    intent: evaluationCase.intent,
     currentPostSlug: evaluationCase.currentPostSlug,
   })
-  const matchUrls = fusedMatches.map((match) => match.url)
+  const finalMatches = selectFinalChatEvidence({
+    question: evaluationCase.intent.standaloneQuestion,
+    locale: evaluationCase.locale,
+    intent: evaluationCase.intent,
+    evidenceScope,
+    lexicalMatches: lexicalResult.matches,
+    semanticMatches: evaluationCase.semanticMatches,
+  })
+  const matchUrls = finalMatches.map((match) => match.url)
   const expectedMatchUrls =
     evaluationCase.expectedMatchUrls ??
     (evaluationCase.expectedTopMatchUrl
@@ -74,7 +62,7 @@ const results = CHAT_RETRIEVAL_EVALUATION_CASES.map((evaluationCase) => {
 
   return {
     id: evaluationCase.id,
-    question: evaluationCase.question,
+    question: evaluationCase.intent.standaloneQuestion,
     matchUrls,
     expectedMatchUrls,
     recallAt1,

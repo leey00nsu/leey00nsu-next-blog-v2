@@ -15,6 +15,18 @@ const SOURCE_CATEGORY_TO_ENTITY_KIND = {
   assistant: 'assistant',
 } as const satisfies Record<ChatSourceCategory, ChatEntityCandidate['kind']>
 
+const CHAT_ENTITY_CATALOG = {
+  AMBIGUOUS_PROFILE_ALIASES: new Set([
+    '이 사람',
+    '이름',
+    'this person',
+    'name',
+    'he',
+    'she',
+    'they',
+  ]),
+} as const
+
 function normalizeComparableText(value: string): string {
   return value.toLocaleLowerCase().replaceAll(/[^\p{L}\p{N}]/gu, '')
 }
@@ -53,7 +65,11 @@ function collectCanonicalAliases(params: {
       params.title,
       params.slug,
       ...params.searchTerms,
-    ])
+    ]).filter((alias) => {
+      return !CHAT_ENTITY_CATALOG.AMBIGUOUS_PROFILE_ALIASES.has(
+        alias.toLocaleLowerCase(),
+      )
+    })
   }
 
   const canonicalComparableValues = new Set([

@@ -73,4 +73,21 @@ describe('buildChatEntityCandidates', () => {
       }),
     )
   })
+
+  it('대명사 alias는 제외하고 명시적 owner 역할 alias는 유지한다', () => {
+    const candidates = buildChatEntityCandidates({
+      records: [
+        {
+          ...RECORDS[2],
+          searchTerms: ['이윤수', '이 사람', '이름', '블로그 주인', '작성자'],
+        },
+      ],
+    })
+    const profileCandidate = candidates[0]
+
+    expect(profileCandidate.aliases).toContain('블로그 주인')
+    expect(profileCandidate.aliases).toContain('작성자')
+    expect(profileCandidate.aliases).not.toContain('이 사람')
+    expect(profileCandidate.aliases).not.toContain('이름')
+  })
 })

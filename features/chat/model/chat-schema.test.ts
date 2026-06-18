@@ -27,7 +27,7 @@ describe('BlogChatRequestSchema', () => {
       locale: 'ko',
       conversationState: {
         ...EMPTY_CHAT_CONVERSATION_STATE,
-        version: 2,
+        version: 1,
       },
     })
 

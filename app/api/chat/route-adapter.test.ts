@@ -5,18 +5,31 @@ import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conver
 
 const answerBlogChatQuestionMock = vi.fn()
 
-const OWNER_CONVERSATION_STATE = {
+const PENDING_OWNER_CLARIFICATION_STATE = {
   ...EMPTY_CHAT_CONVERSATION_STATE,
-  resolvedTarget: {
-    kind: 'profile' as const,
-    sourceCategory: 'profile' as const,
-    slug: 'about',
-    title: '이윤수',
+  pendingClarification: {
+    missingSlots: ['target' as const],
+    clarificationQuestion: '누구를 가리키는지 알려주세요.',
+    suspendedIntent: {
+      standaloneQuestion: '이 사람이 Vercel을 사용했나요?',
+      operation: 'answer' as const,
+      target: {
+        kind: 'none' as const,
+        sourceCategory: null,
+        slug: null,
+        title: null,
+      },
+      temporalConstraint: { order: 'none' as const },
+      requestedFields: ['content' as const],
+      evidenceScope: 'none' as const,
+      requiredConcepts: ['Vercel'],
+      optionalConcepts: [],
+      missingSlots: ['target' as const],
+      clarificationQuestion: '누구를 가리키는지 알려주세요.',
+      confidence: 'low' as const,
+      reason: 'The target is missing.',
+    },
   },
-  requestedFields: ['content' as const],
-  requiredConcepts: ['Vercel'],
-  evidenceScope: 'entity' as const,
-  lastResolvedQuestion: '이윤수가 Vercel을 사용했나요?',
 }
 
 vi.mock('@/features/chat/model/answer-blog-chat-question', () => {
@@ -130,7 +143,7 @@ function createLeeChatRequestWithAssistantMetadata(): NextRequest {
           parts: [{ type: 'text', text: '누구를 가리키는지 알려주세요.' }],
           createdAt: '2026-06-05T00:00:01.000Z',
           metadata: {
-            conversationState: OWNER_CONVERSATION_STATE,
+            conversationState: PENDING_OWNER_CLARIFICATION_STATE,
             blogChatResponse: {
               answer: '누구를 가리키는지 알려주세요.',
               grounded: true,
@@ -263,7 +276,7 @@ describe('POST /api/chat route adapter', () => {
             ],
           },
         ],
-        conversationState: OWNER_CONVERSATION_STATE,
+        conversationState: PENDING_OWNER_CLARIFICATION_STATE,
       }),
       requestHeaders: expect.any(Headers),
     })

@@ -21,6 +21,15 @@ const CANDIDATES: ChatEntityCandidate[] = [
     searchTerms: ['Presigned URL', 'image'],
     sourceCategory: 'project',
   },
+  {
+    entityId: 'profile/about',
+    kind: 'profile',
+    slug: 'about',
+    title: '이윤수',
+    aliases: ['이윤수', '블로그 주인', '작성자'],
+    searchTerms: [],
+    sourceCategory: 'profile',
+  },
 ]
 
 describe('matchChatEntityCandidates', () => {
@@ -46,5 +55,20 @@ describe('matchChatEntityCandidates', () => {
     })
 
     expect(matches).toEqual([])
+  })
+
+  it('대명사는 매칭하지 않고 명시적인 owner 역할은 profile로 매칭한다', () => {
+    expect(
+      matchChatEntityCandidates({
+        question: '이 사람 Vercel 써봤어?',
+        candidates: CANDIDATES,
+      }),
+    ).toEqual([])
+    expect(
+      matchChatEntityCandidates({
+        question: '블로그 주인',
+        candidates: CANDIDATES,
+      }).map((candidate) => candidate.entityId),
+    ).toEqual(['profile/about'])
   })
 })

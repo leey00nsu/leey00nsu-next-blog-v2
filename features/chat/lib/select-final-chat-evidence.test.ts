@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { selectFinalChatEvidence } from '@/features/chat/lib/select-final-chat-evidence'
+import {
+  selectFinalChatEvidence,
+  selectFinalChatEvidenceForIntent,
+} from '@/features/chat/lib/select-final-chat-evidence'
+import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 
@@ -20,6 +24,26 @@ const TECH_STACK_QUESTION_PLAN: ChatQuestionPlan = {
   additionalKeywords: ['주력 기술 스택', '기술 스택'],
   clarificationQuestion: null,
   reason: '사용자의 기술 스택을 묻는 프로필 질문입니다.',
+}
+
+const VERCEL_INTENT: NormalizedChatIntent = {
+  standaloneQuestion: '이윤수가 Vercel을 사용한 경험이 있나요?',
+  operation: 'answer',
+  target: {
+    kind: 'profile',
+    sourceCategory: 'profile',
+    slug: 'about',
+    title: '이윤수',
+  },
+  temporalConstraint: { order: 'none' },
+  requestedFields: ['content'],
+  evidenceScope: 'entity',
+  requiredConcepts: ['Vercel'],
+  optionalConcepts: ['배포'],
+  missingSlots: [],
+  clarificationQuestion: null,
+  confidence: 'high',
+  reason: 'Author technology experience.',
 }
 
 function createEvidenceRecord(
@@ -122,5 +146,36 @@ describe('selectFinalChatEvidence', () => {
       'ko/blog/vercel',
       'ko/about/profile',
     ])
+  })
+
+  it('Intent의 필수 개념을 만족하는 hybrid 근거만 반환한다', () => {
+    const profileRecord = createEvidenceRecord({
+      id: 'ko/about/profile-intent',
+      content: '이윤수의 개발자 프로필입니다.',
+    })
+    const vercelRecord = createEvidenceRecord({
+      id: 'ko/blog/vercel-intent',
+      slug: 'vercel',
+      title: 'Vercel 사용 경험',
+      url: '/ko/blog/vercel',
+      sourceCategory: 'blog',
+      content: 'Vercel을 통해 Next.js를 배포했습니다.',
+    })
+
+    const selectedMatches = selectFinalChatEvidenceForIntent({
+      question: '이 사람 Vercel 써봤어?',
+      locale: 'ko',
+      intent: VERCEL_INTENT,
+      retrievalScope: {
+        mode: 'entity',
+        sourceCategory: 'profile',
+        slug: 'about',
+        title: '이윤수',
+      },
+      lexicalMatches: [profileRecord],
+      semanticMatches: [vercelRecord],
+    })
+
+    expect(selectedMatches[0]?.id).toBe('ko/blog/vercel-intent')
   })
 })

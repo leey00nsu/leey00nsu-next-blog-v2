@@ -1,5 +1,6 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
+import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 
 interface ShouldRerankChatEvidenceParams {
   question: string
@@ -52,5 +53,30 @@ export function shouldRerankChatEvidence({
     question.length >= BLOG_CHAT.RERANK.LONG_QUESTION_MINIMUM_LENGTH ||
     conversationHistoryCount > 0 ||
     hasCompoundQuery(question)
+  )
+}
+
+export function shouldRerankChatIntentEvidence(params: {
+  question: string
+  conversationHistoryCount: number
+  matchCount: number
+  intent: NormalizedChatIntent
+}): boolean {
+  if (
+    params.intent.evidenceScope === 'none' ||
+    params.intent.operation === 'social_reply' ||
+    params.intent.operation === 'contact'
+  ) {
+    return false
+  }
+
+  if (params.matchCount < BLOG_CHAT.RERANK.MINIMUM_MATCH_COUNT) {
+    return false
+  }
+
+  return (
+    params.question.length >= BLOG_CHAT.RERANK.LONG_QUESTION_MINIMUM_LENGTH ||
+    params.conversationHistoryCount > 0 ||
+    hasCompoundQuery(params.question)
   )
 }

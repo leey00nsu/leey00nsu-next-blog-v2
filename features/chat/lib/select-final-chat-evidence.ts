@@ -3,6 +3,7 @@ import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization
 import { selectEvidenceCoveringRequiredConcepts } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatResolvedRetrievalScope } from '@/features/chat/lib/chat-retrieval-scope'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { ChatQuestionPlan } from '@/features/chat/model/chat-question-plan'
 import type { SupportedLocale } from '@/shared/config/constants'
 
@@ -15,6 +16,27 @@ interface SelectFinalChatEvidenceParams {
   semanticMatches: ChatEvidenceRecord[]
   requiredConcepts?: string[]
   optionalConcepts?: string[]
+}
+
+interface SelectFinalChatEvidenceForIntentParams {
+  question: string
+  locale: SupportedLocale
+  intent: NormalizedChatIntent
+  retrievalScope: ChatResolvedRetrievalScope
+  lexicalMatches: ChatEvidenceRecord[]
+  semanticMatches: ChatEvidenceRecord[]
+}
+
+interface SelectFinalChatEvidenceByMeaningParams {
+  question: string
+  standaloneQuestion: string
+  locale: SupportedLocale
+  retrievalScope: ChatResolvedRetrievalScope
+  lexicalMatches: ChatEvidenceRecord[]
+  semanticMatches: ChatEvidenceRecord[]
+  preferredSourceCategories: ChatEvidenceRecord['sourceCategory'][]
+  rankingConcepts: string[]
+  requiredConcepts: string[]
 }
 
 interface RankedChatEvidenceRecord extends ChatEvidenceRecord {
@@ -53,22 +75,19 @@ function countTokenMatches(tokens: string[], text: string): number {
 function buildQuestionTokens(params: {
   question: string
   locale: SupportedLocale
-  questionPlan: ChatQuestionPlan
-  optionalConcepts: string[]
+  standaloneQuestion: string
+  rankingConcepts: string[]
 }): string[] {
   const normalizedQuestion = normalizeChatQuery({
     question: params.question,
     locale: params.locale,
   })
   const normalizedStandaloneQuestion = normalizeChatQuery({
-    question: params.questionPlan.standaloneQuestion,
+    question: params.standaloneQuestion,
     locale: params.locale,
   })
   const normalizedKeywords = normalizeChatQuery({
-    question: [
-      ...params.questionPlan.additionalKeywords,
-      ...params.optionalConcepts,
-    ].join(' '),
+    question: params.rankingConcepts.join(' '),
     locale: params.locale,
   })
 
@@ -157,26 +176,25 @@ function upsertRankedMatch(params: {
   })
 }
 
-export function selectFinalChatEvidence({
+function selectFinalChatEvidenceByMeaning({
   question,
+  standaloneQuestion,
   locale,
-  questionPlan,
   retrievalScope,
   lexicalMatches,
   semanticMatches,
-  requiredConcepts = [],
-  optionalConcepts = [],
-}: SelectFinalChatEvidenceParams): ChatEvidenceRecord[] {
+  preferredSourceCategories,
+  rankingConcepts,
+  requiredConcepts,
+}: SelectFinalChatEvidenceByMeaningParams): ChatEvidenceRecord[] {
   const rankedMatchMap = new Map<string, RankedChatEvidenceRecord>()
   const questionTokens = buildQuestionTokens({
     question,
     locale,
-    questionPlan,
-    optionalConcepts,
+    standaloneQuestion,
+    rankingConcepts,
   })
-  const preferredSourceCategorySet = new Set(
-    questionPlan.preferredSourceCategories,
-  )
+  const preferredSourceCategorySet = new Set(preferredSourceCategories)
 
   for (const [rank, match] of semanticMatches.entries()) {
     upsertRankedMatch({
@@ -245,4 +263,56 @@ export function selectFinalChatEvidence({
     requiredConcepts,
     locale,
   }).slice(0, BLOG_CHAT.SEARCH.TOP_K)
+}
+
+export function selectFinalChatEvidence({
+  question,
+  locale,
+  questionPlan,
+  retrievalScope,
+  lexicalMatches,
+  semanticMatches,
+  requiredConcepts = [],
+  optionalConcepts = [],
+}: SelectFinalChatEvidenceParams): ChatEvidenceRecord[] {
+  return selectFinalChatEvidenceByMeaning({
+    question,
+    standaloneQuestion: questionPlan.standaloneQuestion,
+    locale,
+    retrievalScope,
+    lexicalMatches,
+    semanticMatches,
+    preferredSourceCategories: questionPlan.preferredSourceCategories,
+    rankingConcepts: [
+      ...questionPlan.additionalKeywords,
+      ...optionalConcepts,
+    ],
+    requiredConcepts,
+  })
+}
+
+export function selectFinalChatEvidenceForIntent({
+  question,
+  locale,
+  intent,
+  retrievalScope,
+  lexicalMatches,
+  semanticMatches,
+}: SelectFinalChatEvidenceForIntentParams): ChatEvidenceRecord[] {
+  return selectFinalChatEvidenceByMeaning({
+    question,
+    standaloneQuestion: intent.standaloneQuestion,
+    locale,
+    retrievalScope,
+    lexicalMatches,
+    semanticMatches,
+    preferredSourceCategories: intent.target.sourceCategory
+      ? [intent.target.sourceCategory]
+      : [],
+    rankingConcepts: [
+      ...intent.requiredConcepts,
+      ...intent.optionalConcepts,
+    ],
+    requiredConcepts: intent.requiredConcepts,
+  })
 }

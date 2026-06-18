@@ -15,6 +15,7 @@
 /playwright-report
 /playwright/.cache
 /storybook-static
+/.worktrees/
 
 # next.js
 /.next/

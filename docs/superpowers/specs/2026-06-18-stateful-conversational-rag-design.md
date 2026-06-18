@@ -1,58 +1,101 @@
-# Stateful Conversational RAG Design
+# Stateful Conversational RAG Recovery Design
 
 ## Goal
 
-블로그 챗봇을 메시지 이력을 매번 재해석하는 구조에서 구조화된 대화 상태를 이어가는 Stateful Conversational RAG 구조로 전환한다. 자연어 표현별 보정 규칙을 제거하고, planner가 해석한 의미가 검색, 실행, 캐시, 응답까지 손실 없이 전달되도록 한다.
+현재 배포 서버에서 정상 동작하는 질문 품질을 보존하면서, 브라우저가 최소 대화 상태를 유지하는 Stateful Conversational RAG로 전환한다. 질문 의미는 planner가 해석하고, 콘텐츠에서 생성한 entity catalog가 planner를 grounding하며, reducer와 invariant validator가 잘못된 상태 전이와 실행 불가능한 Intent를 차단한다.
 
-## Problems to Solve
+이 설계는 워크트리에서 확인된 다음 회귀를 복구한다.
 
-현재 `ChatIntentFrame`은 planner 출력을 구조화하지만 기존 `ChatQuestionPlan` 호환 계층으로 변환되는 과정에서 일부 의미가 사라진다.
+- 명시된 `lee-spec-kit`, `Leemage`를 planner가 target으로 선택하지 못했다.
+- 여러 프로젝트를 묻는 질문을 `corpus`가 아니라 명확화로 보냈다.
+- `operation: answer`와 `evidenceScope: none` 같은 실행 불가능한 조합이 schema를 통과했다.
+- 새로운 독립 질문이 이전 `pendingClarification`을 잘못 재개했다.
+- mock 기반 테스트와 retrieval 지표는 통과했지만 실제 planner 응답 품질은 검증하지 않았다.
 
-- `requestedFields`가 유실되어 응답 단계에서 날짜 관련 문자열 패턴을 다시 검사한다.
-- 필수 검색 개념과 보조 검색 개념이 `additionalKeywords`로 합쳐진다.
-- localStorage에는 메시지가 저장되지만 서버는 최근 대화만 받아 매번 대상을 다시 추론한다.
-- 명확화 질문이 일반 메시지로만 남아 후속 답변에서 중단된 작업을 명시적으로 재개할 수 없다.
-- 캐시 키가 실행 의미 전체를 반영하지 않아 다른 문맥의 질문이 충돌할 수 있다.
-- 새 Intent 경로와 legacy 문자열 보정 경로가 함께 존재한다.
+## Success Baseline
+
+현재 배포 서버에서 정상 답변하는 golden 질문은 회귀 없이 유지해야 한다.
+
+- `lee-spec-kit을 왜 만들었어?`
+- `Leemage에서 Presigned URL을 사용한 이유가 뭐야?`
+- `최근 프로젝트에서 AI를 어떻게 활용하고 있어?`
+- `이 사람 Vercel 써봤어?` → `블로그 주인`
+- `마지막 글 언제야?`
+
+상태 기능은 이 기준선 위에 추가한다. 구조적 테스트 통과만으로 완료로 판단하지 않고, 실제 `.env`의 planner 모델로 golden 질문과 대화 시나리오를 평가한다.
 
 ## Architecture
 
-클라이언트는 메시지와 함께 최신 `ChatConversationState`를 assistant message metadata에 저장한다. 서버는 상태를 영속화하지 않으며, 요청마다 전달받은 상태를 검증하고 현재 질문으로 생성한 `ChatIntentPatch`를 reducer에 적용한다.
-
 ```text
-localStorage
-  -> messages + ChatConversationState
-  -> request
-  -> validate conversation state
-  -> planner creates ChatIntentPatch
-  -> reducer creates NormalizedChatIntent and next state
-  -> executor selects deterministic or retrieval execution
-  -> grounded response + next state
-  -> assistant metadata
-  -> localStorage
+question + validated conversation state + current page
+  -> build dynamic entity catalog candidates
+  -> planner interprets meaning and selects candidates
+  -> normalizer resolves canonical target and intent
+  -> reducer applies explicit context action
+  -> invariant validator rejects impossible combinations
+  -> scoped lexical + semantic retrieval
+  -> citation-grounded answer
+  -> minimal next conversation state in SDK metadata
 ```
 
-`ChatQuestionPlan`, `route`, `directAction`, `retrievalScope`, `additionalKeywords`는 제거한다. 검색과 executor는 `NormalizedChatIntent`를 직접 받는다.
+책임은 다음처럼 분리한다.
 
-## State Model
+- Entity catalog: 콘텐츠의 title, slug, alias, tag, search term으로 canonical 후보를 만든다.
+- Planner: operation, 대화 연결, 문맥 전환, 후보 선택, 시간 조건, 요청 필드와 검색 개념을 해석한다.
+- Normalizer: planner가 선택한 후보 ID를 canonical target으로 변환한다.
+- Reducer: 검증된 이전 상태와 현재 Intent의 상태 전이를 계산한다.
+- Invariant validator: target, operation, evidence scope, clarification 조합을 실행 전에 검증한다.
+- Retrieval: 검증된 scope 안에서 근거를 찾고 citation 가능한 근거만 답변 단계에 전달한다.
+
+phrase 목록이나 프로젝트 고유명사 하드코딩으로 planner 의미를 대신 판단하지 않는다.
+
+## Dynamic Entity Catalog
+
+catalog는 빌드된 post, project, profile, assistant curated source에서 동적으로 생성한다.
 
 ```ts
-interface ChatConversationState {
-  version: 1
-  resolvedTarget: ChatTarget | null
-  activeOperation: ChatOperation
-  temporalConstraint: ChatTemporalConstraint
-  requestedFields: ChatRequestedField[]
-  requiredConcepts: string[]
-  optionalConcepts: string[]
-  evidenceScope: ChatEvidenceScope
-  pendingClarification: ChatPendingClarification | null
-  lastResolvedQuestion: string | null
+interface ChatEntityCandidate {
+  entityId: string
+  kind: 'post' | 'project' | 'profile' | 'assistant'
+  slug: string
+  title: string
+  aliases: string[]
+  searchTerms: string[]
+  sourceCategory: string
 }
+```
 
-interface ChatIntentPatch {
+질문은 정규화한 뒤 title, slug, alias와 매칭한다. 매칭된 후보 목록만 planner 입력에 전달하고 planner는 자유 형식 target을 생성하지 않는다. 후보가 없더라도 대명사나 현재 글 참조가 아니라면 즉시 명확화를 요구하지 않고 corpus 검색이 가능한 질문인지 planner가 판단한다.
+
+catalog는 고유명사의 canonical identity를 제공하지만 질문의 의미, operation, scope를 대신 결정하지 않는다.
+
+## Planner Contract
+
+planner 입력은 다음으로 제한한다.
+
+- 현재 질문
+- 검증된 `ChatConversationState`
+- 최근 대화 1~2턴
+- 현재 페이지 slug와 종류
+- 현재 질문에서 찾은 entity 후보 목록
+
+planner 출력은 상태 전이와 실행 의미를 함께 표현한다.
+
+```ts
+type ChatContextAction =
+  | 'continue'
+  | 'reset'
+  | 'resolve_clarification'
+
+type ChatTargetSelection =
+  | { kind: 'candidate'; entityId: string }
+  | { kind: 'preserve' }
+  | { kind: 'none' }
+
+interface ChatIntentPlan {
   standaloneQuestion: string
-  targetUpdate: ChatTargetUpdate
+  contextAction: ChatContextAction
+  targetSelection: ChatTargetSelection
   operation: ChatOperation
   temporalConstraint: ChatTemporalConstraint
   requestedFields: ChatRequestedField[]
@@ -62,155 +105,145 @@ interface ChatIntentPatch {
   missingSlots: ChatMissingSlot[]
   clarificationQuestion: string | null
   confidence: ChatConfidence
+  reason: string
 }
-
-type ChatTargetUpdate =
-  | { kind: 'preserve' }
-  | { kind: 'replace'; target: ChatTarget }
-  | { kind: 'clear' }
 ```
 
-`ChatIntentPatch`는 현재 발화가 기존 상태를 어떻게 변경하는지만 표현한다. reducer는 기존 상태와 patch를 결합하고 도메인 불변식을 검증해 `NormalizedChatIntent`와 다음 `ChatConversationState`를 함께 반환한다.
+`contextAction`과 `targetSelection`은 독립된 축이다. 따라서 새 주제이면서 새 대상이 명시된 질문은 `reset + candidate`로 표현할 수 있다. 이는 기존 `targetUpdate: clear | replace | preserve` 계약의 모순을 제거한다.
 
-## Conversation Semantics
+## Conversation State and Transitions
 
-- `preserve`는 기존 대상을 유지한다.
-- `replace`는 사용자가 새 대상을 지정하거나 이전 대상을 정정했을 때 사용한다.
-- `clear`는 새 대화를 시작하거나 사용자가 이전 문맥을 명시적으로 취소했을 때 사용한다.
-- planner 신뢰도가 낮다는 이유만으로 명확화를 생성하지 않는다.
-- 답변에 필수인 slot이 실제로 없을 때만 `pendingClarification`을 만든다.
-- `pendingClarification`은 누락된 slot과 중단된 Intent를 보존한다.
-- 후속 답변이 slot을 채우면 reducer는 중단된 Intent를 즉시 재개하고 동일 내용을 다시 확인하지 않는다.
-- 새로운 독립 질문은 이전 operation과 검색 개념을 보존하지 않는다. 대상 유지 여부는 `targetUpdate`로 명시한다.
+브라우저 localStorage에는 다음 대화에 필요한 최소 상태만 저장한다.
 
-## Client Persistence and Trust Boundary
+```ts
+interface ChatConversationState {
+  version: 2
+  focusedTarget: ChatTarget | null
+  lastIntent: NormalizedChatIntent | null
+  pendingClarification: PendingClarification | null
+}
+```
 
-`lee-chat-sdk`의 `persistence: 'localStorage'`를 유지한다. 최신 상태는 assistant response metadata의 `conversationState`에 포함하고 다음 요청에서 그대로 전달한다.
+상태 전이 규칙은 다음과 같다.
 
-서버는 다음 조건을 모두 만족할 때만 클라이언트 상태를 사용한다.
+- `continue`: 기존 target과 문맥을 사용하는 후속 질문이다.
+- `reset`: 기존 target과 pending clarification을 버리고 새 질문을 시작한다.
+- `resolve_clarification`: 사용자가 직전 명확화의 누락 slot에 답한 경우에만 중단된 Intent를 재개한다.
+- 새 질문에 target이 포함됐다는 이유만으로 이전 pending Intent를 재개하지 않는다.
+- planner 실패나 invariant 실패 시 잘못된 새 상태를 저장하지 않고 이전 검증 상태를 유지한다.
+- 서버는 클라이언트 상태를 Zod와 도메인 invariant로 검증하며, 실패하면 빈 version 2 상태를 사용한다.
 
-- Zod schema 검증에 성공한다.
-- 지원하는 `version`과 일치한다.
-- 배열 길이와 문자열 길이 제한을 통과한다.
-- 대상과 evidence scope 조합이 도메인 불변식을 만족한다.
-
-검증에 실패한 상태는 오류로 응답하지 않고 빈 상태로 대체한다. 클라이언트 상태는 검색과 문맥 해석을 위한 힌트로만 사용하며, 답변의 사실성은 검색 근거와 citation 검증으로 보장한다.
-
-## Execution Model
-
-executor 선택은 `NormalizedChatIntent`의 구조를 기준으로 결정한다.
+예상 전이는 다음과 같다.
 
 ```text
-missingSlots exists                    -> clarification executor
-operation is social_reply              -> social executor
-operation is contact                   -> contact executor
-temporal order is latest or oldest     -> chronological selector
-otherwise                              -> evidence retrieval
+“이 사람 Vercel 써봤어?”
+-> target 누락으로 pending clarification 저장
+
+“블로그 주인”
+-> resolve_clarification + owner candidate
+-> 중단된 Vercel 질문 재개
+
+“Leemage에서 Presigned URL을 쓴 이유는?”
+-> reset + Leemage candidate
+-> 이전 Vercel Intent와 clarification 폐기
 ```
 
-chronological selector가 문서를 선택한 뒤 실행은 operation에 따라 달라진다.
+## Normalization and Invariants
 
-- `answer`이고 요청 필드가 제목이나 게시일이면 결정론적 응답을 만든다.
-- `summarize`, `explain`, `compare`는 선택한 문서를 근거로 답변 모델을 호출한다.
-- 날짜 포함 여부는 질문 문자열이 아니라 `requestedFields`로 결정한다.
-- executor가 처리할 수 없는 operation과 field 조합은 조용히 일반 답변으로 바꾸지 않고 명시적인 검증 실패로 처리한다.
+normalizer는 `candidate.entityId`를 catalog의 canonical target으로 변환한다. 그 뒤 validator가 다음 invariant를 적용한다.
 
-## Retrieval Contract
+- 근거가 필요한 operation에 target이 있으면 `evidenceScope`는 `entity`여야 한다.
+- 현재 글 참조에 현재 slug가 있으면 scope는 `current_source`여야 한다.
+- 여러 문서나 프로젝트를 종합하는 질문은 scope가 `corpus`여야 한다.
+- target이 없고 일반 corpus 검색이 가능한 질문은 `corpus`를 사용할 수 있다.
+- target이 없고 대명사 또는 현재 글 참조만 있으면 실제 누락 slot을 명확화한다.
+- 근거가 필요한 operation은 `evidenceScope: none`을 가질 수 없다.
+- `missingSlots`가 비어 있으면 clarification을 생성할 수 없다.
+- `resolve_clarification`은 기존 `pendingClarification`이 있고 현재 답변이 누락 slot을 채울 때만 허용한다.
+- `reset`은 이전 `pendingClarification`을 반드시 폐기한다.
+- candidate ID가 catalog에 없으면 planner 출력을 실행하지 않는다.
 
-검색은 필수 조건과 순위 계산을 분리한다.
+일반 규칙으로 교정 가능한 scope 조합은 canonical 값으로 정규화한다. canonical target 유실, 존재하지 않는 candidate, 잘못된 clarification 재개처럼 의미가 달라질 수 있는 오류는 교정하지 않고 검증 실패로 처리한다.
 
-1. 대상, evidence scope, 현재 문서 slug로 검색 corpus를 제한한다.
-2. `requiredConcepts`를 alias 정규화한 뒤 필수 근거 조건으로 적용한다.
-3. lexical 검색과 semantic 검색을 각각 실행한다.
-4. `optionalConcepts`, source category, 제목, 본문, 태그 일치를 순위에 반영한다.
-5. 필수 조건을 만족한 결과에만 reranking과 `TOP_K` 제한을 적용한다.
-6. 필수 개념을 충족하는 근거가 없으면 답변 모델을 호출하지 않고 `insufficient_search_match`를 반환한다.
+## Retrieval and Answering
 
-검색 단계는 사실의 긍정과 부정을 판단하지 않는다. 예를 들어 Vercel이라는 개념이 포함된 근거를 찾는 것까지만 담당하고, 사용 여부는 답변 모델이 근거 문맥에서 판단한다.
+검증된 Intent를 다음 순서로 실행한다.
 
-## Cache Model
+1. evidence scope, canonical target, current page로 corpus 범위를 제한한다.
+2. lexical 검색과 semantic 검색을 병렬 실행한다.
+3. required concepts를 만족하지 못하는 근거를 제거한다.
+4. optional concepts, target 일치, source category로 순위를 계산한다.
+5. 후보를 rerank한다.
+6. citation 가능한 근거만 답변 모델에 전달한다.
 
-캐시 키는 정규화된 실행 의미와 근거 데이터 버전으로 만든다.
+알 수 없는 고유명사는 바로 명확화를 요구하지 않고 corpus에서 먼저 검색한다. 결과가 없으면 `insufficient_search_match`로 종료한다. 검색은 사실의 긍정과 부정을 판단하지 않으며, 답변 모델은 전달된 근거 안에서만 결론을 만든다. citation 검증을 통과하지 못한 모델 답변은 사용자에게 전달하지 않는다.
+
+## Planner Failure and Error Handling
+
+- schema 파싱 오류: 검증 오류를 포함해 동일 schema로 한 번 재시도한다.
+- 의미 invariant 오류: 의미를 바꾸지 않는 일반 scope 규칙만 정규화한다.
+- candidate 또는 상태 전이 오류: 실행하지 않고 안전한 오류를 반환한다.
+- planner 실패: 이전 상태를 변경하지 않는다.
+- 근거 부족: 답변 모델을 호출하지 않고 기존 안전한 검색 부족 응답을 반환한다.
+
+내부 관측 사유는 `invalid_state`, `invalid_intent_plan`, `invalid_candidate`, `planner_unavailable`, `invalid_transition`, `insufficient_search_match`, `ungrounded_answer`로 구분한다. 공개 응답은 현재의 안전한 사용자 메시지 계약을 유지한다.
+
+## Evaluation and Regression Prevention
+
+### Golden question evaluation
+
+각 질문에 다음 기대값을 고정한다.
+
+- clarification 여부
+- context action
+- operation
+- canonical target 또는 corpus scope
+- requested fields와 required concepts
+- 상위 citation
+- grounded 여부
+- 답변에 포함돼야 할 핵심 사실
+
+### Conversation scenarios
+
+다음 시나리오에서 주제 유지, clarification 재개, 주제 초기화를 검증한다.
 
 ```text
-locale
-+ target
-+ operation
-+ temporalConstraint
-+ requestedFields
-+ requiredConcepts
-+ evidenceScope
-+ currentPostSlug
-+ evidenceVersion
+이 사람 Vercel 써봤어?
+-> 블로그 주인
+-> 왜 그만 썼어?
+-> Leemage에서 Presigned URL을 사용한 이유는?
 ```
 
-문장 표현과 대화 상태 전체는 캐시 키에 포함하지 않는다. 같은 의미의 질문은 캐시를 공유하고, 같은 문장이라도 대상이나 요청 필드가 다르면 별도 캐시를 사용한다. 명확화, 검색 부족, 근거 부족, 모델 오류 응답은 캐시하지 않는다.
+### Real planner evaluation
 
-## Planner Failure Recovery
+mock 테스트와 별도로 `.env`의 실제 planner 모델을 호출하는 평가 명령을 제공한다. 기존 배포 baseline보다 나빠진 golden 사례가 하나라도 있으면 평가를 실패시킨다. API 키가 없으면 성공으로 간주하지 않고 라이브 평가 미실행 상태를 명시한다.
 
-1. planner에 현재 질문, 검증된 상태, 필요한 최소 대화 이력을 전달한다.
-2. 구조화 출력이 실패하면 동일 schema로 한 번 재시도한다.
-3. 재시도도 실패하면 이전 상태와 결정론적 규칙만으로 실행 가능한지 확인한다.
-4. 실행 가능하면 모델 planner 없이 처리한다.
-5. 필수 의미를 결정할 수 없으면 `model_error`를 반환한다.
+### Invariant and property tests
 
-예외를 모두 같은 catch 블록에서 숨기지 않고 `invalid_state`, `invalid_intent_patch`, `planner_unavailable`, `unsupported_intent`를 내부 관측 사유로 구분한다. 공개 응답은 기존 안전한 오류 계약을 유지한다.
+- 새 질문은 이전 pending Intent를 재개하지 않는다.
+- canonical entity는 normalizer 이후 유실되지 않는다.
+- 근거가 필요한 Intent는 `none` scope를 가질 수 없다.
+- 존재하지 않는 candidate ID는 거부한다.
+- citation 없는 모델 답변은 사용자에게 전달되지 않는다.
 
-## Migration
+### Browser E2E
 
-새 구조는 호환 adapter를 확장하지 않고 별도 feature flag 아래에서 완성한다.
+- localStorage에 version 2 상태 저장
+- 새로고침 후 후속 질문의 target 유지
+- 독립 질문에서 새 주제로 전환
+- clarification 반복 방지
 
-1. 상태 schema, patch schema, reducer를 추가한다.
-2. 새 executor와 retrieval 계약을 구현한다.
-3. API와 SDK metadata를 새 상태 계약에 연결한다.
-4. 기존과 새 경로에 동일한 평가 fixture를 실행해 결과를 비교한다.
-5. 새 경로를 기본값으로 전환한다.
-6. `ChatQuestionPlan`, adapter, legacy 긍정 표현 목록, 시간 표현 패턴, 관련 테스트를 제거한다.
-7. feature flag와 구형 분기를 제거한다.
+## Migration Strategy
 
-하나의 요청이 기존 경로와 새 경로를 동시에 실행하지 않으며, shadow 실행으로 사용자 질문이나 대화 내용을 중복 전송하지 않는다.
+기존 워크트리의 상태형 파이프라인을 폐기하거나 전체 롤백하지 않고 계약부터 교체한다.
 
-## Testing
+1. golden 질문과 실제 planner 평가를 먼저 추가해 현재 회귀를 재현한다.
+2. dynamic entity catalog와 candidate matching을 추가한다.
+3. planner 계약을 `contextAction + targetSelection`으로 교체한다.
+4. version 2 state reducer와 invariant validator를 구현한다.
+5. retrieval과 cache가 새로운 normalized Intent를 사용하도록 연결한다.
+6. SDK metadata를 version 2 상태로 마이그레이션한다.
+7. 구 version 1 상태와 모순된 `targetUpdate` 계약을 제거한다.
+8. 전체 자동 테스트, 실제 planner 평가, 브라우저 시나리오를 통과한 뒤에만 통합한다.
 
-### Schema and Reducer
-
-- 정상 상태와 변조·구버전 상태 검증
-- 대상 preserve, replace, clear
-- 새 독립 질문에서 오래된 operation과 개념 제거
-- 명확화 생성과 중단된 Intent 재개
-- 사용자 정정 우선 적용
-
-### Executors
-
-- 최신 글 제목 직접 응답
-- 최신 글 제목과 게시일 직접 응답
-- 최신 글 요약 모델 호출
-- 연락처 직접 응답
-- 현재 문서 기반 답변
-- 지원하지 않는 operation과 field 조합 거부
-
-### Retrieval
-
-- 필수 개념 누락 시 검색 실패
-- optional 개념은 순위에만 영향
-- lexical과 semantic 병합 후 필수 조건 유지
-- alias 정규화
-- 필수 근거가 `TOP_K` 적용 전에 제거되지 않음
-
-### Integration
-
-- `이 사람 Vercel 써봤어? -> 블로그 주인`에서 즉시 답변
-- `이 사람이 이윤수야? -> 그래`에서 확정 상태 유지
-- `마지막 글 언제야?`에서 제목과 게시일 응답
-- 새 대화에서 이전 대상 초기화
-- 조작된 localStorage 상태 무시
-- 같은 문장과 다른 Intent의 캐시 분리
-
-## Success Criteria
-
-- 지원 문장을 늘리기 위해 긍정 표현, 최신 글 표현, 날짜 표현 목록을 수정하지 않는다.
-- `requestedFields`, 필수 검색 개념, 대상, 시간 조건이 planner부터 executor까지 손실 없이 유지된다.
-- 명확화에 답한 뒤 같은 대상을 다시 확인하지 않는다.
-- 모든 답변은 검증된 직접 데이터 또는 citation이 있는 검색 근거에 기반한다.
-- legacy `ChatQuestionPlan` 경로와 문자열 보정 코드가 제거된다.
-- 기존 chat 테스트, 새 상태 시나리오 테스트, TypeScript 검사와 lint가 통과한다.
+각 단계는 실패 테스트를 먼저 추가하고 독립 커밋으로 남긴다. 프로젝트 고유명사 하드코딩, phrase 목록 기반 routing, default export, barrel file은 추가하지 않는다.

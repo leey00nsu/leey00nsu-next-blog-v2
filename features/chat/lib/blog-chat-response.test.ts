@@ -32,6 +32,7 @@ const BLOG_SEARCH_MATCHES: ChatEvidenceRecord[] = [
 describe('finalizeBlogChatResponse', () => {
   it('검색 결과 안에 있는 citation만 통과시킨다', () => {
     const result = finalizeBlogChatResponse({
+      locale: 'ko',
       draftAnswer: {
         answer:
           'staleTime을 늘리면 데이터를 신선한 것으로 간주하는 시간이 길어져 불필요한 재요청을 줄일 수 있습니다.',
@@ -54,6 +55,7 @@ describe('finalizeBlogChatResponse', () => {
 
   it('모델 답변에 포함된 마크다운 문법은 평문으로 정리한다', () => {
     const result = finalizeBlogChatResponse({
+      locale: 'ko',
       draftAnswer: {
         answer: [
           '## 핵심 요약',
@@ -88,6 +90,7 @@ describe('finalizeBlogChatResponse', () => {
 
   it('snake_case 식별자는 강조 문법으로 오인하지 않고 유지한다', () => {
     const result = finalizeBlogChatResponse({
+      locale: 'ko',
       draftAnswer: {
         answer:
           '설정 키로 NEXT_PUBLIC_GISCUS_REPO 와 current_post_slug 같은 값을 그대로 안내합니다.',
@@ -105,6 +108,7 @@ describe('finalizeBlogChatResponse', () => {
 
   it('검색 결과에 없는 citation이면 안전하게 거절한다', () => {
     const result = finalizeBlogChatResponse({
+      locale: 'ko',
       draftAnswer: {
         answer: '외부 정보로 추정한 답변입니다.',
         usedCitationUrls: ['/ko/blog/unknown-post'],
@@ -114,7 +118,7 @@ describe('finalizeBlogChatResponse', () => {
     })
 
     expect(result.grounded).toBe(false)
-    expect(result.answer).toBe('')
+    expect(result.answer).toBe('답변을 뒷받침할 근거를 확인할 수 없어요.')
     expect(result.refusalReason).toBe('invalid_citations')
   })
 })

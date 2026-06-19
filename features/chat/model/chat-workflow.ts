@@ -7,6 +7,7 @@ import {
 } from '@/features/chat/api/plan-chat-intent-patch'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
+import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { buildChatRetrievalPlanCacheKey } from '@/features/chat/lib/chat-intent-cache-key'
 import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
@@ -196,17 +197,6 @@ const CHAT_WORKFLOW_RESPONSES = {
   },
 } as const
 
-function buildRefusalResponse(
-  refusalReason: BlogChatResponse['refusalReason'],
-): BlogChatResponse {
-  return {
-    answer: '',
-    citations: [],
-    grounded: false,
-    refusalReason,
-  }
-}
-
 function buildContactResponse(params: {
   request: BlogChatRequest
   contactProfile: ChatContactProfile | null
@@ -214,7 +204,10 @@ function buildContactResponse(params: {
   const contactProfile = params.contactProfile
 
   if (!contactProfile || contactProfile.methods.length === 0) {
-    return buildRefusalResponse('insufficient_search_match')
+    return buildChatRefusalResponse({
+      locale: params.request.locale,
+      refusalReason: 'insufficient_search_match',
+    })
   }
 
   const responses = CHAT_WORKFLOW_RESPONSES[params.request.locale]
@@ -304,7 +297,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
 
       if (!plannerResult.ok) {
         return {
-          response: buildRefusalResponse(plannerResult.refusalReason),
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: plannerResult.refusalReason,
+          }),
           failureKind: plannerResult.failureKind,
           graphPath: ['plan-query'],
         }
@@ -330,7 +326,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
 
       if (!compileResult.ok) {
         return {
-          response: buildRefusalResponse('model_error'),
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: 'model_error',
+          }),
           failureKind: compileResult.failureKind,
           nextConversationState: compileResult.nextConversationState,
           graphPath: ['compile-plan'],
@@ -436,7 +435,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         response:
           execution.kind === 'direct'
             ? execution.response
-            : buildRefusalResponse('insufficient_search_match'),
+            : buildChatRefusalResponse({
+                locale: state.request.locale,
+                refusalReason: 'insufficient_search_match',
+              }),
         graphPath: ['execute-direct'],
       }
     })
@@ -455,7 +457,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         matches: execution.matches,
         response:
           execution.kind === 'refusal'
-            ? buildRefusalResponse(execution.refusalReason)
+            ? buildChatRefusalResponse({
+                locale: state.request.locale,
+                refusalReason: execution.refusalReason,
+              })
             : execution.kind === 'direct'
               ? execution.response
               : null,
@@ -474,9 +479,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
 
       if (!answerResult.ok || !answerResult.draftAnswer) {
         return {
-          response: buildRefusalResponse(
-            answerResult.refusalReason ?? 'model_error',
-          ),
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: answerResult.refusalReason ?? 'model_error',
+          }),
           failureKind: 'answer_model_error' as const,
           graphPath: ['generate-answer'],
         }
@@ -486,6 +492,7 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         response: finalizeBlogChatResponse({
           draftAnswer: answerResult.draftAnswer,
           matches: state.matches,
+          locale: state.request.locale,
         }),
         graphPath: ['generate-answer'],
       }
@@ -495,7 +502,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
 
       if (!parsedResponse.success) {
         return {
-          response: buildRefusalResponse('model_error'),
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: 'model_error',
+          }),
           failureKind: 'ungrounded_answer' as const,
           shouldStoreCache: false,
           graphPath: ['validate-response'],
@@ -546,7 +556,12 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
       return { graphPath: ['store-cache'] }
     })
     .addNode('finalize', (state) => {
-      const response = state.response ?? buildRefusalResponse('model_error')
+      const response =
+        state.response ??
+        buildChatRefusalResponse({
+          locale: state.request.locale,
+          refusalReason: 'model_error',
+        })
 
       return {
         applicationResponse: BlogChatApplicationResponseSchema.parse({
@@ -601,7 +616,10 @@ function buildWorkflowResult(state: ChatWorkflowState): ChatWorkflowResult {
     applicationResponse:
       state.applicationResponse ??
       BlogChatApplicationResponseSchema.parse({
-        response: buildRefusalResponse('model_error'),
+        response: buildChatRefusalResponse({
+          locale: state.request.locale,
+          refusalReason: 'model_error',
+        }),
         conversationState: state.request.conversationState,
       }),
     queryPlan: state.queryPlan,
@@ -637,7 +655,10 @@ export async function runChatWorkflow({
   } catch {
     return {
       applicationResponse: BlogChatApplicationResponseSchema.parse({
-        response: buildRefusalResponse('model_error'),
+        response: buildChatRefusalResponse({
+          locale: request.locale,
+          refusalReason: 'model_error',
+        }),
         conversationState: request.conversationState,
       }),
       queryPlan: null,

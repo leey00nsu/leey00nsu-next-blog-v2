@@ -1,13 +1,16 @@
+import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { validateChatCitations } from '@/features/chat/lib/validate-chat-citations'
 import type {
   BlogChatModelDraft,
   BlogChatResponse,
 } from '@/features/chat/model/chat-schema'
+import type { SupportedLocale } from '@/shared/config/constants'
 
 interface FinalizeBlogChatResponseParams {
   draftAnswer: BlogChatModelDraft
   matches: ChatEvidenceRecord[]
+  locale: SupportedLocale
 }
 
 const BLOG_CHAT_ANSWER_MARKDOWN_PATTERN = {
@@ -25,17 +28,6 @@ const BLOG_CHAT_ANSWER_MARKDOWN_PATTERN = {
   TRAILING_WHITESPACE: /[ \t]+$/gm,
   EXCESSIVE_NEWLINE: /\n{3,}/g,
 } as const
-
-function buildRefusalResponse(
-  refusalReason: BlogChatResponse['refusalReason'],
-): BlogChatResponse {
-  return {
-    answer: '',
-    citations: [],
-    grounded: false,
-    refusalReason,
-  }
-}
 
 export function sanitizeBlogChatAnswerToPlainText(answer: string): string {
   return answer
@@ -58,9 +50,13 @@ export function sanitizeBlogChatAnswerToPlainText(answer: string): string {
 export function finalizeBlogChatResponse({
   draftAnswer,
   matches,
+  locale,
 }: FinalizeBlogChatResponseParams): BlogChatResponse {
   if (draftAnswer.refusalReason === 'insufficient_evidence') {
-    return buildRefusalResponse('insufficient_evidence')
+    return buildChatRefusalResponse({
+      locale,
+      refusalReason: 'insufficient_evidence',
+    })
   }
 
   const citations = validateChatCitations({
@@ -69,7 +65,10 @@ export function finalizeBlogChatResponse({
   })
 
   if (citations.length === 0) {
-    return buildRefusalResponse('invalid_citations')
+    return buildChatRefusalResponse({
+      locale,
+      refusalReason: 'invalid_citations',
+    })
   }
 
   return {

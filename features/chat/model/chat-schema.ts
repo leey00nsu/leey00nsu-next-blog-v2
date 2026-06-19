@@ -43,7 +43,7 @@ export const BlogChatRequestSchema = z.object({
 })
 
 export const BlogChatResponseSchema = z.object({
-  answer: z.string(),
+  answer: z.string().trim().min(1),
   citations: z.array(BlogChatCitationSchema),
   grounded: z.boolean(),
   followUpSuggestions: z

@@ -1,4 +1,5 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
 import { normalizeQuestionText } from '@/features/chat/lib/chat-query-normalization'
 import { cleanupExpiredBlogChatResponseCache } from '@/features/chat/model/blog-chat-response-cache'
 import {
@@ -68,17 +69,6 @@ const CHAT_APPLICATION = {
   UNEXPECTED_ERROR_MESSAGE:
     '답변을 준비하는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.',
 } as const
-
-function buildRefusalResponse(
-  refusalReason: BlogChatResponse['refusalReason'],
-): BlogChatResponse {
-  return {
-    answer: '',
-    citations: [],
-    grounded: false,
-    refusalReason,
-  }
-}
 
 function summarizeMatches(matches: ChatEvidenceRecord[]) {
   return matches.map((match) => {
@@ -173,7 +163,10 @@ function buildValidationErrorResult(requestBody: unknown) {
   ) {
     return {
       body: BlogChatResponseSchema.parse(
-        buildRefusalResponse('question_too_long'),
+        buildChatRefusalResponse({
+          locale: resolveRequestLocale(requestBody),
+          refusalReason: 'question_too_long',
+        }),
       ),
     }
   }
@@ -187,6 +180,19 @@ function buildValidationErrorResult(requestBody: unknown) {
     },
     status: 400,
   }
+}
+
+function resolveRequestLocale(requestBody: unknown): SupportedLocale {
+  if (
+    requestBody &&
+    typeof requestBody === 'object' &&
+    'locale' in requestBody &&
+    LOCALES.SUPPORTED.includes(requestBody.locale as SupportedLocale)
+  ) {
+    return requestBody.locale as SupportedLocale
+  }
+
+  return LOCALES.DEFAULT
 }
 
 function buildChatObservabilityState(params: {
@@ -242,6 +248,8 @@ export async function answerBlogChatQuestion({
       return buildValidationErrorResult(requestBody)
     }
 
+    const locale: SupportedLocale = parsedRequest.data.locale ?? LOCALES.DEFAULT
+
     const clientKey = resolveBlogChatClientKey(requestHeaders)
     const rateLimitResult = consumeBlogChatRequestRateLimit({
       clientKey,
@@ -253,7 +261,10 @@ export async function answerBlogChatQuestion({
     if (!rateLimitResult.allowed) {
       return {
         body: BlogChatResponseSchema.parse(
-          buildRefusalResponse('rate_limited'),
+          buildChatRefusalResponse({
+            locale,
+            refusalReason: 'rate_limited',
+          }),
         ),
       }
     }
@@ -267,7 +278,10 @@ export async function answerBlogChatQuestion({
     if (!concurrentRequestResult.allowed) {
       return {
         body: BlogChatResponseSchema.parse(
-          buildRefusalResponse('rate_limited'),
+          buildChatRefusalResponse({
+            locale,
+            refusalReason: 'rate_limited',
+          }),
         ),
       }
     }
@@ -281,7 +295,10 @@ export async function answerBlogChatQuestion({
       if (!dailyUsageResult.allowed) {
         return {
           body: BlogChatResponseSchema.parse(
-            buildRefusalResponse('daily_limit_exceeded'),
+            buildChatRefusalResponse({
+              locale,
+              refusalReason: 'daily_limit_exceeded',
+            }),
           ),
         }
       }
@@ -290,8 +307,6 @@ export async function answerBlogChatQuestion({
         ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
       })
 
-      const locale: SupportedLocale =
-        parsedRequest.data.locale ?? LOCALES.DEFAULT
       const workflowResult = await runChatWorkflow({
         request: parsedRequest.data,
         assistantProfile: getChatAssistantProfile(locale),

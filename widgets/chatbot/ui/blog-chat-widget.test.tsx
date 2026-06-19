@@ -203,6 +203,52 @@ describe('BlogChatWidget', () => {
     ).toBeInTheDocument()
   })
 
+  it('근거 없음 응답은 중복 번역 대신 application answer를 표시한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
+      renderAssistantContent: (params: {
+        message: {
+          metadata?: {
+            blogChatResponse?: {
+              answer: string
+              citations: []
+              grounded: false
+              refusalReason: 'insufficient_search_match'
+            }
+          }
+        }
+        defaultContent: ReactNode
+      }) => ReactNode
+    }
+    render(
+      widgetProps.renderAssistantContent({
+        message: {
+          metadata: {
+            blogChatResponse: {
+              answer: '공개된 정보에서는 확인할 수 없어요.',
+              citations: [],
+              grounded: false,
+              refusalReason: 'insufficient_search_match',
+            },
+          },
+        },
+        defaultContent: '기본 메시지',
+      }),
+    )
+
+    expect(
+      screen.getByText('공개된 정보에서는 확인할 수 없어요.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        '관련 글을 아직 충분히 찾지 못했어요. 질문을 조금 다르게 적어주시면 다시 찾아볼게요.',
+      ),
+    ).not.toBeInTheDocument()
+  })
+
   it('submit 슬롯은 대기 중에는 전송 아이콘을 렌더링한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 

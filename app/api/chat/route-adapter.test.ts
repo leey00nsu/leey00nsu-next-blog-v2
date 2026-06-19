@@ -276,4 +276,39 @@ describe('POST /api/chat route adapter', () => {
       requestHeaders: expect.any(Headers),
     })
   })
+
+  it('근거 없음 refusal을 HTTP 200의 사용자 메시지로 변환한다', async () => {
+    answerBlogChatQuestionMock.mockResolvedValueOnce({
+      body: {
+        response: {
+          answer: '공개된 정보에서는 확인할 수 없어요.',
+          citations: [],
+          grounded: false,
+          refusalReason: 'insufficient_search_match',
+        },
+        conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+      },
+      status: 200,
+    })
+
+    const { POST } = await import('./route')
+    const response = await POST(createLeeChatRequest())
+    const responseBody = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(responseBody).toMatchObject({
+      message: {
+        content: '공개된 정보에서는 확인할 수 없어요.',
+        parts: [{ type: 'text', text: '공개된 정보에서는 확인할 수 없어요.' }],
+        metadata: {
+          blogChatResponse: {
+            answer: '공개된 정보에서는 확인할 수 없어요.',
+            citations: [],
+            grounded: false,
+            refusalReason: 'insufficient_search_match',
+          },
+        },
+      },
+    })
+  })
 })

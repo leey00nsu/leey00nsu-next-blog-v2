@@ -195,7 +195,7 @@ describe('runChatWorkflow', () => {
     expect(dependencies.storeSemanticResponse).toHaveBeenCalledTimes(1)
   })
 
-  it('insufficient evidence는 answer model을 호출하지 않는다', async () => {
+  it('공개 근거가 없으면 사용자 메시지를 반환하고 answer model을 호출하지 않는다', async () => {
     const dependencies = buildDependencies()
     dependencies.executeRetrievalPlan.mockResolvedValueOnce({
       kind: 'refusal',
@@ -212,6 +212,9 @@ describe('runChatWorkflow', () => {
     expect(result.graphPath).not.toContain('generate-answer')
     expect(result.applicationResponse.response.refusalReason).toBe(
       'insufficient_search_match',
+    )
+    expect(result.applicationResponse.response.answer).toBe(
+      '공개된 정보에서는 확인할 수 없어요.',
     )
     expect(dependencies.answerQuestion).not.toHaveBeenCalled()
   })

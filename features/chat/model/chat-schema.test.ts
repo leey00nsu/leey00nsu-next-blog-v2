@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BlogChatRequestSchema } from './chat-schema'
+import { BlogChatRequestSchema, BlogChatResponseSchema } from './chat-schema'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
 describe('BlogChatRequestSchema', () => {
@@ -29,6 +29,19 @@ describe('BlogChatRequestSchema', () => {
         ...EMPTY_CHAT_CONVERSATION_STATE,
         version: 1,
       },
+    })
+
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('BlogChatResponseSchema', () => {
+  it('public 응답의 빈 answer를 거부한다', () => {
+    const result = BlogChatResponseSchema.safeParse({
+      answer: '',
+      citations: [],
+      grounded: false,
+      refusalReason: 'insufficient_search_match',
     })
 
     expect(result.success).toBe(false)

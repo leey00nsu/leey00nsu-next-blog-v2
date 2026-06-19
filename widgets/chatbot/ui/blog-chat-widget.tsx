@@ -131,7 +131,6 @@ export function BlogChatWidgetView({
             <BlogChatAssistantContent
               response={message.metadata?.blogChatResponse}
               defaultContent={defaultContent}
-              translate={t}
             />
           )
         }}
@@ -172,20 +171,12 @@ export function BlogChatWidgetView({
 function BlogChatAssistantContent({
   response,
   defaultContent,
-  translate,
 }: {
   response?: BlogChatResponse
   defaultContent: ReactNode
-  translate: (key: string) => string
 }) {
-  const t = translate
-
   if (response?.refusalReason && !response.grounded) {
-    return (
-      <p className="whitespace-pre-wrap leading-6">
-        {t(`refusal.${response.refusalReason}`)}
-      </p>
-    )
+    return <p className="whitespace-pre-wrap leading-6">{response.answer}</p>
   }
 
   return defaultContent

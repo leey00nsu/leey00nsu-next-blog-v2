@@ -13,9 +13,9 @@ import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observa
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
 import {
-  runStatefulBlogChatPipeline,
-  type StatefulBlogChatPipelineResult,
-} from '@/features/chat/model/run-stateful-blog-chat-pipeline'
+  runChatWorkflow,
+  type ChatWorkflowResult,
+} from '@/features/chat/model/chat-workflow'
 import {
   type BlogChatApplicationResponse,
   BlogChatRequestSchema,
@@ -40,6 +40,13 @@ interface ChatObservabilityState {
   intentRequiredConcepts: string[]
   intentOptionalConcepts: string[]
   plannerFailureKind: string | null
+  queryOperation: string | null
+  sourceStrategy: string | null
+  sourceCategories: string[]
+  temporalStrategy: string | null
+  temporalOrder: string | null
+  executionKind: string | null
+  graphPath: string[]
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
   finalMatches: ChatEvidenceRecord[]
@@ -109,6 +116,13 @@ async function recordAnswerObservability(params: {
     intentOptionalConcepts:
       params.chatObservabilityState.intentOptionalConcepts,
     plannerFailureKind: params.chatObservabilityState.plannerFailureKind,
+    queryOperation: params.chatObservabilityState.queryOperation,
+    sourceStrategy: params.chatObservabilityState.sourceStrategy,
+    sourceCategories: params.chatObservabilityState.sourceCategories,
+    temporalStrategy: params.chatObservabilityState.temporalStrategy,
+    temporalOrder: params.chatObservabilityState.temporalOrder,
+    executionKind: params.chatObservabilityState.executionKind,
+    graphPath: params.chatObservabilityState.graphPath,
     lexicalMatches: summarizeMatches(
       params.chatObservabilityState.lexicalMatches,
     ),
@@ -129,16 +143,16 @@ async function recordAnswerObservability(params: {
   })
 }
 
-async function buildLoggedStatefulResult(params: {
+async function buildLoggedWorkflowResult(params: {
   locale: SupportedLocale
-  pipelineResult: StatefulBlogChatPipelineResult
+  workflowResult: ChatWorkflowResult
   requestStartedAt: number
   chatObservabilityState: ChatObservabilityState
 }): Promise<BlogChatApplicationResult> {
   try {
     await recordAnswerObservability({
       locale: params.locale,
-      responseData: params.pipelineResult.applicationResponse.response,
+      responseData: params.workflowResult.applicationResponse.response,
       requestStartedAt: params.requestStartedAt,
       chatObservabilityState: params.chatObservabilityState,
     })
@@ -147,7 +161,7 @@ async function buildLoggedStatefulResult(params: {
   }
 
   return {
-    body: params.pipelineResult.applicationResponse,
+    body: params.workflowResult.applicationResponse,
   }
 }
 
@@ -178,32 +192,42 @@ function buildValidationErrorResult(requestBody: unknown) {
 function buildChatObservabilityState(params: {
   originalQuestion: string
   currentPostSlug?: string
-  pipelineResult: StatefulBlogChatPipelineResult
+  workflowResult: ChatWorkflowResult
 }): ChatObservabilityState {
-  const intent = params.pipelineResult.intent
-  const evidenceResult = params.pipelineResult.execution?.evidenceResult
+  const queryPlan = params.workflowResult.queryPlan
+  const retrievalPlan = params.workflowResult.retrievalPlan
+  const execution = params.workflowResult.execution
+  const evidenceExecution = execution?.kind === 'evidence' ? execution : null
+  const canonicalTarget = retrievalPlan?.canonicalTargets[0]
 
   return {
     originalQuestion: params.originalQuestion,
-    resolvedQuestion: intent?.standaloneQuestion ?? null,
-    normalizedQuestion: intent
-      ? normalizeQuestion(intent.standaloneQuestion)
+    resolvedQuestion: retrievalPlan?.standaloneQuestion ?? null,
+    normalizedQuestion: retrievalPlan
+      ? normalizeQuestion(retrievalPlan.standaloneQuestion)
       : null,
     currentPostSlug: params.currentPostSlug,
-    cacheKind: params.pipelineResult.cacheKind,
-    reranked: evidenceResult?.reranked ?? false,
-    plannerReason: intent?.reason ?? null,
-    intentOperation: intent?.operation ?? null,
-    intentTargetKind: intent?.target.kind ?? null,
-    intentEvidenceScope: intent?.evidenceScope ?? null,
-    intentTemporalOrder: intent?.temporalConstraint.order ?? null,
-    intentRequestedFields: [...(intent?.requestedFields ?? [])],
-    intentRequiredConcepts: [...(intent?.requiredConcepts ?? [])],
-    intentOptionalConcepts: [...(intent?.optionalConcepts ?? [])],
-    plannerFailureKind: params.pipelineResult.plannerFailureKind,
-    lexicalMatches: evidenceResult?.lexicalMatches ?? [],
-    semanticMatches: evidenceResult?.semanticMatches ?? [],
-    finalMatches: evidenceResult?.finalMatches ?? [],
+    cacheKind: params.workflowResult.cacheKind,
+    reranked: evidenceExecution?.reranked ?? false,
+    plannerReason: queryPlan?.reason ?? null,
+    intentOperation: retrievalPlan?.operation ?? null,
+    intentTargetKind: canonicalTarget?.kind ?? null,
+    intentEvidenceScope: retrievalPlan?.sourceStrategy ?? null,
+    intentTemporalOrder: retrievalPlan?.temporalOrder ?? null,
+    intentRequestedFields: [...(retrievalPlan?.requestedFields ?? [])],
+    intentRequiredConcepts: [...(retrievalPlan?.requiredConcepts ?? [])],
+    intentOptionalConcepts: [...(retrievalPlan?.optionalConcepts ?? [])],
+    plannerFailureKind: params.workflowResult.failureKind,
+    queryOperation: queryPlan?.operation ?? null,
+    sourceStrategy: retrievalPlan?.sourceStrategy ?? null,
+    sourceCategories: [...(retrievalPlan?.sourceCategories ?? [])],
+    temporalStrategy: retrievalPlan?.temporalStrategy ?? null,
+    temporalOrder: retrievalPlan?.temporalOrder ?? null,
+    executionKind: retrievalPlan?.executionKind ?? null,
+    graphPath: params.workflowResult.graphPath,
+    lexicalMatches: evidenceExecution?.lexicalMatches ?? [],
+    semanticMatches: evidenceExecution?.semanticMatches ?? [],
+    finalMatches: execution?.matches ?? [],
   }
 }
 
@@ -268,7 +292,7 @@ export async function answerBlogChatQuestion({
 
       const locale: SupportedLocale =
         parsedRequest.data.locale ?? LOCALES.DEFAULT
-      const pipelineResult = await runStatefulBlogChatPipeline({
+      const workflowResult = await runChatWorkflow({
         request: parsedRequest.data,
         assistantProfile: getChatAssistantProfile(locale),
         contactProfile: getChatContactProfile(locale),
@@ -276,12 +300,12 @@ export async function answerBlogChatQuestion({
       const chatObservabilityState = buildChatObservabilityState({
         originalQuestion: parsedRequest.data.question,
         currentPostSlug: parsedRequest.data.currentPostSlug,
-        pipelineResult,
+        workflowResult,
       })
 
-      return buildLoggedStatefulResult({
+      return buildLoggedWorkflowResult({
         locale,
-        pipelineResult,
+        workflowResult,
         requestStartedAt,
         chatObservabilityState,
       })

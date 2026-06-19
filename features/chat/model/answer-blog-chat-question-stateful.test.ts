@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
-const { runStatefulBlogChatPipelineMock, recordChatObservabilityEventMock } =
+const { runChatWorkflowMock, recordChatObservabilityEventMock } =
   vi.hoisted(() => {
     return {
-      runStatefulBlogChatPipelineMock: vi.fn(),
+      runChatWorkflowMock: vi.fn(),
       recordChatObservabilityEventMock: vi.fn(),
     }
   })
 
-vi.mock('@/features/chat/model/run-stateful-blog-chat-pipeline', () => {
+vi.mock('@/features/chat/model/chat-workflow', () => {
   return {
-    runStatefulBlogChatPipeline: runStatefulBlogChatPipelineMock,
+    runChatWorkflow: runChatWorkflowMock,
   }
 })
 
@@ -55,7 +55,7 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    runStatefulBlogChatPipelineMock.mockResolvedValue({
+    runChatWorkflowMock.mockResolvedValue({
       applicationResponse: {
         response: {
           answer: '최신 글은 2026년 4월 21일에 게시된 최신 글입니다.',
@@ -85,18 +85,14 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
           },
         },
       },
-      intent: {
+      queryPlan: {
         standaloneQuestion: '최신 글은 언제 게시되었나요?',
-        operation: 'answer',
-        target: {
-          kind: 'none',
-          sourceCategory: null,
-          slug: null,
-          title: null,
-        },
-        temporalConstraint: { order: 'latest' },
+        contextAction: 'reset',
+        targetSelection: { kind: 'none' },
+        operation: 'explain',
+        sourceSelection: { mode: 'only', categories: ['project'] },
+        temporalSelection: { mode: 'rank', order: 'latest' },
         requestedFields: ['title', 'published_at'],
-        evidenceScope: 'corpus',
         requiredConcepts: [],
         optionalConcepts: [],
         missingSlots: [],
@@ -104,9 +100,36 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         confidence: 'high',
         reason: 'Latest post date.',
       },
-      execution: null,
+      retrievalPlan: {
+        executionKind: 'retrieve_and_generate',
+        standaloneQuestion: '최신 글은 언제 게시되었나요?',
+        operation: 'explain',
+        canonicalTargets: [],
+        sourceStrategy: 'only',
+        sourceCategories: ['project'],
+        requiredConcepts: [],
+        optionalConcepts: [],
+        requestedFields: ['title', 'published_at'],
+        temporalStrategy: 'rank',
+        temporalOrder: 'latest',
+        maximumEvidenceCount: 3,
+      },
+      execution: {
+        kind: 'evidence',
+        matches: [],
+        lexicalMatches: [],
+        semanticMatches: [],
+        reranked: false,
+      },
       cacheKind: 'none',
-      plannerFailureKind: null,
+      failureKind: null,
+      graphPath: [
+        'resolve-context',
+        'plan-query',
+        'compile-plan',
+        'retrieve-evidence',
+        'finalize',
+      ],
     })
   })
 
@@ -123,7 +146,7 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
       requestHeaders: new Headers(),
     })
 
-    expect(runStatefulBlogChatPipelineMock).toHaveBeenCalledOnce()
+    expect(runChatWorkflowMock).toHaveBeenCalledOnce()
     expect(result.body).toMatchObject({
       response: {
         answer: '최신 글은 2026년 4월 21일에 게시된 최신 글입니다.',
@@ -135,5 +158,19 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         },
       },
     })
+    expect(recordChatObservabilityEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryOperation: 'explain',
+        sourceStrategy: 'only',
+        sourceCategories: ['project'],
+        temporalStrategy: 'rank',
+        temporalOrder: 'latest',
+        executionKind: 'retrieve_and_generate',
+        graphPath: expect.arrayContaining([
+          'compile-plan',
+          'retrieve-evidence',
+        ]),
+      }),
+    )
   })
 })

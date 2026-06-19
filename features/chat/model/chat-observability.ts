@@ -49,6 +49,13 @@ export interface ChatObservabilityEvent {
   intentRequiredConcepts?: string[]
   intentOptionalConcepts?: string[]
   plannerFailureKind?: string | null
+  queryOperation?: string | null
+  sourceStrategy?: string | null
+  sourceCategories?: string[]
+  temporalStrategy?: string | null
+  temporalOrder?: string | null
+  executionKind?: string | null
+  graphPath?: string[]
   lexicalMatches: ChatObservabilityMatchSummary[]
   semanticMatches: ChatObservabilityMatchSummary[]
   finalMatches: ChatObservabilityMatchSummary[]
@@ -165,6 +172,20 @@ function mapChatObservabilityRow(
       typeof row.planner_failure_kind === 'string'
         ? row.planner_failure_kind
         : null,
+    queryOperation:
+      typeof row.query_operation === 'string' ? row.query_operation : null,
+    sourceStrategy:
+      typeof row.source_strategy === 'string' ? row.source_strategy : null,
+    sourceCategories: parseJsonArray<string>(row.source_categories_json),
+    temporalStrategy:
+      typeof row.temporal_strategy === 'string'
+        ? row.temporal_strategy
+        : null,
+    temporalOrder:
+      typeof row.temporal_order === 'string' ? row.temporal_order : null,
+    executionKind:
+      typeof row.execution_kind === 'string' ? row.execution_kind : null,
+    graphPath: parseJsonArray<string>(row.graph_path_json),
     lexicalMatches: parseJsonArray<ChatObservabilityMatchSummary>(
       row.lexical_matches_json,
     ),
@@ -213,6 +234,13 @@ export async function initializeChatObservabilityDatabase(
       intent_required_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
       intent_optional_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
       planner_failure_kind TEXT,
+      query_operation TEXT,
+      source_strategy TEXT,
+      source_categories_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+      temporal_strategy TEXT,
+      temporal_order TEXT,
+      execution_kind TEXT,
+      graph_path_json JSONB NOT NULL DEFAULT '[]'::jsonb,
       preferred_source_categories_json JSONB NOT NULL,
       additional_keywords_json JSONB NOT NULL,
       lexical_matches_json JSONB NOT NULL,
@@ -251,6 +279,27 @@ export async function initializeChatObservabilityDatabase(
     ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
     ADD COLUMN IF NOT EXISTS planner_failure_kind TEXT;
 
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS query_operation TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS source_strategy TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS source_categories_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS temporal_strategy TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS temporal_order TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS execution_kind TEXT;
+
+    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
+    ADD COLUMN IF NOT EXISTS graph_path_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
     CREATE INDEX IF NOT EXISTS chat_observability_events_created_at_index
     ON ${CHAT_OBSERVABILITY.TABLE}(created_at DESC);
   `)
@@ -285,6 +334,13 @@ export async function insertChatObservabilityEvent(params: {
         intent_required_concepts_json,
         intent_optional_concepts_json,
         planner_failure_kind,
+        query_operation,
+        source_strategy,
+        source_categories_json,
+        temporal_strategy,
+        temporal_order,
+        execution_kind,
+        graph_path_json,
         preferred_source_categories_json,
         additional_keywords_json,
         lexical_matches_json,
@@ -298,8 +354,9 @@ export async function insertChatObservabilityEvent(params: {
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, NULL,
         $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16::jsonb, $17,
-        '[]'::jsonb, '[]'::jsonb, $18::jsonb, $19::jsonb, $20::jsonb,
-        $21::jsonb, $22, $23, $24
+        $18, $19, $20::jsonb, $21, $22, $23, $24::jsonb,
+        '[]'::jsonb, '[]'::jsonb, $25::jsonb, $26::jsonb, $27::jsonb,
+        $28::jsonb, $29, $30, $31
       )
     `,
     [
@@ -320,6 +377,13 @@ export async function insertChatObservabilityEvent(params: {
       JSON.stringify(event.intentRequiredConcepts ?? []),
       JSON.stringify(event.intentOptionalConcepts ?? []),
       event.plannerFailureKind ?? null,
+      event.queryOperation ?? null,
+      event.sourceStrategy ?? null,
+      JSON.stringify(event.sourceCategories ?? []),
+      event.temporalStrategy ?? null,
+      event.temporalOrder ?? null,
+      event.executionKind ?? null,
+      JSON.stringify(event.graphPath ?? []),
       JSON.stringify(event.lexicalMatches),
       JSON.stringify(event.semanticMatches),
       JSON.stringify(event.finalMatches),

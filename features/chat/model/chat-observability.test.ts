@@ -21,6 +21,9 @@ describe('chat-observability', () => {
     expect(queryMock).toHaveBeenCalledWith(
       expect.stringContaining('ADD COLUMN IF NOT EXISTS intent_operation TEXT'),
     )
+    expect(queryMock).toHaveBeenCalledWith(
+      expect.stringContaining('ADD COLUMN IF NOT EXISTS query_operation TEXT'),
+    )
   })
 
   it('observability 이벤트를 JSONB payload와 함께 저장한다', async () => {
@@ -50,6 +53,13 @@ describe('chat-observability', () => {
         intentRequiredConcepts: ['nivo'],
         intentOptionalConcepts: ['chart'],
         plannerFailureKind: null,
+        queryOperation: 'explain',
+        sourceStrategy: 'only',
+        sourceCategories: ['blog'],
+        temporalStrategy: 'rank',
+        temporalOrder: 'latest',
+        executionKind: 'retrieve_and_generate',
+        graphPath: ['compile-plan', 'retrieve-evidence'],
         lexicalMatches: [
           {
             url: '/ko/blog/nivo-chart',

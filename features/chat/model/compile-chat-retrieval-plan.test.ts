@@ -198,6 +198,24 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
+  it('첫 턴의 clarification 요청은 잘못된 resolve action을 reset으로 정규화한다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      contextAction: 'resolve_clarification',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+      missingSlots: ['target'],
+      clarificationQuestion: '누구를 가리키는지 알려주세요.',
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      contextAction: 'reset',
+      queryPlan: { contextAction: 'reset' },
+      retrievalPlan: { executionKind: 'clarification' },
+    })
+  })
+
   it('clarification 답변으로 중단된 질문의 검색 의미를 재개한다', () => {
     const suspendedQueryPlan: ChatQueryPlan = {
       standaloneQuestion: '블로그 주인이 Vercel을 사용한 경험이 있나요?',

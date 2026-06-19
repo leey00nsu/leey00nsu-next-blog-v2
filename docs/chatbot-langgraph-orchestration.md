@@ -1,29 +1,50 @@
-# Chatbot LangGraph Orchestration Decision
+# Chatbot LangGraph Orchestration
 
-> Status: Superseded by `docs/superpowers/specs/2026-06-19-langgraph-query-plan-design.md`.
-> The chatbot crossed the revisit threshold after planner, clarification, cache,
-> direct-response, and citation-validation branches were added.
-
-## Context
-
-The blog chatbot currently has two orchestration layers.
-
-- `features/chat/model/answer-blog-chat-question.ts` owns application flow: request validation result handling, usage limits, question planning, cache lookup, evidence retrieval, answer generation, semantic cache storage, and observability.
-- `features/chat/model/chat-rag-workflow.ts` owns semantic retrieval flow: embedding the question, loading search data, ranking chunks, and returning grounded matches.
+> Status: Implemented. The approved contract is documented in
+> `docs/superpowers/specs/2026-06-19-langgraph-query-plan-design.md`.
 
 ## Decision
 
-Keep LangGraph scoped to semantic RAG for now. Do not move the full chatbot request lifecycle into LangGraph yet.
+The chatbot uses one application-level LangGraph workflow. LangGraph owns the
+branching lifecycle after HTTP validation and usage limiting:
 
-The current application flow has meaningful branches, but they are still easier to follow as a typed function pipeline after the route, cache/limit state, citation validation, and evidence retrieval were split into separate modules. Promoting the whole flow to LangGraph would add a second orchestration vocabulary around HTTP-facing concerns without removing enough complexity.
+```text
+resolve-context -> plan-query -> compile-plan
+  -> execute-direct
+  -> cache-lookup -> retrieve-evidence -> generate-answer
+  -> validate-response -> store-cache -> finalize
+```
 
-LangGraph remains useful inside `chat-rag-workflow.ts` because that layer is a retrieval workflow with explicit state transitions: question embedding, source loading, chunk ranking, and grounded match selection.
+The graph branches on the compiled `ChatRetrievalPlan.executionKind`, not on
+question keywords. `ChatQueryPlan` describes user meaning and a pure compiler
+resolves canonical targets, source strategy, temporal strategy, execution kind,
+and the next conversation state.
 
-## Revisit When
+## Boundaries
 
-- The chatbot starts running multiple answer strategies in parallel.
-- Planner output needs resumable or inspectable node-level execution.
-- Evaluation requires per-node traces across validate, plan, retrieve, rerank, answer, and validate-citation stages.
-- More channels reuse the same chatbot engine with different branching policies.
+- `answer-blog-chat-question.ts` keeps request validation, rate limiting,
+  concurrent/daily limits, cache cleanup, profile loading, and observability
+  outside the graph.
+- `chat-workflow.ts` is the single application orchestrator.
+- `chat-rag-workflow.ts` is a retrieval computation called by the executor. It
+  does not own application decisions.
+- `execute-chat-retrieval-plan.ts` applies compiled source and temporal
+  constraints before answer generation.
+- Citation validation is required before a generated answer can be cached.
 
-Until then, prefer small application-service modules over a full graph migration.
+## Contracts
+
+- `ChatQueryPlan`: planner-owned semantic description.
+- `ChatRetrievalPlan`: compiler-owned executable description.
+- `ChatConversationState`: version 2 state containing `focusedTarget`,
+  `lastQueryPlan`, and an optional `suspendedQueryPlan` clarification.
+
+The removed `NormalizedChatIntent` and manual stateful pipeline are not kept as
+compatibility layers. This avoids two competing sources of execution meaning.
+
+## Observability
+
+Each application result records the query operation, compiled source and
+temporal strategies, execution kind, graph path, retrieval matches, cache kind,
+citations, refusal reason, and duration. Source and time semantics are copied
+from the plans rather than reconstructed from the original question.

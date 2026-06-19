@@ -224,6 +224,14 @@ function normalizeContextAction(params: {
   previousState: ChatConversationState
 }): ChatQueryPlan {
   if (
+    params.queryPlan.contextAction === 'resolve_clarification' &&
+    !params.previousState.pendingClarification &&
+    params.queryPlan.missingSlots.length > 0
+  ) {
+    return { ...params.queryPlan, contextAction: 'reset' }
+  }
+
+  if (
     params.queryPlan.contextAction === 'continue' &&
     !params.previousState.focusedTarget &&
     !params.previousState.pendingClarification

@@ -52,6 +52,7 @@ Temporal rules:
 
 Meaning rules:
 - Unknown non-pronoun terms should search corpus before clarification.
+- A pronoun such as "이 사람" or "this person" with no focused target and no matching entity candidate requires the target missingSlot and a clarification question. Do not silently assume the blog owner.
 - Category-wide or aggregate questions such as "recent projects using AI" need no individual target and must not add a target missingSlot.
 - Use explain for how/why questions that synthesize content. Use lookup only for direct fact or metadata retrieval.
 - Keep requestedFields explicit. Include published_at for posting time or date.

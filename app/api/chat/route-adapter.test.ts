@@ -8,20 +8,15 @@ const answerBlogChatQuestionMock = vi.fn()
 const PENDING_OWNER_CLARIFICATION_STATE = {
   ...EMPTY_CHAT_CONVERSATION_STATE,
   pendingClarification: {
-    missingSlots: ['target' as const],
     clarificationQuestion: '누구를 가리키는지 알려주세요.',
-    suspendedIntent: {
+    suspendedQueryPlan: {
       standaloneQuestion: '이 사람이 Vercel을 사용했나요?',
-      operation: 'answer' as const,
-      target: {
-        kind: 'none' as const,
-        sourceCategory: null,
-        slug: null,
-        title: null,
-      },
-      temporalConstraint: { order: 'none' as const },
+      contextAction: 'reset' as const,
+      targetSelection: { kind: 'none' as const },
+      operation: 'lookup' as const,
+      sourceSelection: { mode: 'all' as const },
+      temporalSelection: { mode: 'none' as const },
       requestedFields: ['content' as const],
-      evidenceScope: 'none' as const,
       requiredConcepts: ['Vercel'],
       optionalConcepts: [],
       missingSlots: ['target' as const],

@@ -4,7 +4,7 @@ import {
   ChatConceptSchema,
   ChatRequestedFieldSchema,
   ChatTargetSchema,
-} from '@/features/chat/model/chat-intent'
+} from '@/features/chat/model/chat-plan-primitives'
 import { ChatQueryOperationSchema } from '@/features/chat/model/chat-query-plan'
 
 export const CHAT_EXECUTION_KINDS = [

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
-import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import { compileChatRetrievalPlan } from '@/features/chat/model/compile-chat-retrieval-plan'
 
@@ -180,7 +179,7 @@ describe('compileChatRetrievalPlan', () => {
       retrievalPlan: { executionKind: 'clarification' },
       nextConversationState: {
         pendingClarification: {
-          missingSlots: ['target'],
+          suspendedQueryPlan: { missingSlots: ['target'] },
         },
       },
     })
@@ -200,18 +199,14 @@ describe('compileChatRetrievalPlan', () => {
   })
 
   it('clarification 답변으로 중단된 질문의 검색 의미를 재개한다', () => {
-    const suspendedIntent: NormalizedChatIntent = {
+    const suspendedQueryPlan: ChatQueryPlan = {
       standaloneQuestion: '블로그 주인이 Vercel을 사용한 경험이 있나요?',
-      operation: 'answer',
-      target: {
-        kind: 'none',
-        sourceCategory: null,
-        slug: null,
-        title: null,
-      },
-      temporalConstraint: { order: 'none' },
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'none',
       requiredConcepts: ['Vercel'],
       optionalConcepts: ['배포'],
       missingSlots: ['target'],
@@ -222,9 +217,8 @@ describe('compileChatRetrievalPlan', () => {
     const previousState: ChatConversationState = {
       ...EMPTY_CHAT_CONVERSATION_STATE,
       pendingClarification: {
-        missingSlots: ['target'],
         clarificationQuestion: '누구를 가리키는지 알려주세요.',
-        suspendedIntent,
+        suspendedQueryPlan,
       },
     }
     const result = compileChatRetrievalPlan({

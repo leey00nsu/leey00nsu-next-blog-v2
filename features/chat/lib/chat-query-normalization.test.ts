@@ -13,28 +13,16 @@ describe('normalizeChatQuery', () => {
     expect(result.queryTokens).toEqual(['leesfield'])
   })
 
-  it('프로젝트 힌트를 source category와 추가 키워드로 변환한다', () => {
+  it('source 의미를 추론하지 않고 검색 문자열만 정규화한다', () => {
     const result = normalizeChatQuery({
       question: 'lee-spec-kit 프로젝트 뭐야?',
       locale: 'ko',
     })
 
-    expect(result.preferredSourceCategories).toEqual(['project'])
-    expect(result.rankingConcepts).toEqual(
-      expect.arrayContaining(['project', 'projects', '프로젝트']),
-    )
-    expect(result.normalizedSearchQuestion).toBe('lee-spec-kit 프로젝트')
-  })
-
-  it('블로그 관련 질문은 blog source category를 우선한다', () => {
-    const result = normalizeChatQuery({
-      question: 'React 관련 글 추천해줘',
-      locale: 'ko',
+    expect(result).toEqual({
+      normalizedQuestion: 'lee-spec-kit 프로젝트 뭐야',
+      normalizedSearchQuestion: 'lee-spec-kit 프로젝트',
+      queryTokens: ['lee-spec-kit', '프로젝트'],
     })
-
-    expect(result.preferredSourceCategories).toEqual(['blog'])
-    expect(result.rankingConcepts).toEqual(
-      expect.arrayContaining(['blog', 'post', 'posts']),
-    )
   })
 })

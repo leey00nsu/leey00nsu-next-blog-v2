@@ -190,7 +190,7 @@ describe('selectChatSearchMatches', () => {
     expect(result.matches[0]?.sourceCategory).toBe('profile')
   })
 
-  it('최신 회고 추천 질문은 날짜가 더 최신인 글을 우선 반환한다', () => {
+  it('시간 의미를 추론하지 않고 lexical score 순서만 반환한다', () => {
     const records: ChatEvidenceRecord[] = [
       {
         id: 'ko/blog/old-retrospect',
@@ -226,10 +226,11 @@ describe('selectChatSearchMatches', () => {
       question: '최신 회고 글 추천해달라',
       locale: 'ko',
       records,
+      allowBroadMatch: true,
     })
 
     expect(result.grounded).toBe(true)
-    expect(result.matches[0]?.slug).toBe('latest-retrospect')
+    expect(result.matches[0]?.slug).toBe('old-retrospect')
   })
 
   it('프로젝트 이름 뒤에 짧은 질문 표현이 붙어도 해당 프로젝트를 찾는다', () => {

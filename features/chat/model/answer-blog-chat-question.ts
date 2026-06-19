@@ -1,5 +1,5 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
-import { normalizeQuestion } from '@/features/chat/lib/question-analysis'
+import { normalizeQuestionText } from '@/features/chat/lib/chat-query-normalization'
 import { cleanupExpiredBlogChatResponseCache } from '@/features/chat/model/blog-chat-response-cache'
 import {
   acquireBlogChatConcurrentRequestSlot,
@@ -204,7 +204,7 @@ function buildChatObservabilityState(params: {
     originalQuestion: params.originalQuestion,
     resolvedQuestion: retrievalPlan?.standaloneQuestion ?? null,
     normalizedQuestion: retrievalPlan
-      ? normalizeQuestion(retrievalPlan.standaloneQuestion)
+      ? normalizeQuestionText(retrievalPlan.standaloneQuestion)
       : null,
     currentPostSlug: params.currentPostSlug,
     cacheKind: params.workflowResult.cacheKind,

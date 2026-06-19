@@ -1,14 +1,13 @@
 import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
+import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 export interface ChatRetrievalEvaluationCase {
   id: string
   locale: SupportedLocale
-  intent: NormalizedChatIntent
-  currentPostSlug?: string
+  retrievalPlan: ChatRetrievalPlan
   semanticMatches: ChatEvidenceRecord[]
   expectedTopMatchUrl?: string
   expectedMatchUrls?: string[]
@@ -203,24 +202,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   {
     id: 'project-name',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: 'leesfield 알아?',
-      operation: 'answer',
-      target: {
+      operation: 'lookup',
+      canonicalTargets: [{
         kind: 'named_entity',
         sourceCategory: 'project',
         slug: 'leesfield',
         title: 'Leesfield',
-      },
-      temporalConstraint: { order: 'none' },
+      }],
+      sourceStrategy: 'only',
+      sourceCategories: ['project'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['leesfield'],
       optionalConcepts: [],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'project entity question',
+      maximumEvidenceCount: 5,
     },
     semanticMatches: [],
     expectedTopMatchUrl: '/ko/projects/leesfield',
@@ -228,24 +227,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   {
     id: 'profile-english-name',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: '영어 이름 뭐야?',
-      operation: 'answer',
-      target: {
+      operation: 'lookup',
+      canonicalTargets: [{
         kind: 'profile',
         sourceCategory: 'profile',
         slug: 'about',
         title: 'About Me',
-      },
-      temporalConstraint: { order: 'none' },
+      }],
+      sourceStrategy: 'only',
+      sourceCategories: ['profile'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['영어 이름'],
       optionalConcepts: ['Yoonsu Lee'],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'profile lookup',
+      maximumEvidenceCount: 5,
     },
     semanticMatches: [],
     expectedTopMatchUrl: '/en/about',
@@ -253,24 +252,24 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   {
     id: 'assistant-grounding',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: '블로그 챗봇 답변 근거 범위가 뭐야?',
-      operation: 'answer',
-      target: {
+      operation: 'lookup',
+      canonicalTargets: [{
         kind: 'assistant',
         sourceCategory: 'assistant',
         slug: 'assistant-profile',
         title: '블로그 챗봇 안내',
-      },
-      temporalConstraint: { order: 'none' },
+      }],
+      sourceStrategy: 'only',
+      sourceCategories: ['assistant'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['답변 근거 범위'],
       optionalConcepts: ['챗봇'],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'assistant grounding',
+      maximumEvidenceCount: 5,
     },
     semanticMatches: [],
     expectedTopMatchUrl: '/ko/about#answer-scope',
@@ -278,75 +277,69 @@ export const CHAT_RETRIEVAL_EVALUATION_CASES: ChatRetrievalEvaluationCase[] = [
   {
     id: 'blog-reason',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: 'lee-spec-kit 만든 이유가 뭐야?',
-      operation: 'answer',
-      target: {
+      operation: 'lookup',
+      canonicalTargets: [{
         kind: 'named_entity',
         sourceCategory: 'blog',
         slug: 'why-i-built-lee-spec-kit',
         title: 'lee-spec-kit을 만든 이유',
-      },
-      temporalConstraint: { order: 'none' },
+      }],
+      sourceStrategy: 'only',
+      sourceCategories: ['blog'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['lee-spec-kit'],
       optionalConcepts: ['만든 이유'],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'blog post lookup',
+      maximumEvidenceCount: 5,
     },
     semanticMatches: [],
-    expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
+    expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit#structure',
   },
   {
     id: 'current-post',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: '이 글에서 구조가 왜 중요해?',
       operation: 'explain',
-      target: {
+      canonicalTargets: [{
         kind: 'current_source',
         sourceCategory: 'blog',
         slug: 'why-i-built-lee-spec-kit',
         title: null,
-      },
-      temporalConstraint: { order: 'none' },
+      }],
+      sourceStrategy: 'only',
+      sourceCategories: ['blog'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['content'],
-      evidenceScope: 'current_source',
       requiredConcepts: ['구조'],
       optionalConcepts: [],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'current post context',
+      maximumEvidenceCount: 5,
     },
-    currentPostSlug: 'why-i-built-lee-spec-kit',
     semanticMatches: [],
     expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit#structure',
   },
   {
     id: 'corpus-philosophy',
     locale: 'ko',
-    intent: {
+    retrievalPlan: {
+      executionKind: 'retrieve_and_generate',
       standaloneQuestion: '이 블로그 전체를 보면 공통된 설계 철학이 뭐야?',
       operation: 'summarize',
-      target: {
-        kind: 'none',
-        sourceCategory: null,
-        slug: null,
-        title: null,
-      },
-      temporalConstraint: { order: 'none' },
+      canonicalTargets: [],
+      sourceStrategy: 'all',
+      sourceCategories: [],
+      temporalStrategy: 'none',
+      temporalOrder: null,
       requestedFields: ['summary'],
-      evidenceScope: 'corpus',
       requiredConcepts: ['구조'],
       optionalConcepts: ['재사용성', '설계 철학'],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'cross document synthesis',
+      maximumEvidenceCount: 5,
     },
     semanticMatches: [
       {

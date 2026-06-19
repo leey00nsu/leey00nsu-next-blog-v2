@@ -333,6 +333,8 @@ export async function executeChatRetrievalPlan({
     records: scopedRecords,
     rankingConcepts,
     preferredSourceCategories,
+    allowBroadMatch:
+      plan.operation === 'recommend' || plan.temporalStrategy !== 'none',
   })
   const rawSemanticMatches = await retrieveSemanticMatches({ plan, locale })
   const semanticMatches = filterRecordsByPlan(rawSemanticMatches, plan)

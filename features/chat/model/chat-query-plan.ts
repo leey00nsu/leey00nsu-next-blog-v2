@@ -6,7 +6,7 @@ import {
   ChatContextActionSchema,
   ChatMissingSlotSchema,
   ChatRequestedFieldSchema,
-} from '@/features/chat/model/chat-intent'
+} from '@/features/chat/model/chat-plan-primitives'
 
 export const CHAT_QUERY_OPERATIONS = [
   'lookup',

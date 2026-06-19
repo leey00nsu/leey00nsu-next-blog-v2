@@ -64,18 +64,14 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         },
         conversationState: {
           ...EMPTY_CHAT_CONVERSATION_STATE,
-          lastIntent: {
+          lastQueryPlan: {
             standaloneQuestion: '최신 글은 언제 게시되었나요?',
-            operation: 'answer',
-            target: {
-              kind: 'none',
-              sourceCategory: null,
-              slug: null,
-              title: null,
-            },
-            temporalConstraint: { order: 'latest' },
+            contextAction: 'reset',
+            targetSelection: { kind: 'none' },
+            operation: 'lookup',
+            sourceSelection: { mode: 'only', categories: ['blog'] },
+            temporalSelection: { mode: 'single', order: 'latest' },
             requestedFields: ['title', 'published_at'],
-            evidenceScope: 'corpus',
             requiredConcepts: [],
             optionalConcepts: [],
             missingSlots: [],
@@ -153,7 +149,7 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
       },
       conversationState: {
         version: 2,
-        lastIntent: {
+        lastQueryPlan: {
           requestedFields: ['title', 'published_at'],
         },
       },

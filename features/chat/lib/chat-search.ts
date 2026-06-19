@@ -11,6 +11,7 @@ interface SelectChatSearchMatchesParams {
   rankingConcepts?: string[]
   preferredSourceCategories?: ChatEvidenceRecord['sourceCategory'][]
   currentPostSlug?: string
+  allowBroadMatch?: boolean
 }
 
 interface ScoredChatEvidenceRecord extends ChatEvidenceRecord {
@@ -33,18 +34,6 @@ const SCRIPT_BOUNDARY_PATTERNS = {
   HANGUL_TO_LATIN: /([가-힣])([A-Za-z])/g,
 } as const
 
-const CHAT_SEARCH_QUERY_PATTERNS = {
-  RECENCY: ['최신', '최근', 'latest', 'recent'],
-  RECOMMENDATION: [
-    '추천',
-    '추천해',
-    '추천해줘',
-    '추천해달라',
-    'recommend',
-    'recommended',
-  ],
-} as const
-
 function normalizeText(text: string): string {
   return text
     .replaceAll(SCRIPT_BOUNDARY_PATTERNS.LATIN_TO_HANGUL, '$1 $2')
@@ -60,15 +49,6 @@ function tokenizeText(text: string): string[] {
       }),
     ),
   ]
-}
-
-function containsQueryPattern(
-  normalizedQuestion: string,
-  patterns: readonly string[],
-): boolean {
-  return patterns.some((pattern) => {
-    return normalizedQuestion.includes(pattern)
-  })
 }
 
 function buildExpandedTokens(
@@ -213,26 +193,20 @@ function resolveMinimumMatchedTokenCount(params: {
   questionTokens: string[]
   rankingConcepts: string[]
   preferredSourceCategories: ChatEvidenceRecord['sourceCategory'][]
-  normalizedQuestion: string
+  allowBroadMatch: boolean
 }): number {
   const {
     questionTokens,
     rankingConcepts,
     preferredSourceCategories,
-    normalizedQuestion,
+    allowBroadMatch,
   } = params
 
   if (questionTokens.length <= 1) {
     return 1
   }
 
-  if (
-    containsQueryPattern(
-      normalizedQuestion,
-      CHAT_SEARCH_QUERY_PATTERNS.RECOMMENDATION,
-    ) ||
-    containsQueryPattern(normalizedQuestion, CHAT_SEARCH_QUERY_PATTERNS.RECENCY)
-  ) {
+  if (allowBroadMatch) {
     return 1
   }
 
@@ -245,15 +219,9 @@ function resolveMinimumMatchedTokenCount(params: {
 
 function resolveMinimumScore(
   questionTokens: string[],
-  normalizedQuestion: string,
+  allowBroadMatch: boolean,
 ): number {
-  if (
-    containsQueryPattern(
-      normalizedQuestion,
-      CHAT_SEARCH_QUERY_PATTERNS.RECOMMENDATION,
-    ) ||
-    containsQueryPattern(normalizedQuestion, CHAT_SEARCH_QUERY_PATTERNS.RECENCY)
-  ) {
+  if (allowBroadMatch) {
     return BLOG_CHAT.SEARCH.FIELD_SCORE.TAG
   }
 
@@ -272,23 +240,6 @@ function isContextDrivenQuestion(question: string): boolean {
   return CHAT_QUESTION_RULES.CONTEXT_QUERY_PATTERNS.some((queryPattern) => {
     return question.includes(queryPattern)
   })
-}
-
-function resolvePublishedAtTimestamp(record: ChatEvidenceRecord): number {
-  if (!record.publishedAt) {
-    return 0
-  }
-
-  const timestamp = new Date(record.publishedAt).getTime()
-
-  return Number.isNaN(timestamp) ? 0 : timestamp
-}
-
-function shouldSortByRecency(normalizedQuestion: string): boolean {
-  return containsQueryPattern(
-    normalizedQuestion,
-    CHAT_SEARCH_QUERY_PATTERNS.RECENCY,
-  )
 }
 
 function scoreRecord(
@@ -452,6 +403,7 @@ export function selectChatSearchMatches({
   rankingConcepts = [],
   preferredSourceCategories = [],
   currentPostSlug,
+  allowBroadMatch = false,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
   const scopedRecords = records.filter((record) => record.locale === locale)
   const normalizedQuery = normalizeChatQuery({
@@ -464,19 +416,15 @@ export function selectChatSearchMatches({
   const baseQuestionTokens = normalizedQuery.queryTokens
   const rankingConceptTokens = tokenizeText(rankingConcepts.join(' '))
   const questionTokens = buildExpandedTokens(baseQuestionTokens, [
-    ...normalizedQuery.rankingConcepts,
     ...rankingConcepts,
   ])
   const minimumMatchedTokenCount = resolveMinimumMatchedTokenCount({
     questionTokens: baseQuestionTokens,
-    rankingConcepts: [...normalizedQuery.rankingConcepts, ...rankingConcepts],
+    rankingConcepts,
     preferredSourceCategories,
-    normalizedQuestion,
+    allowBroadMatch,
   })
-  const minimumScore = resolveMinimumScore(
-    baseQuestionTokens,
-    normalizedQuestion,
-  )
+  const minimumScore = resolveMinimumScore(baseQuestionTokens, allowBroadMatch)
   const documentFrequencyMap = buildDocumentFrequencyMap(
     questionTokens,
     scopedRecords,
@@ -504,14 +452,6 @@ export function selectChatSearchMatches({
       )
     })
     .sort((leftRecord, rightRecord) => {
-      if (shouldSortByRecency(normalizedQuestion)) {
-        return (
-          resolvePublishedAtTimestamp(rightRecord) -
-            resolvePublishedAtTimestamp(leftRecord) ||
-          rightRecord.score - leftRecord.score
-        )
-      }
-
       return rightRecord.score - leftRecord.score
     })
 

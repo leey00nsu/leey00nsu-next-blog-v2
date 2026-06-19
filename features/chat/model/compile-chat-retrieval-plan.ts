@@ -1,14 +1,9 @@
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
+import type { ChatTarget } from '@/features/chat/model/chat-plan-primitives'
 import type {
-  ChatTarget,
-  NormalizedChatIntent,
-} from '@/features/chat/model/chat-intent'
-import type {
-  ChatQueryOperation,
   ChatQueryPlan,
   ChatSourceSelection,
-  ChatTemporalSelection,
 } from '@/features/chat/model/chat-query-plan'
 import {
   type ChatExecutionKind,
@@ -35,7 +30,6 @@ export type CompileChatRetrievalPlanResult =
       ok: true
       queryPlan: ChatQueryPlan
       retrievalPlan: ChatRetrievalPlan
-      compatibilityIntent: NormalizedChatIntent
       nextConversationState: ChatConversationState
       contextAction: ChatQueryPlan['contextAction']
     }
@@ -54,12 +48,6 @@ const EMPTY_CHAT_TARGET: ChatTarget = {
 
 const DIRECT_METADATA_FIELDS = new Set(['title', 'published_at'])
 
-function mapLegacyOperation(
-  operation: NonNullable<ChatConversationState['lastIntent']>['operation'],
-): ChatQueryOperation {
-  return operation === 'answer' ? 'lookup' : operation
-}
-
 function resolveEffectiveQueryPlan(params: {
   queryPlan: ChatQueryPlan
   previousState: ChatConversationState
@@ -68,32 +56,21 @@ function resolveEffectiveQueryPlan(params: {
     return params.queryPlan
   }
 
-  const suspendedIntent =
-    params.previousState.pendingClarification?.suspendedIntent
+  const suspendedQueryPlan =
+    params.previousState.pendingClarification?.suspendedQueryPlan
 
-  if (!suspendedIntent) {
+  if (!suspendedQueryPlan) {
     return params.queryPlan
   }
 
-  const temporalSelection: ChatTemporalSelection =
-    suspendedIntent.temporalConstraint.order === 'none'
-      ? { mode: 'none' }
-      : {
-          mode: 'rank',
-          order: suspendedIntent.temporalConstraint.order,
-        }
-
   return {
-    ...params.queryPlan,
-    standaloneQuestion: suspendedIntent.standaloneQuestion,
-    operation: mapLegacyOperation(suspendedIntent.operation),
-    sourceSelection: { mode: 'all' },
-    temporalSelection,
-    requestedFields: suspendedIntent.requestedFields,
-    requiredConcepts: suspendedIntent.requiredConcepts,
-    optionalConcepts: suspendedIntent.optionalConcepts,
+    ...suspendedQueryPlan,
+    contextAction: 'resolve_clarification',
+    targetSelection: params.queryPlan.targetSelection,
     missingSlots: [],
     clarificationQuestion: null,
+    confidence: params.queryPlan.confidence,
+    reason: params.queryPlan.reason,
   }
 }
 
@@ -276,42 +253,6 @@ function hasRequiredRequestedFields(queryPlan: ChatQueryPlan): boolean {
   return queryPlan.requestedFields.length > 0
 }
 
-function buildCompatibilityIntent(params: {
-  queryPlan: ChatQueryPlan
-  target: ChatTarget
-}): NormalizedChatIntent {
-  const temporalOrder: NormalizedChatIntent['temporalConstraint']['order'] =
-    params.queryPlan.temporalSelection.mode === 'none'
-      ? 'none'
-      : params.queryPlan.temporalSelection.order
-  const evidenceScope: NormalizedChatIntent['evidenceScope'] =
-    params.target.kind === 'none'
-      ? params.queryPlan.operation === 'social_reply'
-        ? 'none'
-        : 'corpus'
-      : params.target.kind === 'current_source'
-        ? 'current_source'
-        : 'entity'
-
-  return {
-    standaloneQuestion: params.queryPlan.standaloneQuestion,
-    operation:
-      params.queryPlan.operation === 'lookup'
-        ? ('answer' as const)
-        : params.queryPlan.operation,
-    target: params.target,
-    temporalConstraint: { order: temporalOrder },
-    requestedFields: params.queryPlan.requestedFields,
-    evidenceScope,
-    requiredConcepts: params.queryPlan.requiredConcepts,
-    optionalConcepts: params.queryPlan.optionalConcepts,
-    missingSlots: params.queryPlan.missingSlots,
-    clarificationQuestion: params.queryPlan.clarificationQuestion,
-    confidence: params.queryPlan.confidence,
-    reason: params.queryPlan.reason,
-  }
-}
-
 export function compileChatRetrievalPlan(
   params: CompileChatRetrievalPlanParams,
 ): CompileChatRetrievalPlanResult {
@@ -387,21 +328,16 @@ export function compileChatRetrievalPlan(
     temporalOrder,
     maximumEvidenceCount: params.maximumEvidenceCount,
   })
-  const reducedState = reduceChatConversationState({
-    previousState: params.previousState,
-    contextAction: queryPlan.contextAction,
-    intent: buildCompatibilityIntent({
-      queryPlan,
-      target: targetResult.target,
-    }),
+  const nextConversationState = reduceChatConversationState({
+    queryPlan,
+    target: targetResult.target,
   })
 
   return {
     ok: true,
     queryPlan,
     retrievalPlan,
-    compatibilityIntent: reducedState.intent,
-    nextConversationState: reducedState.nextState,
+    nextConversationState,
     contextAction: queryPlan.contextAction,
   }
 }

@@ -14,7 +14,7 @@ describe('ChatConversationStateSchema', () => {
     expect(state).toEqual({
       version: 2,
       focusedTarget: null,
-      lastIntent: null,
+      lastQueryPlan: null,
       pendingClarification: null,
     })
     expect(CHAT_CONVERSATION_STATE_VERSION).toBe(2)

@@ -2,7 +2,6 @@ import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { ChatResolvedEvidenceScope } from '@/features/chat/lib/chat-retrieval-scope'
 import {
   getChatRagDatabasePool,
   selectChatRagLocaleSearchData,
@@ -27,9 +26,6 @@ const CHAT_RAG_WORKFLOW_STATE = Annotation.Root({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
   currentPostSlug: Annotation<string | undefined>({
-    reducer: (_previousValue, nextValue) => nextValue,
-  }),
-  evidenceScope: Annotation<ChatResolvedEvidenceScope | undefined>({
     reducer: (_previousValue, nextValue) => nextValue,
   }),
   retrievalPlan: Annotation<ChatRetrievalPlan | undefined>({
@@ -246,7 +242,6 @@ function buildChatRagWorkflow(params: {
   selectSearchData: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
-    evidenceScope?: ChatResolvedEvidenceScope
     retrievalPlan?: ChatRetrievalPlan
   }) => Promise<ChatRagLocaleSearchData>
 }) {
@@ -261,7 +256,6 @@ function buildChatRagWorkflow(params: {
         searchData: await params.selectSearchData({
           locale: state.locale,
           questionEmbedding: state.questionEmbedding,
-          evidenceScope: state.evidenceScope,
           retrievalPlan: state.retrievalPlan,
         }),
       }
@@ -292,14 +286,12 @@ export async function runChatRagWorkflow(params: {
   question: string
   locale: SupportedLocale
   currentPostSlug?: string
-  evidenceScope?: ChatResolvedEvidenceScope
   retrievalPlan?: ChatRetrievalPlan
   databasePool?: Pool
   embedQuestion?: (question: string) => Promise<number[]>
   selectSearchData?: (params: {
     locale: SupportedLocale
     questionEmbedding: number[]
-    evidenceScope?: ChatResolvedEvidenceScope
     retrievalPlan?: ChatRetrievalPlan
   }) => Promise<ChatRagLocaleSearchData>
 }): Promise<ChatRagWorkflowResult> {
@@ -315,7 +307,6 @@ export async function runChatRagWorkflow(params: {
         (async ({
           locale,
           questionEmbedding,
-          evidenceScope,
           retrievalPlan,
         }) => {
           if (!databasePool) {
@@ -342,8 +333,8 @@ export async function runChatRagWorkflow(params: {
             questionEmbedding,
             maximumSemanticCandidates:
               CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
-            sourceCategory: planSourceCategory ?? evidenceScope?.sourceCategory,
-            slug: planTarget?.slug ?? evidenceScope?.slug,
+            sourceCategory: planSourceCategory,
+            slug: planTarget?.slug,
           })
         }),
     })
@@ -351,7 +342,6 @@ export async function runChatRagWorkflow(params: {
       question: params.question,
       locale: params.locale,
       currentPostSlug: params.currentPostSlug,
-      evidenceScope: params.evidenceScope,
       retrievalPlan: params.retrievalPlan,
     })
 

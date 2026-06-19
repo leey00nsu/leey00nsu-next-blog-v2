@@ -114,4 +114,51 @@ describe('normalizeChatIntentPlan', () => {
       },
     })
   })
+
+  it('주제 개념이 있는 corpus content 질문을 설명 Intent로 정규화한다', () => {
+    const result = normalizeChatIntentPlan({
+      intentPlan: {
+        ...BASE_PLAN,
+        standaloneQuestion: '최근 프로젝트에서 AI를 어떻게 활용하고 있어?',
+        targetSelection: { kind: 'none' },
+        operation: 'answer',
+        temporalConstraint: { order: 'latest' },
+        requestedFields: ['content', 'summary', 'published_at'],
+        evidenceScope: 'corpus',
+        requiredConcepts: ['AI 활용', '프로젝트'],
+      },
+      candidates: [],
+      previousState: EMPTY_CHAT_CONVERSATION_STATE,
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      intent: {
+        operation: 'explain',
+        temporalConstraint: { order: 'latest' },
+        requestedFields: ['content', 'summary'],
+        evidenceScope: 'corpus',
+        requiredConcepts: ['AI', '프로젝트'],
+      },
+    })
+  })
+
+  it('근거 질문의 requested field가 비어 있으면 content로 정규화한다', () => {
+    const result = normalizeChatIntentPlan({
+      intentPlan: {
+        ...BASE_PLAN,
+        operation: 'answer',
+        requestedFields: [],
+      },
+      candidates: [LEEMAGE_CANDIDATE],
+      previousState: EMPTY_CHAT_CONVERSATION_STATE,
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      intent: {
+        requestedFields: ['content'],
+      },
+    })
+  })
 })

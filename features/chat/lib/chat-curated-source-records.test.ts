@@ -26,6 +26,7 @@ describe('buildCuratedChatSourceRecords', () => {
       tags: ['project', 'next.js'],
       baseSearchPhrases: ['example', '예시 프로젝트'],
       sourceCategory: 'project',
+      publishedAt: '2026-04-01T00:00:00.000Z',
     })
 
     expect(records).toHaveLength(3)
@@ -48,5 +49,10 @@ describe('buildCuratedChatSourceRecords', () => {
     expect(records[0]?.searchTerms).toEqual(
       expect.arrayContaining(['example', '예시 프로젝트']),
     )
+    expect(
+      records.every(
+        (record) => record.publishedAt === '2026-04-01T00:00:00.000Z',
+      ),
+    ).toBe(true)
   })
 })

@@ -41,6 +41,11 @@ const CROSS_LOCALE_PROFILE_REFERENCE = {
   },
 } as const
 
+const PROJECT_PERIOD_DATE = {
+  PATTERN: /^\d{4}-(0[1-9]|1[0-2])$/,
+  FIRST_DAY_SUFFIX: '-01T00:00:00.000Z',
+} as const
+
 const PROFILE_TECH_STACK_SOURCE = {
   SLUG: 'about',
   ID_SUFFIX: 'profile-tech-stack',
@@ -106,6 +111,16 @@ function buildProjectTechStackLines(projects: Project[]): string[] {
   return projects.map((project) => {
     return `- ${project.title}: ${project.techStacks.join(', ')}`
   })
+}
+
+function toProjectPublishedAt(project: Project): string | null {
+  const representativePeriod = project.period.end ?? project.period.start
+
+  if (!PROJECT_PERIOD_DATE.PATTERN.test(representativePeriod)) {
+    return null
+  }
+
+  return `${representativePeriod}${PROJECT_PERIOD_DATE.FIRST_DAY_SUFFIX}`
 }
 
 function buildProfileTechStackSource(params: {
@@ -289,6 +304,7 @@ export const getCuratedChatSources = cache(
             .filter(Boolean)
             .join(' '),
           markdownContent: project.content,
+          publishedAt: toProjectPublishedAt(project),
           tags: projectTags,
           baseSearchPhrases: [
             ...projectSemanticSearchTerms,

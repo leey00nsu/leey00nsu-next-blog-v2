@@ -1,11 +1,14 @@
 import 'dotenv/config'
+import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { planChatIntent } from '@/features/chat/api/plan-chat-intent-patch'
 import { CHAT_PLANNER_GOLDEN_CASES } from '@/features/chat/fixtures/chat-planner-evaluation'
 import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
+import { resolveChatIntentRequest } from '@/features/chat/lib/resolve-chat-intent-request'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 import { getChatEntityCandidates } from '@/features/chat/model/get-chat-entity-candidates'
+import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 import { normalizeChatIntentPlan } from '@/features/chat/model/normalize-chat-intent-plan'
 import { reduceChatConversationState } from '@/features/chat/model/reduce-chat-conversation-state'
 
@@ -17,9 +20,14 @@ interface PlannerEvaluationResult {
     contextAction: string
     entityId: string | null
     evidenceScope: string
+    operation: string
+    temporalOrder: string
+    requestedFields: string[]
     requiredConcepts: string[]
     missingSlots: string[]
     clarificationQuestion: string | null
+    executionKind?: string
+    sourceCategories?: string[]
   }
 }
 
@@ -75,6 +83,29 @@ async function evaluatePlannerCase(
   if (normalized.intent.evidenceScope !== goldenCase.expectedEvidenceScope) {
     failures.push('evidence_scope')
   }
+  if (!goldenCase.expectedOperations.includes(normalized.intent.operation)) {
+    failures.push('operation')
+  }
+  if (
+    normalized.intent.temporalConstraint.order !==
+    goldenCase.expectedTemporalOrder
+  ) {
+    failures.push('temporal_order')
+  }
+  if (
+    !goldenCase.expectedAnyRequestedFields.some((requestedField) => {
+      return normalized.intent.requestedFields.includes(requestedField)
+    })
+  ) {
+    failures.push('requested_fields')
+  }
+  if (
+    (goldenCase.forbiddenRequestedFields ?? []).some((requestedField) => {
+      return normalized.intent.requestedFields.includes(requestedField)
+    })
+  ) {
+    failures.push('forbidden_requested_fields')
+  }
   if (
     !goldenCase.expectedRequiredConcepts.every((requiredConcept) => {
       return normalized.intent.requiredConcepts.includes(requiredConcept)
@@ -83,10 +114,47 @@ async function evaluatePlannerCase(
     failures.push('required_concepts')
   }
   if (
-    (normalized.intent.missingSlots.length > 0) !==
+    normalized.intent.missingSlots.length > 0 !==
     goldenCase.expectClarification
   ) {
     failures.push('clarification')
+  }
+
+  let executionKind: string | undefined
+  let sourceCategories: string[] | undefined
+
+  if (goldenCase.expectedExecutionKind) {
+    const curatedRecords = await getCuratedChatSources(goldenCase.locale)
+    const blogRecords = GENERATED_BLOG_SEARCH_RECORDS[goldenCase.locale].map(
+      (record) => {
+        return { ...record, sourceCategory: 'blog' as const }
+      },
+    )
+    const resolvedRequest = resolveChatIntentRequest({
+      intent: normalized.intent,
+      locale: goldenCase.locale,
+      blogRecords,
+      curatedRecords,
+    })
+    executionKind = resolvedRequest.directResponse
+      ? 'direct'
+      : resolvedRequest.shouldCallModel
+        ? 'model'
+        : 'refusal'
+    sourceCategories = [
+      ...new Set(resolvedRequest.matches.map((match) => match.sourceCategory)),
+    ]
+
+    if (executionKind !== goldenCase.expectedExecutionKind) {
+      failures.push('execution_kind')
+    }
+    if (
+      !(goldenCase.expectedSourceCategories ?? []).every((sourceCategory) => {
+        return sourceCategories?.includes(sourceCategory)
+      })
+    ) {
+      failures.push('source_categories')
+    }
   }
 
   return {
@@ -97,9 +165,14 @@ async function evaluatePlannerCase(
       contextAction: normalized.contextAction,
       entityId: selectedEntityId,
       evidenceScope: normalized.intent.evidenceScope,
+      operation: normalized.intent.operation,
+      temporalOrder: normalized.intent.temporalConstraint.order,
+      requestedFields: normalized.intent.requestedFields,
       requiredConcepts: normalized.intent.requiredConcepts,
       missingSlots: normalized.intent.missingSlots,
       clarificationQuestion: normalized.intent.clarificationQuestion,
+      executionKind,
+      sourceCategories,
     },
   }
 }
@@ -202,6 +275,9 @@ async function evaluateConversationScenario(): Promise<PlannerEvaluationResult> 
           ? plannerResult.intentPlan.targetSelection.entityId
           : null,
       evidenceScope: reduction.intent.evidenceScope,
+      operation: reduction.intent.operation,
+      temporalOrder: reduction.intent.temporalConstraint.order,
+      requestedFields: reduction.intent.requestedFields,
       requiredConcepts: reduction.intent.requiredConcepts,
       missingSlots: reduction.intent.missingSlots,
       clarificationQuestion: reduction.intent.clarificationQuestion,
@@ -239,7 +315,8 @@ async function main(): Promise<void> {
 void main().catch((error) => {
   console.error(
     JSON.stringify({
-      error: error instanceof Error ? error.message : 'planner_evaluation_error',
+      error:
+        error instanceof Error ? error.message : 'planner_evaluation_error',
     }),
   )
   process.exitCode = 1

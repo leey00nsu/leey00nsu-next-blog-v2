@@ -115,12 +115,27 @@ describe('chat planner golden baseline', () => {
       expect(normalized.ok).toBe(true)
       if (!normalized.ok) return
 
-      expect(normalized.contextAction).toBe(
-        goldenCase.expectedContextAction,
-      )
+      expect(normalized.contextAction).toBe(goldenCase.expectedContextAction)
       expect(normalized.intent.evidenceScope).toBe(
         goldenCase.expectedEvidenceScope,
       )
+      expect(goldenCase.expectedOperations).toContain(
+        normalized.intent.operation,
+      )
+      expect(normalized.intent.temporalConstraint.order).toBe(
+        goldenCase.expectedTemporalOrder,
+      )
+      expect(
+        goldenCase.expectedAnyRequestedFields.some((requestedField) => {
+          return normalized.intent.requestedFields.includes(requestedField)
+        }),
+      ).toBe(true)
+      for (const forbiddenRequestedField of goldenCase.forbiddenRequestedFields ??
+        []) {
+        expect(normalized.intent.requestedFields).not.toContain(
+          forbiddenRequestedField,
+        )
+      }
       expect(normalized.intent.requiredConcepts).toEqual(
         expect.arrayContaining(goldenCase.expectedRequiredConcepts),
       )
@@ -132,6 +147,29 @@ describe('chat planner golden baseline', () => {
           ? goldenCase.modelPlan.targetSelection.entityId
           : null,
       ).toBe(goldenCase.expectedEntityId)
+
+      if (goldenCase.expectedExecutionKind) {
+        const resolvedRequest = resolveChatIntentRequest({
+          intent: normalized.intent,
+          locale: goldenCase.locale,
+          blogRecords: CHAT_PLANNER_EVALUATION_BLOG_RECORDS,
+          curatedRecords: CHAT_PLANNER_EVALUATION_CURATED_RECORDS,
+          contactProfile: CHAT_PLANNER_EVALUATION_CONTACT_PROFILE,
+        })
+        const executionKind = resolvedRequest.directResponse
+          ? 'direct'
+          : resolvedRequest.shouldCallModel
+            ? 'model'
+            : 'refusal'
+
+        expect(executionKind).toBe(goldenCase.expectedExecutionKind)
+        for (const expectedSourceCategory of goldenCase.expectedSourceCategories ??
+          []) {
+          expect(
+            resolvedRequest.matches.map((match) => match.sourceCategory),
+          ).toContain(expectedSourceCategory)
+        }
+      }
     })
   }
 })

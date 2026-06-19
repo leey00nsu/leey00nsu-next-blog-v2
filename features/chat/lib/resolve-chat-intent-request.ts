@@ -3,7 +3,10 @@ import { selectEvidenceCoveringRequiredConcepts } from '@/features/chat/lib/chat
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import { analyzeQuestion } from '@/features/chat/lib/question-analysis'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
-import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type {
+  ChatEvidenceRecord,
+  ChatSourceCategory,
+} from '@/features/chat/model/chat-evidence'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
@@ -46,6 +49,10 @@ const INTENT_CHAT_RESPONSES = {
     CONTACT_INTRO: 'The public contact channels are:',
     CONTACT_OUTRO: 'You can find the details on the About page.',
   },
+} as const
+
+const SOURCE_CATEGORY_QUERY_TERMS = {
+  project: ['project', '프로젝트'],
 } as const
 
 function formatPublishedAt(
@@ -97,6 +104,28 @@ function selectChronologicalRecord(params: {
 
     return params.order === 'latest' ? timeDifference : -timeDifference
   })[0]
+}
+
+function isChronologicalMetadataLookup(intent: NormalizedChatIntent): boolean {
+  return (
+    intent.operation === 'answer' &&
+    intent.requestedFields.length > 0 &&
+    intent.requestedFields.every((requestedField) => {
+      return requestedField === 'title' || requestedField === 'published_at'
+    })
+  )
+}
+
+function isChronologicalSingleDocumentContentLookup(
+  intent: NormalizedChatIntent,
+): boolean {
+  return (
+    intent.evidenceScope === 'corpus' &&
+    intent.requiredConcepts.length === 0 &&
+    intent.requestedFields.some((requestedField) => {
+      return requestedField === 'content' || requestedField === 'summary'
+    })
+  )
 }
 
 function buildChronologicalResponse(params: {
@@ -200,6 +229,69 @@ function mergeUniqueMatches(
   return [...matchMap.values()]
 }
 
+function sortMatchesByTemporalOrder(params: {
+  matches: ChatEvidenceRecord[]
+  order: NormalizedChatIntent['temporalConstraint']['order']
+  preferredSourceCategories: ChatSourceCategory[]
+}): ChatEvidenceRecord[] {
+  if (
+    params.order === 'none' &&
+    params.preferredSourceCategories.length === 0
+  ) {
+    return params.matches
+  }
+
+  return params.matches.toSorted((leftMatch, rightMatch) => {
+    const sourceCategoryDifference =
+      Number(
+        params.preferredSourceCategories.includes(rightMatch.sourceCategory),
+      ) -
+      Number(
+        params.preferredSourceCategories.includes(leftMatch.sourceCategory),
+      )
+
+    if (sourceCategoryDifference !== 0) {
+      return sourceCategoryDifference
+    }
+
+    if (!leftMatch.publishedAt || !rightMatch.publishedAt) {
+      return 0
+    }
+
+    const timeDifference =
+      new Date(rightMatch.publishedAt).getTime() -
+      new Date(leftMatch.publishedAt).getTime()
+
+    if (Number.isNaN(timeDifference)) {
+      return 0
+    }
+
+    return params.order === 'latest' ? timeDifference : -timeDifference
+  })
+}
+
+function resolvePreferredSourceCategories(
+  intent: NormalizedChatIntent,
+): ChatSourceCategory[] {
+  if (intent.target.sourceCategory) {
+    return [intent.target.sourceCategory]
+  }
+
+  const queryText = [
+    intent.standaloneQuestion,
+    ...intent.requiredConcepts,
+    ...intent.optionalConcepts,
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return SOURCE_CATEGORY_QUERY_TERMS.project.some((queryTerm) => {
+    return queryText.includes(queryTerm)
+  })
+    ? ['project']
+    : []
+}
+
 export function resolveChatIntentRequest({
   intent,
   locale,
@@ -227,17 +319,19 @@ export function resolveChatIntentRequest({
     }
   }
 
-  const chronologicalRecord = selectChronologicalRecord({
-    order: intent.temporalConstraint.order,
-    blogRecords,
-  })
+  const isChronologicalMetadataIntent = isChronologicalMetadataLookup(intent)
+  const isChronologicalContentIntent =
+    isChronologicalSingleDocumentContentLookup(intent)
+  const chronologicalRecord =
+    isChronologicalMetadataIntent || isChronologicalContentIntent
+      ? selectChronologicalRecord({
+          order: intent.temporalConstraint.order,
+          blogRecords,
+        })
+      : undefined
 
   if (chronologicalRecord) {
-    if (
-      intent.operation === 'summarize' ||
-      intent.operation === 'explain' ||
-      intent.operation === 'compare'
-    ) {
+    if (!isChronologicalMetadataIntent) {
       return {
         ...baseResult,
         shouldCallModel: true,
@@ -275,9 +369,7 @@ export function resolveChatIntentRequest({
     ...intent.requiredConcepts,
     ...intent.optionalConcepts,
   ]
-  const preferredSourceCategories = intent.target.sourceCategory
-    ? [intent.target.sourceCategory]
-    : []
+  const preferredSourceCategories = resolvePreferredSourceCategories(intent)
   const curatedSelection = selectChatSearchMatches({
     question: intent.standaloneQuestion,
     locale,
@@ -291,13 +383,17 @@ export function resolveChatIntentRequest({
     records: blogRecords,
     rankingConcepts: searchKeywords,
   })
-  const matches = selectEvidenceCoveringRequiredConcepts({
-    matches: mergeUniqueMatches([
-      curatedSelection.matches,
-      blogSelection.matches,
-    ]),
-    requiredConcepts: intent.requiredConcepts,
-    locale,
+  const matches = sortMatchesByTemporalOrder({
+    matches: selectEvidenceCoveringRequiredConcepts({
+      matches: mergeUniqueMatches([
+        curatedSelection.matches,
+        blogSelection.matches,
+      ]),
+      requiredConcepts: intent.requiredConcepts,
+      locale,
+    }),
+    order: intent.temporalConstraint.order,
+    preferredSourceCategories,
   }).slice(0, BLOG_CHAT.SEARCH.TOP_K)
 
   if (matches.length === 0) {

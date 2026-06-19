@@ -20,6 +20,7 @@ interface BuildCuratedChatSourceRecordsParams {
   tags: string[]
   baseSearchPhrases: string[]
   sourceCategory: ChatEvidenceRecord['sourceCategory']
+  publishedAt?: string | null
 }
 
 const CURATED_SOURCE_RECORDS = {
@@ -44,7 +45,9 @@ function isCodeFenceLine(line: string): boolean {
   const trimmedLine = line.trim()
 
   return (
-    trimmedLine.startsWith(CURATED_SOURCE_RECORDS.CODE_FENCE_PATTERNS.BACKTICK) ||
+    trimmedLine.startsWith(
+      CURATED_SOURCE_RECORDS.CODE_FENCE_PATTERNS.BACKTICK,
+    ) ||
     trimmedLine.startsWith(CURATED_SOURCE_RECORDS.CODE_FENCE_PATTERNS.TILDE)
   )
 }
@@ -135,9 +138,11 @@ function buildRecordSearchTerms(params: {
   })
 }
 
-function buildIntroRecord(params: BuildCuratedChatSourceRecordsParams & {
-  introLines: string[]
-}): ChatEvidenceRecord | null {
+function buildIntroRecord(
+  params: BuildCuratedChatSourceRecordsParams & {
+    introLines: string[]
+  },
+): ChatEvidenceRecord | null {
   const introText = [
     params.introContent ?? '',
     sanitizeMarkdownToSearchText(params.introLines.join('\n')),
@@ -156,14 +161,8 @@ function buildIntroRecord(params: BuildCuratedChatSourceRecordsParams & {
     slug: params.slug,
     title: params.title,
     url: params.baseUrl,
-    excerpt: trimText(
-      introText,
-      CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH,
-    ),
-    content: trimText(
-      introText,
-      CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH,
-    ),
+    excerpt: trimText(introText, CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH),
+    content: trimText(introText, CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH),
     sectionTitle: null,
     tags: params.tags,
     searchTerms: buildRecordSearchTerms({
@@ -173,13 +172,16 @@ function buildIntroRecord(params: BuildCuratedChatSourceRecordsParams & {
       tags: params.tags,
       baseSearchPhrases: params.baseSearchPhrases,
     }),
+    publishedAt: params.publishedAt,
     sourceCategory: params.sourceCategory,
   }
 }
 
-function buildSectionRecord(params: BuildCuratedChatSourceRecordsParams & {
-  section: HeadingSection
-}): ChatEvidenceRecord | null {
+function buildSectionRecord(
+  params: BuildCuratedChatSourceRecordsParams & {
+    section: HeadingSection
+  },
+): ChatEvidenceRecord | null {
   const sanitizedSectionText = sanitizeMarkdownToSearchText(
     params.section.lines.join('\n'),
   )
@@ -213,6 +215,7 @@ function buildSectionRecord(params: BuildCuratedChatSourceRecordsParams & {
       tags: params.tags,
       baseSearchPhrases: params.baseSearchPhrases,
     }),
+    publishedAt: params.publishedAt,
     sourceCategory: params.sourceCategory,
   }
 }
@@ -220,7 +223,9 @@ function buildSectionRecord(params: BuildCuratedChatSourceRecordsParams & {
 export function buildCuratedChatSourceRecords(
   params: BuildCuratedChatSourceRecordsParams,
 ): ChatEvidenceRecord[] {
-  const { introLines, headingSections } = buildHeadingSections(params.markdownContent)
+  const { introLines, headingSections } = buildHeadingSections(
+    params.markdownContent,
+  )
   const records: ChatEvidenceRecord[] = []
   const introRecord = buildIntroRecord({
     ...params,

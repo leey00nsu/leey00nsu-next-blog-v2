@@ -28,9 +28,7 @@ export type NormalizeChatIntentPlanResult =
     }
   | { ok: false; failureKind: NormalizeChatIntentPlanFailureKind }
 
-function resolveCandidateTarget(
-  candidate: ChatEntityCandidate,
-): ChatTarget {
+function resolveCandidateTarget(candidate: ChatEntityCandidate): ChatTarget {
   return {
     kind:
       candidate.kind === 'profile' || candidate.kind === 'assistant'
@@ -184,6 +182,33 @@ function normalizeMissingSlots(params: {
   })
 }
 
+function isTopicalCorpusContentIntent(params: {
+  evidenceScope: ChatIntentPlan['evidenceScope']
+  requiredConcepts: string[]
+  requestedFields: ChatIntentPlan['requestedFields']
+}): boolean {
+  return (
+    params.evidenceScope === 'corpus' &&
+    params.requiredConcepts.length > 0 &&
+    params.requestedFields.some((requestedField) => {
+      return requestedField === 'content' || requestedField === 'summary'
+    })
+  )
+}
+
+function normalizeRequestedFields(
+  intentPlan: ChatIntentPlan,
+): ChatIntentPlan['requestedFields'] {
+  if (
+    isEvidenceOperation(intentPlan.operation) &&
+    intentPlan.requestedFields.length === 0
+  ) {
+    return ['content']
+  }
+
+  return intentPlan.requestedFields
+}
+
 export function normalizeChatIntentPlan(params: {
   intentPlan: ChatIntentPlan
   candidates: ChatEntityCandidate[]
@@ -199,9 +224,7 @@ export function normalizeChatIntentPlan(params: {
 
   const hasMissingSlots = params.intentPlan.missingSlots.length > 0
 
-  if (
-    hasMissingSlots !== Boolean(params.intentPlan.clarificationQuestion)
-  ) {
+  if (hasMissingSlots !== Boolean(params.intentPlan.clarificationQuestion)) {
     return { ok: false, failureKind: 'invalid_intent_plan' }
   }
 
@@ -220,6 +243,15 @@ export function normalizeChatIntentPlan(params: {
     target: targetResult.target,
     evidenceScope,
   })
+  const requiredConcepts = normalizeRequiredConcepts(
+    params.intentPlan.requiredConcepts,
+  )
+  const requestedFields = normalizeRequestedFields(params.intentPlan)
+  const isTopicalCorpusContent = isTopicalCorpusContentIntent({
+    evidenceScope,
+    requiredConcepts,
+    requestedFields,
+  })
 
   if (
     missingSlots.length === 0 &&
@@ -234,15 +266,22 @@ export function normalizeChatIntentPlan(params: {
     contextAction: undefined,
     targetSelection: undefined,
     target: targetResult.target,
+    operation:
+      isTopicalCorpusContent && params.intentPlan.operation === 'answer'
+        ? 'explain'
+        : params.intentPlan.operation,
     evidenceScope,
+    requestedFields: isTopicalCorpusContent
+      ? requestedFields.filter((requestedField) => {
+          return requestedField !== 'published_at'
+        })
+      : requestedFields,
     missingSlots,
     clarificationQuestion:
       missingSlots.length === 0
         ? null
         : params.intentPlan.clarificationQuestion,
-    requiredConcepts: normalizeRequiredConcepts(
-      params.intentPlan.requiredConcepts,
-    ),
+    requiredConcepts,
   })
 
   return parsedIntent.success

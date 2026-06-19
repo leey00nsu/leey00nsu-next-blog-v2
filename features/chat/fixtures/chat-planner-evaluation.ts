@@ -1,4 +1,5 @@
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
+import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import {
   EMPTY_CHAT_CONVERSATION_STATE,
   type ChatConversationState,
@@ -36,8 +37,14 @@ export interface ChatPlannerGoldenCase {
   expectedContextAction: ChatIntentPlan['contextAction']
   expectedEntityId: string | null
   expectedEvidenceScope: NormalizedChatIntent['evidenceScope']
+  expectedOperations: NormalizedChatIntent['operation'][]
+  expectedTemporalOrder: NormalizedChatIntent['temporalConstraint']['order']
+  expectedAnyRequestedFields: NormalizedChatIntent['requestedFields']
+  forbiddenRequestedFields?: NormalizedChatIntent['requestedFields']
   expectedRequiredConcepts: string[]
   expectClarification: boolean
+  expectedExecutionKind?: 'direct' | 'model'
+  expectedSourceCategories?: ChatSourceCategory[]
   modelPlan: ChatIntentPlan
 }
 
@@ -230,6 +237,9 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     expectedContextAction: 'reset',
     expectedEntityId: 'project/lee-spec-kit',
     expectedEvidenceScope: 'entity',
+    expectedOperations: ['answer', 'explain'],
+    expectedTemporalOrder: 'none',
+    expectedAnyRequestedFields: ['content', 'summary'],
     expectedRequiredConcepts: ['lee-spec-kit'],
     expectClarification: false,
     modelPlan: {
@@ -258,6 +268,9 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     expectedContextAction: 'reset',
     expectedEntityId: 'project/leemage',
     expectedEvidenceScope: 'entity',
+    expectedOperations: ['answer', 'explain'],
+    expectedTemporalOrder: 'none',
+    expectedAnyRequestedFields: ['content', 'summary'],
     expectedRequiredConcepts: ['Presigned URL'],
     expectClarification: false,
     modelPlan: {
@@ -286,15 +299,21 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     expectedContextAction: 'reset',
     expectedEntityId: null,
     expectedEvidenceScope: 'corpus',
+    expectedOperations: ['explain'],
+    expectedTemporalOrder: 'latest',
+    expectedAnyRequestedFields: ['content', 'summary'],
+    forbiddenRequestedFields: ['published_at'],
     expectedRequiredConcepts: ['AI'],
     expectClarification: false,
+    expectedExecutionKind: 'model',
+    expectedSourceCategories: ['project'],
     modelPlan: {
       standaloneQuestion: '최근 프로젝트에서 AI를 활용한 방식을 설명해 주세요.',
       contextAction: 'reset',
       targetSelection: { kind: 'none' },
-      operation: 'explain',
+      operation: 'answer',
       temporalConstraint: { order: 'latest' },
-      requestedFields: ['content'],
+      requestedFields: ['content', 'summary', 'published_at'],
       evidenceScope: 'corpus',
       requiredConcepts: ['AI'],
       optionalConcepts: ['프로젝트'],

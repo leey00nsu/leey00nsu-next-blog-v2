@@ -136,6 +136,23 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
+  it('이전 문맥 없는 continue candidate를 새 주제 reset으로 정규화한다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      contextAction: 'continue',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: LEEMAGE_CANDIDATE.entityId,
+      },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      contextAction: 'reset',
+      queryPlan: { contextAction: 'reset' },
+    })
+  })
+
   it('존재하지 않는 candidate를 거부한다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,

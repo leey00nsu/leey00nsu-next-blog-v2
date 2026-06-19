@@ -1,13 +1,14 @@
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
-import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import {
   EMPTY_CHAT_CONVERSATION_STATE,
   type ChatConversationState,
 } from '@/features/chat/model/chat-conversation-state'
+import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
+import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import type {
-  ChatIntentPlan,
-  NormalizedChatIntent,
-} from '@/features/chat/model/chat-intent'
+  ChatExecutionKind,
+  ChatRetrievalPlan,
+} from '@/features/chat/model/chat-retrieval-plan'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 export {
@@ -22,38 +23,31 @@ export interface ChatPlannerEvaluationCase {
   question: string
   locale: SupportedLocale
   inputState: ChatConversationState
-  modelPlan: ChatIntentPlan
-  expectedIntent: NormalizedChatIntent
-  expectedExecutionKind: 'direct' | 'model'
+  modelPlan: ChatQueryPlan
+  expectedRetrievalPlan: Partial<ChatRetrievalPlan>
+  expectedTargetSlug: string | null
   conversationHistory?: ChatConversationHistoryItem[]
   currentPostSlug?: string
-  expectedTopMatchUrl?: string
 }
 
 export interface ChatPlannerGoldenCase {
   id: string
   question: string
   locale: SupportedLocale
-  expectedContextAction: ChatIntentPlan['contextAction']
+  expectedContextAction: ChatQueryPlan['contextAction']
   expectedEntityId: string | null
-  expectedEvidenceScope: NormalizedChatIntent['evidenceScope']
-  expectedOperations: NormalizedChatIntent['operation'][]
-  expectedTemporalOrder: NormalizedChatIntent['temporalConstraint']['order']
-  expectedAnyRequestedFields: NormalizedChatIntent['requestedFields']
-  forbiddenRequestedFields?: NormalizedChatIntent['requestedFields']
+  expectedOperations: ChatQueryPlan['operation'][]
+  expectedSourceMode: ChatQueryPlan['sourceSelection']['mode']
+  expectedSourceCategories: ChatSourceCategory[]
+  expectedTemporalMode: ChatQueryPlan['temporalSelection']['mode']
+  expectedTemporalOrder: 'latest' | 'oldest' | null
+  expectedAnyRequestedFields: ChatQueryPlan['requestedFields']
+  forbiddenRequestedFields?: ChatQueryPlan['requestedFields']
   expectedRequiredConcepts: string[]
   expectClarification: boolean
-  expectedExecutionKind?: 'direct' | 'model'
-  expectedSourceCategories?: ChatSourceCategory[]
-  modelPlan: ChatIntentPlan
+  expectedExecutionKind: ChatExecutionKind
+  modelPlan: ChatQueryPlan
 }
-
-const EMPTY_TARGET = {
-  kind: 'none',
-  sourceCategory: null,
-  slug: null,
-  title: null,
-} as const
 
 const OWNER_TARGET = {
   kind: 'profile',
@@ -75,10 +69,10 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
         kind: 'candidate',
         entityId: 'project/leesfield',
       },
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['Leesfield'],
       optionalConcepts: [],
       missingSlots: [],
@@ -86,27 +80,13 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       confidence: 'high',
       reason: 'Project lookup after greeting.',
     },
-    expectedIntent: {
-      standaloneQuestion: 'Leesfield라는 프로젝트를 설명해 주세요.',
-      target: {
-        kind: 'named_entity',
-        sourceCategory: 'project',
-        slug: 'leesfield',
-        title: 'Leesfield',
-      },
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
-      requestedFields: ['content'],
-      evidenceScope: 'entity',
-      requiredConcepts: ['Leesfield'],
-      optionalConcepts: [],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'Project lookup after greeting.',
+    expectedRetrievalPlan: {
+      executionKind: 'retrieve_and_generate',
+      sourceStrategy: 'only',
+      sourceCategories: ['project'],
+      temporalStrategy: 'none',
     },
-    expectedExecutionKind: 'model',
-    expectedTopMatchUrl: '/ko/projects/leesfield',
+    expectedTargetSlug: 'leesfield',
   },
   {
     id: 'ambiguous-person-reference',
@@ -117,10 +97,10 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       standaloneQuestion: '이 사람의 이름은 무엇인가요?',
       contextAction: 'reset',
       targetSelection: { kind: 'none' },
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'none',
       requiredConcepts: [],
       optionalConcepts: [],
       missingSlots: ['target'],
@@ -128,21 +108,12 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       confidence: 'low',
       reason: 'The target is missing.',
     },
-    expectedIntent: {
-      standaloneQuestion: '이 사람의 이름은 무엇인가요?',
-      target: EMPTY_TARGET,
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
-      requestedFields: ['content'],
-      evidenceScope: 'none',
-      requiredConcepts: [],
-      optionalConcepts: [],
-      missingSlots: ['target'],
-      clarificationQuestion: '누구를 가리키는지 알려주세요.',
-      confidence: 'low',
-      reason: 'The target is missing.',
+    expectedRetrievalPlan: {
+      executionKind: 'clarification',
+      sourceStrategy: 'all',
+      sourceCategories: [],
     },
-    expectedExecutionKind: 'direct',
+    expectedTargetSlug: null,
   },
   {
     id: 'resolved-profile-reference',
@@ -156,10 +127,10 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       standaloneQuestion: '이윤수의 이름을 알려주세요.',
       contextAction: 'continue',
       targetSelection: { kind: 'preserve' },
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'prefer', categories: ['profile'] },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['이윤수'],
       optionalConcepts: ['이름'],
       missingSlots: [],
@@ -167,22 +138,12 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       confidence: 'high',
       reason: 'Use the resolved owner target.',
     },
-    expectedIntent: {
-      standaloneQuestion: '이윤수의 이름을 알려주세요.',
-      target: OWNER_TARGET,
-      operation: 'answer',
-      temporalConstraint: { order: 'none' },
-      requestedFields: ['content'],
-      evidenceScope: 'entity',
-      requiredConcepts: ['이윤수'],
-      optionalConcepts: ['이름'],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'Use the resolved owner target.',
+    expectedRetrievalPlan: {
+      executionKind: 'retrieve_and_generate',
+      sourceStrategy: 'prefer',
+      sourceCategories: ['profile'],
     },
-    expectedExecutionKind: 'model',
-    expectedTopMatchUrl: '/ko/about',
+    expectedTargetSlug: 'about',
   },
   {
     id: 'current-post-question',
@@ -193,11 +154,11 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
     modelPlan: {
       standaloneQuestion: '현재 글에서 구조가 중요한 이유를 설명해 주세요.',
       contextAction: 'reset',
-      targetSelection: { kind: 'none' },
+      targetSelection: { kind: 'current_source' },
       operation: 'explain',
-      temporalConstraint: { order: 'none' },
+      sourceSelection: { mode: 'only', categories: ['blog'] },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'current_source',
       requiredConcepts: ['구조'],
       optionalConcepts: [],
       missingSlots: [],
@@ -205,27 +166,12 @@ export const CHAT_PLANNER_EVALUATION_CASES: ChatPlannerEvaluationCase[] = [
       confidence: 'high',
       reason: 'Current post explanation.',
     },
-    expectedIntent: {
-      standaloneQuestion: '현재 글에서 구조가 중요한 이유를 설명해 주세요.',
-      target: {
-        kind: 'current_source',
-        sourceCategory: 'blog',
-        slug: 'why-i-built-lee-spec-kit',
-        title: null,
-      },
-      operation: 'explain',
-      temporalConstraint: { order: 'none' },
-      requestedFields: ['content'],
-      evidenceScope: 'current_source',
-      requiredConcepts: ['구조'],
-      optionalConcepts: [],
-      missingSlots: [],
-      clarificationQuestion: null,
-      confidence: 'high',
-      reason: 'Current post explanation.',
+    expectedRetrievalPlan: {
+      executionKind: 'retrieve_and_generate',
+      sourceStrategy: 'only',
+      sourceCategories: ['blog'],
     },
-    expectedExecutionKind: 'model',
-    expectedTopMatchUrl: '/ko/blog/why-i-built-lee-spec-kit',
+    expectedTargetSlug: 'why-i-built-lee-spec-kit',
   },
 ]
 
@@ -236,12 +182,15 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     locale: 'ko',
     expectedContextAction: 'reset',
     expectedEntityId: 'project/lee-spec-kit',
-    expectedEvidenceScope: 'entity',
-    expectedOperations: ['answer', 'explain'],
-    expectedTemporalOrder: 'none',
+    expectedOperations: ['lookup', 'explain'],
+    expectedSourceMode: 'only',
+    expectedSourceCategories: ['project'],
+    expectedTemporalMode: 'none',
+    expectedTemporalOrder: null,
     expectedAnyRequestedFields: ['content', 'summary'],
-    expectedRequiredConcepts: ['lee-spec-kit'],
+    expectedRequiredConcepts: [],
     expectClarification: false,
+    expectedExecutionKind: 'retrieve_and_generate',
     modelPlan: {
       standaloneQuestion: 'lee-spec-kit을 만든 이유는 무엇인가요?',
       contextAction: 'reset',
@@ -250,9 +199,9 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
         entityId: 'project/lee-spec-kit',
       },
       operation: 'explain',
-      temporalConstraint: { order: 'none' },
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['lee-spec-kit'],
       optionalConcepts: ['만든 이유'],
       missingSlots: [],
@@ -267,12 +216,15 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     locale: 'ko',
     expectedContextAction: 'reset',
     expectedEntityId: 'project/leemage',
-    expectedEvidenceScope: 'entity',
-    expectedOperations: ['answer', 'explain'],
-    expectedTemporalOrder: 'none',
+    expectedOperations: ['lookup', 'explain'],
+    expectedSourceMode: 'only',
+    expectedSourceCategories: ['project'],
+    expectedTemporalMode: 'none',
+    expectedTemporalOrder: null,
     expectedAnyRequestedFields: ['content', 'summary'],
     expectedRequiredConcepts: ['Presigned URL'],
     expectClarification: false,
+    expectedExecutionKind: 'retrieve_and_generate',
     modelPlan: {
       standaloneQuestion: 'Leemage에서 Presigned URL을 사용한 이유는?',
       contextAction: 'reset',
@@ -281,9 +233,9 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
         entityId: 'project/leemage',
       },
       operation: 'explain',
-      temporalConstraint: { order: 'none' },
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'none' },
       requestedFields: ['content'],
-      evidenceScope: 'entity',
       requiredConcepts: ['Presigned URL'],
       optionalConcepts: [],
       missingSlots: [],
@@ -298,25 +250,26 @@ export const CHAT_PLANNER_GOLDEN_CASES: ChatPlannerGoldenCase[] = [
     locale: 'ko',
     expectedContextAction: 'reset',
     expectedEntityId: null,
-    expectedEvidenceScope: 'corpus',
     expectedOperations: ['explain'],
+    expectedSourceMode: 'only',
+    expectedSourceCategories: ['project'],
+    expectedTemporalMode: 'rank',
     expectedTemporalOrder: 'latest',
     expectedAnyRequestedFields: ['content', 'summary'],
     forbiddenRequestedFields: ['published_at'],
     expectedRequiredConcepts: ['AI'],
     expectClarification: false,
-    expectedExecutionKind: 'model',
-    expectedSourceCategories: ['project'],
+    expectedExecutionKind: 'retrieve_and_generate',
     modelPlan: {
       standaloneQuestion: '최근 프로젝트에서 AI를 활용한 방식을 설명해 주세요.',
       contextAction: 'reset',
       targetSelection: { kind: 'none' },
-      operation: 'answer',
-      temporalConstraint: { order: 'latest' },
-      requestedFields: ['content', 'summary', 'published_at'],
-      evidenceScope: 'corpus',
+      operation: 'explain',
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'rank', order: 'latest' },
+      requestedFields: ['content', 'summary'],
       requiredConcepts: ['AI'],
-      optionalConcepts: ['프로젝트'],
+      optionalConcepts: [],
       missingSlots: [],
       clarificationQuestion: null,
       confidence: 'high',

@@ -1,34 +1,49 @@
 import 'dotenv/config'
-import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { planChatIntent } from '@/features/chat/api/plan-chat-intent-patch'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { CHAT_PLANNER_GOLDEN_CASES } from '@/features/chat/fixtures/chat-planner-evaluation'
 import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
-import { resolveChatIntentRequest } from '@/features/chat/lib/resolve-chat-intent-request'
-import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
-import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
+import {
+  EMPTY_CHAT_CONVERSATION_STATE,
+  type ChatConversationState,
+} from '@/features/chat/model/chat-conversation-state'
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
+import { compileChatRetrievalPlan } from '@/features/chat/model/compile-chat-retrieval-plan'
 import { getChatEntityCandidates } from '@/features/chat/model/get-chat-entity-candidates'
-import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
-import { normalizeChatIntentPlan } from '@/features/chat/model/normalize-chat-intent-plan'
-import { reduceChatConversationState } from '@/features/chat/model/reduce-chat-conversation-state'
+
+interface PlannerEvaluationActual {
+  contextAction: string
+  entityId: string | null
+  operation: string
+  sourceMode: string
+  sourceCategories: string[]
+  temporalMode: string
+  temporalOrder: string | null
+  requestedFields: string[]
+  requiredConcepts: string[]
+  missingSlots: string[]
+  clarificationQuestion: string | null
+  executionKind?: string
+  targetSlug?: string | null
+}
 
 interface PlannerEvaluationResult {
   id: string
   passed: boolean
   failures: string[]
-  actual?: {
-    contextAction: string
-    entityId: string | null
-    evidenceScope: string
-    operation: string
-    temporalOrder: string
-    requestedFields: string[]
-    requiredConcepts: string[]
-    missingSlots: string[]
-    clarificationQuestion: string | null
-    executionKind?: string
-    sourceCategories?: string[]
-  }
+  actual?: PlannerEvaluationActual
+}
+
+function resolveSelectionCategories(
+  sourceSelection: (typeof CHAT_PLANNER_GOLDEN_CASES)[number]['modelPlan']['sourceSelection'],
+): string[] {
+  return sourceSelection.mode === 'all' ? [] : sourceSelection.categories
+}
+
+function resolveTemporalOrder(
+  temporalSelection: (typeof CHAT_PLANNER_GOLDEN_CASES)[number]['modelPlan']['temporalSelection'],
+): 'latest' | 'oldest' | null {
+  return temporalSelection.mode === 'none' ? null : temporalSelection.order
 }
 
 async function evaluatePlannerCase(
@@ -54,107 +69,111 @@ async function evaluatePlannerCase(
     }
   }
 
-  const normalized = normalizeChatIntentPlan({
-    intentPlan: plannerResult.intentPlan,
+  const compiled = compileChatRetrievalPlan({
+    queryPlan: plannerResult.queryPlan,
     candidates,
     previousState: EMPTY_CHAT_CONVERSATION_STATE,
+    maximumEvidenceCount: BLOG_CHAT.SEARCH.TOP_K,
   })
 
-  if (!normalized.ok) {
+  if (!compiled.ok) {
+    const queryPlan = plannerResult.queryPlan
     return {
       id: goldenCase.id,
       passed: false,
-      failures: [normalized.failureKind],
+      failures: [compiled.failureKind],
+      actual: {
+        contextAction: queryPlan.contextAction,
+        entityId:
+          queryPlan.targetSelection.kind === 'candidate'
+            ? queryPlan.targetSelection.entityId
+            : null,
+        operation: queryPlan.operation,
+        sourceMode: queryPlan.sourceSelection.mode,
+        sourceCategories: resolveSelectionCategories(queryPlan.sourceSelection),
+        temporalMode: queryPlan.temporalSelection.mode,
+        temporalOrder: resolveTemporalOrder(queryPlan.temporalSelection),
+        requestedFields: queryPlan.requestedFields,
+        requiredConcepts: queryPlan.requiredConcepts,
+        missingSlots: queryPlan.missingSlots,
+        clarificationQuestion: queryPlan.clarificationQuestion,
+      },
     }
   }
 
   const failures: string[] = []
   const selectedEntityId =
-    plannerResult.intentPlan.targetSelection.kind === 'candidate'
-      ? plannerResult.intentPlan.targetSelection.entityId
+    compiled.queryPlan.targetSelection.kind === 'candidate'
+      ? compiled.queryPlan.targetSelection.entityId
       : null
+  const sourceCategories = resolveSelectionCategories(
+    compiled.queryPlan.sourceSelection,
+  )
+  const temporalOrder = resolveTemporalOrder(
+    compiled.queryPlan.temporalSelection,
+  )
 
-  if (normalized.contextAction !== goldenCase.expectedContextAction) {
+  if (compiled.contextAction !== goldenCase.expectedContextAction) {
     failures.push('context_action')
   }
   if (selectedEntityId !== goldenCase.expectedEntityId) {
     failures.push('entity_id')
   }
-  if (normalized.intent.evidenceScope !== goldenCase.expectedEvidenceScope) {
-    failures.push('evidence_scope')
-  }
-  if (!goldenCase.expectedOperations.includes(normalized.intent.operation)) {
+  if (!goldenCase.expectedOperations.includes(compiled.queryPlan.operation)) {
     failures.push('operation')
   }
   if (
-    normalized.intent.temporalConstraint.order !==
-    goldenCase.expectedTemporalOrder
+    compiled.queryPlan.sourceSelection.mode !== goldenCase.expectedSourceMode
   ) {
+    failures.push('source_mode')
+  }
+  if (
+    !goldenCase.expectedSourceCategories.every((sourceCategory) => {
+      return compiled.retrievalPlan.sourceCategories.includes(sourceCategory)
+    })
+  ) {
+    failures.push('source_categories')
+  }
+  if (
+    compiled.queryPlan.temporalSelection.mode !==
+    goldenCase.expectedTemporalMode
+  ) {
+    failures.push('temporal_mode')
+  }
+  if (temporalOrder !== goldenCase.expectedTemporalOrder) {
     failures.push('temporal_order')
   }
   if (
     !goldenCase.expectedAnyRequestedFields.some((requestedField) => {
-      return normalized.intent.requestedFields.includes(requestedField)
+      return compiled.queryPlan.requestedFields.includes(requestedField)
     })
   ) {
     failures.push('requested_fields')
   }
   if (
     (goldenCase.forbiddenRequestedFields ?? []).some((requestedField) => {
-      return normalized.intent.requestedFields.includes(requestedField)
+      return compiled.queryPlan.requestedFields.includes(requestedField)
     })
   ) {
     failures.push('forbidden_requested_fields')
   }
   if (
     !goldenCase.expectedRequiredConcepts.every((requiredConcept) => {
-      return normalized.intent.requiredConcepts.includes(requiredConcept)
+      return compiled.queryPlan.requiredConcepts.includes(requiredConcept)
     })
   ) {
     failures.push('required_concepts')
   }
   if (
-    normalized.intent.missingSlots.length > 0 !==
+    compiled.queryPlan.missingSlots.length > 0 !==
     goldenCase.expectClarification
   ) {
     failures.push('clarification')
   }
-
-  let executionKind: string | undefined
-  let sourceCategories: string[] | undefined
-
-  if (goldenCase.expectedExecutionKind) {
-    const curatedRecords = await getCuratedChatSources(goldenCase.locale)
-    const blogRecords = GENERATED_BLOG_SEARCH_RECORDS[goldenCase.locale].map(
-      (record) => {
-        return { ...record, sourceCategory: 'blog' as const }
-      },
-    )
-    const resolvedRequest = resolveChatIntentRequest({
-      intent: normalized.intent,
-      locale: goldenCase.locale,
-      blogRecords,
-      curatedRecords,
-    })
-    executionKind = resolvedRequest.directResponse
-      ? 'direct'
-      : resolvedRequest.shouldCallModel
-        ? 'model'
-        : 'refusal'
-    sourceCategories = [
-      ...new Set(resolvedRequest.matches.map((match) => match.sourceCategory)),
-    ]
-
-    if (executionKind !== goldenCase.expectedExecutionKind) {
-      failures.push('execution_kind')
-    }
-    if (
-      !(goldenCase.expectedSourceCategories ?? []).every((sourceCategory) => {
-        return sourceCategories?.includes(sourceCategory)
-      })
-    ) {
-      failures.push('source_categories')
-    }
+  if (
+    compiled.retrievalPlan.executionKind !== goldenCase.expectedExecutionKind
+  ) {
+    failures.push('execution_kind')
   }
 
   return {
@@ -162,17 +181,19 @@ async function evaluatePlannerCase(
     passed: failures.length === 0,
     failures,
     actual: {
-      contextAction: normalized.contextAction,
+      contextAction: compiled.contextAction,
       entityId: selectedEntityId,
-      evidenceScope: normalized.intent.evidenceScope,
-      operation: normalized.intent.operation,
-      temporalOrder: normalized.intent.temporalConstraint.order,
-      requestedFields: normalized.intent.requestedFields,
-      requiredConcepts: normalized.intent.requiredConcepts,
-      missingSlots: normalized.intent.missingSlots,
-      clarificationQuestion: normalized.intent.clarificationQuestion,
-      executionKind,
+      operation: compiled.queryPlan.operation,
+      sourceMode: compiled.queryPlan.sourceSelection.mode,
       sourceCategories,
+      temporalMode: compiled.queryPlan.temporalSelection.mode,
+      temporalOrder,
+      requestedFields: compiled.queryPlan.requestedFields,
+      requiredConcepts: compiled.queryPlan.requiredConcepts,
+      missingSlots: compiled.queryPlan.missingSlots,
+      clarificationQuestion: compiled.queryPlan.clarificationQuestion,
+      executionKind: compiled.retrievalPlan.executionKind,
+      targetSlug: compiled.retrievalPlan.canonicalTargets[0]?.slug ?? null,
     },
   }
 }
@@ -208,7 +229,7 @@ async function evaluateConversationScenario(): Promise<PlannerEvaluationResult> 
   const history: ChatConversationHistoryItem[] = []
   const failures: string[] = []
   let state: ChatConversationState = EMPTY_CHAT_CONVERSATION_STATE
-  let lastActual: PlannerEvaluationResult['actual']
+  let lastActual: PlannerEvaluationActual | undefined
 
   for (const [turnIndex, turn] of turns.entries()) {
     const candidates = matchChatEntityCandidates({
@@ -228,24 +249,23 @@ async function evaluateConversationScenario(): Promise<PlannerEvaluationResult> 
       break
     }
 
-    const normalized = normalizeChatIntentPlan({
-      intentPlan: plannerResult.intentPlan,
+    const compiled = compileChatRetrievalPlan({
+      queryPlan: plannerResult.queryPlan,
       candidates,
       previousState: state,
+      maximumEvidenceCount: BLOG_CHAT.SEARCH.TOP_K,
     })
 
-    if (!normalized.ok) {
-      failures.push(`turn_${turnIndex + 1}_${normalized.failureKind}`)
+    if (!compiled.ok) {
+      failures.push(`turn_${turnIndex + 1}_${compiled.failureKind}`)
       break
     }
 
-    const hasClarification = normalized.intent.missingSlots.length > 0
-    const targetSlug =
-      normalized.intent.target.kind === 'none'
-        ? null
-        : normalized.intent.target.slug
+    const targetSlug = compiled.retrievalPlan.canonicalTargets[0]?.slug ?? null
+    const hasClarification =
+      compiled.retrievalPlan.executionKind === 'clarification'
 
-    if (normalized.contextAction !== turn.expectedContextAction) {
+    if (compiled.contextAction !== turn.expectedContextAction) {
       failures.push(`turn_${turnIndex + 1}_context_action`)
     }
     if (targetSlug !== turn.expectedTargetSlug) {
@@ -255,32 +275,31 @@ async function evaluateConversationScenario(): Promise<PlannerEvaluationResult> 
       failures.push(`turn_${turnIndex + 1}_clarification`)
     }
 
-    const reduction = reduceChatConversationState({
-      previousState: state,
-      contextAction: normalized.contextAction,
-      intent: normalized.intent,
-    })
-    state = reduction.nextState
+    state = compiled.nextConversationState
     history.push({
       question: turn.question,
       answer:
-        normalized.intent.clarificationQuestion ??
+        compiled.queryPlan.clarificationQuestion ??
         '근거를 바탕으로 답변했습니다.',
       citations: [],
     })
     lastActual = {
-      contextAction: normalized.contextAction,
+      contextAction: compiled.contextAction,
       entityId:
-        plannerResult.intentPlan.targetSelection.kind === 'candidate'
-          ? plannerResult.intentPlan.targetSelection.entityId
+        compiled.queryPlan.targetSelection.kind === 'candidate'
+          ? compiled.queryPlan.targetSelection.entityId
           : null,
-      evidenceScope: reduction.intent.evidenceScope,
-      operation: reduction.intent.operation,
-      temporalOrder: reduction.intent.temporalConstraint.order,
-      requestedFields: reduction.intent.requestedFields,
-      requiredConcepts: reduction.intent.requiredConcepts,
-      missingSlots: reduction.intent.missingSlots,
-      clarificationQuestion: reduction.intent.clarificationQuestion,
+      operation: compiled.queryPlan.operation,
+      sourceMode: compiled.queryPlan.sourceSelection.mode,
+      sourceCategories: compiled.retrievalPlan.sourceCategories,
+      temporalMode: compiled.queryPlan.temporalSelection.mode,
+      temporalOrder: compiled.retrievalPlan.temporalOrder,
+      requestedFields: compiled.queryPlan.requestedFields,
+      requiredConcepts: compiled.queryPlan.requiredConcepts,
+      missingSlots: compiled.queryPlan.missingSlots,
+      clarificationQuestion: compiled.queryPlan.clarificationQuestion,
+      executionKind: compiled.retrievalPlan.executionKind,
+      targetSlug,
     }
   }
 

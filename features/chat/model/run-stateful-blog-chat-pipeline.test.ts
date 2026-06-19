@@ -3,7 +3,7 @@ import {
   type ChatConversationState,
   EMPTY_CHAT_CONVERSATION_STATE,
 } from '@/features/chat/model/chat-conversation-state'
-import type { ChatIntentPlan } from '@/features/chat/model/chat-intent'
+import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import type {
   BlogChatRequest,
   BlogChatResponse,
@@ -22,14 +22,14 @@ const OWNER_CANDIDATE = {
 
 const NO_CACHED_RESPONSE: BlogChatResponse | undefined = undefined
 
-const OWNER_PLAN: ChatIntentPlan = {
+const OWNER_PLAN: ChatQueryPlan = {
   standaloneQuestion: '이윤수가 Vercel을 사용했나요?',
   contextAction: 'reset',
   targetSelection: { kind: 'candidate', entityId: 'profile/about' },
-  operation: 'answer',
-  temporalConstraint: { order: 'none' },
+  operation: 'lookup',
+  sourceSelection: { mode: 'prefer', categories: ['profile'] },
+  temporalSelection: { mode: 'none' },
   requestedFields: ['content'],
-  evidenceScope: 'entity',
   requiredConcepts: ['Vercel'],
   optionalConcepts: [],
   missingSlots: [],
@@ -54,7 +54,7 @@ function buildDependencies() {
     getEntityCandidates: vi.fn().mockResolvedValue([OWNER_CANDIDATE]),
     planIntent: vi.fn().mockResolvedValue({
       ok: true as const,
-      intentPlan: OWNER_PLAN,
+      queryPlan: OWNER_PLAN,
     }),
     executeIntent: vi.fn().mockImplementation(({ intent }) => {
       return Promise.resolve(
@@ -161,7 +161,7 @@ describe('runStatefulBlogChatPipeline', () => {
     }
     dependencies.planIntent.mockResolvedValueOnce({
       ok: true,
-      intentPlan: {
+      queryPlan: {
         ...OWNER_PLAN,
         contextAction: 'resolve_clarification',
       },

@@ -72,4 +72,13 @@ describe('ChatQueryPlanSchema', () => {
       }).success,
     ).toBe(true)
   })
+
+  it('근거 작업의 빈 requested fields를 거부한다', () => {
+    expect(
+      ChatQueryPlanSchema.safeParse({
+        ...BASE_QUERY_PLAN,
+        requestedFields: [],
+      }).success,
+    ).toBe(false)
+  })
 })

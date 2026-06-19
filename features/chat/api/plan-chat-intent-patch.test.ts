@@ -24,9 +24,9 @@ const LEEMAGE_PLAN = {
   contextAction: 'reset',
   targetSelection: { kind: 'candidate', entityId: 'project/leemage' },
   operation: 'explain',
-  temporalConstraint: { order: 'none' },
+  sourceSelection: { mode: 'only', categories: ['project'] },
+  temporalSelection: { mode: 'none' },
   requestedFields: ['content'],
-  evidenceScope: 'entity',
   requiredConcepts: ['Presigned URL'],
   optionalConcepts: [],
   missingSlots: [],
@@ -57,7 +57,7 @@ describe('planChatIntent', () => {
       entityCandidates: [LEEMAGE_CANDIDATE],
     })
 
-    expect(result).toEqual({ ok: true, intentPlan: LEEMAGE_PLAN })
+    expect(result).toEqual({ ok: true, queryPlan: LEEMAGE_PLAN })
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt: expect.stringContaining(JSON.stringify([LEEMAGE_CANDIDATE])),

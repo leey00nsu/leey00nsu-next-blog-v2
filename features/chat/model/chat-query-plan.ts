@@ -123,6 +123,19 @@ export const ChatQueryPlanSchema = z
       .max(CHAT_QUERY_PLAN_LIMITS.MAXIMUM_REASON_CHARACTERS),
   })
   .strict()
+  .superRefine((queryPlan, refinementContext) => {
+    const requiresRequestedFields =
+      queryPlan.operation !== 'social_reply' &&
+      queryPlan.operation !== 'contact'
+
+    if (requiresRequestedFields && queryPlan.requestedFields.length === 0) {
+      refinementContext.addIssue({
+        code: 'custom',
+        path: ['requestedFields'],
+        message: 'Evidence operations require at least one requested field.',
+      })
+    }
+  })
 
 export interface ChatQueryPlan extends z.infer<typeof ChatQueryPlanSchema> {}
 export type ChatQueryOperation = z.infer<typeof ChatQueryOperationSchema>

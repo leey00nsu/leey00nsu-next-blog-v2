@@ -35,6 +35,7 @@ export type CompileChatRetrievalPlanResult =
       ok: true
       queryPlan: ChatQueryPlan
       retrievalPlan: ChatRetrievalPlan
+      compatibilityIntent: NormalizedChatIntent
       nextConversationState: ChatConversationState
       contextAction: ChatQueryPlan['contextAction']
     }
@@ -241,6 +242,21 @@ function isValidTransition(params: {
   return true
 }
 
+function normalizeContextAction(params: {
+  queryPlan: ChatQueryPlan
+  previousState: ChatConversationState
+}): ChatQueryPlan {
+  if (
+    params.queryPlan.contextAction === 'continue' &&
+    !params.previousState.focusedTarget &&
+    !params.previousState.pendingClarification
+  ) {
+    return { ...params.queryPlan, contextAction: 'reset' }
+  }
+
+  return params.queryPlan
+}
+
 function isValidClarification(queryPlan: ChatQueryPlan): boolean {
   return (
     queryPlan.missingSlots.length > 0 ===
@@ -269,13 +285,13 @@ function buildCompatibilityIntent(params: {
       ? 'none'
       : params.queryPlan.temporalSelection.order
   const evidenceScope: NormalizedChatIntent['evidenceScope'] =
-    params.target.kind === 'current_source'
-      ? 'current_source'
-      : params.target.kind !== 'none'
-        ? 'entity'
-        : params.queryPlan.operation === 'social_reply'
-          ? 'none'
-          : 'corpus'
+    params.target.kind === 'none'
+      ? params.queryPlan.operation === 'social_reply'
+        ? 'none'
+        : 'corpus'
+      : params.target.kind === 'current_source'
+        ? 'current_source'
+        : 'entity'
 
   return {
     standaloneQuestion: params.queryPlan.standaloneQuestion,
@@ -299,17 +315,26 @@ function buildCompatibilityIntent(params: {
 export function compileChatRetrievalPlan(
   params: CompileChatRetrievalPlanParams,
 ): CompileChatRetrievalPlanResult {
-  if (!isValidTransition(params) || !isValidClarification(params.queryPlan)) {
+  const contextNormalizedQueryPlan = normalizeContextAction(params)
+  const normalizedParams = {
+    ...params,
+    queryPlan: contextNormalizedQueryPlan,
+  }
+
+  if (
+    !isValidTransition(normalizedParams) ||
+    !isValidClarification(contextNormalizedQueryPlan)
+  ) {
     return {
       ok: false,
-      failureKind: isValidTransition(params)
+      failureKind: isValidTransition(normalizedParams)
         ? 'invalid_query_plan'
         : 'invalid_transition',
       nextConversationState: params.previousState,
     }
   }
 
-  const queryPlan = resolveEffectiveQueryPlan(params)
+  const queryPlan = resolveEffectiveQueryPlan(normalizedParams)
 
   if (!hasRequiredRequestedFields(queryPlan)) {
     return {
@@ -375,6 +400,7 @@ export function compileChatRetrievalPlan(
     ok: true,
     queryPlan,
     retrievalPlan,
+    compatibilityIntent: reducedState.intent,
     nextConversationState: reducedState.nextState,
     contextAction: queryPlan.contextAction,
   }

@@ -14,6 +14,10 @@ import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
 import type { NormalizedChatIntent } from '@/features/chat/model/chat-intent'
 import {
+  compileChatRetrievalPlan,
+  type CompileChatRetrievalPlanFailureKind,
+} from '@/features/chat/model/compile-chat-retrieval-plan'
+import {
   executeChatIntent,
   type ExecuteChatIntentResult,
 } from '@/features/chat/model/execute-chat-intent'
@@ -21,14 +25,7 @@ import {
   getCachedBlogChatResponse,
   setCachedBlogChatResponse,
 } from '@/features/chat/model/blog-chat-response-cache'
-import {
-  reduceChatConversationState,
-} from '@/features/chat/model/reduce-chat-conversation-state'
 import { getChatEntityCandidates } from '@/features/chat/model/get-chat-entity-candidates'
-import {
-  normalizeChatIntentPlan,
-  type NormalizeChatIntentPlanFailureKind,
-} from '@/features/chat/model/normalize-chat-intent-plan'
 import {
   findSemanticCachedBlogChatResponse,
   storeSemanticCachedBlogChatResponse,
@@ -92,7 +89,7 @@ export interface StatefulBlogChatPipelineResult {
   plannerFailureKind:
     | 'planner_unavailable'
     | 'invalid_intent_plan'
-    | NormalizeChatIntentPlanFailureKind
+    | CompileChatRetrievalPlanFailureKind
     | null
 }
 
@@ -166,33 +163,28 @@ function buildIntentAfterPlanning(params: {
 }): {
   intent: NormalizedChatIntent | null
   nextState: BlogChatRequest['conversationState']
-  normalizationFailureKind: NormalizeChatIntentPlanFailureKind | null
+  normalizationFailureKind: CompileChatRetrievalPlanFailureKind | null
 } {
   if (params.plannerResult.ok) {
-    const normalizedResult = normalizeChatIntentPlan({
-      intentPlan: params.plannerResult.intentPlan,
+    const compiledResult = compileChatRetrievalPlan({
+      queryPlan: params.plannerResult.queryPlan,
       candidates: params.entityCandidates,
       previousState: params.request.conversationState,
       currentPostSlug: params.request.currentPostSlug,
+      maximumEvidenceCount: BLOG_CHAT.SEARCH.TOP_K,
     })
 
-    if (!normalizedResult.ok) {
+    if (!compiledResult.ok) {
       return {
         intent: null,
         nextState: params.request.conversationState,
-        normalizationFailureKind: normalizedResult.failureKind,
+        normalizationFailureKind: compiledResult.failureKind,
       }
     }
 
-    const reducedState = reduceChatConversationState({
-      previousState: params.request.conversationState,
-      contextAction: normalizedResult.contextAction,
-      intent: normalizedResult.intent,
-    })
-
     return {
-      intent: reducedState.intent,
-      nextState: reducedState.nextState,
+      intent: compiledResult.compatibilityIntent,
+      nextState: compiledResult.nextConversationState,
       normalizationFailureKind: null,
     }
   }
@@ -230,11 +222,12 @@ export async function runStatefulBlogChatPipeline({
     assistantProfile,
     entityCandidates,
   })
-  const { intent, nextState, normalizationFailureKind } = buildIntentAfterPlanning({
-    request,
-    plannerResult,
-    entityCandidates,
-  })
+  const { intent, nextState, normalizationFailureKind } =
+    buildIntentAfterPlanning({
+      request,
+      plannerResult,
+      entityCandidates,
+    })
   const plannerFailureKind = plannerResult.ok
     ? normalizationFailureKind
     : plannerResult.failureKind

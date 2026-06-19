@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Pool, type PoolClient } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
-import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
+import type {
+  ChatEvidenceTime,
+  ChatSourceCategory,
+} from '@/features/chat/model/chat-evidence'
 import type {
   GraphRagChunk,
   GraphRagEntity,
@@ -68,6 +71,33 @@ function normalizeBooleanEnvironmentValue(
   return environmentValue === 'true'
 }
 
+function normalizeDatabaseTimestamp(timestampValue: unknown): string | null {
+  if (timestampValue instanceof Date) {
+    return timestampValue.toISOString()
+  }
+
+  return typeof timestampValue === 'string' ? timestampValue : null
+}
+
+function mapEvidenceTime(
+  row: Record<string, unknown>,
+): ChatEvidenceTime | null {
+  const value = normalizeDatabaseTimestamp(row.evidence_time_value)
+  const kind = row.evidence_time_kind
+
+  if (
+    !value ||
+    (kind !== 'published' &&
+      kind !== 'updated' &&
+      kind !== 'project_started' &&
+      kind !== 'project_ended')
+  ) {
+    return null
+  }
+
+  return { kind, value }
+}
+
 function buildChatRagDatabasePool(): Pool {
   return new Pool({
     connectionString: CHAT_RAG.DATABASE.URL,
@@ -103,8 +133,8 @@ function mapChunkRowToGraphRagChunk(
       typeof row.section_title === 'string' ? row.section_title : null,
     tags: parseJsonArray<string>(row.tags_json),
     searchTerms: parseJsonArray<string>(row.search_terms_json),
-    publishedAt:
-      typeof row.published_at === 'string' ? row.published_at : null,
+    publishedAt: typeof row.published_at === 'string' ? row.published_at : null,
+    evidenceTime: mapEvidenceTime(row),
     sourceCategory: row.source_category as GraphRagChunk['sourceCategory'],
     entityIds: parseJsonArray<string>(row.entity_ids_json),
   }
@@ -206,6 +236,8 @@ export async function initializeChatRagDatabase(
       tags_json JSONB NOT NULL,
       search_terms_json JSONB NOT NULL,
       published_at TIMESTAMPTZ,
+      evidence_time_kind TEXT,
+      evidence_time_value TIMESTAMPTZ,
       source_category TEXT NOT NULL,
       entity_ids_json JSONB NOT NULL,
       PRIMARY KEY (index_version, id)
@@ -253,6 +285,12 @@ export async function initializeChatRagDatabase(
 
     CREATE INDEX IF NOT EXISTS chat_rag_embeddings_locale_index
     ON ${CHAT_RAG_DATABASE.TABLES.EMBEDDINGS}(index_version, locale);
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.CHUNKS}
+      ADD COLUMN IF NOT EXISTS evidence_time_kind TEXT;
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.CHUNKS}
+      ADD COLUMN IF NOT EXISTS evidence_time_value TIMESTAMPTZ;
   `)
 }
 
@@ -329,11 +367,13 @@ export async function replaceChatRagLocaleIndex(params: {
           tags_json,
           search_terms_json,
           published_at,
+          evidence_time_kind,
+          evidence_time_value,
           source_category,
           entity_ids_json
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9,
-          $10::jsonb, $11::jsonb, $12, $13, $14::jsonb
+          $10::jsonb, $11::jsonb, $12, $13, $14, $15, $16::jsonb
         )
       `,
       [
@@ -349,6 +389,8 @@ export async function replaceChatRagLocaleIndex(params: {
         JSON.stringify(chunk.tags),
         JSON.stringify(chunk.searchTerms),
         chunk.publishedAt ?? null,
+        chunk.evidenceTime?.kind ?? null,
+        chunk.evidenceTime?.value ?? null,
         chunk.sourceCategory,
         JSON.stringify(chunk.entityIds),
       ],
@@ -467,10 +509,7 @@ export async function activateChatRagIndexRun(params: {
         ON CONFLICT (singleton_id)
         DO UPDATE SET active_index_version = EXCLUDED.active_index_version
       `,
-      [
-        CHAT_RAG_DATABASE.ACTIVE_INDEX_SINGLETON_ID,
-        params.indexVersion,
-      ],
+      [CHAT_RAG_DATABASE.ACTIVE_INDEX_SINGLETON_ID, params.indexVersion],
     )
 
     await params.databaseClient.query(
@@ -624,6 +663,8 @@ export async function selectChatRagLocaleSearchData(params: {
         chunks.tags_json,
         chunks.search_terms_json,
         chunks.published_at,
+        chunks.evidence_time_kind,
+        chunks.evidence_time_value,
         chunks.source_category,
         chunks.entity_ids_json,
         GREATEST(0, 1 - (embeddings.embedding <=> $3::vector))::float8 AS semantic_similarity

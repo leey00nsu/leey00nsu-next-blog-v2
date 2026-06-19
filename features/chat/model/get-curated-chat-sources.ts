@@ -4,7 +4,10 @@ import { getAllProjects } from '@/entities/project/lib/project'
 import type { Project } from '@/entities/project/model/types'
 import { CHAT_ASSISTANT } from '@/features/chat/config/chat-assistant'
 import { buildCuratedChatSourceRecords } from '@/features/chat/lib/chat-curated-source-records'
-import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type {
+  ChatEvidenceRecord,
+  ChatEvidenceTime,
+} from '@/features/chat/model/chat-evidence'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import {
   buildLocalizedRoutePath,
@@ -113,14 +116,17 @@ function buildProjectTechStackLines(projects: Project[]): string[] {
   })
 }
 
-function toProjectPublishedAt(project: Project): string | null {
+function toProjectEvidenceTime(project: Project): ChatEvidenceTime | null {
   const representativePeriod = project.period.end ?? project.period.start
 
   if (!PROJECT_PERIOD_DATE.PATTERN.test(representativePeriod)) {
     return null
   }
 
-  return `${representativePeriod}${PROJECT_PERIOD_DATE.FIRST_DAY_SUFFIX}`
+  return {
+    kind: project.period.end ? 'project_ended' : 'project_started',
+    value: `${representativePeriod}${PROJECT_PERIOD_DATE.FIRST_DAY_SUFFIX}`,
+  }
 }
 
 function buildProfileTechStackSource(params: {
@@ -304,7 +310,7 @@ export const getCuratedChatSources = cache(
             .filter(Boolean)
             .join(' '),
           markdownContent: project.content,
-          publishedAt: toProjectPublishedAt(project),
+          evidenceTime: toProjectEvidenceTime(project),
           tags: projectTags,
           baseSearchPhrases: [
             ...projectSemanticSearchTerms,

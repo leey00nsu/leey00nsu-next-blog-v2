@@ -17,6 +17,10 @@ const CHAT_EVIDENCE_RECORDS: ChatEvidenceRecord[] = [
     sectionTitle: null,
     tags: ['lee-spec-kit', 'ai'],
     searchTerms: ['하네스', '문서 구조'],
+    evidenceTime: {
+      kind: 'published',
+      value: '2026-03-20T00:00:00.000Z',
+    },
     sourceCategory: 'blog',
   },
 ]
@@ -41,5 +45,9 @@ describe('buildGraphRagEntities', () => {
     const chunks = buildGraphRagChunks(CHAT_EVIDENCE_RECORDS)
 
     expect(chunks[0]?.entityIds.length).toBeGreaterThan(0)
+    expect(chunks[0]?.evidenceTime).toEqual({
+      kind: 'published',
+      value: '2026-03-20T00:00:00.000Z',
+    })
   })
 })

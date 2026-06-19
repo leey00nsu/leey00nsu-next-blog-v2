@@ -230,6 +230,7 @@ function buildSelectedMatches(
       sectionTitle: chunk.sectionTitle,
       tags: chunk.tags,
       publishedAt: chunk.publishedAt,
+      evidenceTime: chunk.evidenceTime,
       searchTerms: chunk.searchTerms,
       sourceCategory: chunk.sourceCategory,
     }

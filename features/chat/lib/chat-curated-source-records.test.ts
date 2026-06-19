@@ -26,7 +26,10 @@ describe('buildCuratedChatSourceRecords', () => {
       tags: ['project', 'next.js'],
       baseSearchPhrases: ['example', '예시 프로젝트'],
       sourceCategory: 'project',
-      publishedAt: '2026-04-01T00:00:00.000Z',
+      evidenceTime: {
+        kind: 'project_ended',
+        value: '2026-04-01T00:00:00.000Z',
+      },
     })
 
     expect(records).toHaveLength(3)
@@ -50,9 +53,13 @@ describe('buildCuratedChatSourceRecords', () => {
       expect.arrayContaining(['example', '예시 프로젝트']),
     )
     expect(
-      records.every(
-        (record) => record.publishedAt === '2026-04-01T00:00:00.000Z',
-      ),
+      records.every((record) => {
+        return (
+          record.evidenceTime?.kind === 'project_ended' &&
+          record.evidenceTime.value === '2026-04-01T00:00:00.000Z' &&
+          record.publishedAt === undefined
+        )
+      }),
     ).toBe(true)
   })
 })

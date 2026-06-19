@@ -61,6 +61,8 @@ describe('selectChatRagLocaleSearchData', () => {
             tags_json: ['react', 'nivo', 'chart'],
             search_terms_json: ['nivo', 'what is nivo'],
             published_at: '2023-08-07T00:00:00.000Z',
+            evidence_time_kind: 'published',
+            evidence_time_value: '2023-08-07T00:00:00.000Z',
             source_category: 'blog',
             entity_ids_json: ['ko:term:nivo'],
             semantic_similarity: 0.91,
@@ -87,6 +89,10 @@ describe('selectChatRagLocaleSearchData', () => {
       'chart',
     ])
     expect(result.semanticCandidates[0]?.entityIds).toEqual(['ko:term:nivo'])
+    expect(result.semanticCandidates[0]?.evidenceTime).toEqual({
+      kind: 'published',
+      value: '2023-08-07T00:00:00.000Z',
+    })
     expect(queryTexts.at(-1)).toContain('AND chunks.source_category = $5')
     expect(queryTexts.at(-1)).toContain('AND chunks.slug = $6')
   })

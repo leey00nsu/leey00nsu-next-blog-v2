@@ -20,7 +20,7 @@ interface BuildCuratedChatSourceRecordsParams {
   tags: string[]
   baseSearchPhrases: string[]
   sourceCategory: ChatEvidenceRecord['sourceCategory']
-  publishedAt?: string | null
+  evidenceTime?: ChatEvidenceRecord['evidenceTime']
 }
 
 const CURATED_SOURCE_RECORDS = {
@@ -172,7 +172,7 @@ function buildIntroRecord(
       tags: params.tags,
       baseSearchPhrases: params.baseSearchPhrases,
     }),
-    publishedAt: params.publishedAt,
+    evidenceTime: params.evidenceTime,
     sourceCategory: params.sourceCategory,
   }
 }
@@ -215,7 +215,7 @@ function buildSectionRecord(
       tags: params.tags,
       baseSearchPhrases: params.baseSearchPhrases,
     }),
-    publishedAt: params.publishedAt,
+    evidenceTime: params.evidenceTime,
     sourceCategory: params.sourceCategory,
   }
 }

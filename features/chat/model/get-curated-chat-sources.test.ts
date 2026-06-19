@@ -41,7 +41,7 @@ describe('getCuratedChatSources', () => {
     expect(assistantSectionSource?.url).toContain('#')
   })
 
-  it('프로젝트 source에 프로젝트 종료 기간을 게시일로 저장한다', async () => {
+  it('프로젝트 source에 프로젝트 종료 시간을 명시적으로 저장한다', async () => {
     const curatedChatSources = await getCuratedChatSources('ko')
 
     const leemageSources = curatedChatSources.filter((source) => {
@@ -50,9 +50,13 @@ describe('getCuratedChatSources', () => {
 
     expect(leemageSources.length).toBeGreaterThan(0)
     expect(
-      leemageSources.every(
-        (source) => source.publishedAt === '2026-01-01T00:00:00.000Z',
-      ),
+      leemageSources.every((source) => {
+        return (
+          source.evidenceTime?.kind === 'project_ended' &&
+          source.evidenceTime.value === '2026-01-01T00:00:00.000Z' &&
+          source.publishedAt === undefined
+        )
+      }),
     ).toBe(true)
   })
 

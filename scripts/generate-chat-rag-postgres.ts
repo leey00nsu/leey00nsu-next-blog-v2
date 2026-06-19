@@ -34,6 +34,9 @@ function buildBlogEvidenceRecords(
   return (GENERATED_BLOG_SEARCH_RECORDS[locale] ?? []).map((record) => {
     return {
       ...record,
+      evidenceTime: record.publishedAt
+        ? { kind: 'published' as const, value: record.publishedAt }
+        : null,
       sourceCategory: 'blog' as const,
     }
   })

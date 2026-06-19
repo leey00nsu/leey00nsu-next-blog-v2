@@ -83,6 +83,7 @@ export function buildGraphRagChunks(
       tags: record.tags,
       searchTerms: record.searchTerms ?? [],
       publishedAt: record.publishedAt ?? null,
+      evidenceTime: record.evidenceTime ?? null,
       sourceCategory: record.sourceCategory,
       entityIds,
     }

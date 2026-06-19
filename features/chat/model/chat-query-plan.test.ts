@@ -60,4 +60,16 @@ describe('ChatQueryPlanSchema', () => {
       }).success,
     ).toBe(false)
   })
+
+  it('현재 페이지 근거를 current_source target으로 표현한다', () => {
+    expect(
+      ChatQueryPlanSchema.safeParse({
+        ...BASE_QUERY_PLAN,
+        standaloneQuestion: '현재 글에서 구조가 중요한 이유는?',
+        targetSelection: { kind: 'current_source' },
+        sourceSelection: { mode: 'only', categories: ['blog'] },
+        temporalSelection: { mode: 'none' },
+      }).success,
+    ).toBe(true)
+  })
 })

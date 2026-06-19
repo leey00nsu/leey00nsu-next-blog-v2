@@ -113,7 +113,7 @@ Expected: FAIL because both modules are missing.
 
 - [ ] **Step 3: Implement both Zod contracts**
 
-`chat-query-plan.ts` must define `lookup | explain | summarize | compare | recommend | social_reply | contact`, use non-empty unique categories for `only | prefer`, and preserve the existing candidate/preserve/none target selection and conversation action values.
+`chat-query-plan.ts` must define `lookup | explain | summarize | compare | recommend | social_reply | contact`, use non-empty unique categories for `only | prefer`, and define candidate/preserve/current_source/none target selection plus the existing conversation action values.
 
 ```ts
 export const ChatSourceSelectionSchema = z.discriminatedUnion('mode', [
@@ -197,6 +197,7 @@ Also assert:
 - unknown candidate returns `invalid_candidate`.
 - missing slots return `clarification` and do not create a retrieval plan.
 - target category upgrades `all` to `prefer` with that category.
+- `current_source` resolves to the supplied current post slug and fails when the slug is absent.
 - invalid clarification continuation returns `invalid_transition`.
 - the same inputs produce deeply equal outputs.
 

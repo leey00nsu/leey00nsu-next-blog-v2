@@ -6,7 +6,6 @@ import {
   ChatContextActionSchema,
   ChatMissingSlotSchema,
   ChatRequestedFieldSchema,
-  ChatTargetSelectionSchema,
 } from '@/features/chat/model/chat-intent'
 
 export const CHAT_QUERY_OPERATIONS = [
@@ -33,6 +32,7 @@ const CHAT_QUERY_PLAN_LIMITS = {
   MAXIMUM_MISSING_SLOT_COUNT: 4,
   MAXIMUM_CLARIFICATION_CHARACTERS: 160,
   MAXIMUM_REASON_CHARACTERS: 160,
+  MAXIMUM_ENTITY_IDENTIFIER_CHARACTERS: 180,
 } as const
 
 function hasUniqueSourceCategories(
@@ -42,6 +42,22 @@ function hasUniqueSourceCategories(
 }
 
 export const ChatQueryOperationSchema = z.enum(CHAT_QUERY_OPERATIONS)
+
+export const ChatQueryTargetSelectionSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('candidate'),
+      entityId: z
+        .string()
+        .trim()
+        .min(1)
+        .max(CHAT_QUERY_PLAN_LIMITS.MAXIMUM_ENTITY_IDENTIFIER_CHARACTERS),
+    })
+    .strict(),
+  z.object({ kind: z.literal('preserve') }).strict(),
+  z.object({ kind: z.literal('current_source') }).strict(),
+  z.object({ kind: z.literal('none') }).strict(),
+])
 
 export const ChatSourceSelectionSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('all') }).strict(),
@@ -77,7 +93,7 @@ export const ChatQueryPlanSchema = z
       .min(1)
       .max(CHAT_QUERY_PLAN_LIMITS.MAXIMUM_QUESTION_CHARACTERS),
     contextAction: ChatContextActionSchema,
-    targetSelection: ChatTargetSelectionSchema,
+    targetSelection: ChatQueryTargetSelectionSchema,
     operation: ChatQueryOperationSchema,
     sourceSelection: ChatSourceSelectionSchema,
     temporalSelection: ChatTemporalSelectionSchema,
@@ -110,5 +126,8 @@ export const ChatQueryPlanSchema = z
 
 export interface ChatQueryPlan extends z.infer<typeof ChatQueryPlanSchema> {}
 export type ChatQueryOperation = z.infer<typeof ChatQueryOperationSchema>
+export type ChatQueryTargetSelection = z.infer<
+  typeof ChatQueryTargetSelectionSchema
+>
 export type ChatSourceSelection = z.infer<typeof ChatSourceSelectionSchema>
 export type ChatTemporalSelection = z.infer<typeof ChatTemporalSelectionSchema>

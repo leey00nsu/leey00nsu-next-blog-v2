@@ -71,6 +71,12 @@ type ChatTemporalSelection =
       order: 'latest' | 'oldest'
     }
 
+type ChatTargetSelection =
+  | { kind: 'candidate'; entityId: string }
+  | { kind: 'preserve' }
+  | { kind: 'current_source' }
+  | { kind: 'none' }
+
 interface ChatQueryPlan {
   standaloneQuestion: string
   contextAction: ChatContextAction
@@ -130,6 +136,7 @@ interface ChatRetrievalPlan {
 Compiler는 다음 불변조건을 적용한다.
 
 - candidate ID는 catalog의 canonical target으로만 변환한다.
+- `current_source`는 현재 페이지 slug가 있을 때만 blog target으로 컴파일하고, slug가 없으면 `invalid_query_plan`으로 거부한다.
 - target이 있으면 해당 source category를 최소 `prefer`로 승격한다.
 - `direct_metadata`는 `lookup + single`이며 requested field가 `title`, `published_at`과 같은 확정적 메타데이터로만 구성될 때 허용한다.
 - `explain`, `summarize`, `compare`, `recommend`는 항상 `retrieve_and_generate`를 사용한다.

@@ -1,5 +1,9 @@
 # Chatbot LangGraph Orchestration Decision
 
+> Status: Superseded by `docs/superpowers/specs/2026-06-19-langgraph-query-plan-design.md`.
+> The chatbot crossed the revisit threshold after planner, clarification, cache,
+> direct-response, and citation-validation branches were added.
+
 ## Context
 
 The blog chatbot currently has two orchestration layers.

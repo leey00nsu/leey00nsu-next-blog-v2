@@ -7,6 +7,7 @@ import type {
   GraphRagEntity,
   GraphRagRelation,
 } from '@/features/chat/model/graph-rag'
+import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 
 function buildSemanticCandidate(
@@ -306,6 +307,43 @@ describe('runChatRagWorkflow', () => {
           title: null,
         },
       }),
+    )
+  })
+
+  it('compiled retrieval plan을 semantic search data loader로 전달한다', async () => {
+    const retrievalPlan: ChatRetrievalPlan = {
+      executionKind: 'retrieve_and_generate',
+      standaloneQuestion: 'Leemage의 핵심 기능은?',
+      operation: 'explain',
+      canonicalTargets: [
+        {
+          kind: 'named_entity',
+          sourceCategory: 'project',
+          slug: 'leemage',
+          title: 'Leemage',
+        },
+      ],
+      sourceStrategy: 'only',
+      sourceCategories: ['project'],
+      requiredConcepts: ['Leemage'],
+      optionalConcepts: [],
+      requestedFields: ['content'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
+      maximumEvidenceCount: 3,
+    }
+    const selectSearchDataMock = vi.fn(async () => buildSearchData({}))
+
+    await runChatRagWorkflow({
+      question: retrievalPlan.standaloneQuestion,
+      locale: 'ko',
+      retrievalPlan,
+      embedQuestion: async () => [1, 0],
+      selectSearchData: selectSearchDataMock,
+    })
+
+    expect(selectSearchDataMock).toHaveBeenCalledWith(
+      expect.objectContaining({ retrievalPlan }),
     )
   })
 })

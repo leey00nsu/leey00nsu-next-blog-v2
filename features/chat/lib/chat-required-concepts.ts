@@ -71,7 +71,7 @@ function buildEvidenceSearchText(record: ChatEvidenceRecord): string {
   )
 }
 
-function recordMatchesConcept(
+export function doesChatEvidenceMatchConcept(
   record: ChatEvidenceRecord,
   concept: string,
 ): boolean {
@@ -89,7 +89,9 @@ export function normalizeChatConcepts(params: {
   void params.locale
 
   return [
-    ...new Set(params.concepts.map((concept) => resolveCanonicalConcept(concept))),
+    ...new Set(
+      params.concepts.map((concept) => resolveCanonicalConcept(concept)),
+    ),
   ]
 }
 
@@ -111,7 +113,7 @@ export function selectEvidenceCoveringRequiredConcepts(params: {
 
   for (const requiredConcept of requiredConcepts) {
     const requiredMatch = params.matches.find((match) => {
-      return recordMatchesConcept(match, requiredConcept)
+      return doesChatEvidenceMatchConcept(match, requiredConcept)
     })
 
     if (!requiredMatch) {

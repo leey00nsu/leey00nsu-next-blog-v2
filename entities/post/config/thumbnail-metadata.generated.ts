@@ -407,10 +407,22 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoQAAkABUB8JYwAAunDG3HizAAA/u/KoLNAklLbR/8zBGiy8Mu4sWx65qSefbG6FqH3nBiXtZPt47ZagAA=",
     "isAnimated": false
   },
+  "/public/projects/blog/blog-list-screen.png": {
+    "width": 2594,
+    "height": 1842,
+    "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACwAQCdASoQAAsABUB8JaQAAuQmb7LgAP7x2XlSw6/97VvH0dpMgAAA",
+    "isAnimated": false
+  },
   "/public/projects/blog/logo.webp": {
     "width": 2048,
     "height": 2048,
     "base64": "data:image/webp;base64,UklGRr4AAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSEkAAAARL6CobSM2VTq39/8iInBN/mAaSbKqh/6jZ8/+hfBp8g/m0Q8hov8TIP4sQwUm0NEGlojDBi5MRAduVOAB7b1weg5mT5SlDGQCAFZQOCBOAAAAUAIAnQEqEAAQAAVAfCWwAnR/ABhL7hiz3VyAAP6M8QmRA9Y5duRfGIOjAVkt4AFD1ANq7ZvmiSAwtIfGDqQbQjrFydWhJI/QHOTLgQAA",
+    "isAnimated": false
+  },
+  "/public/projects/blog/studio-editor-screen.png": {
+    "width": 2590,
+    "height": 1846,
+    "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAsABUB8JaQAA3AA/vBjGsh6pQAA",
     "isAnimated": false
   },
   "/public/projects/lee-spec-kit/logo.png": {
@@ -419,10 +431,46 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAwAgCdASoPABAABUB8JbACdEf/gS+OVqAc6AD+6gRXTc8ei4igDOMIa8ISm4EWTwgFVFw8ZGd8+OfaTlW9h/gPQygkKzX6My+fXyst0ujSxncqgSmlkcNvfoiAAA==",
     "isAnimated": false
   },
+  "/public/projects/lee-spec-kit/spec-workflow.png": {
+    "width": 1448,
+    "height": 1086,
+    "base64": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAABwAQCdASoQAAwABUB8JZ2DrAHJgAD+79bxysK6103Bm3G3l+SG2qIqYQAAAA==",
+    "isAnimated": false
+  },
   "/public/projects/leemage/cloudy.png": {
     "width": 1024,
     "height": 1024,
     "base64": "data:image/webp;base64,UklGRpQAAABXRUJQVlA4WAoAAAAQAAAADwAADwAAQUxQSCEAAAARFyAQSBRC33iNiIgFM23bWP3KslCGfwgi+p9l4byHKwMAVlA4IEwAAADwAQCdASoQABAABUB8JbACdACqPPQysmQA+daBg/3yJhfBc4kK4E9nOTpd0CfogrAxmAlpUvGQEDjOnk3U1xeX0v39iZj21RlsAAAA",
+    "isAnimated": false
+  },
+  "/public/projects/leemage/file-detail-image.png": {
+    "width": 1600,
+    "height": 1120,
+    "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAABwAQCdASoQAAsABUB8JZwAAls9oAD+79JM+LOG6N1+qIHJQi9mLgAA",
+    "isAnimated": false
+  },
+  "/public/projects/leemage/monitoring-30d.png": {
+    "width": 1600,
+    "height": 1120,
+    "base64": "data:image/webp;base64,UklGRjAAAABXRUJQVlA4ICQAAACwAQCdASoQAAsABUB8JZwAAudc5ioAAP7vt+6f0/viM+8zgAA=",
+    "isAnimated": false
+  },
+  "/public/projects/leemage/project-detail-grid.png": {
+    "width": 2812,
+    "height": 1846,
+    "base64": "data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAACQAQCdASoQAAsABUB8JQAAXOsrAgAA/u/Awbp57e1L216IJN++dwVolyGvD5iPIFuqJyOfou8+Zn74tUVFvFlF09kwAA==",
+    "isAnimated": false
+  },
+  "/public/projects/leesfield/image-generation.png": {
+    "width": 1440,
+    "height": 1000,
+    "base64": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoQAAsABUB8JQAAXOk5/QAA/vKk7rl4Uh4s4XZhi4p9MVv8gAAAAA==",
+    "isAnimated": false
+  },
+  "/public/projects/leesfield/landing.png": {
+    "width": 1440,
+    "height": 1000,
+    "base64": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAQCdASoQAAsABUB8JbACdAEO/MSAAAD+8RmdAEDHzFQc1H+tgM4D3kF93ptXX35Di2Foj7dXEYU2aAxSmpq1K5W1wAAA",
     "isAnimated": false
   },
   "/public/projects/leesfield/logo.webp": {

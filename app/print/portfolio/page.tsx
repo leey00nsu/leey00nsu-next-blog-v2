@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllProjects } from '@/entities/project/lib/project'
 import { AboutDetail } from '@/widgets/about/ui/about-detail'
-import { ProjectDetail } from '@/widgets/project/ui/project-detail'
+import { ProjectPrintDetail } from '@/widgets/project/ui/project-print-detail'
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
 export default async function PortfolioPrintPage() {
@@ -19,11 +19,12 @@ export default async function PortfolioPrintPage() {
   const projects = await getAllProjects(locale)
 
   return (
-    <div className="mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
+    <div className="portfolio-print-root mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
       <AboutDetail
         about={about}
         locale={locale}
         showDownloadButton={false}
+        showProjectSection={false}
         projectCardLinkVariant="github"
         enableBlockEntranceAnimation={false}
       />
@@ -34,11 +35,7 @@ export default async function PortfolioPrintPage() {
           style={{ breakBefore: 'page' }}
           className="pt-10"
         >
-          <ProjectDetail
-            locale={locale}
-            project={project}
-            enableBlockEntranceAnimation={false}
-          />
+          <ProjectPrintDetail locale={locale} project={project} />
         </div>
       ))}
     </div>

@@ -85,7 +85,7 @@ export function ProjectSummaryCardView({
   const hasDimensions = project.width > 0 && project.height > 0
 
   const className =
-    'group border-border bg-card hover:border-primary/60 focus-visible:ring-primary/60 block rounded-lg border p-5 transition hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none'
+    'group border-border bg-card hover:border-primary/60 focus-visible:ring-primary/60 block break-inside-avoid rounded-lg border p-5 transition hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none [page-break-inside:avoid]'
 
   const content = (
     <article className="flex items-start gap-4">
@@ -96,6 +96,7 @@ export function ProjectSummaryCardView({
             alt=""
             aria-hidden
             className="h-full w-full object-cover"
+            imageClassName="scale-110"
             width={hasDimensions ? project.width : undefined}
             height={hasDimensions ? project.height : undefined}
           />

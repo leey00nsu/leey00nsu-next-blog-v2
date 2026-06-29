@@ -3,6 +3,7 @@ import type { Project } from '@/entities/project/model/types'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { SupportedLocale } from '@/shared/config/constants'
 import { ProjectDetailView } from '@/widgets/project/ui/project-detail-view'
+import { ProjectMdxImage } from '@/widgets/project/ui/project-mdx-image'
 
 interface ProjectDetailProps {
   project: Project
@@ -37,7 +38,10 @@ export async function ProjectDetail({
         projectTypeLabel,
       }}
     >
-      <MdxRenderer content={project.content} />
+      <MdxRenderer
+        content={project.content}
+        components={{ img: ProjectMdxImage }}
+      />
     </ProjectDetailView>
   )
 }

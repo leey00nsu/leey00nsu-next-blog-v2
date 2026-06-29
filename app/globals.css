@@ -179,6 +179,29 @@
   }
 }
 
+.portfolio-print-root .prose :where(blockquote, pre, table):not(
+    :where([class~='not-prose'] *)
+  ) {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.portfolio-print-root .prose :where(h2, h3, h4):not(:where([class~='not-prose'] *)) {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.portfolio-print-root .prose :where(li):not(:where([class~='not-prose'] *)) {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.portfolio-print-root .prose :where(p:has(img)):not(:where([class~='not-prose'] *)),
+.portfolio-print-root .prose :where(figure):not(:where([class~='not-prose'] *)) {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .blog-chat-assistant-loading-text {
   color: transparent;
   background-image: linear-gradient(

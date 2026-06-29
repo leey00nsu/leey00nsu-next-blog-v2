@@ -9,6 +9,7 @@ import { buildDefaultSizes } from '@/shared/ui/custom-image/lib/build-default-si
 export interface CustomImageProps extends ImageProps {
   base64?: string
   isAnimated?: boolean
+  imageClassName?: string
 }
 
 function isExternalUrl(src: ImageProps['src']): boolean {
@@ -23,6 +24,7 @@ export function CustomImage({
   height,
   base64,
   className,
+  imageClassName,
   loading: loadingProp,
   priority,
   sizes,
@@ -141,6 +143,7 @@ export function CustomImage({
             'absolute inset-0 !m-0 h-full w-full object-contain opacity-100 blur-xs',
             isLoaded && 'opacity-0 transition-opacity',
             className,
+            imageClassName,
           )}
           src={base64}
           loading="eager"
@@ -162,6 +165,7 @@ export function CustomImage({
           'absolute inset-0 !m-0 h-full w-full object-contain',
           isLoaded ? 'opacity-100 transition-opacity' : 'opacity-0',
           className,
+          imageClassName,
         )}
         loading={resolvedLoading}
         priority={priority}

@@ -30,6 +30,9 @@ const BASE_URL = `http://localhost:${SERVER_PORT}`
 const SERVER_STARTUP_TIMEOUT_MS = 30_000
 const SERVER_STARTUP_CHECK_INTERVAL_MS = 500
 const PDF_RENDER = {
+  VIEWPORT_WIDTH_PX: 1440,
+  VIEWPORT_HEIGHT_PX: 1080,
+  DEVICE_SCALE_FACTOR: 2,
   IMAGE_PRELOAD_INITIAL_WAIT_MS: 800,
   IMAGE_PRELOAD_SCROLL_STEP_PX: 600,
   IMAGE_PRELOAD_SCROLL_WAIT_MS: 80,
@@ -202,7 +205,9 @@ async function preparePageForPdf(page: Page): Promise<void> {
   // 불필요한 UI 요소 숨김
   await page.addStyleTag({
     content: `
-        nav, footer, aside, [data-next-route-announcer], [data-nextjs-toolbox],
+        nav, footer, aside, nextjs-portal, [data-next-route-announcer],
+        [data-nextjs-toolbox], [data-nextjs-toast], [data-nextjs-dialog],
+        [data-nextjs-dialog-overlay],
         #__next_devtools_container, #__next-route-announcer, #__next_devtools_panel,
         .nextjs-toast-container { display: none !important; }
         body { background: white !important; }
@@ -315,7 +320,11 @@ async function generatePdfForLocale(
 
   try {
     context = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
+      viewport: {
+        width: PDF_RENDER.VIEWPORT_WIDTH_PX,
+        height: PDF_RENDER.VIEWPORT_HEIGHT_PX,
+      },
+      deviceScaleFactor: PDF_RENDER.DEVICE_SCALE_FACTOR,
     })
 
     await context.addCookies([

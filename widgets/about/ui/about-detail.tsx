@@ -1,6 +1,7 @@
 import { About } from '@/entities/about/model/types'
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { ProjectSection } from '@/widgets/about/ui/project-section'
+import { AboutProfileImage } from '@/widgets/about/ui/about-profile-image'
 import { EntranceMotionBlock } from '@/shared/ui/entrance-motion-block'
 import {
   PDF,
@@ -11,14 +12,16 @@ import type { ProjectSummaryCardLinkVariant } from '@/entities/project/ui/projec
 
 const ABOUT_DETAIL_BLOCK_ANIMATION = {
   DOWNLOAD_BUTTONS_DELAY_SECONDS: 0,
-  CONTENT_DELAY_SECONDS: 0.06,
-  PROJECT_SECTION_DELAY_SECONDS: 0.12,
+  PROFILE_IMAGE_DELAY_SECONDS: 0.06,
+  CONTENT_DELAY_SECONDS: 0.12,
+  PROJECT_SECTION_DELAY_SECONDS: 0.18,
 } as const
 
 interface AboutDetailProps {
   about: About
   locale: SupportedLocale
   showDownloadButton?: boolean
+  showProjectSection?: boolean
   projectCardLinkVariant?: ProjectSummaryCardLinkVariant
   enableBlockEntranceAnimation?: boolean
 }
@@ -27,6 +30,7 @@ export function AboutDetail({
   about,
   locale,
   showDownloadButton = true,
+  showProjectSection = true,
   projectCardLinkVariant,
   enableBlockEntranceAnimation = true,
 }: AboutDetailProps) {
@@ -51,21 +55,30 @@ export function AboutDetail({
         </EntranceMotionBlock>
       ) : null}
       <EntranceMotionBlock
+        className="not-prose"
+        delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.PROFILE_IMAGE_DELAY_SECONDS}
+        disabled={!enableBlockEntranceAnimation}
+      >
+        <AboutProfileImage />
+      </EntranceMotionBlock>
+      <EntranceMotionBlock
         delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.CONTENT_DELAY_SECONDS}
         disabled={!enableBlockEntranceAnimation}
       >
         <MdxRenderer content={about.content} />
       </EntranceMotionBlock>
-      <EntranceMotionBlock
-        className="not-prose"
-        delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.PROJECT_SECTION_DELAY_SECONDS}
-        disabled={!enableBlockEntranceAnimation}
-      >
-        <ProjectSection
-          locale={locale}
-          projectCardLinkVariant={projectCardLinkVariant}
-        />
-      </EntranceMotionBlock>
+      {showProjectSection ? (
+        <EntranceMotionBlock
+          className="not-prose"
+          delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.PROJECT_SECTION_DELAY_SECONDS}
+          disabled={!enableBlockEntranceAnimation}
+        >
+          <ProjectSection
+            locale={locale}
+            projectCardLinkVariant={projectCardLinkVariant}
+          />
+        </EntranceMotionBlock>
+      ) : null}
     </article>
   )
 }

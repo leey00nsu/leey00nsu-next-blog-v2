@@ -4,6 +4,7 @@ import { formatProjectPeriod } from '@/entities/project/lib/format-project-perio
 import { removePublic } from '@/shared/lib/remove-public'
 import { EntranceMotionBlock } from '@/shared/ui/entrance-motion-block'
 import { CustomImage } from '@/shared/ui/custom-image'
+import { cn } from '@/shared/lib/utils'
 
 const PROJECT_DETAIL_BLOCK_ANIMATION = {
   HEADER_DELAY_SECONDS: 0,
@@ -23,6 +24,8 @@ interface ProjectDetailViewProps {
   project: Project
   labels: ProjectDetailLabels
   children?: ReactNode
+  beforeContent?: ReactNode
+  articleClassName?: string
   enableBlockEntranceAnimation?: boolean
 }
 
@@ -30,6 +33,8 @@ export function ProjectDetailView({
   project,
   labels,
   children,
+  beforeContent,
+  articleClassName,
   enableBlockEntranceAnimation = true,
 }: ProjectDetailViewProps) {
   const formattedPeriod = formatProjectPeriod(
@@ -54,6 +59,7 @@ export function ProjectDetailView({
                   alt=""
                   aria-hidden
                   className="h-full w-full object-cover"
+                  imageClassName="scale-110"
                   width={hasDimensions ? project.width : undefined}
                   height={hasDimensions ? project.height : undefined}
                 />
@@ -110,7 +116,13 @@ export function ProjectDetailView({
         delaySeconds={PROJECT_DETAIL_BLOCK_ANIMATION.CONTENT_DELAY_SECONDS}
         disabled={!enableBlockEntranceAnimation}
       >
-        <article className="prose prose-lg dark:prose-invert mx-auto">
+        {beforeContent}
+        <article
+          className={cn(
+            'prose prose-lg dark:prose-invert mx-auto',
+            articleClassName,
+          )}
+        >
           {children}
         </article>
       </EntranceMotionBlock>

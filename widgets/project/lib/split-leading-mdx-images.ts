@@ -6,8 +6,17 @@ interface SplitLeadingMdxImagesResult {
   remainingContent: string
 }
 
+interface SplitLeadingMdxImagesOptions {
+  preserveRemainingLeadingImages?: boolean
+}
+
+const DEFAULT_SPLIT_LEADING_MDX_IMAGES_OPTIONS = {
+  preserveRemainingLeadingImages: true,
+} as const
+
 export function splitLeadingMdxImages(
   content: string,
+  options: SplitLeadingMdxImagesOptions = DEFAULT_SPLIT_LEADING_MDX_IMAGES_OPTIONS,
 ): SplitLeadingMdxImagesResult {
   const leadingImageBlockMatch = content.match(LEADING_MDX_IMAGE_BLOCK_REGEX)
 
@@ -37,7 +46,12 @@ export function splitLeadingMdxImages(
     }
   }
 
-  const remainingLeadingImages = imageMarkdowns.slice(1).join('\n\n')
+  const shouldPreserveRemainingLeadingImages =
+    options.preserveRemainingLeadingImages ??
+    DEFAULT_SPLIT_LEADING_MDX_IMAGES_OPTIONS.preserveRemainingLeadingImages
+  const remainingLeadingImages = shouldPreserveRemainingLeadingImages
+    ? imageMarkdowns.slice(1).join('\n\n')
+    : ''
   const contentAfterLeadingImages = content
     .slice(leadingImageBlock.length)
     .trimStart()

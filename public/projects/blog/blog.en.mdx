@@ -5,7 +5,7 @@ summary: A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit
 keyFeatures:
   - Author MDX in Studio and auto-commit to GitHub
   - Multilingual MDX with OpenAI-powered translation
-  - Blog Q&A chatbot powered by lexical search and Postgres RAG
+  - Blog Q&A chatbot powered by lexical search and PostgreSQL RAG
   - Automatic image metadata injection and portfolio PDF generation
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
@@ -50,9 +50,9 @@ Recently, I added a grounded Q&A chatbot that answers from blog posts, profile c
 - MDX-based blog (syntax highlighting, image metadata, etc.)
 - Studio editor (Tiptap) for authoring frontmatter/body and uploading images
 - GitHub API (Octokit) auto-commit for MDX/images
-- i18n: `next-intl` + OpenAI-powered translation
-- AI image generation from selected text (requires `LEESFIELD_API_KEY`)
-- Blog Q&A chatbot: Question Planner, lexical/curated search, Postgres (`pgvector`) Graph-RAG, citation validation
+- i18n: next-intl + OpenAI-powered translation
+- AI image generation from selected text (requires a Leesfield API key)
+- Blog Q&A chatbot: Question Planner, lexical/curated search, PostgreSQL(pgvector) Graph-RAG, citation validation
 - Playwright-based portfolio PDF generation
 
 ## Problem
@@ -69,7 +69,7 @@ Recently, I added a grounded Q&A chatbot that answers from blog posts, profile c
 - Synchronize Korean/English content with OpenAI-powered translation
 - Automate commits to a branch via GitHub API (Octokit) to streamline deployment
 - Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance
-- Generate lexical search records from MDX at build time, then combine curated sources with Postgres (`pgvector`) Graph-RAG for grounded Q&A
+- Generate lexical search records from MDX at build time, then combine curated sources with PostgreSQL(pgvector) Graph-RAG for grounded Q&A
 - Use a question router to choose direct response, clarification, or lexical/semantic retrieval first, then restrict answers through citation validation
 - Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach
 - Automate portfolio PDF output with a Playwright-based pipeline
@@ -83,13 +83,3 @@ Recently, I added a grounded Q&A chatbot that answers from blog posts, profile c
 - **Improved web performance**: More stable image rendering contributes to better LCP/CLS
 - **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing
 
-## Tech Stack
-
-- Frontend: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
-- MDX: next-mdx-remote, remark/rehype
-- i18n: next-intl
-- Editor: Tiptap
-- Auth: NextAuth
-- AI/Automation: OpenAI API, AI SDK, LangGraph.js, Modal, Octokit (GitHub API)
-- Search/RAG: lexical retrieval, PostgreSQL(`pgvector`)
-- Test/Tooling: Vitest, Playwright, Storybook

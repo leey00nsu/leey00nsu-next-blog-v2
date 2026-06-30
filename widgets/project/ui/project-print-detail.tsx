@@ -11,6 +11,10 @@ interface ProjectPrintDetailProps {
   locale: SupportedLocale
 }
 
+const PRINT_SPLIT_LEADING_MDX_IMAGES_OPTIONS = {
+  preserveRemainingLeadingImages: false,
+} as const
+
 export async function ProjectPrintDetail({
   project,
   locale,
@@ -21,6 +25,7 @@ export async function ProjectPrintDetail({
   })
   const { firstImageContent, remainingContent } = splitLeadingMdxImages(
     project.content,
+    PRINT_SPLIT_LEADING_MDX_IMAGES_OPTIONS,
   )
 
   return (

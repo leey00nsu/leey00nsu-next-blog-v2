@@ -6,7 +6,7 @@ tags:
   - Remotion
   - CapCut
   - 회고
-description: A retrospective on how far I got with an AI video editor called vibe-cut, and why I narrowed the work down to capcut-automation.
+description: A retrospective on how far I got with an AI video editor called vibe-cut, and why I changed direction to capcut-automation.
 date: 2026-04-21
 section: blog
 series:
@@ -19,7 +19,7 @@ writer: leey00nsu
 
 `vibe-cut` was an AI video editor I had been building. I started it because turning long-form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again.
 
-As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I narrowed the direction to `capcut-automation`.
+As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I changed direction to `capcut-automation`.
 
 The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including [AlphaCut](https://alphacut.video/), `OpusClip`, `Klap`, [Vizard](https://vizard.ai/), and [2short.ai](https://2short.ai/).
 
@@ -174,7 +174,7 @@ The hard part was not that I lacked a new editor. It was watching the same video
 
 Once I saw that, it became easier to understand why `vibe-cut` had grown so large. Building a new editor and reducing repeated judgment sit next to each other, but they are not the same job.
 
-## So I Narrowed the Direction to `capcut-automation`
+## So I Changed Direction to `capcut-automation`
 
 That is why I changed direction to `capcut-automation`. It is easier to think of it as a separate project that keeps only the part I truly needed from `vibe-cut`.
 
@@ -194,7 +194,9 @@ At first, I wanted to build an AI video editor. But the more I built, the more I
 
 So now I am not trying to keep `vibe-cut` alive as it was. I am keeping the part where the transcript is read, shorts candidates are selected, and `CapCut` drafts are created. The name changed, but that is the work I was actually repeating.
 
-The biggest thing I took from this project was a question that comes before “how far can AI go in video editing?” If I do not narrow the work I actually want to remove, automation quickly turns into a different product. For now, I am more interested in reducing the decisions I repeat often than in adding more editor features.
+The numbers made that choice clearer. Before, it took about 30 minutes to get one short into a state where I could finish it in `CapCut`. Now `capcut-automation` picks the candidates and creates the `CapCut` draft in about 5 minutes. That is roughly an 83% reduction in time. I also no longer need to pay for a separate tool like AlphaCut, which would have cost about 16,000 KRW per month. For that cost line, the reduction is 100%.
+
+The biggest thing I took from this project was a question that comes before “how far can AI go in video editing?” If I do not first define the work I actually want to remove, automation quickly turns into a different product. For now, I am more interested in reducing the decisions I repeat often than in adding more editor features.
 
 ## References
 

@@ -12,7 +12,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#ai-비디오-편집기-구현을-포기한-이유",
       "excerpt": "vibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꿀 때마다 반복되는 판단과 손이 많이 가는 편집을 줄여보고 싶어서 시작했습니다. 만들다 보니 새 편집기보다 제가 진짜 줄이고 싶은 일이 따로 있다는 걸 알게 됐습니다. 영상을 다시 보며 후보를 고르고, 시작 지점을 다듬고, 자막과 컷을 맞추는 쪽이었습니다. 그래서 지금은 capcut automation으로…",
-      "content": "AI 비디오 편집기 구현을 포기한 이유\nvibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꿀 때마다 반복되는 판단과 손이 많이 가는 편집을 줄여보고 싶어서 시작했습니다. 만들다 보니 새 편집기보다 제가 진짜 줄이고 싶은 일이 따로 있다는 걸 알게 됐습니다. 영상을 다시 보며 후보를 고르고, 시작 지점을 다듬고, 자막과 컷을 맞추는 쪽이었습니다. 그래서 지금은 capcut automation으로 방향을 좁혀 두었습니다. 그때 지치던 건 같은 기준으로 장면을 고르고 자르고 다시 확인하는 일이었습니다. 이 작업을 조금 더 편하게 해주는 서비스들인 알파컷, OpusClip, Klap, Vizard, 2short.ai도 같이 찾아봤습니다. 자동으로 후보를 뽑아주는 점은 편했습니다. 다만 결과를 받아보면 제가 다시 손대는 부분이 늘 비슷했습니다. 말이 시작되기 전후가 어색하거나, 도입부로 쓰기에는 맥락이 약하거나, 자막을 그대로 쓰기 어려운 경우가 많았습니다. 그래도 마지막엔 CapCut을 다시 열어 앞뒤를 자르고, 자막을 고치고, 도입 문구를 새로 잡게 됐습니다. 계속 쓰면 비용도 꽤 쌓였습니다. 그러다 이런 생각이 들었습니다. 이 정도면 직접 만들어볼 수 있지 않을까? 그렇게 vibe cut을 만들기 시작했습니다. 처음의 질문은 단순했습니다. 영상 편집도, 내가 의도를 말하면 에이전트가 꽤 많은 부분을 대신해줄 수 없을까?",
+      "content": "AI 비디오 편집기 구현을 포기한 이유\nvibe cut은 제가 만들던 AI 기반 영상 편집기였습니다. 롱폼 영상을 쇼츠로 바꿀 때마다 반복되는 판단과 손이 많이 가는 편집을 줄여보고 싶어서 시작했습니다. 만들다 보니 새 편집기보다 제가 진짜 줄이고 싶은 일이 따로 있다는 걸 알게 됐습니다. 영상을 다시 보며 후보를 고르고, 시작 지점을 다듬고, 자막과 컷을 맞추는 쪽이었습니다. 그래서 지금은 capcut automation으로 방향을 바꿨습니다. 그때 지치던 건 같은 기준으로 장면을 고르고 자르고 다시 확인하는 일이었습니다. 이 작업을 조금 더 편하게 해주는 서비스들인 알파컷, OpusClip, Klap, Vizard, 2short.ai도 같이 찾아봤습니다. 자동으로 후보를 뽑아주는 점은 편했습니다. 다만 결과를 받아보면 제가 다시 손대는 부분이 늘 비슷했습니다. 말이 시작되기 전후가 어색하거나, 도입부로 쓰기에는 맥락이 약하거나, 자막을 그대로 쓰기 어려운 경우가 많았습니다. 그래도 마지막엔 CapCut을 다시 열어 앞뒤를 자르고, 자막을 고치고, 도입 문구를 새로 잡게 됐습니다. 계속 쓰면 비용도 꽤 쌓였습니다. 그러다 이런 생각이 들었습니다. 이 정도면 직접 만들어볼 수 있지 않을까? 그렇게 vibe cut을 만들기 시작했습니다. 처음의 질문은 단순했습니다. 영상 편집도, 내가 의도를 말하면 에이전트가 꽤 많은 부분을 대신해줄 수 없을까?",
       "sectionTitle": "AI 비디오 편집기 구현을 포기한 이유",
       "tags": [
         "AI",
@@ -23,7 +23,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -66,7 +66,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -109,7 +109,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -152,7 +152,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -195,7 +195,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -238,7 +238,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -281,7 +281,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -324,7 +324,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -367,7 +367,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -410,7 +410,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -436,14 +436,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-capcut-automation으로-방향을-좁혔다",
+      "id": "ko/why-i-gave-up-on-building-an-ai-video-editor/그래서-capcut-automation으로-방향을-바꿨다",
       "locale": "ko",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "AI 비디오 편집기 구현을 포기한 이유",
-      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-capcut-automation으로-방향을-좁혔다",
-      "excerpt": "그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전…",
-      "content": "그래서 `capcut-automation`으로 방향을 좁혔다\n그래서 capcut automation으로 방향을 바꾸게 됐습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전사를 직접 넣을 수도 있고, 로컬 전사나 OpenAI 전사로 바로 만드는 쪽도 붙어 있습니다. capcut automation은 어디를 자를지, 어떤 문구로 시작할지, 어떤 후보를 먼저 볼지를 정리해주고, 선택한 구간마다 CapCut 프로젝트 초안을 하나씩 만들어줍니다. 마지막 다듬기와 내보내기는 여전히 CapCut에서 직접 합니다. 새 편집기를 다시 만드는 대신, 제가 손으로 반복하던 쇼츠 제작의 앞부분만 떼어낸 겁니다. capcut automation 후보 생성 화면",
-      "sectionTitle": "그래서 `capcut-automation`으로 방향을 좁혔다",
+      "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#그래서-capcut-automation으로-방향을-바꿨다",
+      "excerpt": "그래서 capcut automation으로 방향을 바꿨습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전사를…",
+      "content": "그래서 `capcut-automation`으로 방향을 바꿨다\n그래서 capcut automation으로 방향을 바꿨습니다. vibe cut에서 제가 정말 필요했던 부분만 따로 떼어낸 프로젝트라고 보면 됩니다. 여기서 남긴 건 편집기 전체가 아니었습니다. 원본 영상과 전사를 준비하고, AI로 쇼츠 후보 구간을 추리고, 후보마다 도입 문구를 몇 가지씩 만들고, 마지막에는 바로 CapCut에서 열어볼 수 있는 초안을 만드는 과정이었습니다. 지금은 전사를 직접 넣을 수도 있고, 로컬 전사나 OpenAI 전사로 바로 만드는 쪽도 붙어 있습니다. capcut automation은 어디를 자를지, 어떤 문구로 시작할지, 어떤 후보를 먼저 볼지를 정리해주고, 선택한 구간마다 CapCut 프로젝트 초안을 하나씩 만들어줍니다. 마지막 다듬기와 내보내기는 여전히 CapCut에서 직접 합니다. 새 편집기를 다시 만드는 대신, 제가 손으로 반복하던 쇼츠 제작의 앞부분만 떼어낸 겁니다. capcut automation 후보 생성 화면",
+      "sectionTitle": "그래서 `capcut-automation`으로 방향을 바꿨다",
       "tags": [
         "AI",
         "Remotion",
@@ -453,7 +453,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -464,7 +464,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "ai 글 추천해줘",
         "remotion 글 뭐야",
         "remotion 글 추천해줘",
-        "그래서 `capcut-automation`으로 방향을 좁혔다",
+        "그래서 `capcut-automation`으로 방향을 바꿨다",
         "비디오",
         "편집기",
         "구현을",
@@ -473,9 +473,9 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "그래서",
         "capcut-automation",
         "방향을",
-        "좁혔다",
+        "바꿨다",
         "automation",
-        "바꾸게"
+        "바꿨습니다."
       ]
     },
     {
@@ -485,7 +485,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "AI 비디오 편집기 구현을 포기한 이유",
       "url": "/ko/blog/why-i-gave-up-on-building-an-ai-video-editor#멈췄지만-남은-건-있었다",
       "excerpt": "vibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 직접 만들어봤기 때문에 제가 지치던 지점이 어디였는지 더 잘 보였습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 그런데 만들수록 제가 힘들어하던 건 편집기 전체가 아니라, 같은 영상을 다시 보면서 “이 구간을 잘라야 하나?”, “이 부분이 쇼츠로 괜찮나?”, “첫 문장은 어떻게 잡…",
-      "content": "멈췄지만 남은 건 있었다\nvibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 직접 만들어봤기 때문에 제가 지치던 지점이 어디였는지 더 잘 보였습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 그런데 만들수록 제가 힘들어하던 건 편집기 전체가 아니라, 같은 영상을 다시 보면서 “이 구간을 잘라야 하나?”, “이 부분이 쇼츠로 괜찮나?”, “첫 문장은 어떻게 잡아야 하나?”를 반복해서 판단하는 일이었습니다. vibe cut은 그걸 확인하기 위해 필요했던 프로젝트였습니다. 직접 만들어보니 AI가 영상 편집에서 바로 가치를 줄 수 있는 부분과, 오히려 새 편집기 전체를 만들어야 해서 일이 커지는 부분이 나뉘어 보였습니다. 타임라인, 프리뷰, 렌더링, 상태 동기화, 복구, 에이전트 인터페이스를 모두 끌고 가다 보면, 어느 순간 컷 편집 자동화보다 편집기 자체를 유지하는 일이 더 큰 문제가 됩니다. 그래서 지금은 vibe cut을 더 붙잡고 있기보다, 전사를 읽고 쇼츠 후보를 고른 뒤 CapCut 초안으로 넘기는 앞부분만 남겨두었습니다. 이름은 바뀌었지만, 그 작업이 제가 실제로 반복하던 일이었습니다. 돌아보면 이 프로젝트에서 제일 크게 배운 건 “AI로 영상 편집을 어디까지 할 수 있는가”보다 더 앞의 질문이었습니다. 내가 줄이고 싶은 일이 정확히 뭔지 먼저 좁히지 않으면, 자동화를 만들다가 금방 다른 제품을 만들게 됩니다. 지금은 기능을 더 붙이기보다, 제가 자주 반복하는 판단을 줄이는 데 맞추고 있습니다.",
+      "content": "멈췄지만 남은 건 있었다\nvibe cut을 여기서 멈춘다고 해서, 이 프로젝트가 헛수고였다고 생각하지는 않습니다. 오히려 직접 만들어봤기 때문에 제가 지치던 지점이 어디였는지 더 잘 보였습니다. 처음에는 AI 기반 영상 편집기를 만들고 싶었습니다. 그런데 만들수록 제가 힘들어하던 건 편집기 전체가 아니라, 같은 영상을 다시 보면서 “이 구간을 잘라야 하나?”, “이 부분이 쇼츠로 괜찮나?”, “첫 문장은 어떻게 잡아야 하나?”를 반복해서 판단하는 일이었습니다. vibe cut은 그걸 확인하기 위해 필요했던 프로젝트였습니다. 직접 만들어보니 AI가 영상 편집에서 바로 가치를 줄 수 있는 부분과, 오히려 새 편집기 전체를 만들어야 해서 일이 커지는 부분이 나뉘어 보였습니다. 타임라인, 프리뷰, 렌더링, 상태 동기화, 복구, 에이전트 인터페이스를 모두 끌고 가다 보면, 어느 순간 컷 편집 자동화보다 편집기 자체를 유지하는 일이 더 큰 문제가 됩니다. 그래서 지금은 vibe cut을 더 붙잡고 있기보다, 전사를 읽고 쇼츠 후보를 고른 뒤 CapCut 초안으로 넘기는 앞부분만 남겨두었습니다. 이름은 바뀌었지만, 그 작업이 제가 실제로 반복하던 일이었습니다. 숫자로 놓고 보니 이 선택이 더 선명해졌습니다. 예전에는 쇼츠 하나를 만들어 CapCut에서 손볼 상태로 가져가기까지 30분 정도 걸렸습니다. 지금은 capcut automation이 후보를 고르고 CapCut 초안까지 넘겨주니 5분 정도면 됩니다. 작업 시간이 약 83% 줄었습니다. 알파컷 기준으로 월 약 16,000원씩 나가던 외부 툴 비용도 없어졌습니다. 이 비용만 놓고 보면 100% 줄어든 겁니다. 돌아보면 이 프로젝트에서 제일 크게 배운 건 “AI로 영상 편집을 어디까지 할 수 있는가”보다 더 앞의 질문이었습니다. 내가 줄이고 싶은 일이 정확히 뭔지 먼저 정리하지 않으면, 자동화를 만들다가 어느새 다른 제품을 만들고 있게 됩니다. 지금은 기능을 더 붙이기보다, 제가 자주 반복하는 판단을 줄이는 데 맞추고 있습니다.",
       "sectionTitle": "멈췄지만 남은 건 있었다",
       "tags": [
         "AI",
@@ -496,7 +496,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -539,7 +539,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "ai 비디오 편집기 구현을 포기한 이유",
-        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 범위를 좁혔는지 정리한 회고",
+        "vibe cut 이라는 ai 기반 영상 편집기를 어디까지 만들었고, 왜 capcut automation 으로 방향을 바꿨는지 정리한 회고",
         "ai",
         "remotion",
         "capcut",
@@ -3711,7 +3711,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#why-i-gave-up-on-building-an-ai-video-editor",
       "excerpt": "vibe cut was an AI video editor I had been building. I started it because turning long form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again…",
-      "content": "Why I Gave Up on Building an AI Video Editor\nvibe cut was an AI video editor I had been building. I started it because turning long form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again. As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I narrowed the direction to capcut automation. The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including AlphaCut, OpusClip, Klap, Vizard, and 2short.ai. Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open CapCut, trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought. Could I just build this myself? That is how I sta…",
+      "content": "Why I Gave Up on Building an AI Video Editor\nvibe cut was an AI video editor I had been building. I started it because turning long form videos into shorts kept putting me through the same loop: watch again, pick a moment, trim it, fix captions, and check it again. As I built it, I realized I was chasing the wrong object. I did not need a new editor as much as I needed to remove the repeated decisions around the editor: choosing candidates, adjusting starts, and matching captions to cuts. That is why I changed direction to capcut automation. The tiring part was picking scenes, cutting them, and checking them again with the same criteria. I also looked into tools that make this easier, including AlphaCut, OpusClip, Klap, Vizard, and 2short.ai. Automatic candidate selection was useful. But when I looked at the results, I kept touching the same parts again: the start or end of a sentence felt awkward, the opening lacked context, or the captions needed another pass. I would still open CapCut, trim the edges, fix the subtitles, and rewrite the hook. The cost also added up if I kept using them. At some point, I had a simple thought. Could I just build this myself? That is how I started…",
       "sectionTitle": "Why I Gave Up on Building an AI Video Editor",
       "tags": [
         "AI",
@@ -3722,7 +3722,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3765,7 +3765,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3808,7 +3808,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3851,7 +3851,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3894,7 +3894,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3937,7 +3937,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -3980,7 +3980,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4023,7 +4023,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4066,7 +4066,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4109,7 +4109,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4135,14 +4135,14 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       ]
     },
     {
-      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/so-i-narrowed-the-direction-to-capcut-automation",
+      "id": "en/why-i-gave-up-on-building-an-ai-video-editor/so-i-changed-direction-to-capcut-automation",
       "locale": "en",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "title": "Why I Gave Up on Building an AI Video Editor",
-      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#so-i-narrowed-the-direction-to-capcut-automation",
+      "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#so-i-changed-direction-to-capcut-automation",
       "excerpt": "That is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the proces…",
-      "content": "So I Narrowed the Direction to `capcut-automation`\nThat is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the process of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook text options for each candidate, and producing drafts that can be opened directly in CapCut. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or OpenAI transcription. capcut automation organizes where to cut, which hook text to start with, and which candidates to review first, then creates one CapCut project draft per selected range. Final polishing and export still happen manually in CapCut. Instead of rebuilding the editor, it keeps only the front part of the shorts workflow I had been repeating by hand. capcut automation candidate generation screen",
-      "sectionTitle": "So I Narrowed the Direction to `capcut-automation`",
+      "content": "So I Changed Direction to `capcut-automation`\nThat is why I changed direction to capcut automation. It is easier to think of it as a separate project that keeps only the part I truly needed from vibe cut. What I kept was not the editor as a whole. It was the process of preparing the source video and transcript, using AI to pull out shorts candidate ranges, generating a few hook text options for each candidate, and producing drafts that can be opened directly in CapCut. At this point, the project can accept a transcript directly, and it also supports generating one through a local transcription path or OpenAI transcription. capcut automation organizes where to cut, which hook text to start with, and which candidates to review first, then creates one CapCut project draft per selected range. Final polishing and export still happen manually in CapCut. Instead of rebuilding the editor, it keeps only the front part of the shorts workflow I had been repeating by hand. capcut automation candidate generation screen",
+      "sectionTitle": "So I Changed Direction to `capcut-automation`",
       "tags": [
         "AI",
         "Remotion",
@@ -4152,7 +4152,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4163,7 +4163,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "post about ai",
         "what is remotion",
         "post about remotion",
-        "so i narrowed the direction to `capcut-automation`",
+        "so i changed direction to `capcut-automation`",
         "why",
         "gave",
         "up",
@@ -4171,10 +4171,10 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
         "video",
         "editor",
         "so",
-        "narrowed",
+        "changed",
         "direction",
         "capcut-automation",
-        "changed"
+        "automation."
       ]
     },
     {
@@ -4184,7 +4184,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "title": "Why I Gave Up on Building an AI Video Editor",
       "url": "/en/blog/why-i-gave-up-on-building-an-ai-video-editor#even-after-stopping-something-was-left",
       "excerpt": "I do not think stopping vibe cut here means the project was wasted. Building it made the tiring part of my own workflow easier to see. At first, I wanted to build an AI video editor. But the more I built, the more I saw…",
-      "content": "Even After Stopping, Something Was Left\nI do not think stopping vibe cut here means the project was wasted. Building it made the tiring part of my own workflow easier to see. At first, I wanted to build an AI video editor. But the more I built, the more I saw that the painful part was not the whole editor. It was asking the same questions again and again while watching the same footage: “Should I cut here?”, “Does this part work as a short?”, “What should the first line be?” vibe cut was necessary because it let me check that directly. By building it, I could see where AI could help video editing right away, and where the work ballooned because I was building a whole editor. If I had to keep timeline, preview, rendering, state synchronization, recovery, and the agent interface all moving together, maintaining the editor itself would become larger than the cut editing automation. So now I am not trying to keep vibe cut alive as it was. I am keeping the part where the transcript is read, shorts candidates are selected, and CapCut drafts are created. The name changed, but that is the work I was actually repeating. The biggest thing I took from this project was a question that comes b…",
+      "content": "Even After Stopping, Something Was Left\nI do not think stopping vibe cut here means the project was wasted. Building it made the tiring part of my own workflow easier to see. At first, I wanted to build an AI video editor. But the more I built, the more I saw that the painful part was not the whole editor. It was asking the same questions again and again while watching the same footage: “Should I cut here?”, “Does this part work as a short?”, “What should the first line be?” vibe cut was necessary because it let me check that directly. By building it, I could see where AI could help video editing right away, and where the work ballooned because I was building a whole editor. If I had to keep timeline, preview, rendering, state synchronization, recovery, and the agent interface all moving together, maintaining the editor itself would become larger than the cut editing automation. So now I am not trying to keep vibe cut alive as it was. I am keeping the part where the transcript is read, shorts candidates are selected, and CapCut drafts are created. The name changed, but that is the work I was actually repeating. The numbers made that choice clearer. Before, it took about 30 minutes…",
       "sectionTitle": "Even After Stopping, Something Was Left",
       "tags": [
         "AI",
@@ -4195,7 +4195,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",
@@ -4238,7 +4238,7 @@ export const GENERATED_BLOG_SEARCH_RECORDS = {
       "publishedAt": "2026-04-21T00:00:00.000Z",
       "searchTerms": [
         "why i gave up on building an ai video editor",
-        "a retrospective on how far i got with an ai video editor called vibe cut, and why i narrowed the work down to capcut automation.",
+        "a retrospective on how far i got with an ai video editor called vibe cut, and why i changed direction to capcut automation.",
         "ai",
         "remotion",
         "capcut",

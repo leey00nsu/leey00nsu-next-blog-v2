@@ -161,6 +161,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "building-ai-interactive-movie-d7",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "ai로 인터랙티브 무비 만들기"
+      ],
+      "aliases": [
+        "ai로 인터랙티브 무비 만들기",
+        "ai 생성 영상을 웹 인터랙티브 무비로 구현하며 겪은 분기 설계와 모바일 미디어 재생 문제",
+        "ai",
+        "interactive movie",
+        "next.js",
+        "web media"
+      ],
+      "faqQueries": [
+        "ai로 인터랙티브 무비 만들기 글 뭐야",
+        "ai로 인터랙티브 무비 만들기 글 추천해줘",
+        "ai 글 뭐야",
+        "ai 글 추천해줘",
+        "interactive movie 글 뭐야",
+        "interactive movie 글 추천해줘"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "why-i-gave-up-on-building-an-ai-video-editor",
       "sourceCategory": "blog",
       "entityNames": [
@@ -788,6 +812,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what does leemage do",
         "which project uses next.js",
         "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "building-ai-interactive-movie-d7",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "building an interactive movie with ai"
+      ],
+      "aliases": [
+        "building an interactive movie with ai",
+        "branch design and mobile media playback problems i encountered while turning ai generated video into a web based interactive movie.",
+        "ai",
+        "interactive movie",
+        "next.js",
+        "web media"
+      ],
+      "faqQueries": [
+        "what is building an interactive movie with ai",
+        "post about building an interactive movie with ai",
+        "what is ai",
+        "post about ai",
+        "what is interactive movie",
+        "post about interactive movie"
       ]
     },
     {

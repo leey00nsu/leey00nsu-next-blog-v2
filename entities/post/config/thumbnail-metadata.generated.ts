@@ -53,6 +53,48 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAACwAQCdASoQAAsABUB8JaQAAud7OVUAAP7tV5TrgmudRaewexiKwAAA",
     "isAnimated": false
   },
+  "/public/posts/building-ai-interactive-movie-d7/excel-story-structure.webp": {
+    "width": 1400,
+    "height": 820,
+    "base64": "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAABQAQCdASoQAAkABUB8JZQABDOAAP7vxWE67afXFqWK8AZrQE0LLgAA",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/game-decision.webp": {
+    "width": 1280,
+    "height": 720,
+    "base64": "data:image/webp;base64,UklGRkoAAABXRUJQVlA4ID4AAADQAQCdASoQAAkABUB8JZwAAv+lp7mVgAD7yzTagL1mQ7hA6Fxfjf1EnhDDiwt+iA0QO1hBgx4Gg9fzb8QAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/game-home.webp": {
+    "width": 1280,
+    "height": 720,
+    "base64": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoQAAkABUB8JQBYdiLZIruGAAD7iBiSPnZ+kMr1KLdBqS5+iad8XdtJmigSuc9tzwwowAAA",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/higgsfield-generator.webp": {
+    "width": 1280,
+    "height": 672,
+    "base64": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoQAAgABUB8JYwAAuftRwAA/uvjgRRdvEuR9jo683/4TFF9zibAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/higgsfield-monday-scene.webp": {
+    "width": 1280,
+    "height": 720,
+    "base64": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADwAQCdASoQAAkABUB8JZwAAu08BCfQMXAA+jYJHaCOtEU63M2qk1ATHcJhuH/8o03yIaDJSobSweLxZ9mGgAAA",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/media-delivery-architecture.webp": {
+    "width": 1000,
+    "height": 1100,
+    "base64": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAAAwAQCdASoPABAABUB8JZQAA3AA/u/VUmhtBmlflLbJEGm5bm9PnWq2JpwasAAA",
+    "isAnimated": false
+  },
+  "/public/posts/building-ai-interactive-movie-d7/playback-state-flow.webp": {
+    "width": 1400,
+    "height": 820,
+    "base64": "data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAAAwAQCdASoQAAkABUB8JZwAA3AA/vARyDUwrVvs/t6iKAAA",
+    "isAnimated": false
+  },
   "/public/posts/contribute-open-source/contributors.webp": {
     "width": 500,
     "height": 180,

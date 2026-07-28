@@ -1,0 +1,161 @@
+---
+slug: building-ai-interactive-movie-d7
+title: Building an Interactive Movie with AI
+tags:
+  - AI
+  - interactive movie
+  - Next.js
+  - web media
+description: Branch design and mobile media playback problems I encountered while turning AI-generated video into a web-based interactive movie.
+date: 2026-07-27
+section: blog
+series:
+thumbnail: /public/posts/building-ai-interactive-movie-d7/higgsfield-monday-scene.webp
+draft: false
+writer: leey00nsu
+---
+
+## Building an Interactive Movie with AI
+
+Whenever a new image or video generation model comes out, I tend to try it myself. I am curious about how much better the output has become, but I am even more interested in how far the technology can go once it is built into an actual product.
+
+Earlier this year, I built [`Leesfield`](https://github.com/leey00nsu/leesfield), a place to generate and manage AI images and videos. One of the services I referenced when I started development was [`Higgsfield`](https://higgsfield.ai/).
+
+Higgsfield is an AI creative platform for producing video, image, and audio content from text or images.
+
+![Higgsfield's Seedance 2.0 video generation screen](/public/posts/building-ai-interactive-movie-d7/higgsfield-generator.webp)
+
+This time, I used Higgsfield to produce a series of short clips, then added choices, subtitles, and endings to turn them into a web game.
+
+![A Monday scene from the game, generated with Higgsfield](/public/posts/building-ai-interactive-movie-d7/higgsfield-monday-scene.webp)
+
+The result was `정규직까지 D-7`, roughly `Seven Days to Full-Time` in English. It follows an intern who is one week away from learning whether he will be offered a full-time position. From Monday through Thursday, he makes a series of choices at work, then faces the result on Friday.
+
+At first, I thought the rest would be straightforward once the videos were ready. Play the scenes in order, show two choices in between, then continue with the video that matches the player's decision. While I was building the first desktop version, that still seemed reasonable.
+
+Once it started taking the shape of a game, however, things changed.
+
+The end of one video had to line up with the moment the next scene became available. Subtitles and audio had to follow the same timeline. Once refreshing, pausing, and changing settings entered the picture, even playing a single scene reliably became more complicated than I expected.
+
+On mobile, scene transitions and narration drifted out of sync more often. The approach that worked on desktop did not carry over cleanly to an iPhone.
+
+![The home screen of 정규직까지 D-7](/public/posts/building-ai-interactive-movie-d7/game-home.webp)
+
+## Designing the Structure Before Producing Video
+
+Before producing any video, I laid out the overall structure. If I jumped straight into generation, I knew I would lose track of how the clips connected as the number of scenes grew.
+
+I created a spreadsheet and separated the node scenario, choice branches, variables and ending conditions, asset list, dialogue, and voice lines into different sheets. Every scene received a unique node ID such as `N01_MON_STATUS`. The two Monday choices became `C01_A` and `C01_B`, while the endings were managed as `E01`, `E02`, and `E03`.
+
+I then used those IDs to connect each scene to its next scene, choice result, subtitles, audio, and video file. A node ID was less like a sequence number and more like a shared name for the same scene across several documents and files.
+
+![A summary of the D-7 node structure organized in the spreadsheet](/public/posts/building-ai-interactive-movie-d7/excel-story-structure.webp)
+
+At first, I considered making every scene after a choice branch into a different path. But if each of four choices continued in two directions, the number of required videos grew quickly. Generation cost was one concern. The larger burden was checking that the characters and locations still connected naturally along every route.
+
+So I added short result scenes only where they were needed. Some choices shared the same follow-up scene, and after showing the immediate result, the story returned to a common path on the following day. The four choices made from Monday through Thursday accumulated as variables and led to one of three endings on Friday.
+
+This structure let the game respond immediately to a choice while reusing the same flow from the next day onward. I decided that four choices and three endings created enough variation for the story.
+
+![The Monday choice screen](/public/posts/building-ai-interactive-movie-d7/game-decision.webp)
+
+The structure from the spreadsheet was moved into the chapters, choice IDs, and video filename rules in `game.ts`. `subtitles.json` and `media-manifest.json` were also connected through the same video filenames.
+
+Instead of writing video paths throughout the components, I made the application read which video and subtitles each scene used and where it should continue from the data.
+
+The spreadsheet did not remain a document that I only used during planning. Whenever I changed dialogue or added a video, I checked the node first. It also reduced the amount of guessing I had to do from filenames alone.
+
+## Two Video Tags Were Not Enough
+
+The first implementation alternated between two `<video>` elements. While the current video was playing, the next one loaded in the other slot. Once it was ready, I switched which slot was visible. This was meant to reduce the brief black flash between videos.
+
+It worked while I was joining only a few scenes on desktop. But once choice screens, pause controls, and narration were added, swapping two slots was no longer enough.
+
+What looked like one playback state actually contained many different situations:
+
+- whether the next file was still loading
+- whether the user had paused playback
+- whether the muted loop on a choice screen was playing
+- whether the video had ended but the game was still waiting for the narration to finish
+- whether the playback mode had changed between streaming and download
+
+One recurring problem was that a `play()` call or loading callback from the previous scene would finish late and overwrite the state of the current scene.
+
+To prevent this, I identified the active scene with a `sceneKey`. When an asynchronous operation finished, I compared the `sceneKey` of the scene that started it with the current one. If they no longer matched, I ignored the result.
+
+I also consolidated the scene start and finish paths. Pressing the skip button now follows the same completion path as a video that reaches its natural end. Keeping separate transition logic for every possible reason a scene ended made the state drift out of sync too easily.
+
+![The scene transition state flow for D-7](/public/posts/building-ai-interactive-movie-d7/playback-state-flow.webp)
+
+## Putting the Videos in Git Got Heavy Fast
+
+At first, the MP4 files also lived inside the project. This was the easiest setup locally. The paths were simple, and the application could run with everything in one place.
+
+As the number of videos grew, the inconvenience started to outweigh that simplicity. Every replacement MP4 added another large binary change to Git. Even a deployment for a one-line code change carried tens of megabytes of media in the same build context.
+
+I eventually removed the MP4 files from the repository and moved them to [Cloudflare R2](https://developers.cloudflare.com/r2/). Audio stayed in the application's `public` assets, and the media manifest managed both types of files together.
+
+R2 stores the MP4 files prepared for deployment. Cloudflare can cache the responses at the edge and, once cached, serve them from a location closer to the user. It also handles `Range` requests so the browser can fetch only the part of an MP4 it needs.
+
+The application server no longer had to proxy the video bytes itself.
+
+When I first saw `CF-Cache-Status: HIT` in DevTools, I thought the playback problem was nearly solved. But a healthy network cache and reliable scene transitions in the browser turned out to be different problems.
+
+## Why It Still Stalled on iPhone After Moving to R2
+
+On desktop Chrome, streaming from R2 was usable. Preloading the next video while the scene changed made most transitions feel natural. I also applied Fast Start so the MP4 metadata was placed at the beginning of each file.
+
+On an iPhone, however, a video would sometimes refuse to start even when it looked ready. In some cases, repeatedly pressing play and pause finally moved it forward, and sometimes the previous video appeared again. There were also cases where the narration started late and the next scene began before the voice had finished.
+
+Controlling short clips, narration, and background music at the same time made Safari's media policies and asynchronous state collide more often. A fast Wi-Fi connection did not change the situation much.
+
+I tried preloading for longer before showing the next scene and retrying failed requests. I also kept adjusting when the two video slots switched. These changes helped a little, but the underlying condition stayed the same: whenever the game needed another eight-second MP4, playback still depended on a remote request and the browser's media buffer.
+
+A long video starting a little late feels very different from the game freezing immediately after a choice. For this project, uninterrupted scene transitions mattered more than starting the first video as quickly as possible.
+
+## Downloading Media First on Mobile
+
+Fortunately, all of the media together was only about 35 MB. That made it practical to try downloading everything once before the game started instead of continuing to stream throughout the playthrough.
+
+On mobile, the game downloads every video and audio file before it begins. Once the download is complete, it creates a `Blob URL` for each file and passes those URLs to the `<video>` element and audio player instead of using the R2 addresses.
+
+After the game starts, changing scenes no longer triggers another MP4 request to R2.
+
+![The Cloudflare R2 streaming and mobile pre-download architecture](/public/posts/building-ai-interactive-movie-d7/media-delivery-architecture.webp)
+
+When the game starts for the first time, it asks whether it may download about 35 MB of media. Mobile users must finish the download before beginning, while desktop users can still choose streaming.
+
+This makes the initial wait longer and downloads videos from branches the player may never see. But because the complete set was only about 35 MB and reliable scene transitions mattered more for this game, I chose the pre-download approach.
+
+My first approach stored the files in [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system). Reusing the same downloaded videos on a later visit was attractive.
+
+But storage-constrained environments, such as private browsing on an iPhone, produced intermittent storage operation errors. From the error message alone, it was difficult to tell whether the cause was a temporary storage problem or insufficient memory, and each browser imposed different conditions on storage access.
+
+I eventually removed OPFS.
+
+Reducing downloads on later visits was less important than starting the game the same way across different environments, including private browsing.
+
+The current version keeps the Blobs only while the tab remains open. Refreshing the page or closing the tab removes them. When the provider is cleaned up, the Object URLs are also released with `URL.revokeObjectURL()`.
+
+## Conclusion
+
+The most important part of this project was not the visual quality of the generated videos, but the structure that held them together.
+
+If I had not organized the relationships between scenes, choices, and files as nodes before generating the videos, the project would have become harder to revise as the amount of content grew. Limiting the number of branches instead of turning every choice into a completely new path was also a way to manage both generation cost and story consistency.
+
+There was no single playback solution that worked equally well in every environment, either. Streaming was sufficient on desktop, while downloading all media before starting proved more reliable on mobile. Fast delivery and a healthy cache did not automatically produce a stable playback experience.
+
+Using AI to make content did not reduce the need to design its structure. If anything, once natural language made it faster to produce images and video, deciding what to create, at what scale, and how to connect the pieces became more important.
+
+AI development and video production both use natural language as an interface, but natural language alone does not complete the work.
+
+I believe the ability to break a complex goal into smaller units, turn those units into repeatable rules, and keep validating and revising the result will become even more important.
+
+## References
+
+- [정규직까지 D-7 GitHub repository](https://github.com/leey00nsu/day-7)
+- [Leesfield GitHub repository](https://github.com/leey00nsu/leesfield)
+- [Cloudflare R2](https://developers.cloudflare.com/r2/)
+- [HTTP Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests)
+- [Blob URL](https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL_static)
+- [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system)

@@ -321,12 +321,18 @@ describe('POST /api/chat route adapter', () => {
         reportProgress: (event: unknown) => void
       }) => {
         reportProgress({
-          type: 'stage',
-          stage: 'understanding_question',
+          type: 'step',
+          step: {
+            id: 'understanding_question',
+            label: '질문의 대상과 범위를 확인하고 있어요',
+          },
         })
         reportProgress({
-          type: 'stage',
-          stage: 'checking_sources',
+          type: 'step',
+          step: {
+            id: 'checking_sources',
+            label: '공개된 자료를 확인하고 있어요',
+          },
         })
 
         return {
@@ -358,44 +364,53 @@ describe('POST /api/chat route adapter', () => {
     expect(response.headers.get('Content-Type')).toContain('text/event-stream')
     expect(envelopes).toEqual([
       {
+        version: 1,
         type: 'progress',
-        event: {
-          type: 'stage',
-          stage: 'understanding_question',
+        data: {
+          type: 'step',
+          step: {
+            id: 'understanding_question',
+            label: '질문의 대상과 범위를 확인하고 있어요',
+          },
         },
       },
       {
+        version: 1,
         type: 'progress',
-        event: {
-          type: 'stage',
-          stage: 'checking_sources',
+        data: {
+          type: 'step',
+          step: {
+            id: 'checking_sources',
+            label: '공개된 자료를 확인하고 있어요',
+          },
         },
       },
       {
+        version: 1,
         type: 'progress',
-        event: {
-          type: 'sources',
-          sources: [
+        data: {
+          type: 'references',
+          references: [
             {
-              title: 'About Me',
-              url: '/ko/about',
-              sourceCategory: 'profile',
-              sectionTitle: null,
+              id: '/ko/about',
+              label: 'About Me',
+              href: '/ko/about',
             },
           ],
         },
       },
       {
+        version: 1,
         type: 'progress',
-        event: {
+        data: {
           type: 'completed',
           elapsedMilliseconds: expect.any(Number),
         },
       },
       {
+        version: 1,
         type: 'result',
-        status: 200,
-        body: {
+        data: {
           message: {
             id: 'message-id:assistant',
             content: 'React와 TypeScript를 사용합니다.',
@@ -420,30 +435,39 @@ describe('POST /api/chat route adapter', () => {
                 ],
                 grounded: true,
               },
-              blogChatProgressTrace: {
-                stages: [
-                  {
-                    stage: 'understanding_question',
-                    status: 'completed',
-                  },
-                  {
-                    stage: 'checking_sources',
-                    status: 'completed',
-                  },
-                ],
-                sources: [
-                  {
-                    title: 'About Me',
-                    url: '/ko/about',
-                    sourceCategory: 'profile',
-                    sectionTitle: null,
-                  },
-                ],
-                elapsedMilliseconds: expect.any(Number),
-                failed: false,
-              },
             },
           },
+        },
+      },
+    ])
+  })
+
+  it('stream 시작 후 application 오류는 완료가 아닌 terminal error로 전송한다', async () => {
+    answerBlogChatQuestionMock.mockResolvedValueOnce({
+      body: {
+        error: 'internal error',
+      },
+      status: 500,
+    })
+
+    const { POST } = await import('./route')
+    const response = await POST(createLeeChatProgressRequest())
+    const serializedStream = await response.text()
+    const envelopes = serializedStream
+      .split('\n')
+      .filter((line) => line.startsWith('data: '))
+      .map((line) => JSON.parse(line.slice('data: '.length)))
+
+    expect(envelopes).toEqual([
+      {
+        version: 1,
+        type: 'error',
+        error: {
+          code: 'blog_chat_request_failed',
+          message:
+            '답변을 준비하는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.',
+          status: 500,
+          retryable: false,
         },
       },
     ])

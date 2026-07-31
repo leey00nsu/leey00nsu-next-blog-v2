@@ -126,4 +126,24 @@ export const BLOG_CHAT = {
       100,
     ),
   },
+  ACTIVITY: {
+    STEP_LABELS: {
+      ko: {
+        understanding_question: '질문의 대상과 범위를 확인하고 있어요',
+        checking_sources: '공개된 자료를 확인하고 있어요',
+        searching_evidence: '관련 글과 프로젝트를 검색하고 있어요',
+        selecting_evidence: '답변에 사용할 근거를 선별했어요',
+        generating_answer: '근거를 바탕으로 답변을 작성하고 있어요',
+        validating_answer: '답변과 출처가 일치하는지 확인하고 있어요',
+      },
+      en: {
+        understanding_question: 'Understanding the question and its scope',
+        checking_sources: 'Checking public information',
+        searching_evidence: 'Searching related posts and projects',
+        selecting_evidence: 'Selecting evidence for the answer',
+        generating_answer: 'Writing an answer from the evidence',
+        validating_answer: 'Checking the answer against its sources',
+      },
+    },
+  },
 } as const

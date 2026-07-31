@@ -265,19 +265,6 @@
     "inputCounter": "{current}/{max} chars",
     "send": "Send question",
     "sending": "Looking through related posts and drafting an answer...",
-    "progress": {
-      "title": "Preparing your answer",
-      "completedTitle": "Answer ready",
-      "sourceCount": "{count} sources",
-      "stages": {
-        "understandingQuestion": "Understanding the question and its scope",
-        "checkingSources": "Checking public information",
-        "searchingEvidence": "Searching related posts and projects",
-        "selectingEvidence": "Selecting evidence for the answer",
-        "generatingAnswer": "Writing an answer from the evidence",
-        "validatingAnswer": "Checking the answer against its sources"
-      }
-    },
     "errors": {
       "request_failed": "Something went wrong while loading a response. Please try again shortly."
     }

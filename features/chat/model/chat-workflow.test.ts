@@ -498,39 +498,46 @@ describe('runChatWorkflow', () => {
     expect(dependencies.storeSemanticResponse).toHaveBeenCalledTimes(1)
     expect(reportProgress.mock.calls.map(([event]) => event)).toEqual([
       {
-        type: 'stage',
-        stage: 'understanding_question',
+        type: 'step',
+        step: {
+          id: 'understanding_question',
+          label: '질문의 대상과 범위를 확인하고 있어요',
+        },
       },
       {
-        type: 'stage',
-        stage: 'checking_sources',
+        type: 'step',
+        step: {
+          id: 'checking_sources',
+          label: '공개된 자료를 확인하고 있어요',
+        },
       },
       {
-        type: 'stage',
-        stage: 'searching_evidence',
+        type: 'step',
+        step: {
+          id: 'searching_evidence',
+          label: '관련 글과 프로젝트를 검색하고 있어요',
+        },
       },
       {
-        type: 'sources',
-        sources: [
-          {
-            title: LEEMAGE_MATCH.title,
-            url: LEEMAGE_MATCH.url,
-            sourceCategory: LEEMAGE_MATCH.sourceCategory,
-            sectionTitle: LEEMAGE_MATCH.sectionTitle,
-          },
-        ],
+        type: 'step',
+        step: {
+          id: 'selecting_evidence',
+          label: '답변에 사용할 근거를 선별했어요',
+        },
       },
       {
-        type: 'stage',
-        stage: 'selecting_evidence',
+        type: 'step',
+        step: {
+          id: 'generating_answer',
+          label: '근거를 바탕으로 답변을 작성하고 있어요',
+        },
       },
       {
-        type: 'stage',
-        stage: 'generating_answer',
-      },
-      {
-        type: 'stage',
-        stage: 'validating_answer',
+        type: 'step',
+        step: {
+          id: 'validating_answer',
+          label: '답변과 출처가 일치하는지 확인하고 있어요',
+        },
       },
     ])
   })

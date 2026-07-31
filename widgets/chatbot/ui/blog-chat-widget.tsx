@@ -1,30 +1,22 @@
 'use client'
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import {
+  HttpEventStreamChatTransport,
   LEE_CHAT_TEXT_PRESETS,
   LeeChatProvider,
   LeeChatWidget,
+  type ChatActivityEvent,
+  type LeeChatRequest,
+  type LeeChatResponse,
 } from 'lee-chat-sdk'
 import { ArrowUpRight, MessageCircleMore } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
-import { createBlogChatProgressFetch } from '@/features/chat/api/create-blog-chat-progress-fetch'
-import {
-  EMPTY_BLOG_CHAT_PROGRESS_TRACE,
-  reduceBlogChatProgressTrace,
-  type BlogChatProgressEvent,
-  type BlogChatProgressTrace,
-} from '@/features/chat/model/blog-chat-progress'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { ROUTES } from '@/shared/config/constants'
-import { BlogChatAssistantLoading } from '@/widgets/chatbot/ui/blog-chat-assistant-loading'
-import {
-  BlogChatProgress,
-  type BlogChatProgressMessages,
-} from '@/widgets/chatbot/ui/blog-chat-progress'
 import { BlogChatSubmitContent } from '@/widgets/chatbot/ui/blog-chat-submit-content'
 
 const BLOG_CHAT_WIDGET_PATH = {
@@ -56,7 +48,6 @@ interface BlogChatWidgetViewProps {
 interface BlogChatMessageMetadata {
   blogChatResponse?: BlogChatResponse
   conversationState?: ChatConversationState
-  blogChatProgressTrace?: BlogChatProgressTrace
 }
 
 export function BlogChatWidget() {
@@ -84,43 +75,15 @@ export function BlogChatWidgetView({
   translate,
 }: BlogChatWidgetViewProps) {
   const t = translate
-  const [progressTrace, setProgressTrace] = useState<BlogChatProgressTrace>(
-    EMPTY_BLOG_CHAT_PROGRESS_TRACE,
-  )
-  const progressMessages: BlogChatProgressMessages = {
-    title: t('progress.title'),
-    completedTitle: t('progress.completedTitle'),
-    sourceCount: (sourceCount) => {
-      return t('progress.sourceCount', { count: sourceCount })
-    },
-    stages: {
-      understanding_question: t('progress.stages.understandingQuestion'),
-      checking_sources: t('progress.stages.checkingSources'),
-      searching_evidence: t('progress.stages.searchingEvidence'),
-      selecting_evidence: t('progress.stages.selectingEvidence'),
-      generating_answer: t('progress.stages.generatingAnswer'),
-      validating_answer: t('progress.stages.validatingAnswer'),
-    },
-  }
-  const handleRequestStart = useCallback(() => {
-    setProgressTrace(
-      reduceBlogChatProgressTrace(EMPTY_BLOG_CHAT_PROGRESS_TRACE, {
-        type: 'stage',
-        stage: 'understanding_question',
-      }),
-    )
-  }, [])
-  const handleProgress = useCallback((event: BlogChatProgressEvent) => {
-    setProgressTrace((currentTrace) => {
-      return reduceBlogChatProgressTrace(currentTrace, event)
+  const requestTransport = useMemo(() => {
+    return new HttpEventStreamChatTransport<
+      LeeChatRequest,
+      LeeChatResponse<BlogChatMessageMetadata>,
+      ChatActivityEvent
+    >({
+      endpoint: ROUTES.API.CHAT,
     })
   }, [])
-  const progressFetchImplementation = useMemo(() => {
-    return createBlogChatProgressFetch({
-      onRequestStart: handleRequestStart,
-      onProgress: handleProgress,
-    })
-  }, [handleProgress, handleRequestStart])
 
   return (
     <LeeChatProvider<BlogChatMessageMetadata>
@@ -171,31 +134,9 @@ export function BlogChatWidgetView({
           root: 'z-[60]',
         },
       }}
-      fetchImplementation={progressFetchImplementation}
+      requestTransport={requestTransport}
     >
       <LeeChatWidget<BlogChatMessageMetadata>
-        renderAssistantLoading={() => {
-          return (
-            <BlogChatAssistantLoading
-              locale={locale}
-              trace={progressTrace}
-              messages={progressMessages}
-            >
-              {t('sending')}
-            </BlogChatAssistantLoading>
-          )
-        }}
-        renderAssistantContent={({ message, defaultContent }) => {
-          return (
-            <BlogChatAssistantContent
-              response={message.metadata?.blogChatResponse}
-              progressTrace={message.metadata?.blogChatProgressTrace}
-              progressMessages={progressMessages}
-              locale={locale}
-              defaultContent={defaultContent}
-            />
-          )
-        }}
         renderMessageFooter={({ message }) => {
           return (
             <BlogChatMessageFooter
@@ -227,43 +168,6 @@ export function BlogChatWidgetView({
         }}
       />
     </LeeChatProvider>
-  )
-}
-
-function BlogChatAssistantContent({
-  response,
-  progressTrace,
-  progressMessages,
-  locale,
-  defaultContent,
-}: {
-  response?: BlogChatResponse
-  progressTrace?: BlogChatProgressTrace
-  progressMessages: BlogChatProgressMessages
-  locale: SupportedLocale
-  defaultContent: ReactNode
-}) {
-  const answerContent =
-    response?.refusalReason && !response.grounded ? (
-      <p className="whitespace-pre-wrap leading-6">{response.answer}</p>
-    ) : (
-      defaultContent
-    )
-
-  if (!progressTrace) {
-    return answerContent
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <BlogChatProgress
-        locale={locale}
-        trace={progressTrace}
-        messages={progressMessages}
-        pending={false}
-      />
-      {answerContent}
-    </div>
   )
 }
 

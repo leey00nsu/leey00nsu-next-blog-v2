@@ -4,15 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import koMessages from '@/messages/ko.json'
 import { BlogChatWidget } from '@/widgets/chatbot/ui/blog-chat-widget'
 
-const { usePathnameMock, leeChatProviderMock, leeChatWidgetMock } = vi.hoisted(
-  () => {
-    return {
-      usePathnameMock: vi.fn(),
-      leeChatProviderMock: vi.fn(),
-      leeChatWidgetMock: vi.fn(),
-    }
-  },
-)
+const {
+  usePathnameMock,
+  leeChatProviderMock,
+  leeChatWidgetMock,
+  requestTransportMock,
+} = vi.hoisted(() => {
+  return {
+    usePathnameMock: vi.fn(),
+    leeChatProviderMock: vi.fn(),
+    leeChatWidgetMock: vi.fn(),
+    requestTransportMock: vi.fn(),
+  }
+})
 
 function resolveChatbotTranslationMessage(translationKey: string): string {
   const translationPathSegments = translationKey.split('.')
@@ -60,6 +64,11 @@ vi.mock('next/navigation', () => {
 
 vi.mock('lee-chat-sdk', () => {
   return {
+    HttpEventStreamChatTransport: class {
+      constructor(params: unknown) {
+        requestTransportMock(params)
+      }
+    },
     LEE_CHAT_TEXT_PRESETS: {
       ko: {
         title: '채팅',
@@ -70,6 +79,8 @@ vi.mock('lee-chat-sdk', () => {
         sending: '전송 중',
         messageSending: '전송 중...',
         assistantLoading: '답변을 준비하고 있어요...',
+        activityCompleted: '답변 준비 완료',
+        activityFailed: '답변 준비 실패',
         participantOnline: '온라인',
         participantTyping: '상대방이 입력 중이에요...',
         messageRead: '읽음',
@@ -85,6 +96,8 @@ vi.mock('lee-chat-sdk', () => {
         sending: 'Sending',
         messageSending: 'Sending...',
         assistantLoading: 'Assistant is typing...',
+        activityCompleted: 'Answer ready',
+        activityFailed: 'Answer preparation failed',
         participantOnline: 'Online',
         participantTyping: 'Participant is typing...',
         messageRead: 'Read',
@@ -171,152 +184,34 @@ describe('BlogChatWidget', () => {
     expect(leeChatProviderMock).not.toHaveBeenCalled()
   })
 
-  it('SDK 위젯에 assistant loading/content/footer, submit 슬롯과 트리거 렌더러를 전달한다', () => {
+  it('SDK의 기본 activity UI를 유지하고 블로그 전용 footer와 조작 슬롯만 전달한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
     render(<BlogChatWidget />)
 
     expect(leeChatWidgetMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        renderAssistantLoading: expect.any(Function),
-        renderAssistantContent: expect.any(Function),
         renderMessageFooter: expect.any(Function),
         renderSubmitContent: expect.any(Function),
         renderTrigger: expect.any(Function),
       }),
     )
-  })
-
-  it('assistant loading 슬롯에는 응답 생성 중 문구만 렌더링한다', () => {
-    usePathnameMock.mockReturnValue('/ko/about')
-
-    render(<BlogChatWidget />)
-
-    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
-      renderAssistantLoading: () => ReactNode
-    }
-
-    render(widgetProps.renderAssistantLoading())
-
-    expect(
-      screen.getByText(koMessages.chatbot.sending),
-    ).toBeInTheDocument()
-  })
-
-  it('근거 없음 응답은 중복 번역 대신 application answer를 표시한다', () => {
-    usePathnameMock.mockReturnValue('/ko/about')
-
-    render(<BlogChatWidget />)
-
-    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
-      renderAssistantContent: (params: {
-        message: {
-          metadata?: {
-            blogChatResponse?: {
-              answer: string
-              citations: []
-              grounded: false
-              refusalReason: 'insufficient_search_match'
-            }
-          }
-        }
-        defaultContent: ReactNode
-      }) => ReactNode
-    }
-    render(
-      widgetProps.renderAssistantContent({
-        message: {
-          metadata: {
-            blogChatResponse: {
-              answer: '공개된 정보에서는 확인할 수 없어요.',
-              citations: [],
-              grounded: false,
-              refusalReason: 'insufficient_search_match',
-            },
-          },
-        },
-        defaultContent: '기본 메시지',
-      }),
+    expect(leeChatWidgetMock.mock.lastCall?.[0]).not.toHaveProperty(
+      'renderAssistantLoading',
     )
-
-    expect(
-      screen.getByText('공개된 정보에서는 확인할 수 없어요.'),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(
-        '관련 글을 아직 충분히 찾지 못했어요. 질문을 조금 다르게 적어주시면 다시 찾아볼게요.',
-      ),
-    ).not.toBeInTheDocument()
+    expect(leeChatWidgetMock.mock.lastCall?.[0]).not.toHaveProperty(
+      'renderAssistantContent',
+    )
   })
 
-  it('완료된 답변 준비 과정은 답변 텍스트 위에 표시한다', () => {
+  it('요청 범위 event stream transport를 SDK provider에 전달한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 
     render(<BlogChatWidget />)
 
-    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
-      renderAssistantContent: (params: {
-        message: {
-          metadata?: {
-            blogChatResponse?: {
-              answer: string
-              citations: []
-              grounded: true
-            }
-            blogChatProgressTrace?: {
-              stages: Array<{
-                stage: 'understanding_question' | 'validating_answer'
-                status: 'completed'
-              }>
-              sources: []
-              elapsedMilliseconds: null
-              failed: false
-            }
-          }
-        }
-        defaultContent: ReactNode
-      }) => ReactNode
-    }
-
-    render(
-      widgetProps.renderAssistantContent({
-        message: {
-          metadata: {
-            blogChatResponse: {
-              answer: '완료된 답변',
-              citations: [],
-              grounded: true,
-            },
-            blogChatProgressTrace: {
-              stages: [
-                {
-                  stage: 'understanding_question',
-                  status: 'completed',
-                },
-                {
-                  stage: 'validating_answer',
-                  status: 'completed',
-                },
-              ],
-              sources: [],
-              elapsedMilliseconds: null,
-              failed: false,
-            },
-          },
-        },
-        defaultContent: <p>완료된 답변</p>,
-      }),
-    )
-
-    const progressToggle = screen.getByRole('button', {
-      name: koMessages.chatbot.progress.completedTitle,
+    expect(requestTransportMock).toHaveBeenCalledWith({
+      endpoint: '/api/chat',
     })
-    const answerText = screen.getByText('완료된 답변')
-
-    expect(
-      progressToggle.compareDocumentPosition(answerText) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   it('submit 슬롯은 대기 중에는 전송 아이콘을 렌더링한다', () => {

@@ -1,3 +1,4 @@
+import type { ChatActivityEvent } from 'lee-chat-sdk'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
 import { normalizeQuestionText } from '@/features/chat/lib/chat-query-normalization'
@@ -10,7 +11,6 @@ import {
   resolveBlogChatClientKey,
 } from '@/features/chat/model/blog-chat-usage-limiter'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
-import type { BlogChatProgressEvent } from '@/features/chat/model/blog-chat-progress'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
@@ -57,7 +57,8 @@ interface ChatObservabilityState {
 export interface AnswerBlogChatQuestionParams {
   requestBody: unknown
   requestHeaders: Headers
-  reportProgress?: (event: BlogChatProgressEvent) => void
+  reportProgress?: (event: ChatActivityEvent) => void
+  signal?: AbortSignal
 }
 
 export interface BlogChatApplicationResult {
@@ -243,8 +244,10 @@ export async function answerBlogChatQuestion({
   requestBody,
   requestHeaders,
   reportProgress,
+  signal,
 }: AnswerBlogChatQuestionParams): Promise<BlogChatApplicationResult> {
   try {
+    signal?.throwIfAborted()
     const parsedRequest = BlogChatRequestSchema.safeParse(requestBody)
 
     if (!parsedRequest.success) {
@@ -310,12 +313,14 @@ export async function answerBlogChatQuestion({
         ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
       })
 
+      signal?.throwIfAborted()
       const workflowResult = await runChatWorkflow({
         request: parsedRequest.data,
         assistantProfile: getChatAssistantProfile(locale),
         contactProfile: getChatContactProfile(locale),
         reportProgress,
       })
+      signal?.throwIfAborted()
       const chatObservabilityState = buildChatObservabilityState({
         originalQuestion: parsedRequest.data.question,
         currentPostSlug: parsedRequest.data.currentPostSlug,
@@ -332,6 +337,8 @@ export async function answerBlogChatQuestion({
       releaseBlogChatConcurrentRequestSlot({ clientKey })
     }
   } catch {
+    signal?.throwIfAborted()
+
     return {
       body: {
         error: CHAT_APPLICATION.UNEXPECTED_ERROR_MESSAGE,

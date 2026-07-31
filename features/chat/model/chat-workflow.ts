@@ -1,4 +1,5 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
+import type { ChatActivityEvent } from 'lee-chat-sdk'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
 import {
@@ -17,7 +18,6 @@ import {
   getCachedBlogChatResponse,
   setCachedBlogChatResponse,
 } from '@/features/chat/model/blog-chat-response-cache'
-import type { BlogChatProgressEvent } from '@/features/chat/model/blog-chat-progress'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
@@ -90,7 +90,7 @@ interface RunChatWorkflowParams {
   assistantProfile?: ChatAssistantProfile | null
   contactProfile?: ChatContactProfile | null
   dependencies?: Partial<ChatWorkflowDependencies>
-  reportProgress?: (event: BlogChatProgressEvent) => void
+  reportProgress?: (event: ChatActivityEvent) => void
 }
 
 export type ChatWorkflowFailureKind =
@@ -350,15 +350,34 @@ const DEFAULT_DEPENDENCIES: ChatWorkflowDependencies = {
   storeSemanticResponse: storeSemanticCachedBlogChatResponse,
 }
 
+type BlogChatActivityStepId =
+  keyof typeof BLOG_CHAT.ACTIVITY.STEP_LABELS.ko
+
+function reportChatActivityStep(params: {
+  reportProgress?: (event: ChatActivityEvent) => void
+  locale: BlogChatRequest['locale']
+  stepId: BlogChatActivityStepId
+}): void {
+  params.reportProgress?.({
+    type: 'step',
+    step: {
+      id: params.stepId,
+      label:
+        BLOG_CHAT.ACTIVITY.STEP_LABELS[params.locale][params.stepId],
+    },
+  })
+}
+
 function buildChatWorkflow(
   dependencies: ChatWorkflowDependencies,
-  reportProgress?: (event: BlogChatProgressEvent) => void,
+  reportProgress?: (event: ChatActivityEvent) => void,
 ) {
   return new StateGraph(CHAT_WORKFLOW_STATE)
     .addNode('resolve-context', async (state) => {
-      reportProgress?.({
-        type: 'stage',
-        stage: 'understanding_question',
+      reportChatActivityStep({
+        reportProgress,
+        locale: state.request.locale,
+        stepId: 'understanding_question',
       })
       const allCandidates = await dependencies.getEntityCandidates(
         state.request.locale,
@@ -434,9 +453,10 @@ function buildChatWorkflow(
       }
     })
     .addNode('cache-lookup', async (state) => {
-      reportProgress?.({
-        type: 'stage',
-        stage: 'checking_sources',
+      reportChatActivityStep({
+        reportProgress,
+        locale: state.request.locale,
+        stepId: 'checking_sources',
       })
 
       if (!state.retrievalPlan) {
@@ -488,9 +508,10 @@ function buildChatWorkflow(
         retrievalPlan.executionKind !== 'social_reply' &&
         retrievalPlan.executionKind !== 'identity'
       ) {
-        reportProgress?.({
-          type: 'stage',
-          stage: 'checking_sources',
+        reportChatActivityStep({
+          reportProgress,
+          locale: state.request.locale,
+          stepId: 'checking_sources',
         })
       }
 
@@ -583,9 +604,10 @@ function buildChatWorkflow(
       }
     })
     .addNode('retrieve-evidence', async (state) => {
-      reportProgress?.({
-        type: 'stage',
-        stage: 'searching_evidence',
+      reportChatActivityStep({
+        reportProgress,
+        locale: state.request.locale,
+        stepId: 'searching_evidence',
       })
 
       if (!state.retrievalPlan) {
@@ -598,20 +620,10 @@ function buildChatWorkflow(
       })
 
       if (execution.matches.length > 0) {
-        reportProgress?.({
-          type: 'sources',
-          sources: execution.matches.map((match) => {
-            return {
-              title: match.title,
-              url: match.url,
-              sourceCategory: match.sourceCategory,
-              sectionTitle: match.sectionTitle,
-            }
-          }),
-        })
-        reportProgress?.({
-          type: 'stage',
-          stage: 'selecting_evidence',
+        reportChatActivityStep({
+          reportProgress,
+          locale: state.request.locale,
+          stepId: 'selecting_evidence',
         })
       }
 
@@ -631,9 +643,10 @@ function buildChatWorkflow(
       }
     })
     .addNode('generate-answer', async (state) => {
-      reportProgress?.({
-        type: 'stage',
-        stage: 'generating_answer',
+      reportChatActivityStep({
+        reportProgress,
+        locale: state.request.locale,
+        stepId: 'generating_answer',
       })
 
       if (!state.retrievalPlan || state.matches.length === 0) {
@@ -666,9 +679,10 @@ function buildChatWorkflow(
       }
     })
     .addNode('validate-response', (state) => {
-      reportProgress?.({
-        type: 'stage',
-        stage: 'validating_answer',
+      reportChatActivityStep({
+        reportProgress,
+        locale: state.request.locale,
+        stepId: 'validating_answer',
       })
       const parsedResponse = BlogChatResponseSchema.safeParse(state.response)
 

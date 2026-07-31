@@ -12,6 +12,9 @@ export const CHAT_QUESTION_RULES = {
     nextjs: ['next.js', 'next js'],
     vercel: ['버셀'],
     기술스택: ['기술 스택', '주로 쓰는 기술'],
+    동아리: ['experience'],
+    대화형: ['인터랙티브', 'interactive'],
+    영화: ['무비', 'movie'],
   },
   CONTEXT_QUERY_PATTERNS: [
     '이 글',

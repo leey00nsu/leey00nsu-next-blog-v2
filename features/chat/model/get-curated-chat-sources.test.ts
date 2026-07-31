@@ -75,8 +75,45 @@ describe('getCuratedChatSources', () => {
     expect(profileTechStackSource?.content).toContain('Leemage')
     expect(profileTechStackSource?.content).toContain('Next.js')
     expect(profileTechStackSource?.content).toContain('TypeScript')
+    expect(profileTechStackSource?.content).toContain(
+      '공통/반복 기술: TypeScript, Next.js',
+    )
     expect(profileTechStackSource?.searchTerms).toEqual(
       expect.arrayContaining(['주력 기술 스택', '기술 스택', 'tech stack']),
     )
+  })
+
+  it('프로필 하위 항목에 Career와 Education 계층을 보존한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+    const careerSource = curatedChatSources.find((source) => {
+      return source.sectionTitle === 'Ecount ERP'
+    })
+    const educationSource = curatedChatSources.find((source) => {
+      return source.sectionTitle === '삼육대학교'
+    })
+
+    expect(careerSource?.content).toContain('Career > Ecount ERP')
+    expect(careerSource?.searchTerms).toContain('career')
+    expect(educationSource?.content).toContain('Education > 삼육대학교')
+    expect(educationSource?.searchTerms).toContain('education')
+  })
+
+  it('프로젝트 intro source에 공개 링크와 기간을 포함한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+    const leeSpecIntroSource = curatedChatSources.find((source) => {
+      return (
+        source.slug === 'lee-spec-kit' &&
+        source.sourceCategory === 'project' &&
+        source.sectionTitle === null
+      )
+    })
+
+    expect(leeSpecIntroSource?.content).toContain(
+      'https://github.com/leey00nsu/lee-spec-kit',
+    )
+    expect(leeSpecIntroSource?.content).toContain(
+      'https://www.npmjs.com/package/lee-spec-kit',
+    )
+    expect(leeSpecIntroSource?.content).toContain('2025-12 ~ 2026-02')
   })
 })

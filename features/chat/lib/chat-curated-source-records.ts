@@ -7,6 +7,7 @@ interface HeadingSection {
   title: string
   anchor: string
   lines: string[]
+  parentTitles: string[]
 }
 
 interface BuildCuratedChatSourceRecordsParams {
@@ -82,6 +83,7 @@ function buildHeadingSections(markdownContent: string): {
 
   let currentSection: HeadingSection | null = null
   let isInsideCodeFence = false
+  const headingHierarchy: Array<{ level: number; title: string }> = []
 
   for (const line of lines) {
     if (isCodeFenceLine(line)) {
@@ -97,12 +99,23 @@ function buildHeadingSections(markdownContent: string): {
 
     if (headingMatch) {
       const title = headingMatch[2].trim()
+      const headingLevel = headingMatch[1].length
+
+      while (
+        headingHierarchy.length > 0 &&
+        (headingHierarchy.at(-1)?.level ?? 0) >= headingLevel
+      ) {
+        headingHierarchy.pop()
+      }
+
       currentSection = {
         title,
         anchor: slugger.slug(title),
         lines: [],
+        parentTitles: headingHierarchy.map((heading) => heading.title),
       }
       headingSections.push(currentSection)
+      headingHierarchy.push({ level: headingLevel, title })
       continue
     }
 
@@ -191,7 +204,7 @@ function buildSectionRecord(
   }
 
   const content = trimText(
-    `${params.section.title}\n${sanitizedSectionText}`,
+    `${[...params.section.parentTitles, params.section.title].join(' > ')}\n${sanitizedSectionText}`,
     CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH,
   )
 
@@ -211,9 +224,17 @@ function buildSectionRecord(
     searchTerms: buildRecordSearchTerms({
       title: params.title,
       sectionTitle: params.section.title,
-      text: sanitizedSectionText,
+      text: [
+        ...params.section.parentTitles,
+        params.section.title,
+        sanitizedSectionText,
+      ].join(' '),
       tags: params.tags,
-      baseSearchPhrases: params.baseSearchPhrases,
+      baseSearchPhrases: [
+        ...params.section.parentTitles,
+        params.section.title,
+        ...params.baseSearchPhrases,
+      ],
     }),
     evidenceTime: params.evidenceTime,
     sourceCategory: params.sourceCategory,

@@ -10,9 +10,11 @@ import { ChatQueryOperationSchema } from '@/features/chat/model/chat-query-plan'
 export const CHAT_EXECUTION_KINDS = [
   'clarification',
   'direct_metadata',
+  'direct_profile',
   'retrieve_and_generate',
   'social_reply',
   'identity',
+  'owner_identity',
   'contact',
 ] as const
 

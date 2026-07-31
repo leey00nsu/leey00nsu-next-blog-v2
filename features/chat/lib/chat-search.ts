@@ -12,6 +12,7 @@ interface SelectChatSearchMatchesParams {
   preferredSourceCategories?: ChatEvidenceRecord['sourceCategory'][]
   currentPostSlug?: string
   allowBroadMatch?: boolean
+  maximumMatchCount?: number
 }
 
 interface ScoredChatEvidenceRecord extends ChatEvidenceRecord {
@@ -348,6 +349,7 @@ function preserveAdditionalKeywordMatches(params: {
   scoredMatches: ScoredChatEvidenceRecord[]
   limitedMatches: ScoredChatEvidenceRecord[]
   rankingConceptTokens: string[]
+  maximumMatchCount: number
 }): ScoredChatEvidenceRecord[] {
   const preservedMatchMap = new Map<string, ScoredChatEvidenceRecord>()
 
@@ -365,7 +367,7 @@ function preserveAdditionalKeywordMatches(params: {
     preservedMatchMap.set(limitedMatch.id, limitedMatch)
   }
 
-  return [...preservedMatchMap.values()].slice(0, BLOG_CHAT.SEARCH.TOP_K)
+  return [...preservedMatchMap.values()].slice(0, params.maximumMatchCount)
 }
 
 function selectCurrentPostFallbackMatches(
@@ -404,6 +406,7 @@ export function selectChatSearchMatches({
   preferredSourceCategories = [],
   currentPostSlug,
   allowBroadMatch = false,
+  maximumMatchCount = BLOG_CHAT.SEARCH.TOP_K,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
   const scopedRecords = records.filter((record) => record.locale === locale)
   const normalizedQuery = normalizeChatQuery({
@@ -459,9 +462,10 @@ export function selectChatSearchMatches({
     scoredMatches,
     limitedMatches: limitMatchesPerSlug(scoredMatches).slice(
       0,
-      BLOG_CHAT.SEARCH.TOP_K,
+      maximumMatchCount,
     ),
     rankingConceptTokens,
+    maximumMatchCount,
   })
 
   if (limitedMatches.length === 0) {

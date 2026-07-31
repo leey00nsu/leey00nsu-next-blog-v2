@@ -45,4 +45,27 @@ describe('buildChatEvidenceContext', () => {
     expect(context).toContain('저는 이윤수 님의 챗봇입니다.')
     expect(context.length).toBeLessThanOrEqual(2400)
   })
+
+  it('긴 문서에서는 질문과 관련된 뒤쪽 문장을 우선 포함한다', () => {
+    const context = buildChatEvidenceContext({
+      question: 'Vercel을 더 이상 사용하지 않는 이유는?',
+      matches: [
+        buildEvidenceRecord(
+          'vercel',
+          [
+            '기존 배포 구조를 설명합니다.',
+            '일반적인 호스팅의 장점을 설명합니다.',
+            '관련 없는 배경입니다.'.repeat(100),
+            'Vercel은 높은 트래픽과 고급 기능의 비용을 고려해야 했습니다.',
+            '컨테이너 기반 프로젝트를 함께 운영하려고 셀프 호스팅으로 옮겼습니다.',
+          ].join(' '),
+        ),
+      ],
+      maximumRecordCount: 1,
+      maximumCharacters: 500,
+    })
+
+    expect(context).toContain('Vercel은 높은 트래픽')
+    expect(context.length).toBeLessThanOrEqual(500)
+  })
 })

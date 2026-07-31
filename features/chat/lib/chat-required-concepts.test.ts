@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   normalizeChatConcepts,
+  partitionChatConceptsByRequirement,
   selectEvidenceCoveringRequiredConcepts,
 } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
@@ -32,6 +33,20 @@ describe('normalizeChatConcepts', () => {
         locale: 'ko',
       }),
     ).toEqual(['vercel'])
+  })
+})
+
+describe('partitionChatConceptsByRequirement', () => {
+  it('제품명은 필수로 유지하고 추상적인 질문 의도는 선택 개념으로 내린다', () => {
+    expect(
+      partitionChatConceptsByRequirement({
+        requiredConcepts: ['Vercel', '사용을 중단한 이유', '경력'],
+        optionalConcepts: ['배포'],
+      }),
+    ).toEqual({
+      requiredConcepts: ['Vercel'],
+      optionalConcepts: ['배포', '사용을 중단한 이유', '경력'],
+    })
   })
 })
 

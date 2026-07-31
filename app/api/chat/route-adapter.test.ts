@@ -158,6 +158,69 @@ function createLeeChatRequestWithAssistantMetadata(): NextRequest {
   }) as NextRequest
 }
 
+function createLeeChatRequestWithRefusalHistory(): NextRequest {
+  return new Request('http://localhost/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-forwarded-for': '203.0.113.10',
+    },
+    body: JSON.stringify({
+      appId: 'leey00nsu-next-blog',
+      conversation: {
+        id: 'blog-chat:ko',
+        kind: 'assistant',
+      },
+      participant: {
+        id: 'visitor',
+        kind: 'user',
+      },
+      visitor: {
+        id: 'visitor',
+      },
+      metadata: {
+        locale: 'ko',
+      },
+      message: {
+        id: 'message-id',
+        senderId: 'visitor',
+        content: '최근 어디에서 일했어?',
+        parts: [{ type: 'text', text: '최근 어디에서 일했어?' }],
+        createdAt: '2026-06-05T00:00:02.000Z',
+      },
+      history: [
+        {
+          role: 'user',
+          senderId: 'visitor',
+          content: '구직중이야?',
+          parts: [{ type: 'text', text: '구직중이야?' }],
+          createdAt: '2026-06-05T00:00:00.000Z',
+        },
+        {
+          role: 'assistant',
+          senderId: 'assistant',
+          content: '공개된 정보에서는 확인할 수 없어요.',
+          parts: [
+            {
+              type: 'text',
+              text: '공개된 정보에서는 확인할 수 없어요.',
+            },
+          ],
+          createdAt: '2026-06-05T00:00:01.000Z',
+          metadata: {
+            blogChatResponse: {
+              answer: '공개된 정보에서는 확인할 수 없어요.',
+              citations: [],
+              grounded: false,
+              refusalReason: 'insufficient_search_match',
+            },
+          },
+        },
+      ],
+    }),
+  }) as NextRequest
+}
+
 describe('POST /api/chat route adapter', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -272,6 +335,29 @@ describe('POST /api/chat route adapter', () => {
           },
         ],
         conversationState: PENDING_OWNER_CLARIFICATION_STATE,
+      }),
+      requestHeaders: expect.any(Headers),
+    })
+  })
+
+  it('refusal 응답은 다음 질문의 플래너 대화 이력에서 제외한다', async () => {
+    answerBlogChatQuestionMock.mockResolvedValueOnce({
+      body: {
+        answer: '가장 최근 근무처는 Ecount ERP입니다.',
+        citations: [],
+        grounded: true,
+      },
+      status: 200,
+    })
+
+    const { POST } = await import('./route')
+
+    await POST(createLeeChatRequestWithRefusalHistory())
+
+    expect(answerBlogChatQuestionMock).toHaveBeenCalledWith({
+      requestBody: expect.objectContaining({
+        question: '최근 어디에서 일했어?',
+        conversationHistory: [],
       }),
       requestHeaders: expect.any(Headers),
     })

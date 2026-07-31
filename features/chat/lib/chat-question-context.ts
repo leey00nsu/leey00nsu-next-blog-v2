@@ -54,7 +54,12 @@ export function buildChatQuestionContextSnapshot({
   conversationHistory = [],
   currentPostSlug,
 }: BuildChatQuestionContextSnapshotParams): ChatQuestionContextSnapshot {
-  const latestConversationHistory = conversationHistory.at(-1)
+  const successfulConversationHistory = conversationHistory.filter(
+    (conversationHistoryItem) => {
+      return !conversationHistoryItem.refusalReason
+    },
+  )
+  const latestConversationHistory = successfulConversationHistory.at(-1)
 
   return {
     latestConversationQuestion: latestConversationHistory?.question ?? null,
@@ -66,7 +71,7 @@ export function buildChatQuestionContextSnapshot({
       latestConversationHistory?.citations
         .slice(0, CHAT_QUESTION_CONTEXT.MAXIMUM_CONTEXT_CITATION_COUNT)
         .map((citation) => citation.sourceCategory) ?? [],
-    recentConversationTurns: conversationHistory,
+    recentConversationTurns: successfulConversationHistory,
     hasCurrentPostContext: Boolean(currentPostSlug),
   }
 }

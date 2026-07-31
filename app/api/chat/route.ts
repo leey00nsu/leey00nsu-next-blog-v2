@@ -62,36 +62,49 @@ function buildBlogChatConversationHistory(requestBody: unknown) {
 
   return collectLeeChatTurnHistory(requestBody)
     .filter((turnHistoryItem) => {
-      return Boolean(turnHistoryItem.assistant)
+      const assistantHistoryItem = requestBody.history.find((historyItem) => {
+        return (
+          historyItem.role === turnHistoryItem.assistant?.role &&
+          historyItem.senderId === turnHistoryItem.assistant?.senderId &&
+          historyItem.createdAt === turnHistoryItem.assistant?.createdAt
+        )
+      })
+      const assistantResponse =
+        resolveAssistantBlogChatResponse(assistantHistoryItem)
+
+      return (
+        Boolean(turnHistoryItem.assistant) && !assistantResponse?.refusalReason
+      )
     })
     .slice(-CHAT_ROUTE.MAXIMUM_CONVERSATION_HISTORY_ITEM_COUNT)
     .map<BlogChatHistoryItem>((turnHistoryItem) => {
       return {
         question: turnHistoryItem.user.content,
         answer: turnHistoryItem.assistant?.content ?? '',
-        citations: resolveAssistantBlogChatResponseCitations(
-          requestBody.history.find((historyItem) => {
-            return (
-              historyItem.role === turnHistoryItem.assistant?.role &&
-              historyItem.senderId === turnHistoryItem.assistant.senderId &&
-              historyItem.createdAt === turnHistoryItem.assistant.createdAt
-            )
-          }),
-        ),
+        citations:
+          resolveAssistantBlogChatResponse(
+            requestBody.history.find((historyItem) => {
+              return (
+                historyItem.role === turnHistoryItem.assistant?.role &&
+                historyItem.senderId === turnHistoryItem.assistant.senderId &&
+                historyItem.createdAt === turnHistoryItem.assistant.createdAt
+              )
+            }),
+          )?.citations ?? [],
       }
     })
 }
 
-function resolveAssistantBlogChatResponseCitations(
+function resolveAssistantBlogChatResponse(
   historyItem: unknown,
-): BlogChatHistoryItem['citations'] {
+): BlogChatResponse | null {
   if (
     !historyItem ||
     typeof historyItem !== 'object' ||
     !('metadata' in historyItem) ||
     typeof historyItem.metadata !== 'object'
   ) {
-    return []
+    return null
   }
 
   const metadata = historyItem.metadata as BlogChatMessageMetadata
@@ -99,7 +112,7 @@ function resolveAssistantBlogChatResponseCitations(
     metadata.blogChatResponse,
   )
 
-  return parsedResponse.success ? parsedResponse.data.citations : []
+  return parsedResponse.success ? parsedResponse.data : null
 }
 
 function resolveAssistantConversationState(

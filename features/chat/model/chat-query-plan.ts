@@ -16,6 +16,7 @@ export const CHAT_QUERY_OPERATIONS = [
   'recommend',
   'social_reply',
   'identity',
+  'owner_identity',
   'contact',
 ] as const
 
@@ -86,7 +87,7 @@ export const ChatTemporalSelectionSchema = z.discriminatedUnion('mode', [
     .strict(),
 ])
 
-export const ChatQueryPlanSchema = z
+export const ChatQueryPlanDraftSchema = z
   .object({
     standaloneQuestion: z
       .string()
@@ -124,10 +125,13 @@ export const ChatQueryPlanSchema = z
       .max(CHAT_QUERY_PLAN_LIMITS.MAXIMUM_REASON_CHARACTERS),
   })
   .strict()
-  .superRefine((queryPlan, refinementContext) => {
+
+export const ChatQueryPlanSchema = ChatQueryPlanDraftSchema.superRefine(
+  (queryPlan, refinementContext) => {
     const requiresRequestedFields =
       queryPlan.operation !== 'social_reply' &&
       queryPlan.operation !== 'identity' &&
+      queryPlan.operation !== 'owner_identity' &&
       queryPlan.operation !== 'contact'
 
     if (requiresRequestedFields && queryPlan.requestedFields.length === 0) {
@@ -137,9 +141,12 @@ export const ChatQueryPlanSchema = z
         message: 'Evidence operations require at least one requested field.',
       })
     }
-  })
+  },
+)
 
 export interface ChatQueryPlan extends z.infer<typeof ChatQueryPlanSchema> {}
+export interface ChatQueryPlanDraft
+  extends z.infer<typeof ChatQueryPlanDraftSchema> {}
 export type ChatQueryOperation = z.infer<typeof ChatQueryOperationSchema>
 export type ChatQueryTargetSelection = z.infer<
   typeof ChatQueryTargetSelectionSchema

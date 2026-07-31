@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
+import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
 import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import type { ExecuteChatRetrievalPlanResult } from '@/features/chat/model/execute-chat-retrieval-plan'
@@ -71,7 +72,9 @@ const GROUNDED_RESPONSE: BlogChatResponse = {
 
 function buildDependencies() {
   return {
-    getEntityCandidates: vi.fn(async () => [LEEMAGE_CANDIDATE]),
+    getEntityCandidates: vi.fn<() => Promise<ChatEntityCandidate[]>>(
+      async () => [LEEMAGE_CANDIDATE],
+    ),
     planQuery: vi.fn(async () => ({
       ok: true as const,
       queryPlan: QUERY_PLAN,
@@ -209,6 +212,108 @@ describe('runChatWorkflow', () => {
     expect(dependencies.answerQuestion).not.toHaveBeenCalled()
   })
 
+  it('블로그 주인 이름 질문은 assistant profile의 ownerName으로 직접 답한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '이 블로그 주인은 누구야?',
+        targetSelection: { kind: 'none' },
+        operation: 'owner_identity',
+        sourceSelection: { mode: 'all' },
+        requestedFields: [],
+        requiredConcepts: [],
+      },
+    })
+
+    const result = await runChatWorkflow({
+      request: { ...REQUEST, question: '이 블로그 주인은 누구야?' },
+      assistantProfile: {
+        title: '블로그 챗봇 안내',
+        chatbotName: '블로그 챗봇',
+        ownerName: '이윤수',
+        greetingAnswer: '안녕하세요.',
+        identityAnswer: '저는 이윤수 님의 챗봇입니다.',
+        aliases: [],
+        content: '저는 이윤수 님의 챗봇입니다.',
+      },
+      dependencies,
+    })
+
+    expect(result.applicationResponse.response.answer).toBe(
+      '이 블로그의 주인은 이윤수입니다.',
+    )
+    expect(dependencies.executeRetrievalPlan).not.toHaveBeenCalled()
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+  })
+
+  it('결정적 profile 질문은 cache와 answer model을 건너뛴다', async () => {
+    const dependencies = buildDependencies()
+    const careerMatch = {
+      ...LEEMAGE_MATCH,
+      id: 'ko/about/profile/ecount-erp',
+      slug: 'about',
+      title: 'About Me',
+      url: '/ko/about#ecount-erp',
+      sectionTitle: 'Ecount ERP',
+      sourceCategory: 'profile' as const,
+    }
+    const directCareerResponse: BlogChatResponse = {
+      answer:
+        '가장 최근 근무처는 Ecount ERP이며, 2024.07부터 2025.08까지 근무했습니다.',
+      grounded: true,
+      citations: [
+        {
+          title: careerMatch.title,
+          url: careerMatch.url,
+          sectionTitle: careerMatch.sectionTitle,
+          sourceCategory: careerMatch.sourceCategory,
+        },
+      ],
+    }
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '최근 어디에서 일했어?',
+        targetSelection: { kind: 'none' },
+        operation: 'lookup',
+        sourceSelection: { mode: 'only', categories: ['profile'] },
+        temporalSelection: { mode: 'single', order: 'latest' },
+        requestedFields: ['content'],
+        requiredConcepts: [],
+        optionalConcepts: ['career', 'workplace'],
+      },
+    })
+    dependencies.executeRetrievalPlan.mockResolvedValueOnce({
+      kind: 'direct',
+      response: directCareerResponse,
+      matches: [careerMatch],
+    })
+
+    const result = await runChatWorkflow({
+      request: { ...REQUEST, question: '최근 어디에서 일했어?' },
+      dependencies,
+    })
+
+    expect(result.graphPath).toEqual([
+      'resolve-context',
+      'plan-query',
+      'compile-plan',
+      'execute-direct',
+      'validate-response',
+      'store-cache',
+      'finalize',
+    ])
+    expect(result.applicationResponse.response).toMatchObject(
+      directCareerResponse,
+    )
+    expect(dependencies.getCachedResponse).not.toHaveBeenCalled()
+    expect(dependencies.findSemanticResponse).not.toHaveBeenCalled()
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+  })
+
   it('GitHub 연락처 요청은 다른 연락 채널 없이 GitHub만 직접 답한다', async () => {
     const dependencies = buildDependencies()
     dependencies.planQuery.mockResolvedValueOnce({
@@ -292,6 +397,71 @@ describe('runChatWorkflow', () => {
     )
     expect(result.applicationResponse.response.answer).not.toContain(
       'linkedin.com',
+    )
+  })
+
+  it('전화번호나 주소 요청은 공개 연락 채널을 대신 노출하지 않고 거절한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '블로그 주인의 전화번호와 집 주소를 알려줘',
+        targetSelection: { kind: 'none' },
+        operation: 'contact',
+        sourceSelection: { mode: 'all' },
+        requestedFields: ['contact_methods'],
+        requiredConcepts: [],
+      },
+    })
+
+    const result = await runChatWorkflow({
+      request: {
+        ...REQUEST,
+        question: '블로그 주인의 전화번호와 집 주소를 알려줘',
+      },
+      contactProfile: {
+        title: 'About Me',
+        aboutUrl: '/ko/about',
+        methods: [{ label: 'GitHub', url: 'https://github.com/leey00nsu' }],
+      },
+      dependencies,
+    })
+
+    expect(result.applicationResponse.response.refusalReason).toBe(
+      'insufficient_search_match',
+    )
+    expect(result.applicationResponse.response.answer).not.toContain(
+      'github.com',
+    )
+  })
+
+  it('기술 질문에서는 assistant 이름 충돌을 planner candidate에서 제외한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.getEntityCandidates.mockResolvedValueOnce([
+      {
+        entityId: 'assistant/assistant-profile',
+        kind: 'assistant',
+        slug: 'assistant-profile',
+        title: '블로그 챗봇 안내',
+        aliases: ['블로그 챗봇'],
+        searchTerms: ['RAG'],
+        sourceCategory: 'assistant',
+      },
+    ])
+
+    await runChatWorkflow({
+      request: {
+        ...REQUEST,
+        question: '블로그 챗봇의 RAG 검색 발전 과정을 설명해줘',
+      },
+      dependencies,
+    })
+
+    expect(dependencies.planQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityCandidates: [],
+      }),
     )
   })
 

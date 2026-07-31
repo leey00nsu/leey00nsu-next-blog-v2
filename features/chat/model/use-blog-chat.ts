@@ -244,9 +244,16 @@ function buildConversationHistoryFromConversationItems(
   conversationItems: BlogChatConversationItem[],
 ): BlogChatHistoryItem[] {
   return conversationItems
-    .filter((conversationItem) => {
-      return conversationItem.status === 'completed'
-    })
+    .filter(
+      (
+        conversationItem,
+      ): conversationItem is CompletedBlogChatConversationItem => {
+      return (
+        conversationItem.status === 'completed' &&
+        !conversationItem.response.refusalReason
+      )
+      },
+    )
     .slice(-BLOG_CHAT_CONVERSATION_HISTORY.MAXIMUM_ITEM_COUNT)
     .map((conversationItem) => {
       return {

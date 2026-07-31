@@ -5,6 +5,9 @@ const generateTextMock = vi.fn()
 
 vi.mock('ai', () => ({
   generateText: generateTextMock,
+  NoObjectGeneratedError: {
+    isInstance: vi.fn(() => false),
+  },
   Output: { object: ({ schema }: { schema: unknown }) => ({ schema }) },
 }))
 vi.mock('@ai-sdk/openai', () => ({ openai: vi.fn(() => 'mock-model') }))
@@ -39,6 +42,7 @@ describe('planChatIntent', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    generateTextMock.mockReset()
     process.env.OPENAI_API_KEY = 'test-key'
     process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL = 'test-router-model'
   })
@@ -113,6 +117,62 @@ describe('planChatIntent', () => {
 
   it('두 번의 schema 오류를 invalid_intent_plan으로 반환한다', async () => {
     generateTextMock.mockResolvedValue({ output: { operation: 'answer' } })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
+
+    const result = await planChatIntent({
+      question: '질문',
+      locale: 'ko',
+      conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+      entityCandidates: [],
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      refusalReason: 'model_error',
+      failureKind: 'invalid_intent_plan',
+    })
+  })
+
+  it('근거 조회 plan의 빈 requestedFields를 content로 복구한다', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        standaloneQuestion: '최근 어디에서 일했어?',
+        contextAction: 'continue',
+        targetSelection: { kind: 'none' },
+        operation: 'lookup',
+        sourceSelection: { mode: 'all' },
+        temporalSelection: { mode: 'rank', order: 'latest' },
+        requestedFields: [],
+        requiredConcepts: [],
+        optionalConcepts: ['career', 'workplace'],
+        missingSlots: [],
+        clarificationQuestion: null,
+        confidence: 'medium',
+        reason: 'Recent workplace lookup.',
+      },
+    })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
+
+    const result = await planChatIntent({
+      question: '작성자의 경력 정보를 정리해줘',
+      locale: 'ko',
+      conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+      entityCandidates: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      queryPlan: {
+        contextAction: 'reset',
+        requestedFields: ['content'],
+      },
+    })
+  })
+
+  it('첫 schema 오류 뒤 일반 호출 오류가 발생해도 invalid 분류를 보존한다', async () => {
+    generateTextMock
+      .mockResolvedValueOnce({ output: { operation: 'answer' } })
+      .mockRejectedValueOnce(new Error('Temporary API failure'))
     const { planChatIntent } = await import('./plan-chat-intent-patch')
 
     const result = await planChatIntent({

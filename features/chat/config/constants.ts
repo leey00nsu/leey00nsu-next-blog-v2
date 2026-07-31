@@ -24,7 +24,12 @@ export const BLOG_CHAT = {
   },
   SEARCH: {
     TOP_K: parseIntegerEnvironmentValue(process.env.BLOG_CHAT_SEARCH_TOP_K, 3),
+    AGGREGATE_TOP_K: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_SEARCH_AGGREGATE_TOP_K,
+      6,
+    ),
     MAXIMUM_MATCHES_PER_SLUG: 2,
+    MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE: 1,
     MINIMUM_MATCHED_TOKEN_COUNT: 2,
     SOURCE_CATEGORY_BOOST: 4,
     EXACT_TITLE_MATCH_BOOST: 5,
@@ -40,12 +45,21 @@ export const BLOG_CHAT = {
     },
   },
   PROMPT: {
-    MAXIMUM_CONTEXT_RECORD_COUNT: 3,
-    MAXIMUM_CONTEXT_CHARACTERS: 2400,
+    MAXIMUM_CONTEXT_RECORD_COUNT: 6,
+    MAXIMUM_CONTEXT_CHARACTERS: 4800,
     MAXIMUM_QUESTION_CHARACTERS: 400,
+    MODEL_TIMEOUT_MILLISECONDS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_ANSWER_MODEL_TIMEOUT_MS,
+      20 * 1000,
+    ),
+    MAXIMUM_ATTEMPT_COUNT: 2,
   },
   PLANNER: {
     MAXIMUM_QUESTION_CHARACTERS: 300,
+    MODEL_TIMEOUT_MILLISECONDS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_PLANNER_MODEL_TIMEOUT_MS,
+      15 * 1000,
+    ),
   },
   CACHE: {
     TTL_MILLISECONDS: parseIntegerEnvironmentValue(

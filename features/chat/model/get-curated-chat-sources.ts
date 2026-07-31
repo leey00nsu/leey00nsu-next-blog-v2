@@ -23,11 +23,22 @@ const CURATED_SOURCE_TAGS = {
     'profile',
     'about',
     'career',
+    '경력',
+    '커리어',
     'experience',
+    '경험',
+    '활동',
     'education',
+    '학력',
+    '교육',
     'university',
+    '대학교',
+    '대학',
     'school',
+    '학교',
     'major',
+    '전공',
+    '학점',
     'developer',
     'react',
     'next.js',
@@ -49,9 +60,25 @@ const PROJECT_PERIOD_DATE = {
   FIRST_DAY_SUFFIX: '-01T00:00:00.000Z',
 } as const
 
+const PROJECT_METADATA_LABELS = {
+  ko: {
+    period: '프로젝트 기간',
+    github: 'GitHub',
+    demo: 'Demo',
+    npm: 'npm',
+  },
+  en: {
+    period: 'Project period',
+    github: 'GitHub',
+    demo: 'Demo',
+    npm: 'npm',
+  },
+} as const
+
 const PROFILE_TECH_STACK_SOURCE = {
   SLUG: 'about',
   ID_SUFFIX: 'profile-tech-stack',
+  MINIMUM_PROJECT_USAGE_COUNT: 2,
   SECTION_TITLE: {
     ko: '주력 기술 스택',
     en: 'Primary Tech Stack',
@@ -110,10 +137,65 @@ function collectUniqueTechStacks(projects: Project[]): string[] {
   return [...techStackMap.values()]
 }
 
+function collectRepeatedTechStacks(projects: Project[]): string[] {
+  const techStackUsageMap = new Map<
+    string,
+    { displayName: string; usageCount: number }
+  >()
+
+  for (const project of projects) {
+    for (const techStack of new Set(project.techStacks)) {
+      const normalizedTechStack = techStack.toLowerCase()
+      const currentUsage = techStackUsageMap.get(normalizedTechStack)
+
+      techStackUsageMap.set(normalizedTechStack, {
+        displayName: currentUsage?.displayName ?? techStack,
+        usageCount: (currentUsage?.usageCount ?? 0) + 1,
+      })
+    }
+  }
+
+  return [...techStackUsageMap.values()]
+    .filter((techStackUsage) => {
+      return (
+        techStackUsage.usageCount >=
+        PROFILE_TECH_STACK_SOURCE.MINIMUM_PROJECT_USAGE_COUNT
+      )
+    })
+    .toSorted((leftUsage, rightUsage) => {
+      return rightUsage.usageCount - leftUsage.usageCount
+    })
+    .map((techStackUsage) => techStackUsage.displayName)
+}
+
 function buildProjectTechStackLines(projects: Project[]): string[] {
   return projects.map((project) => {
     return `- ${project.title}: ${project.techStacks.join(', ')}`
   })
+}
+
+function buildProjectMetadataLines(params: {
+  locale: SupportedLocale
+  project: Project
+}): string[] {
+  const labels = PROJECT_METADATA_LABELS[params.locale]
+  const periodEnd = params.project.period.end ?? 'present'
+  const linkLines = Object.entries(params.project.links).flatMap(
+    ([linkKind, linkUrl]) => {
+      if (!linkUrl) {
+        return []
+      }
+
+      const label = labels[linkKind as keyof typeof params.project.links]
+
+      return label ? [`${label}: ${linkUrl}`] : []
+    },
+  )
+
+  return [
+    `${labels.period}: ${params.project.period.start} ~ ${periodEnd}`,
+    ...linkLines,
+  ]
 }
 
 function toProjectEvidenceTime(project: Project): ChatEvidenceTime | null {
@@ -139,6 +221,7 @@ function buildProfileTechStackSource(params: {
   }
 
   const uniqueTechStacks = collectUniqueTechStacks(params.projects)
+  const repeatedTechStacks = collectRepeatedTechStacks(params.projects)
   const searchTerms = [
     ...PROFILE_TECH_STACK_SOURCE.SEARCH_TERMS[params.locale],
     ...uniqueTechStacks,
@@ -163,7 +246,7 @@ function buildProfileTechStackSource(params: {
     content: [
       PROFILE_TECH_STACK_SOURCE.SECTION_TITLE[params.locale],
       PROFILE_TECH_STACK_SOURCE.INTRODUCTION[params.locale],
-      `${PROFILE_TECH_STACK_SOURCE.COMMON_TECH_STACK_LABEL[params.locale]}: ${uniqueTechStacks.join(', ')}`,
+      `${PROFILE_TECH_STACK_SOURCE.COMMON_TECH_STACK_LABEL[params.locale]}: ${repeatedTechStacks.join(', ')}`,
       ...buildProjectTechStackLines(params.projects),
     ].join('\n'),
     sectionTitle: PROFILE_TECH_STACK_SOURCE.SECTION_TITLE[params.locale],
@@ -294,6 +377,10 @@ export const getCuratedChatSources = cache(
         ...CURATED_SOURCE_TAGS.PROJECT,
         ...project.techStacks.map((stack) => stack.toLowerCase()),
       ]
+      const projectMetadataLines = buildProjectMetadataLines({
+        locale,
+        project,
+      })
 
       curatedSources.push(
         ...buildCuratedChatSourceRecords({
@@ -306,6 +393,7 @@ export const getCuratedChatSources = cache(
             project.summary,
             project.keyFeatures.join(' '),
             project.techStacks.join(' '),
+            ...projectMetadataLines,
           ]
             .filter(Boolean)
             .join(' '),
@@ -318,6 +406,11 @@ export const getCuratedChatSources = cache(
             project.summary,
             ...project.keyFeatures,
             ...project.techStacks,
+            ...projectMetadataLines,
+            'GitHub 주소',
+            'repository URL',
+            'npm 주소',
+            'package URL',
             ...CURATED_SOURCE_TAGS.PROJECT,
           ],
           sourceCategory: 'project',

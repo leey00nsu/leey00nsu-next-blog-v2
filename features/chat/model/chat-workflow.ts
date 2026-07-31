@@ -8,6 +8,7 @@ import {
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
+import { isPrivateChatContactQuestion } from '@/features/chat/lib/chat-contact-question'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { buildChatRetrievalPlanCacheKey } from '@/features/chat/lib/chat-intent-cache-key'
 import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
@@ -186,19 +187,28 @@ const CHAT_WORKFLOW_RESPONSES = {
   ko: {
     CLARIFICATION: '답변에 필요한 대상을 조금 더 구체적으로 알려주세요.',
     SOCIAL_REPLY: '안녕하세요. 무엇을 찾고 계신가요?',
+    OWNER_IDENTITY: '이 블로그의 주인은 {ownerName}입니다.',
     CONTACT_INTRO: '공개된 연락 채널은 다음과 같습니다.',
     CONTACT_OUTRO: '자세한 정보는 소개 페이지에서 확인할 수 있어요.',
   },
   en: {
     CLARIFICATION: 'Please specify the target needed to answer the question.',
     SOCIAL_REPLY: 'Hi there. What are you looking for?',
+    OWNER_IDENTITY: 'The owner of this blog is {ownerName}.',
     CONTACT_INTRO: 'The public contact channels are:',
     CONTACT_OUTRO: 'You can find the details on the About page.',
   },
 } as const
 
 const DIRECT_CHAT_EXECUTION_KINDS = new Set<ChatRetrievalPlan['executionKind']>(
-  ['clarification', 'social_reply', 'identity', 'contact'],
+  [
+    'clarification',
+    'direct_profile',
+    'social_reply',
+    'identity',
+    'owner_identity',
+    'contact',
+  ],
 )
 
 const CHAT_CONTACT_METHOD_ALIASES = {
@@ -249,6 +259,13 @@ function buildContactResponse(params: {
   contactProfile: ChatContactProfile | null
   retrievalPlan: ChatRetrievalPlan
 }): BlogChatResponse {
+  if (isPrivateChatContactQuestion(params.retrievalPlan.standaloneQuestion)) {
+    return buildChatRefusalResponse({
+      locale: params.request.locale,
+      refusalReason: 'insufficient_search_match',
+    })
+  }
+
   const contactProfile = params.contactProfile
 
   if (!contactProfile || contactProfile.methods.length === 0) {
@@ -342,6 +359,8 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         entityCandidates: matchChatEntityCandidates({
           question: state.request.question,
           candidates: allCandidates,
+        }).filter((candidate) => {
+          return candidate.kind !== 'assistant'
         }),
         graphPath: ['resolve-context'],
       }
@@ -485,6 +504,26 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
             citations: [],
             grounded: false,
           },
+          graphPath: ['execute-direct'],
+        }
+      }
+
+      if (retrievalPlan.executionKind === 'owner_identity') {
+        const ownerName = state.assistantProfile?.ownerName
+
+        return {
+          response: ownerName
+            ? {
+                answer: CHAT_WORKFLOW_RESPONSES[
+                  state.request.locale
+                ].OWNER_IDENTITY.replace('{ownerName}', ownerName),
+                citations: [],
+                grounded: false,
+              }
+            : buildChatRefusalResponse({
+                locale: state.request.locale,
+                refusalReason: 'insufficient_search_match',
+              }),
           graphPath: ['execute-direct'],
         }
       }

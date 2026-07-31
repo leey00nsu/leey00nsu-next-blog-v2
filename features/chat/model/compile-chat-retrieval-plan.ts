@@ -1,5 +1,7 @@
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { partitionChatConceptsByRequirement } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatTarget } from '@/features/chat/model/chat-plan-primitives'
 import type {
   ChatQueryPlan,
@@ -46,7 +48,7 @@ const EMPTY_CHAT_TARGET: ChatTarget = {
   title: null,
 }
 
-const DIRECT_METADATA_FIELDS = new Set(['title', 'published_at'])
+const DIRECT_METADATA_FIELDS = new Set(['title', 'published_at', 'summary'])
 const DIRECT_CONTACT_FIELD = 'contact_methods'
 const DIRECT_CONTACT_TARGET_KINDS = new Set<ChatTarget['kind']>([
   'none',
@@ -58,6 +60,15 @@ const CHAT_TARGET_ANSWER = {
   RESPONSE_SUFFIX_PATTERN: /(?:이요|입니다)$/gu,
   MULTIPLE_WHITESPACE_PATTERN: /\s+/gu,
 } as const
+const IMPLICIT_PROFILE_QUESTION_PATTERN =
+  /경력|커리어|직장|근무|학력|학교|대학교|대학|전공|학점|대외\s*활동|동아리|관심사|주력\s*기술|기술\s*스택|주로\s*쓰는\s*기술/u
+const DIRECT_PROFILE_QUESTION_PATTERN =
+  /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무)|경력|직장|근무처)|학력|학교별|대외\s*활동|동아리|주력\s*기술|기술\s*스택|주로\s*쓰는\s*기술|recent|latest|last\s+(?:job|workplace)|education|school|extracurricular|club\s+experience|primary\s+tech|tech(?:nology)?\s+stack/iu
+const AGGREGATE_CHAT_OPERATIONS = new Set<ChatQueryPlan['operation']>([
+  'compare',
+  'recommend',
+  'summarize',
+])
 
 function resolveEffectiveQueryPlan(params: {
   queryPlan: ChatQueryPlan
@@ -140,6 +151,164 @@ function resolveCanonicalTarget(params: {
   return { ok: true, target: EMPTY_CHAT_TARGET }
 }
 
+function doesQuestionMentionCandidate(params: {
+  question: string
+  candidate: ChatEntityCandidate
+}): boolean {
+  const normalizedQuestion = normalizeTargetAnswer(params.question)
+
+  return [params.candidate.title, ...params.candidate.aliases].some(
+    (candidateName) => {
+      const normalizedCandidateName = normalizeTargetAnswer(candidateName)
+
+      return (
+        Boolean(normalizedCandidateName) &&
+        normalizedQuestion.includes(normalizedCandidateName)
+      )
+    },
+  )
+}
+
+function resolveCanonicalTargets(params: {
+  queryPlan: ChatQueryPlan
+  candidates: ChatEntityCandidate[]
+  primaryTarget: ChatTarget
+}): ChatTarget[] {
+  if (params.primaryTarget.kind === 'none') {
+    return []
+  }
+
+  const targetMap = new Map<string, ChatTarget>()
+  const addTarget = (target: ChatTarget) => {
+    targetMap.set(
+      `${target.sourceCategory ?? 'none'}/${target.slug ?? 'none'}`,
+      target,
+    )
+  }
+
+  addTarget(params.primaryTarget)
+
+  if (params.queryPlan.operation === 'compare') {
+    for (const candidate of params.candidates) {
+      if (
+        doesQuestionMentionCandidate({
+          question: params.queryPlan.standaloneQuestion,
+          candidate,
+        })
+      ) {
+        addTarget(resolveCandidateTarget(candidate))
+      }
+    }
+  }
+
+  return [...targetMap.values()]
+}
+
+function normalizeQueryPlanConceptRequirements(
+  queryPlan: ChatQueryPlan,
+): ChatQueryPlan {
+  const concepts = partitionChatConceptsByRequirement({
+    requiredConcepts: queryPlan.requiredConcepts,
+    optionalConcepts: queryPlan.optionalConcepts,
+  })
+
+  return {
+    ...queryPlan,
+    requiredConcepts: concepts.requiredConcepts,
+    optionalConcepts: concepts.optionalConcepts,
+  }
+}
+
+function normalizeImplicitProfileSourceSelection(
+  queryPlan: ChatQueryPlan,
+  candidates: ChatEntityCandidate[],
+): ChatQueryPlan {
+  const hasNoCanonicalTarget = queryPlan.targetSelection.kind === 'none'
+  const selectedCandidateEntityId =
+    queryPlan.targetSelection.kind === 'candidate'
+      ? queryPlan.targetSelection.entityId
+      : null
+  const hasProfileCandidateTarget =
+    selectedCandidateEntityId !== null &&
+    candidates.some((candidate) => {
+      return (
+        candidate.entityId === selectedCandidateEntityId &&
+        candidate.kind === 'profile'
+      )
+    })
+  const asksForProfileField = IMPLICIT_PROFILE_QUESTION_PATTERN.test(
+    queryPlan.standaloneQuestion,
+  )
+
+  if (
+    (!hasNoCanonicalTarget && !hasProfileCandidateTarget) ||
+    !asksForProfileField
+  ) {
+    return queryPlan
+  }
+
+  return {
+    ...queryPlan,
+    sourceSelection: {
+      mode: 'only',
+      categories: ['profile'],
+    },
+  }
+}
+
+function doesConceptReferenceTarget(
+  concept: string,
+  target: ChatTarget,
+): boolean {
+  const normalizedConcept = normalizeTargetAnswer(concept)
+  const targetNames = [target.title ?? '', target.slug ?? '']
+
+  return targetNames.some((targetName) => {
+    const normalizedTargetName = normalizeTargetAnswer(targetName)
+
+    return (
+      Boolean(normalizedTargetName) &&
+      normalizedConcept.includes(normalizedTargetName)
+    )
+  })
+}
+
+function normalizeQueryPlanTargetConcepts(params: {
+  queryPlan: ChatQueryPlan
+  targets: ChatTarget[]
+}): ChatQueryPlan {
+  const targetConcepts = params.queryPlan.requiredConcepts.filter((concept) => {
+    return params.targets.some((target) => {
+      return doesConceptReferenceTarget(concept, target)
+    })
+  })
+
+  if (targetConcepts.length === 0) {
+    return params.queryPlan
+  }
+
+  const targetConceptSet = new Set(targetConcepts)
+
+  return {
+    ...params.queryPlan,
+    requiredConcepts: params.queryPlan.requiredConcepts.filter((concept) => {
+      return !targetConceptSet.has(concept)
+    }),
+    optionalConcepts: [
+      ...new Set([...params.queryPlan.optionalConcepts, ...targetConcepts]),
+    ],
+  }
+}
+
+function resolveMaximumEvidenceCount(params: {
+  queryPlan: ChatQueryPlan
+  maximumEvidenceCount: number
+}): number {
+  return AGGREGATE_CHAT_OPERATIONS.has(params.queryPlan.operation)
+    ? Math.max(params.maximumEvidenceCount, BLOG_CHAT.SEARCH.AGGREGATE_TOP_K)
+    : params.maximumEvidenceCount
+}
+
 function resolveSourceSelection(params: {
   sourceSelection: ChatSourceSelection
   target: ChatTarget
@@ -199,12 +368,25 @@ function resolveExecutionKind(params: {
     return 'identity'
   }
 
+  if (queryPlan.operation === 'owner_identity') {
+    return 'owner_identity'
+  }
+
   if (
     (queryPlan.operation === 'contact' ||
       queryPlan.requestedFields.includes(DIRECT_CONTACT_FIELD)) &&
     DIRECT_CONTACT_TARGET_KINDS.has(params.target.kind)
   ) {
     return 'contact'
+  }
+
+  const isDirectProfileLookup =
+    queryPlan.sourceSelection.mode === 'only' &&
+    queryPlan.sourceSelection.categories.includes('profile') &&
+    DIRECT_PROFILE_QUESTION_PATTERN.test(queryPlan.standaloneQuestion)
+
+  if (isDirectProfileLookup) {
+    return 'direct_profile'
   }
 
   const isDirectMetadataLookup =
@@ -214,8 +396,16 @@ function resolveExecutionKind(params: {
     queryPlan.requestedFields.every((requestedField) => {
       return DIRECT_METADATA_FIELDS.has(requestedField)
     })
+  const isDirectTemporalProjectLookup =
+    queryPlan.operation === 'lookup' &&
+    queryPlan.temporalSelection.mode === 'single' &&
+    queryPlan.sourceSelection.mode === 'only' &&
+    queryPlan.sourceSelection.categories.includes('project') &&
+    queryPlan.requestedFields.includes('title')
 
-  return isDirectMetadataLookup ? 'direct_metadata' : 'retrieve_and_generate'
+  return isDirectMetadataLookup || isDirectTemporalProjectLookup
+    ? 'direct_metadata'
+    : 'retrieve_and_generate'
 }
 
 function isValidTransition(params: {
@@ -304,6 +494,17 @@ function normalizeContextAction(params: {
 
   if (
     params.queryPlan.contextAction === 'resolve_clarification' &&
+    params.previousState.pendingClarification &&
+    !isSelectedCandidateTargetAnswer(params)
+  ) {
+    return {
+      ...params.queryPlan,
+      contextAction: 'reset',
+    }
+  }
+
+  if (
+    params.queryPlan.contextAction === 'resolve_clarification' &&
     !params.previousState.pendingClarification &&
     params.queryPlan.missingSlots.length > 0
   ) {
@@ -333,6 +534,7 @@ function hasRequiredRequestedFields(queryPlan: ChatQueryPlan): boolean {
     queryPlan.missingSlots.length > 0 ||
     queryPlan.operation === 'social_reply' ||
     queryPlan.operation === 'identity' ||
+    queryPlan.operation === 'owner_identity' ||
     queryPlan.operation === 'contact'
   ) {
     return true
@@ -363,7 +565,12 @@ export function compileChatRetrievalPlan(
     }
   }
 
-  const queryPlan = resolveEffectiveQueryPlan(normalizedParams)
+  const queryPlan = normalizeImplicitProfileSourceSelection(
+    normalizeQueryPlanConceptRequirements(
+      resolveEffectiveQueryPlan(normalizedParams),
+    ),
+    params.candidates,
+  )
 
   if (!hasRequiredRequestedFields(queryPlan)) {
     return {
@@ -401,34 +608,45 @@ export function compileChatRetrievalPlan(
     queryPlan.temporalSelection.mode === 'none'
       ? null
       : queryPlan.temporalSelection.order
+  const canonicalTargets = resolveCanonicalTargets({
+    queryPlan,
+    candidates: params.candidates,
+    primaryTarget: targetResult.target,
+  })
+  const targetNormalizedQueryPlan = normalizeQueryPlanTargetConcepts({
+    queryPlan,
+    targets: canonicalTargets,
+  })
   const retrievalPlan = ChatRetrievalPlanSchema.parse({
     executionKind: resolveExecutionKind({
-      queryPlan,
+      queryPlan: targetNormalizedQueryPlan,
       target: targetResult.target,
     }),
-    standaloneQuestion: queryPlan.standaloneQuestion,
-    operation: queryPlan.operation,
-    canonicalTargets:
-      targetResult.target.kind === 'none' ? [] : [targetResult.target],
+    standaloneQuestion: targetNormalizedQueryPlan.standaloneQuestion,
+    operation: targetNormalizedQueryPlan.operation,
+    canonicalTargets,
     sourceStrategy: sourceResult.sourceStrategy,
     sourceCategories: sourceResult.sourceCategories,
-    requiredConcepts: queryPlan.requiredConcepts,
-    optionalConcepts: queryPlan.optionalConcepts,
-    requestedFields: queryPlan.requestedFields,
+    requiredConcepts: targetNormalizedQueryPlan.requiredConcepts,
+    optionalConcepts: targetNormalizedQueryPlan.optionalConcepts,
+    requestedFields: targetNormalizedQueryPlan.requestedFields,
     temporalStrategy,
     temporalOrder,
-    maximumEvidenceCount: params.maximumEvidenceCount,
+    maximumEvidenceCount: resolveMaximumEvidenceCount({
+      queryPlan: targetNormalizedQueryPlan,
+      maximumEvidenceCount: params.maximumEvidenceCount,
+    }),
   })
   const nextConversationState = reduceChatConversationState({
-    queryPlan,
+    queryPlan: targetNormalizedQueryPlan,
     target: targetResult.target,
   })
 
   return {
     ok: true,
-    queryPlan,
+    queryPlan: targetNormalizedQueryPlan,
     retrievalPlan,
     nextConversationState,
-    contextAction: queryPlan.contextAction,
+    contextAction: targetNormalizedQueryPlan.contextAction,
   }
 }

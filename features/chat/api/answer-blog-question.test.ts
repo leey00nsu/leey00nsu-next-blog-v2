@@ -74,4 +74,25 @@ describe('answerBlogQuestion', () => {
       }),
     )
   })
+
+  it('일시적인 answer model 오류는 한 번 재시도한다', async () => {
+    generateTextMock
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValueOnce({
+        output: {
+          answer: 'Vercel 대신 Coolify를 선택했습니다.',
+          usedCitationUrls: ['/ko/blog/why-i-do-not-use-vercel-anymore'],
+          refusalReason: null,
+        },
+      })
+    const { answerBlogQuestion } = await import('./answer-blog-question')
+
+    const result = await answerBlogQuestion({
+      question: '왜 Vercel을 떠났어?',
+      matches: [BLOG_EVIDENCE_RECORD],
+    })
+
+    expect(result.ok).toBe(true)
+    expect(generateTextMock).toHaveBeenCalledTimes(2)
+  })
 })

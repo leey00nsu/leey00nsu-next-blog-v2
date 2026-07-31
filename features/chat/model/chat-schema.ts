@@ -14,6 +14,17 @@ export const BlogChatCitationSchema = z.object({
   sourceCategory: ChatSourceCategorySchema,
 })
 
+export const BlogChatRefusalReasonSchema = z.enum([
+  'insufficient_search_match',
+  'insufficient_evidence',
+  'invalid_citations',
+  'missing_api_key',
+  'model_error',
+  'rate_limited',
+  'question_too_long',
+  'daily_limit_exceeded',
+])
+
 export const BlogChatHistoryItemSchema = z.object({
   question: z
     .string()
@@ -22,6 +33,7 @@ export const BlogChatHistoryItemSchema = z.object({
     .max(BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS),
   answer: z.string(),
   citations: z.array(BlogChatCitationSchema),
+  refusalReason: BlogChatRefusalReasonSchema.optional(),
 })
 
 export const BlogChatRequestSchema = z.object({
@@ -50,18 +62,7 @@ export const BlogChatResponseSchema = z.object({
     .array(z.string().trim().min(1).max(120))
     .max(BLOG_CHAT.FOLLOW_UP.MAXIMUM_SUGGESTION_COUNT)
     .optional(),
-  refusalReason: z
-    .enum([
-      'insufficient_search_match',
-      'insufficient_evidence',
-      'invalid_citations',
-      'missing_api_key',
-      'model_error',
-      'rate_limited',
-      'question_too_long',
-      'daily_limit_exceeded',
-    ])
-    .optional(),
+  refusalReason: BlogChatRefusalReasonSchema.optional(),
 })
 
 export const BlogChatModelDraftSchema = z.object({

@@ -141,8 +141,8 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3
       lee-chat-sdk:
-        specifier: file:vendor/lee-chat-sdk-0.4.1.tgz
-        version: file:vendor/lee-chat-sdk-0.4.1.tgz(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        specifier: ^0.4.1
+        version: 0.4.1(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -5584,9 +5584,8 @@ packages:
     resolution: {integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==}
     engines: {node: '>=0.10'}
 
-  lee-chat-sdk@file:vendor/lee-chat-sdk-0.4.1.tgz:
-    resolution: {integrity: sha512-Cn1ecFBuCrftBUkVvRW730CPo09EC/0x9Nr6mhWgLy8kYhXWAGQW0iPGRYsP/Jg28Bk5d3N0vKri3hVdVmfBbQ==, tarball: file:vendor/lee-chat-sdk-0.4.1.tgz}
-    version: 0.4.1
+  lee-chat-sdk@0.4.1:
+    resolution: {integrity: sha512-Cn1ecFBuCrftBUkVvRW730CPo09EC/0x9Nr6mhWgLy8kYhXWAGQW0iPGRYsP/Jg28Bk5d3N0vKri3hVdVmfBbQ==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -13469,7 +13468,7 @@ snapshots:
     dependencies:
       language-subtag-registry: 0.3.23
 
-  lee-chat-sdk@file:vendor/lee-chat-sdk-0.4.1.tgz(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  lee-chat-sdk@0.4.1(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@radix-ui/react-popover': 1.1.23(@types/react-dom@19.1.9(@types/react@19.1.12))(@types/react@19.1.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     optionalDependencies:

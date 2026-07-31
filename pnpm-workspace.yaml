@@ -6,3 +6,5 @@ allowBuilds:
   esbuild: true
   sharp: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - lee-chat-sdk@0.4.1

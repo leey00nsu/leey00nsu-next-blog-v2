@@ -2,7 +2,7 @@
   "name": "leey00nsu-next-blog-v2",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "next dev",
     "predev": "pnpm run gen:image-metadata && pnpm run gen:posts && pnpm run gen:projects && pnpm run gen:chat-semantic && pnpm run gen:blog-search",

@@ -93,6 +93,16 @@ function createLeeChatRequest(): NextRequest {
   }) as NextRequest
 }
 
+function createLeeChatProgressRequest(): NextRequest {
+  const request = createLeeChatRequest()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('Accept', 'text/event-stream')
+
+  return new Request(request, {
+    headers: requestHeaders,
+  }) as NextRequest
+}
+
 function createLeeChatRequestWithAssistantMetadata(): NextRequest {
   return new Request('http://localhost/api/chat', {
     method: 'POST',
@@ -301,6 +311,142 @@ describe('POST /api/chat route adapter', () => {
         },
       },
     })
+  })
+
+  it('진행 스트림 요청에는 실제 단계와 최종 SDK 응답을 순서대로 전송한다', async () => {
+    answerBlogChatQuestionMock.mockImplementationOnce(
+      async ({
+        reportProgress,
+      }: {
+        reportProgress: (event: unknown) => void
+      }) => {
+        reportProgress({
+          type: 'stage',
+          stage: 'understanding_question',
+        })
+        reportProgress({
+          type: 'stage',
+          stage: 'checking_sources',
+        })
+
+        return {
+          body: {
+            answer: 'React와 TypeScript를 사용합니다.',
+            citations: [
+              {
+                title: 'About Me',
+                url: '/ko/about',
+                sectionTitle: null,
+                sourceCategory: 'profile',
+              },
+            ],
+            grounded: true,
+          },
+          status: 200,
+        }
+      },
+    )
+
+    const { POST } = await import('./route')
+    const response = await POST(createLeeChatProgressRequest())
+    const serializedStream = await response.text()
+    const envelopes = serializedStream
+      .split('\n')
+      .filter((line) => line.startsWith('data: '))
+      .map((line) => JSON.parse(line.slice('data: '.length)))
+
+    expect(response.headers.get('Content-Type')).toContain('text/event-stream')
+    expect(envelopes).toEqual([
+      {
+        type: 'progress',
+        event: {
+          type: 'stage',
+          stage: 'understanding_question',
+        },
+      },
+      {
+        type: 'progress',
+        event: {
+          type: 'stage',
+          stage: 'checking_sources',
+        },
+      },
+      {
+        type: 'progress',
+        event: {
+          type: 'sources',
+          sources: [
+            {
+              title: 'About Me',
+              url: '/ko/about',
+              sourceCategory: 'profile',
+              sectionTitle: null,
+            },
+          ],
+        },
+      },
+      {
+        type: 'progress',
+        event: {
+          type: 'completed',
+          elapsedMilliseconds: expect.any(Number),
+        },
+      },
+      {
+        type: 'result',
+        status: 200,
+        body: {
+          message: {
+            id: 'message-id:assistant',
+            content: 'React와 TypeScript를 사용합니다.',
+            parts: [
+              {
+                type: 'text',
+                text: 'React와 TypeScript를 사용합니다.',
+              },
+            ],
+            createdAt: expect.any(String),
+            metadata: {
+              conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+              blogChatResponse: {
+                answer: 'React와 TypeScript를 사용합니다.',
+                citations: [
+                  {
+                    title: 'About Me',
+                    url: '/ko/about',
+                    sectionTitle: null,
+                    sourceCategory: 'profile',
+                  },
+                ],
+                grounded: true,
+              },
+              blogChatProgressTrace: {
+                stages: [
+                  {
+                    stage: 'understanding_question',
+                    status: 'completed',
+                  },
+                  {
+                    stage: 'checking_sources',
+                    status: 'completed',
+                  },
+                ],
+                sources: [
+                  {
+                    title: 'About Me',
+                    url: '/ko/about',
+                    sourceCategory: 'profile',
+                    sectionTitle: null,
+                  },
+                ],
+                elapsedMilliseconds: expect.any(Number),
+                failed: false,
+              },
+            },
+          },
+        },
+      },
+    ])
   })
 
   it('SDK assistant metadata의 blogChatResponse citations를 대화 이력에 보존한다', async () => {

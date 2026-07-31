@@ -467,10 +467,12 @@ describe('runChatWorkflow', () => {
 
   it('evidence path는 답변과 citation을 검증하고 cache에 저장한다', async () => {
     const dependencies = buildDependencies()
+    const reportProgress = vi.fn()
 
     const result = await runChatWorkflow({
       request: REQUEST,
       dependencies,
+      reportProgress,
     })
 
     expect(result.graphPath).toEqual([
@@ -494,6 +496,43 @@ describe('runChatWorkflow', () => {
     })
     expect(dependencies.setCachedResponse).toHaveBeenCalledTimes(1)
     expect(dependencies.storeSemanticResponse).toHaveBeenCalledTimes(1)
+    expect(reportProgress.mock.calls.map(([event]) => event)).toEqual([
+      {
+        type: 'stage',
+        stage: 'understanding_question',
+      },
+      {
+        type: 'stage',
+        stage: 'checking_sources',
+      },
+      {
+        type: 'stage',
+        stage: 'searching_evidence',
+      },
+      {
+        type: 'sources',
+        sources: [
+          {
+            title: LEEMAGE_MATCH.title,
+            url: LEEMAGE_MATCH.url,
+            sourceCategory: LEEMAGE_MATCH.sourceCategory,
+            sectionTitle: LEEMAGE_MATCH.sectionTitle,
+          },
+        ],
+      },
+      {
+        type: 'stage',
+        stage: 'selecting_evidence',
+      },
+      {
+        type: 'stage',
+        stage: 'generating_answer',
+      },
+      {
+        type: 'stage',
+        stage: 'validating_answer',
+      },
+    ])
   })
 
   it('공개 근거가 없으면 사용자 메시지를 반환하고 answer model을 호출하지 않는다', async () => {

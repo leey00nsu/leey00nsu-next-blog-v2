@@ -17,6 +17,7 @@ import {
   getCachedBlogChatResponse,
   setCachedBlogChatResponse,
 } from '@/features/chat/model/blog-chat-response-cache'
+import type { BlogChatProgressEvent } from '@/features/chat/model/blog-chat-progress'
 import type { ChatContactProfile } from '@/features/chat/model/chat-contact'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
@@ -89,6 +90,7 @@ interface RunChatWorkflowParams {
   assistantProfile?: ChatAssistantProfile | null
   contactProfile?: ChatContactProfile | null
   dependencies?: Partial<ChatWorkflowDependencies>
+  reportProgress?: (event: BlogChatProgressEvent) => void
 }
 
 export type ChatWorkflowFailureKind =
@@ -348,9 +350,16 @@ const DEFAULT_DEPENDENCIES: ChatWorkflowDependencies = {
   storeSemanticResponse: storeSemanticCachedBlogChatResponse,
 }
 
-function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
+function buildChatWorkflow(
+  dependencies: ChatWorkflowDependencies,
+  reportProgress?: (event: BlogChatProgressEvent) => void,
+) {
   return new StateGraph(CHAT_WORKFLOW_STATE)
     .addNode('resolve-context', async (state) => {
+      reportProgress?.({
+        type: 'stage',
+        stage: 'understanding_question',
+      })
       const allCandidates = await dependencies.getEntityCandidates(
         state.request.locale,
       )
@@ -425,6 +434,11 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
       }
     })
     .addNode('cache-lookup', async (state) => {
+      reportProgress?.({
+        type: 'stage',
+        stage: 'checking_sources',
+      })
+
       if (!state.retrievalPlan) {
         return { graphPath: ['cache-lookup'] }
       }
@@ -467,6 +481,17 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
 
       if (!retrievalPlan) {
         return { graphPath: ['execute-direct'] }
+      }
+
+      if (
+        retrievalPlan.executionKind !== 'clarification' &&
+        retrievalPlan.executionKind !== 'social_reply' &&
+        retrievalPlan.executionKind !== 'identity'
+      ) {
+        reportProgress?.({
+          type: 'stage',
+          stage: 'checking_sources',
+        })
       }
 
       if (retrievalPlan.executionKind === 'clarification') {
@@ -558,6 +583,11 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
       }
     })
     .addNode('retrieve-evidence', async (state) => {
+      reportProgress?.({
+        type: 'stage',
+        stage: 'searching_evidence',
+      })
+
       if (!state.retrievalPlan) {
         return { graphPath: ['retrieve-evidence'] }
       }
@@ -566,6 +596,24 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         plan: state.retrievalPlan,
         locale: state.request.locale,
       })
+
+      if (execution.matches.length > 0) {
+        reportProgress?.({
+          type: 'sources',
+          sources: execution.matches.map((match) => {
+            return {
+              title: match.title,
+              url: match.url,
+              sourceCategory: match.sourceCategory,
+              sectionTitle: match.sectionTitle,
+            }
+          }),
+        })
+        reportProgress?.({
+          type: 'stage',
+          stage: 'selecting_evidence',
+        })
+      }
 
       return {
         execution,
@@ -583,6 +631,11 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
       }
     })
     .addNode('generate-answer', async (state) => {
+      reportProgress?.({
+        type: 'stage',
+        stage: 'generating_answer',
+      })
+
       if (!state.retrievalPlan || state.matches.length === 0) {
         return { graphPath: ['generate-answer'] }
       }
@@ -613,6 +666,10 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
       }
     })
     .addNode('validate-response', (state) => {
+      reportProgress?.({
+        type: 'stage',
+        stage: 'validating_answer',
+      })
       const parsedResponse = BlogChatResponseSchema.safeParse(state.response)
 
       if (!parsedResponse.success) {
@@ -749,6 +806,7 @@ export async function runChatWorkflow({
   assistantProfile = null,
   contactProfile = null,
   dependencies: dependencyOverrides = {},
+  reportProgress,
 }: RunChatWorkflowParams): Promise<ChatWorkflowResult> {
   const dependencies = {
     ...DEFAULT_DEPENDENCIES,
@@ -756,7 +814,7 @@ export async function runChatWorkflow({
   }
 
   try {
-    const workflow = buildChatWorkflow(dependencies)
+    const workflow = buildChatWorkflow(dependencies, reportProgress)
     const state = await workflow.invoke({
       request,
       assistantProfile,

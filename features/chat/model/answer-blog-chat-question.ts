@@ -10,6 +10,7 @@ import {
   resolveBlogChatClientKey,
 } from '@/features/chat/model/blog-chat-usage-limiter'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { BlogChatProgressEvent } from '@/features/chat/model/blog-chat-progress'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
@@ -56,6 +57,7 @@ interface ChatObservabilityState {
 export interface AnswerBlogChatQuestionParams {
   requestBody: unknown
   requestHeaders: Headers
+  reportProgress?: (event: BlogChatProgressEvent) => void
 }
 
 export interface BlogChatApplicationResult {
@@ -240,6 +242,7 @@ function buildChatObservabilityState(params: {
 export async function answerBlogChatQuestion({
   requestBody,
   requestHeaders,
+  reportProgress,
 }: AnswerBlogChatQuestionParams): Promise<BlogChatApplicationResult> {
   try {
     const parsedRequest = BlogChatRequestSchema.safeParse(requestBody)
@@ -311,6 +314,7 @@ export async function answerBlogChatQuestion({
         request: parsedRequest.data,
         assistantProfile: getChatAssistantProfile(locale),
         contactProfile: getChatContactProfile(locale),
+        reportProgress,
       })
       const chatObservabilityState = buildChatObservabilityState({
         originalQuestion: parsedRequest.data.question,

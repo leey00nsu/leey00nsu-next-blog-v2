@@ -201,34 +201,3 @@
   break-inside: avoid;
   page-break-inside: avoid;
 }
-
-.blog-chat-assistant-loading-text {
-  color: transparent;
-  background-image: linear-gradient(
-    110deg,
-    var(--muted-foreground) 35%,
-    var(--foreground) 50%,
-    var(--muted-foreground) 65%
-  );
-  background-size: 200% 100%;
-  background-clip: text;
-  animation: blog-chat-assistant-loading-shine 1.8s linear infinite;
-}
-
-@keyframes blog-chat-assistant-loading-shine {
-  from {
-    background-position: 100% 0;
-  }
-
-  to {
-    background-position: -100% 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .blog-chat-assistant-loading-text {
-    color: var(--muted-foreground);
-    background-image: none;
-    animation: none;
-  }
-}

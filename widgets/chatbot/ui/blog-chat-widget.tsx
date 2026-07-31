@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import {
   LEE_CHAT_TEXT_PRESETS,
   LeeChatProvider,
@@ -9,11 +9,22 @@ import {
 import { ArrowUpRight, MessageCircleMore } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
+import { createBlogChatProgressFetch } from '@/features/chat/api/create-blog-chat-progress-fetch'
+import {
+  EMPTY_BLOG_CHAT_PROGRESS_TRACE,
+  reduceBlogChatProgressTrace,
+  type BlogChatProgressEvent,
+  type BlogChatProgressTrace,
+} from '@/features/chat/model/blog-chat-progress'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { ROUTES } from '@/shared/config/constants'
 import { BlogChatAssistantLoading } from '@/widgets/chatbot/ui/blog-chat-assistant-loading'
+import {
+  BlogChatProgress,
+  type BlogChatProgressMessages,
+} from '@/widgets/chatbot/ui/blog-chat-progress'
 import { BlogChatSubmitContent } from '@/widgets/chatbot/ui/blog-chat-submit-content'
 
 const BLOG_CHAT_WIDGET_PATH = {
@@ -36,12 +47,16 @@ function resolveCurrentPostSlug(pathname: string): string | undefined {
 interface BlogChatWidgetViewProps {
   locale: SupportedLocale
   currentPostSlug?: string
-  translate: (key: string) => string
+  translate: (
+    key: string,
+    values?: Record<string, string | number>,
+  ) => string
 }
 
 interface BlogChatMessageMetadata {
   blogChatResponse?: BlogChatResponse
   conversationState?: ChatConversationState
+  blogChatProgressTrace?: BlogChatProgressTrace
 }
 
 export function BlogChatWidget() {
@@ -69,6 +84,43 @@ export function BlogChatWidgetView({
   translate,
 }: BlogChatWidgetViewProps) {
   const t = translate
+  const [progressTrace, setProgressTrace] = useState<BlogChatProgressTrace>(
+    EMPTY_BLOG_CHAT_PROGRESS_TRACE,
+  )
+  const progressMessages: BlogChatProgressMessages = {
+    title: t('progress.title'),
+    completedTitle: t('progress.completedTitle'),
+    sourceCount: (sourceCount) => {
+      return t('progress.sourceCount', { count: sourceCount })
+    },
+    stages: {
+      understanding_question: t('progress.stages.understandingQuestion'),
+      checking_sources: t('progress.stages.checkingSources'),
+      searching_evidence: t('progress.stages.searchingEvidence'),
+      selecting_evidence: t('progress.stages.selectingEvidence'),
+      generating_answer: t('progress.stages.generatingAnswer'),
+      validating_answer: t('progress.stages.validatingAnswer'),
+    },
+  }
+  const handleRequestStart = useCallback(() => {
+    setProgressTrace(
+      reduceBlogChatProgressTrace(EMPTY_BLOG_CHAT_PROGRESS_TRACE, {
+        type: 'stage',
+        stage: 'understanding_question',
+      }),
+    )
+  }, [])
+  const handleProgress = useCallback((event: BlogChatProgressEvent) => {
+    setProgressTrace((currentTrace) => {
+      return reduceBlogChatProgressTrace(currentTrace, event)
+    })
+  }, [])
+  const progressFetchImplementation = useMemo(() => {
+    return createBlogChatProgressFetch({
+      onRequestStart: handleRequestStart,
+      onProgress: handleProgress,
+    })
+  }, [handleProgress, handleRequestStart])
 
   return (
     <LeeChatProvider<BlogChatMessageMetadata>
@@ -119,11 +171,18 @@ export function BlogChatWidgetView({
           root: 'z-[60]',
         },
       }}
+      fetchImplementation={progressFetchImplementation}
     >
       <LeeChatWidget<BlogChatMessageMetadata>
         renderAssistantLoading={() => {
           return (
-            <BlogChatAssistantLoading>{t('sending')}</BlogChatAssistantLoading>
+            <BlogChatAssistantLoading
+              locale={locale}
+              trace={progressTrace}
+              messages={progressMessages}
+            >
+              {t('sending')}
+            </BlogChatAssistantLoading>
           )
         }}
         renderAssistantContent={({ message, defaultContent }) => {
@@ -138,6 +197,9 @@ export function BlogChatWidgetView({
           return (
             <BlogChatMessageFooter
               response={message.metadata?.blogChatResponse}
+              progressTrace={message.metadata?.blogChatProgressTrace}
+              progressMessages={progressMessages}
+              locale={locale}
               translate={t}
             />
           )
@@ -184,35 +246,60 @@ function BlogChatAssistantContent({
 
 function BlogChatMessageFooter({
   response,
+  progressTrace,
+  progressMessages,
+  locale,
   translate,
 }: {
   response?: BlogChatResponse
-  translate: (key: string) => string
+  progressTrace?: BlogChatProgressTrace
+  progressMessages: BlogChatProgressMessages
+  locale: SupportedLocale
+  translate: (
+    key: string,
+    values?: Record<string, string | number>,
+  ) => string
 }) {
   const t = translate
+  const hasCitations = Boolean(
+    response?.citations && response.citations.length > 0,
+  )
 
-  if (!response?.citations || response.citations.length === 0) {
+  if (!hasCitations && !progressTrace) {
     return null
   }
 
   return (
     <div className="mt-3 flex flex-col gap-2 border-t pt-3">
-      <p className="text-muted-foreground text-xs">{t('sources')}</p>
-      {response.citations.map((citation) => (
-        <a
-          key={citation.url}
-          href={citation.url}
-          className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
-        >
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate font-medium">{citation.title}</span>
-            <span className="text-muted-foreground truncate text-xs">
-              {citation.sectionTitle ?? citation.url}
-            </span>
-          </span>
-          <ArrowUpRight className="size-4 shrink-0" />
-        </a>
-      ))}
+      {progressTrace ? (
+        <BlogChatProgress
+          locale={locale}
+          trace={progressTrace}
+          messages={progressMessages}
+          pending={false}
+        />
+      ) : null}
+
+      {hasCitations ? (
+        <>
+          <p className="text-muted-foreground mt-1 text-xs">{t('sources')}</p>
+          {response?.citations.map((citation) => (
+            <a
+              key={citation.url}
+              href={citation.url}
+              className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate font-medium">{citation.title}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {citation.sectionTitle ?? citation.url}
+                </span>
+              </span>
+              <ArrowUpRight className="size-4 shrink-0" />
+            </a>
+          ))}
+        </>
+      ) : null}
     </div>
   )
 }

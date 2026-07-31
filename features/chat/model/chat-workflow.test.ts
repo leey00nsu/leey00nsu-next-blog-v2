@@ -96,9 +96,9 @@ function buildDependencies() {
         refusalReason: null,
       },
     })),
-    getCachedResponse: vi.fn<
-      (cacheKey: string) => BlogChatResponse | null
-    >(() => null),
+    getCachedResponse: vi.fn<(cacheKey: string) => BlogChatResponse | null>(
+      () => null,
+    ),
     setCachedResponse: vi.fn(),
     findSemanticResponse: vi.fn(
       async (): Promise<BlogChatResponse | undefined> => {
@@ -162,6 +162,137 @@ describe('runChatWorkflow', () => {
     )
     expect(dependencies.getCachedResponse).not.toHaveBeenCalled()
     expect(dependencies.executeRetrievalPlan).not.toHaveBeenCalled()
+  })
+
+  it('정체성 질문은 assistant profile로 직접 답한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '넌 누구야?',
+        targetSelection: { kind: 'none' },
+        operation: 'identity',
+        sourceSelection: { mode: 'all' },
+        requestedFields: [],
+        requiredConcepts: [],
+      },
+    })
+
+    const result = await runChatWorkflow({
+      request: { ...REQUEST, question: '넌 누구야?' },
+      assistantProfile: {
+        title: '블로그 챗봇 안내',
+        chatbotName: '블로그 챗봇',
+        ownerName: '이윤수',
+        greetingAnswer: '안녕하세요.',
+        identityAnswer: '저는 이윤수 님의 챗봇입니다.',
+        aliases: [],
+        content: '저는 이윤수 님의 챗봇입니다.',
+      },
+      dependencies,
+    })
+
+    expect(result.graphPath).toEqual([
+      'resolve-context',
+      'plan-query',
+      'compile-plan',
+      'execute-direct',
+      'validate-response',
+      'finalize',
+    ])
+    expect(result.applicationResponse.response.answer).toBe(
+      '저는 이윤수 님의 챗봇입니다.',
+    )
+    expect(dependencies.getCachedResponse).not.toHaveBeenCalled()
+    expect(dependencies.executeRetrievalPlan).not.toHaveBeenCalled()
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+  })
+
+  it('GitHub 연락처 요청은 다른 연락 채널 없이 GitHub만 직접 답한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '블로그 주인의 GitHub 주소를 알려줘',
+        targetSelection: { kind: 'none' },
+        operation: 'lookup',
+        sourceSelection: { mode: 'all' },
+        requestedFields: ['contact_methods'],
+        requiredConcepts: ['GitHub'],
+      },
+    })
+
+    const result = await runChatWorkflow({
+      request: {
+        ...REQUEST,
+        question: '블로그 주인의 GitHub 주소를 알려줘',
+      },
+      contactProfile: {
+        title: 'About Me',
+        aboutUrl: '/ko/about',
+        methods: [
+          { label: 'GitHub', url: 'https://github.com/leey00nsu' },
+          {
+            label: 'LinkedIn',
+            url: 'https://www.linkedin.com/in/leey00nsu',
+          },
+        ],
+      },
+      dependencies,
+    })
+
+    expect(result.retrievalPlan?.executionKind).toBe('contact')
+    expect(result.applicationResponse.response.answer).toContain(
+      'https://github.com/leey00nsu',
+    )
+    expect(result.applicationResponse.response.answer).not.toContain(
+      'linkedin.com',
+    )
+    expect(dependencies.executeRetrievalPlan).not.toHaveBeenCalled()
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+  })
+
+  it('요청한 연락 채널이 공개되지 않았으면 다른 채널을 대신 반환하지 않는다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '블로그 주인의 GitHub 주소를 알려줘',
+        targetSelection: { kind: 'none' },
+        operation: 'lookup',
+        sourceSelection: { mode: 'all' },
+        requestedFields: ['contact_methods'],
+        requiredConcepts: ['GitHub'],
+      },
+    })
+
+    const result = await runChatWorkflow({
+      request: {
+        ...REQUEST,
+        question: '블로그 주인의 GitHub 주소를 알려줘',
+      },
+      contactProfile: {
+        title: 'About Me',
+        aboutUrl: '/ko/about',
+        methods: [
+          {
+            label: 'LinkedIn',
+            url: 'https://www.linkedin.com/in/leey00nsu',
+          },
+        ],
+      },
+      dependencies,
+    })
+
+    expect(result.applicationResponse.response.refusalReason).toBe(
+      'insufficient_search_match',
+    )
+    expect(result.applicationResponse.response.answer).not.toContain(
+      'linkedin.com',
+    )
   })
 
   it('evidence path는 답변과 citation을 검증하고 cache에 저장한다', async () => {

@@ -2,6 +2,7 @@ import { generateText, Output } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { getBlogChatAnswerModel } from '@/features/chat/config/chat-models'
+import { buildChatEvidenceContext } from '@/features/chat/lib/build-chat-evidence-context'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import {
   BlogChatModelDraftSchema,
@@ -42,35 +43,6 @@ function trimQuestion(question: string): string {
   return question.slice(0, BLOG_CHAT.PROMPT.MAXIMUM_QUESTION_CHARACTERS)
 }
 
-function buildEvidenceContext(matches: ChatEvidenceRecord[]): string {
-  let context = ''
-
-  for (const match of matches.slice(0, BLOG_CHAT.PROMPT.MAXIMUM_CONTEXT_RECORD_COUNT)) {
-    const sectionLabel = match.sectionTitle
-      ? `section=${match.sectionTitle}`
-      : 'section=intro'
-    const nextEntry = [
-      `- source=${match.sourceCategory}`,
-      `- title=${match.title}`,
-      `  ${sectionLabel}`,
-      `  url=${match.url}`,
-      `  excerpt=${match.excerpt}`,
-      `  content=${match.content}`,
-    ].join('\n')
-
-    if (
-      context.length + nextEntry.length >
-      BLOG_CHAT.PROMPT.MAXIMUM_CONTEXT_CHARACTERS
-    ) {
-      break
-    }
-
-    context = context ? `${context}\n${nextEntry}` : nextEntry
-  }
-
-  return context
-}
-
 export async function answerBlogQuestion({
   question,
   matches,
@@ -84,12 +56,15 @@ export async function answerBlogQuestion({
     }
   }
 
-  const evidenceContext = buildEvidenceContext(matches)
+  const evidenceContext = buildChatEvidenceContext({
+    matches,
+    maximumRecordCount: BLOG_CHAT.PROMPT.MAXIMUM_CONTEXT_RECORD_COUNT,
+    maximumCharacters: BLOG_CHAT.PROMPT.MAXIMUM_CONTEXT_CHARACTERS,
+  })
 
   try {
     const { output } = await generateText({
       model: openai(getBlogChatAnswerModel()),
-      temperature: 0,
       output: Output.object({
         schema: BlogChatModelDraftSchema,
       }),

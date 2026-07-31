@@ -10,6 +10,7 @@ import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
+import { getDirectChatQueryPlan } from '@/features/chat/model/get-direct-chat-query-plan'
 import {
   ChatQueryPlanSchema,
   type ChatQueryPlan,
@@ -52,6 +53,8 @@ Temporal rules:
 - none: time is not part of the request.
 
 Meaning rules:
+- Use identity when the user asks who or what the chatbot itself is.
+- Use contact for public GitHub, LinkedIn, email, or contact-channel requests.
 - Unknown non-pronoun terms should search corpus before clarification.
 - A pronoun such as "이 사람" or "this person" with no focused target and no matching entity candidate requires the target missingSlot and a clarification question. Do not silently assume the blog owner.
 - Category-wide or aggregate questions such as "recent projects using AI" need no individual target and must not add a target missingSlot.
@@ -98,6 +101,12 @@ function trimQuestion(question: string): string {
 export async function planChatIntent(
   params: PlanChatIntentParams,
 ): Promise<PlanChatIntentResult> {
+  const directQueryPlan = getDirectChatQueryPlan(trimQuestion(params.question))
+
+  if (directQueryPlan) {
+    return { ok: true, queryPlan: directQueryPlan }
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     return {
       ok: false,

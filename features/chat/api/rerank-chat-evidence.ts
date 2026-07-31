@@ -51,7 +51,6 @@ export async function rerankChatEvidence({
   try {
     const { output } = await generateText({
       model: openai(getBlogChatRerankModel()),
-      temperature: 0,
       output: ChatEvidenceRankingSchema,
       system: CHAT_RERANK_PROMPT.SYSTEM,
       prompt: [

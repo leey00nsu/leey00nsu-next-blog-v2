@@ -197,9 +197,57 @@ const CHAT_WORKFLOW_RESPONSES = {
   },
 } as const
 
+const DIRECT_CHAT_EXECUTION_KINDS = new Set<ChatRetrievalPlan['executionKind']>(
+  ['clarification', 'social_reply', 'identity', 'contact'],
+)
+
+const CHAT_CONTACT_METHOD_ALIASES = {
+  GitHub: ['github', '깃허브'],
+  LinkedIn: ['linkedin', '링크드인'],
+  Email: ['email', 'e-mail', '이메일', '메일'],
+} as const
+
+interface RequestedContactMethodSelection {
+  hasSpecificRequest: boolean
+  methods: ChatContactProfile['methods']
+}
+
+function selectRequestedContactMethods(params: {
+  question: string
+  methods: ChatContactProfile['methods']
+}): RequestedContactMethodSelection {
+  const normalizedQuestion = params.question.toLowerCase()
+  const requestedMethodLabels = Object.entries(
+    CHAT_CONTACT_METHOD_ALIASES,
+  ).flatMap(([methodLabel, aliases]) => {
+    return aliases.some((alias) => normalizedQuestion.includes(alias))
+      ? [methodLabel.toLowerCase()]
+      : []
+  })
+
+  if (requestedMethodLabels.length === 0) {
+    return {
+      hasSpecificRequest: false,
+      methods: params.methods,
+    }
+  }
+
+  return {
+    hasSpecificRequest: true,
+    methods: params.methods.filter((method) => {
+      const normalizedMethod = `${method.label} ${method.url}`.toLowerCase()
+
+      return requestedMethodLabels.some((requestedMethodLabel) => {
+        return normalizedMethod.includes(requestedMethodLabel)
+      })
+    }),
+  }
+}
+
 function buildContactResponse(params: {
   request: BlogChatRequest
   contactProfile: ChatContactProfile | null
+  retrievalPlan: ChatRetrievalPlan
 }): BlogChatResponse {
   const contactProfile = params.contactProfile
 
@@ -211,11 +259,25 @@ function buildContactResponse(params: {
   }
 
   const responses = CHAT_WORKFLOW_RESPONSES[params.request.locale]
+  const contactMethodSelection = selectRequestedContactMethods({
+    question: params.retrievalPlan.standaloneQuestion,
+    methods: contactProfile.methods,
+  })
+
+  if (
+    contactMethodSelection.hasSpecificRequest &&
+    contactMethodSelection.methods.length === 0
+  ) {
+    return buildChatRefusalResponse({
+      locale: params.request.locale,
+      refusalReason: 'insufficient_search_match',
+    })
+  }
 
   return {
     answer: [
       responses.CONTACT_INTRO,
-      ...contactProfile.methods.map((method) => {
+      ...contactMethodSelection.methods.map((method) => {
         return `- ${method.label}: ${method.url}`
       }),
       '',
@@ -414,11 +476,25 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         }
       }
 
+      if (retrievalPlan.executionKind === 'identity') {
+        return {
+          response: {
+            answer:
+              state.assistantProfile?.identityAnswer ??
+              CHAT_WORKFLOW_RESPONSES[state.request.locale].SOCIAL_REPLY,
+            citations: [],
+            grounded: false,
+          },
+          graphPath: ['execute-direct'],
+        }
+      }
+
       if (retrievalPlan.executionKind === 'contact') {
         return {
           response: buildContactResponse({
             request: state.request,
             contactProfile: state.contactProfile,
+            retrievalPlan,
           }),
           graphPath: ['execute-direct'],
         }
@@ -581,9 +657,7 @@ function buildChatWorkflow(dependencies: ChatWorkflowDependencies) {
         return 'finalize'
       }
 
-      return ['clarification', 'social_reply', 'contact'].includes(
-        state.retrievalPlan.executionKind,
-      )
+      return DIRECT_CHAT_EXECUTION_KINDS.has(state.retrievalPlan.executionKind)
         ? 'execute-direct'
         : 'cache-lookup'
     })

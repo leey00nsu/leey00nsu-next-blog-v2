@@ -47,6 +47,17 @@ const EMPTY_CHAT_TARGET: ChatTarget = {
 }
 
 const DIRECT_METADATA_FIELDS = new Set(['title', 'published_at'])
+const DIRECT_CONTACT_FIELD = 'contact_methods'
+const DIRECT_CONTACT_TARGET_KINDS = new Set<ChatTarget['kind']>([
+  'none',
+  'profile',
+  'assistant',
+])
+const CHAT_TARGET_ANSWER = {
+  TRAILING_PUNCTUATION_PATTERN: /[?!.,~]+$/gu,
+  RESPONSE_SUFFIX_PATTERN: /(?:이요|입니다)$/gu,
+  MULTIPLE_WHITESPACE_PATTERN: /\s+/gu,
+} as const
 
 function resolveEffectiveQueryPlan(params: {
   queryPlan: ChatQueryPlan
@@ -170,7 +181,12 @@ function resolveSourceSelection(params: {
   }
 }
 
-function resolveExecutionKind(queryPlan: ChatQueryPlan): ChatExecutionKind {
+function resolveExecutionKind(params: {
+  queryPlan: ChatQueryPlan
+  target: ChatTarget
+}): ChatExecutionKind {
+  const queryPlan = params.queryPlan
+
   if (queryPlan.missingSlots.length > 0) {
     return 'clarification'
   }
@@ -179,7 +195,15 @@ function resolveExecutionKind(queryPlan: ChatQueryPlan): ChatExecutionKind {
     return 'social_reply'
   }
 
-  if (queryPlan.operation === 'contact') {
+  if (queryPlan.operation === 'identity') {
+    return 'identity'
+  }
+
+  if (
+    (queryPlan.operation === 'contact' ||
+      queryPlan.requestedFields.includes(DIRECT_CONTACT_FIELD)) &&
+    DIRECT_CONTACT_TARGET_KINDS.has(params.target.kind)
+  ) {
     return 'contact'
   }
 
@@ -219,10 +243,65 @@ function isValidTransition(params: {
   return true
 }
 
+function normalizeTargetAnswer(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replaceAll(CHAT_TARGET_ANSWER.TRAILING_PUNCTUATION_PATTERN, '')
+    .replaceAll(CHAT_TARGET_ANSWER.RESPONSE_SUFFIX_PATTERN, '')
+    .replaceAll(CHAT_TARGET_ANSWER.MULTIPLE_WHITESPACE_PATTERN, ' ')
+    .trim()
+}
+
+function isSelectedCandidateTargetAnswer(params: {
+  queryPlan: ChatQueryPlan
+  candidates: ChatEntityCandidate[]
+}): boolean {
+  const targetSelection = params.queryPlan.targetSelection
+
+  if (targetSelection.kind !== 'candidate') {
+    return false
+  }
+
+  const selectedCandidate = params.candidates.find((candidate) => {
+    return candidate.entityId === targetSelection.entityId
+  })
+
+  if (!selectedCandidate) {
+    return false
+  }
+
+  const normalizedQuestion = normalizeTargetAnswer(
+    params.queryPlan.standaloneQuestion,
+  )
+  const candidateNames = [
+    selectedCandidate.title,
+    ...selectedCandidate.aliases,
+  ].map((candidateName) => normalizeTargetAnswer(candidateName))
+
+  return candidateNames.includes(normalizedQuestion)
+}
+
 function normalizeContextAction(params: {
   queryPlan: ChatQueryPlan
   previousState: ChatConversationState
+  candidates: ChatEntityCandidate[]
 }): ChatQueryPlan {
+  const suspendedQueryPlan =
+    params.previousState.pendingClarification?.suspendedQueryPlan
+  const suppliesPendingTarget =
+    suspendedQueryPlan?.missingSlots.includes('target') &&
+    params.queryPlan.contextAction === 'reset' &&
+    params.queryPlan.missingSlots.length === 0 &&
+    isSelectedCandidateTargetAnswer(params)
+
+  if (suppliesPendingTarget) {
+    return {
+      ...params.queryPlan,
+      contextAction: 'resolve_clarification',
+    }
+  }
+
   if (
     params.queryPlan.contextAction === 'resolve_clarification' &&
     !params.previousState.pendingClarification &&
@@ -253,6 +332,7 @@ function hasRequiredRequestedFields(queryPlan: ChatQueryPlan): boolean {
   if (
     queryPlan.missingSlots.length > 0 ||
     queryPlan.operation === 'social_reply' ||
+    queryPlan.operation === 'identity' ||
     queryPlan.operation === 'contact'
   ) {
     return true
@@ -322,7 +402,10 @@ export function compileChatRetrievalPlan(
       ? null
       : queryPlan.temporalSelection.order
   const retrievalPlan = ChatRetrievalPlanSchema.parse({
-    executionKind: resolveExecutionKind(queryPlan),
+    executionKind: resolveExecutionKind({
+      queryPlan,
+      target: targetResult.target,
+    }),
     standaloneQuestion: queryPlan.standaloneQuestion,
     operation: queryPlan.operation,
     canonicalTargets:

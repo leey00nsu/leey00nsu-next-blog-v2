@@ -48,6 +48,30 @@ describe('planChatIntent', () => {
     delete process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL
   })
 
+  it.each(['넌 누구야?', '넌 누구지?'])(
+    '챗봇 정체성 질문 "%s"을 모델 호출 없이 직접 계획한다',
+    async (question) => {
+      const { planChatIntent } = await import('./plan-chat-intent-patch')
+
+      const result = await planChatIntent({
+        question,
+        locale: 'ko',
+        conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+        entityCandidates: [],
+      })
+
+      expect(result).toMatchObject({
+        ok: true,
+        queryPlan: {
+          operation: 'identity',
+          requestedFields: [],
+          missingSlots: [],
+        },
+      })
+      expect(generateTextMock).not.toHaveBeenCalled()
+    },
+  )
+
   it('candidate 목록을 prompt에 전달하고 plan을 반환한다', async () => {
     generateTextMock.mockResolvedValueOnce({ output: LEEMAGE_PLAN })
     const { planChatIntent } = await import('./plan-chat-intent-patch')

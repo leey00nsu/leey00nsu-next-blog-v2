@@ -68,5 +68,10 @@ describe('answerBlogQuestion', () => {
         ),
       }),
     )
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        temperature: expect.anything(),
+      }),
+    )
   })
 })

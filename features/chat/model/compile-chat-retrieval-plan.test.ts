@@ -273,6 +273,159 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
+  it('대상 답변을 reset으로 분류해도 중단된 연락처 요청을 복원한다', () => {
+    const suspendedQueryPlan: ChatQueryPlan = {
+      standaloneQuestion: '이 사람 깃허브 주소 좀 알려줘',
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+      requestedFields: ['contact_methods'],
+      requiredConcepts: ['GitHub'],
+      optionalConcepts: [],
+      missingSlots: ['target'],
+      clarificationQuestion: '어느 사람을 말하는지 알려주세요.',
+      confidence: 'low',
+      reason: 'Target is missing.',
+    }
+    const previousState: ChatConversationState = {
+      ...EMPTY_CHAT_CONVERSATION_STATE,
+      pendingClarification: {
+        clarificationQuestion: '어느 사람을 말하는지 알려주세요.',
+        suspendedQueryPlan,
+      },
+    }
+    const result = compileChatRetrievalPlan({
+      queryPlan: {
+        ...BASE_QUERY_PLAN,
+        standaloneQuestion: '블로그 주인',
+        contextAction: 'reset',
+        targetSelection: {
+          kind: 'candidate',
+          entityId: OWNER_CANDIDATE.entityId,
+        },
+        operation: 'lookup',
+        sourceSelection: { mode: 'all' },
+        temporalSelection: { mode: 'none' },
+        requestedFields: ['content'],
+        requiredConcepts: [],
+      },
+      candidates: [OWNER_CANDIDATE],
+      previousState,
+      maximumEvidenceCount: 3,
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      contextAction: 'resolve_clarification',
+      queryPlan: {
+        standaloneQuestion: suspendedQueryPlan.standaloneQuestion,
+        requestedFields: ['contact_methods'],
+        requiredConcepts: ['GitHub'],
+      },
+      retrievalPlan: {
+        executionKind: 'contact',
+        canonicalTargets: [{ sourceCategory: 'profile', slug: 'about' }],
+      },
+      nextConversationState: { pendingClarification: null },
+    })
+  })
+
+  it('lookup으로 분류된 연락처 필드도 직접 contact 응답으로 컴파일한다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '블로그 주인의 GitHub 주소를 알려줘',
+      operation: 'lookup',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+      requestedFields: ['contact_methods'],
+      requiredConcepts: ['GitHub'],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: { executionKind: 'contact' },
+    })
+  })
+
+  it('pending clarification 중 들어온 별도 candidate 질문은 새 질문으로 유지한다', () => {
+    const suspendedQueryPlan: ChatQueryPlan = {
+      standaloneQuestion: '이 사람 깃허브 주소 좀 알려줘',
+      contextAction: 'reset',
+      targetSelection: { kind: 'none' },
+      operation: 'lookup',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+      requestedFields: ['contact_methods'],
+      requiredConcepts: ['GitHub'],
+      optionalConcepts: [],
+      missingSlots: ['target'],
+      clarificationQuestion: '어느 사람을 말하는지 알려주세요.',
+      confidence: 'low',
+      reason: 'Target is missing.',
+    }
+    const previousState: ChatConversationState = {
+      ...EMPTY_CHAT_CONVERSATION_STATE,
+      pendingClarification: {
+        clarificationQuestion: '어느 사람을 말하는지 알려주세요.',
+        suspendedQueryPlan,
+      },
+    }
+    const result = compileChatRetrievalPlan({
+      queryPlan: {
+        ...BASE_QUERY_PLAN,
+        standaloneQuestion: 'Leemage GitHub 주소를 알려줘',
+        contextAction: 'reset',
+        targetSelection: {
+          kind: 'candidate',
+          entityId: LEEMAGE_CANDIDATE.entityId,
+        },
+        operation: 'lookup',
+        sourceSelection: { mode: 'only', categories: ['project'] },
+        temporalSelection: { mode: 'none' },
+        requestedFields: ['contact_methods'],
+        requiredConcepts: ['GitHub'],
+      },
+      candidates: [LEEMAGE_CANDIDATE],
+      previousState,
+      maximumEvidenceCount: 3,
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      contextAction: 'reset',
+      queryPlan: {
+        standaloneQuestion: 'Leemage GitHub 주소를 알려줘',
+      },
+      retrievalPlan: {
+        executionKind: 'retrieve_and_generate',
+        canonicalTargets: [{ slug: 'leemage' }],
+      },
+    })
+  })
+
+  it('프로젝트 연락처 요청은 블로그 주인 연락처로 직접 처리하지 않는다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: 'Leemage GitHub 주소를 알려줘',
+      targetSelection: {
+        kind: 'candidate',
+        entityId: LEEMAGE_CANDIDATE.entityId,
+      },
+      operation: 'lookup',
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'none' },
+      requestedFields: ['contact_methods'],
+      requiredConcepts: ['GitHub'],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: { executionKind: 'retrieve_and_generate' },
+    })
+  })
+
   it('근거 작업의 빈 requested fields를 거부한다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,

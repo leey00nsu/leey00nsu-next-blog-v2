@@ -245,7 +245,7 @@ describe('runChatRagWorkflow', () => {
     ])
   })
 
-  it('semantic retrieval 중 예외가 발생하면 로그를 남기고 빈 결과를 반환한다', async () => {
+  it('semantic retrieval 중 예외가 발생하면 실패 상태와 빈 결과를 반환한다', async () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {})
@@ -262,6 +262,7 @@ describe('runChatRagWorkflow', () => {
     expect(result).toEqual({
       grounded: false,
       matches: [],
+      failureKind: 'workflow_error',
     })
     expect(consoleErrorSpy).toHaveBeenCalled()
 

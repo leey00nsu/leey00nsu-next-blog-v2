@@ -7,21 +7,19 @@ describe('getChatContactProfile', () => {
 
     expect(contactProfile).not.toBeNull()
     expect(contactProfile?.aboutUrl).toBe('/ko/about')
-    expect(contactProfile?.methods).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          label: 'GitHub',
-          url: 'https://github.com/leey00nsu',
-        }),
-        expect.objectContaining({
-          label: 'LinkedIn',
-          url: 'https://www.linkedin.com/in/leey00nsu',
-        }),
-        expect.objectContaining({
-          label: 'Email',
-          url: 'mailto:dbstndla1212@naver.com',
-        }),
-      ]),
-    )
+    expect(contactProfile?.methods).toEqual([
+      {
+        label: 'GitHub',
+        url: 'https://github.com/leey00nsu',
+      },
+      {
+        label: 'LinkedIn',
+        url: 'https://www.linkedin.com/in/leey00nsu',
+      },
+      {
+        label: 'Email',
+        url: 'mailto:dbstndla1212@naver.com',
+      },
+    ])
   })
 })

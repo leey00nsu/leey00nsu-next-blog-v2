@@ -51,6 +51,7 @@ const CHAT_RAG_WORKFLOW_STATE = Annotation.Root({
 export interface ChatRagWorkflowResult {
   grounded: boolean
   matches: ChatEvidenceRecord[]
+  failureKind: 'workflow_error' | null
 }
 
 const CHAT_RAG_WORKFLOW_LOG = {
@@ -304,11 +305,7 @@ export async function runChatRagWorkflow(params: {
       embedQuestion: params.embedQuestion ?? embedChatRagQuestion,
       selectSearchData:
         params.selectSearchData ??
-        (async ({
-          locale,
-          questionEmbedding,
-          retrievalPlan,
-        }) => {
+        (async ({ locale, questionEmbedding, retrievalPlan }) => {
           if (!databasePool) {
             return {
               entities: [],
@@ -348,6 +345,7 @@ export async function runChatRagWorkflow(params: {
     return {
       grounded: result.grounded,
       matches: result.matches,
+      failureKind: null,
     }
   } catch (error) {
     console.error(CHAT_RAG_WORKFLOW_LOG.FAILURE_MESSAGE, error)
@@ -355,6 +353,7 @@ export async function runChatRagWorkflow(params: {
     return {
       grounded: false,
       matches: [],
+      failureKind: 'workflow_error',
     }
   }
 }

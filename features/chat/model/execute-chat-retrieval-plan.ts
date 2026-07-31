@@ -297,6 +297,10 @@ async function retrieveDefaultSemanticMatches(
     retrievalPlan: params.plan,
   })
 
+  if (result.failureKind) {
+    throw new Error('Chat semantic retrieval failed.')
+  }
+
   return result.matches
 }
 
@@ -336,7 +340,19 @@ export async function executeChatRetrievalPlan({
     allowBroadMatch:
       plan.operation === 'recommend' || plan.temporalStrategy !== 'none',
   })
-  const rawSemanticMatches = await retrieveSemanticMatches({ plan, locale })
+  let rawSemanticMatches: ChatEvidenceRecord[] = []
+  let semanticRetrievalError: unknown = null
+
+  try {
+    rawSemanticMatches = await retrieveSemanticMatches({ plan, locale })
+  } catch (error) {
+    semanticRetrievalError = error
+
+    if (lexicalSelection.matches.length === 0) {
+      throw error
+    }
+  }
+
   const semanticMatches = filterRecordsByPlan(rawSemanticMatches, plan)
   const coveredMatches = selectEvidenceCoveringRequiredConcepts({
     matches: mergeUniqueMatches([lexicalSelection.matches, semanticMatches]),
@@ -350,6 +366,10 @@ export async function executeChatRetrievalPlan({
       : limitMatchesWithDiversity(sortedMatches, plan.maximumEvidenceCount)
 
   if (matches.length === 0) {
+    if (semanticRetrievalError) {
+      throw semanticRetrievalError
+    }
+
     return {
       kind: 'refusal',
       refusalReason: 'insufficient_search_match',

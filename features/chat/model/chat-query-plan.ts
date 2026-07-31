@@ -15,6 +15,7 @@ export const CHAT_QUERY_OPERATIONS = [
   'compare',
   'recommend',
   'social_reply',
+  'identity',
   'contact',
 ] as const
 
@@ -126,6 +127,7 @@ export const ChatQueryPlanSchema = z
   .superRefine((queryPlan, refinementContext) => {
     const requiresRequestedFields =
       queryPlan.operation !== 'social_reply' &&
+      queryPlan.operation !== 'identity' &&
       queryPlan.operation !== 'contact'
 
     if (requiresRequestedFields && queryPlan.requestedFields.length === 0) {

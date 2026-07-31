@@ -189,4 +189,57 @@ describe('executeChatRetrievalPlan', () => {
       matches: [expect.objectContaining({ slug: 'newer-ai' })],
     })
   })
+
+  it('semantic 검색 실패 시 lexical 근거가 있으면 해당 근거로 계속한다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: RECENT_PROJECT_AI_PLAN,
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [RECENT_AI_PROJECT],
+      retrieveSemanticMatches: async () => {
+        throw new Error('semantic retrieval failed')
+      },
+    })
+
+    expect(result).toMatchObject({
+      kind: 'evidence',
+      matches: [expect.objectContaining({ slug: 'recent-ai' })],
+      semanticMatches: [],
+    })
+  })
+
+  it('semantic 검색 실패를 근거 없음으로 숨기지 않는다', async () => {
+    await expect(
+      executeChatRetrievalPlan({
+        plan: {
+          ...RECENT_PROJECT_AI_PLAN,
+          standaloneQuestion: '검색되지 않는 질문',
+          requiredConcepts: ['검색되지 않는 개념'],
+        },
+        locale: 'ko',
+        blogRecords: [],
+        curatedRecords: [],
+        retrieveSemanticMatches: async () => {
+          throw new Error('semantic retrieval failed')
+        },
+      }),
+    ).rejects.toThrow('semantic retrieval failed')
+  })
+
+  it('semantic 검색 실패 후 lexical 후보가 required concept를 충족하지 못해도 오류를 다시 던진다', async () => {
+    await expect(
+      executeChatRetrievalPlan({
+        plan: {
+          ...RECENT_PROJECT_AI_PLAN,
+          requiredConcepts: ['Vercel'],
+        },
+        locale: 'ko',
+        blogRecords: [],
+        curatedRecords: [RECENT_AI_PROJECT],
+        retrieveSemanticMatches: async () => {
+          throw new Error('semantic retrieval failed')
+        },
+      }),
+    ).rejects.toThrow('semantic retrieval failed')
+  })
 })

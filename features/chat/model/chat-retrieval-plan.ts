@@ -12,6 +12,7 @@ export const CHAT_EXECUTION_KINDS = [
   'direct_metadata',
   'retrieve_and_generate',
   'social_reply',
+  'identity',
   'contact',
 ] as const
 

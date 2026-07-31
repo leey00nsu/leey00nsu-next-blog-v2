@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { BlogChatProgressTrace } from '@/features/chat/model/blog-chat-progress'
 import {
@@ -69,12 +70,21 @@ describe('BlogChatProgress', () => {
     expect(
       screen.getByRole('region', { name: PROGRESS_MESSAGES.title }),
     ).toBeInTheDocument()
-    expect(screen.getByText('공개된 자료를 확인하고 있어요')).toBeInTheDocument()
+    expect(screen.queryByText(PROGRESS_MESSAGES.title)).not.toBeInTheDocument()
+    expect(screen.getByText('공개된 자료를 확인하고 있어요')).toHaveClass(
+      'blog-chat-progress-active-text',
+    )
+    expect(document.querySelector('.lucide-loader-circle')).toHaveClass(
+      'text-muted-foreground',
+      'animate-spin',
+    )
     expect(screen.getByText('About Me')).toBeInTheDocument()
   })
 
-  it('완료 후에는 단계 기록을 접힌 요약으로 표시한다', () => {
-    const { container } = render(
+  it('완료 기록을 버튼으로 부드럽게 접고 펼친다', async () => {
+    const user = userEvent.setup()
+
+    render(
       <BlogChatProgress
         locale="ko"
         trace={COMPLETED_TRACE}
@@ -83,7 +93,20 @@ describe('BlogChatProgress', () => {
       />,
     )
 
-    expect(screen.getByText('답변 준비 완료 · 근거 1개 · 1.2s')).toBeInTheDocument()
-    expect(container.querySelector('details')).not.toHaveAttribute('open')
+    const toggleButton = screen.getByRole('button', {
+      name: '답변 준비 완료 · 근거 1개 · 1.2s',
+    })
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByText('질문의 대상과 범위를 확인하고 있어요'),
+    ).not.toBeInTheDocument()
+
+    await user.click(toggleButton)
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByText('질문의 대상과 범위를 확인하고 있어요'),
+    ).toBeInTheDocument()
   })
 })

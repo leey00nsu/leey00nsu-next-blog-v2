@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useReducedMotion } from 'motion/react'
 import {
   EMPTY_BLOG_CHAT_PROGRESS_TRACE,
   reduceBlogChatProgressTrace,
@@ -22,6 +24,8 @@ export function BlogChatAssistantLoading({
   trace,
   messages,
 }: BlogChatAssistantLoadingProps) {
+  const progressEndReference = useRef<HTMLDivElement>(null)
+  const shouldReduceMotion = Boolean(useReducedMotion())
   const visibleTrace =
     trace.stages.length > 0
       ? trace
@@ -29,6 +33,26 @@ export function BlogChatAssistantLoading({
           type: 'stage',
           stage: 'understanding_question',
         })
+  const latestStage = visibleTrace.stages.at(-1)?.stage
+
+  useEffect(() => {
+    const progressEndElement = progressEndReference.current
+
+    if (typeof progressEndElement?.scrollIntoView !== 'function') {
+      return
+    }
+
+    progressEndElement.scrollIntoView({
+      behavior: shouldReduceMotion ? 'auto' : 'smooth',
+      block: 'end',
+      inline: 'nearest',
+    })
+  }, [
+    latestStage,
+    shouldReduceMotion,
+    visibleTrace.sources.length,
+    visibleTrace.stages.length,
+  ])
 
   return (
     <div>
@@ -38,6 +62,7 @@ export function BlogChatAssistantLoading({
         messages={messages}
         pending
       />
+      <div ref={progressEndReference} aria-hidden="true" className="h-px" />
       <span className="sr-only">{children}</span>
     </div>
   )

@@ -189,6 +189,9 @@ export function BlogChatWidgetView({
           return (
             <BlogChatAssistantContent
               response={message.metadata?.blogChatResponse}
+              progressTrace={message.metadata?.blogChatProgressTrace}
+              progressMessages={progressMessages}
+              locale={locale}
               defaultContent={defaultContent}
             />
           )
@@ -197,9 +200,6 @@ export function BlogChatWidgetView({
           return (
             <BlogChatMessageFooter
               response={message.metadata?.blogChatResponse}
-              progressTrace={message.metadata?.blogChatProgressTrace}
-              progressMessages={progressMessages}
-              locale={locale}
               translate={t}
             />
           )
@@ -232,29 +232,46 @@ export function BlogChatWidgetView({
 
 function BlogChatAssistantContent({
   response,
-  defaultContent,
-}: {
-  response?: BlogChatResponse
-  defaultContent: ReactNode
-}) {
-  if (response?.refusalReason && !response.grounded) {
-    return <p className="whitespace-pre-wrap leading-6">{response.answer}</p>
-  }
-
-  return defaultContent
-}
-
-function BlogChatMessageFooter({
-  response,
   progressTrace,
   progressMessages,
   locale,
-  translate,
+  defaultContent,
 }: {
   response?: BlogChatResponse
   progressTrace?: BlogChatProgressTrace
   progressMessages: BlogChatProgressMessages
   locale: SupportedLocale
+  defaultContent: ReactNode
+}) {
+  const answerContent =
+    response?.refusalReason && !response.grounded ? (
+      <p className="whitespace-pre-wrap leading-6">{response.answer}</p>
+    ) : (
+      defaultContent
+    )
+
+  if (!progressTrace) {
+    return answerContent
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <BlogChatProgress
+        locale={locale}
+        trace={progressTrace}
+        messages={progressMessages}
+        pending={false}
+      />
+      {answerContent}
+    </div>
+  )
+}
+
+function BlogChatMessageFooter({
+  response,
+  translate,
+}: {
+  response?: BlogChatResponse
   translate: (
     key: string,
     values?: Record<string, string | number>,
@@ -265,41 +282,28 @@ function BlogChatMessageFooter({
     response?.citations && response.citations.length > 0,
   )
 
-  if (!hasCitations && !progressTrace) {
+  if (!hasCitations) {
     return null
   }
 
   return (
     <div className="mt-3 flex flex-col gap-2 border-t pt-3">
-      {progressTrace ? (
-        <BlogChatProgress
-          locale={locale}
-          trace={progressTrace}
-          messages={progressMessages}
-          pending={false}
-        />
-      ) : null}
-
-      {hasCitations ? (
-        <>
-          <p className="text-muted-foreground mt-1 text-xs">{t('sources')}</p>
-          {response?.citations.map((citation) => (
-            <a
-              key={citation.url}
-              href={citation.url}
-              className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
-            >
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate font-medium">{citation.title}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {citation.sectionTitle ?? citation.url}
-                </span>
-              </span>
-              <ArrowUpRight className="size-4 shrink-0" />
-            </a>
-          ))}
-        </>
-      ) : null}
+      <p className="text-muted-foreground mt-1 text-xs">{t('sources')}</p>
+      {response?.citations.map((citation) => (
+        <a
+          key={citation.url}
+          href={citation.url}
+          className="hover:bg-muted/70 flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors"
+        >
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate font-medium">{citation.title}</span>
+            <span className="text-muted-foreground truncate text-xs">
+              {citation.sectionTitle ?? citation.url}
+            </span>
+          </span>
+          <ArrowUpRight className="size-4 shrink-0" />
+        </a>
+      ))}
     </div>
   )
 }

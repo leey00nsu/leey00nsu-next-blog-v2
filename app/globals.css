@@ -201,3 +201,26 @@
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+.blog-chat-progress-active-text {
+  color: transparent;
+  background-image: linear-gradient(
+    110deg,
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  animation: blog-chat-progress-shimmer 1.8s linear infinite;
+}
+
+@keyframes blog-chat-progress-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}

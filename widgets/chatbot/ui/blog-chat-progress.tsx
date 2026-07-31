@@ -1,7 +1,10 @@
+'use client'
+
+import { useId, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import {
   CheckCircle2,
   ChevronDown,
-  ListChecks,
   LoaderCircle,
 } from 'lucide-react'
 import type {
@@ -29,6 +32,10 @@ const BLOG_CHAT_PROGRESS_TIME = {
   MAXIMUM_FRACTION_DIGITS: 1,
 } as const
 
+const BLOG_CHAT_PROGRESS_MOTION = {
+  DURATION_SECONDS: 0.24,
+} as const
+
 function formatElapsedTime(
   elapsedMilliseconds: number,
   locale: SupportedLocale,
@@ -45,9 +52,14 @@ function formatElapsedTime(
 function renderBlogChatProgressContent({
   trace,
   messages,
-}: Pick<BlogChatProgressProps, 'trace' | 'messages'>) {
+  withTopMargin = true,
+}: Pick<BlogChatProgressProps, 'trace' | 'messages'> & {
+  withTopMargin?: boolean
+}) {
   return (
-    <div className="mt-3 flex flex-col gap-2.5">
+    <div
+      className={`${withTopMargin ? 'mt-3' : ''} flex flex-col gap-2.5`}
+    >
       <ol className="flex flex-col gap-2">
         {trace.stages.map((stageState) => (
           <li
@@ -57,18 +69,18 @@ function renderBlogChatProgressContent({
             {stageState.status === 'completed' ? (
               <CheckCircle2
                 aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                className="text-muted-foreground mt-0.5 size-4 shrink-0"
               />
             ) : (
               <LoaderCircle
                 aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 animate-spin text-foreground"
+                className="text-muted-foreground mt-0.5 size-4 shrink-0 animate-spin"
               />
             )}
             <span
               className={
                 stageState.status === 'active'
-                  ? 'text-foreground'
+                  ? 'blog-chat-progress-active-text'
                   : undefined
               }
             >
@@ -107,6 +119,10 @@ export function BlogChatProgress({
   messages,
   pending,
 }: BlogChatProgressProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const shouldReduceMotion = Boolean(useReducedMotion())
+  const contentId = useId()
+
   if (pending) {
     return (
       <section
@@ -114,11 +130,11 @@ export function BlogChatProgress({
         aria-live="polite"
         className="min-w-0 py-0.5"
       >
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <ListChecks aria-hidden="true" className="size-4" />
-          <span>{messages.title}</span>
-        </div>
-        {renderBlogChatProgressContent({ trace, messages })}
+        {renderBlogChatProgressContent({
+          trace,
+          messages,
+          withTopMargin: false,
+        })}
       </section>
     )
   }
@@ -138,19 +154,68 @@ export function BlogChatProgress({
   }
 
   return (
-    <details className="group">
-      <summary className="text-muted-foreground flex cursor-pointer list-none items-center gap-2 text-xs">
+    <div>
+      <button
+        type="button"
+        aria-controls={contentId}
+        aria-expanded={isExpanded}
+        className="text-muted-foreground flex w-full items-center gap-2 text-left text-xs"
+        onClick={() => setIsExpanded((currentExpanded) => !currentExpanded)}
+      >
         <CheckCircle2
           aria-hidden="true"
-          className="size-4 text-emerald-600 dark:text-emerald-400"
+          className="text-muted-foreground size-4"
         />
         <span>{summaryParts.join(' · ')}</span>
-        <ChevronDown
-          aria-hidden="true"
-          className="ml-auto size-4 transition-transform group-open:rotate-180"
-        />
-      </summary>
-      {renderBlogChatProgressContent({ trace, messages })}
-    </details>
+        <motion.span
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{
+            duration: shouldReduceMotion
+              ? 0
+              : BLOG_CHAT_PROGRESS_MOTION.DURATION_SECONDS,
+          }}
+          className="ml-auto"
+        >
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4"
+          />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {isExpanded ? (
+          <motion.div
+            key="progress-content"
+            id={contentId}
+            initial={
+              shouldReduceMotion
+                ? false
+                : {
+                    height: 0,
+                    opacity: 0,
+                  }
+            }
+            animate={{
+              height: 'auto',
+              opacity: 1,
+            }}
+            exit={
+              {
+                height: 0,
+                opacity: 0,
+              }
+            }
+            transition={{
+              duration: shouldReduceMotion
+                ? 0
+                : BLOG_CHAT_PROGRESS_MOTION.DURATION_SECONDS,
+            }}
+            className="overflow-hidden"
+          >
+            {renderBlogChatProgressContent({ trace, messages })}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
   )
 }

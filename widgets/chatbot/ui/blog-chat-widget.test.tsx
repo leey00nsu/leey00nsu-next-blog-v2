@@ -249,6 +249,76 @@ describe('BlogChatWidget', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('완료된 답변 준비 과정은 답변 텍스트 위에 표시한다', () => {
+    usePathnameMock.mockReturnValue('/ko/about')
+
+    render(<BlogChatWidget />)
+
+    const widgetProps = leeChatWidgetMock.mock.lastCall?.[0] as {
+      renderAssistantContent: (params: {
+        message: {
+          metadata?: {
+            blogChatResponse?: {
+              answer: string
+              citations: []
+              grounded: true
+            }
+            blogChatProgressTrace?: {
+              stages: Array<{
+                stage: 'understanding_question' | 'validating_answer'
+                status: 'completed'
+              }>
+              sources: []
+              elapsedMilliseconds: null
+              failed: false
+            }
+          }
+        }
+        defaultContent: ReactNode
+      }) => ReactNode
+    }
+
+    render(
+      widgetProps.renderAssistantContent({
+        message: {
+          metadata: {
+            blogChatResponse: {
+              answer: '완료된 답변',
+              citations: [],
+              grounded: true,
+            },
+            blogChatProgressTrace: {
+              stages: [
+                {
+                  stage: 'understanding_question',
+                  status: 'completed',
+                },
+                {
+                  stage: 'validating_answer',
+                  status: 'completed',
+                },
+              ],
+              sources: [],
+              elapsedMilliseconds: null,
+              failed: false,
+            },
+          },
+        },
+        defaultContent: <p>완료된 답변</p>,
+      }),
+    )
+
+    const progressToggle = screen.getByRole('button', {
+      name: koMessages.chatbot.progress.completedTitle,
+    })
+    const answerText = screen.getByText('완료된 답변')
+
+    expect(
+      progressToggle.compareDocumentPosition(answerText) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
   it('submit 슬롯은 대기 중에는 전송 아이콘을 렌더링한다', () => {
     usePathnameMock.mockReturnValue('/ko/about')
 

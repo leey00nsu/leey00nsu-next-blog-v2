@@ -1,6 +1,7 @@
 import { generateText, Output } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { getBlogChatAnswerModel } from '@/features/chat/config/chat-models'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import {
   BlogChatModelDraftSchema,
@@ -87,11 +88,7 @@ export async function answerBlogQuestion({
 
   try {
     const { output } = await generateText({
-      model: openai(
-        process.env.OPENAI_BLOG_CHAT_MODEL ??
-          process.env.OPENAI_MDX_MODEL ??
-          'gpt-4o-mini',
-      ),
+      model: openai(getBlogChatAnswerModel()),
       temperature: 0,
       output: Output.object({
         schema: BlogChatModelDraftSchema,

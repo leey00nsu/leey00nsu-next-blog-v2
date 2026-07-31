@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { getBlogChatPlannerModel } from '@/features/chat/config/chat-models'
 import {
   buildChatQuestionContextSnapshot,
   buildPlannerConversationContextText,
@@ -120,7 +121,7 @@ export async function planChatIntent(
   ) {
     try {
       const { output } = await generateText({
-        model: openai(BLOG_CHAT.PLANNER.MODEL_ID),
+        model: openai(getBlogChatPlannerModel()),
         output: Output.object({ schema: ChatQueryPlanSchema }),
         system: CHAT_INTENT_PLANNER.SYSTEM,
         prompt: [

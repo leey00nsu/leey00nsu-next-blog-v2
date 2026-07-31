@@ -5,6 +5,11 @@ import {
   AI_TEXT_ACTIONS,
   wrapUserTextForAI,
 } from '@/features/editor/config/constants'
+import { getRequiredEnvironmentValue } from '@/shared/config/get-required-environment-value'
+
+const EDITOR_ENVIRONMENT_VARIABLE = {
+  MODEL: 'OPENAI_EDITOR_MODEL',
+} as const
 
 export interface TransformTextParams {
   text: string
@@ -60,7 +65,10 @@ export async function transformTextWithOpenAI({
 
   try {
     const response = await client.chat.completions.create({
-      model: process.env.OPENAI_EDITOR_MODEL ?? 'gpt-4o-mini',
+      model: getRequiredEnvironmentValue({
+        variableNames: [EDITOR_ENVIRONMENT_VARIABLE.MODEL],
+        values: [process.env.OPENAI_EDITOR_MODEL],
+      }),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: wrappedUserText },

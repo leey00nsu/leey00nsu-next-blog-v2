@@ -1,5 +1,10 @@
 import OpenAI from 'openai'
 import { type SupportedLocale } from '@/shared/config/constants'
+import { getRequiredEnvironmentValue } from '@/shared/config/get-required-environment-value'
+
+const STUDIO_TRANSLATION_ENVIRONMENT_VARIABLE = {
+  MODEL: 'OPENAI_MDX_MODEL',
+} as const
 
 export interface TranslateMdxParams {
   sourceMdx: string
@@ -49,7 +54,10 @@ ${sourceMdx}`
 
   try {
     const response = await client.chat.completions.create({
-      model: process.env.OPENAI_MDX_MODEL ?? 'gpt-5-mini',
+      model: getRequiredEnvironmentValue({
+        variableNames: [STUDIO_TRANSLATION_ENVIRONMENT_VARIABLE.MODEL],
+        values: [process.env.OPENAI_MDX_MODEL],
+      }),
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },

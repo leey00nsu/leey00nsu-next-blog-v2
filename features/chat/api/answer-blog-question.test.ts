@@ -37,10 +37,12 @@ describe('answerBlogQuestion', () => {
     vi.resetModules()
     vi.clearAllMocks()
     process.env.OPENAI_API_KEY = 'test-key'
+    process.env.OPENAI_BLOG_CHAT_MODEL = 'test-answer-model'
   })
 
   afterEach(() => {
     delete process.env.OPENAI_API_KEY
+    delete process.env.OPENAI_BLOG_CHAT_MODEL
   })
 
   it('작성자 질문에서 blog evidence의 1인칭 표현을 작성자 근거로 사용할 수 있도록 지시한다', async () => {

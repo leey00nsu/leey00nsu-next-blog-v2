@@ -40,10 +40,12 @@ describe('planChatIntent', () => {
     vi.resetModules()
     vi.clearAllMocks()
     process.env.OPENAI_API_KEY = 'test-key'
+    process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL = 'test-router-model'
   })
 
   afterEach(() => {
     delete process.env.OPENAI_API_KEY
+    delete process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL
   })
 
   it('candidate 목록을 prompt에 전달하고 plan을 반환한다', async () => {

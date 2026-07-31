@@ -2,6 +2,7 @@ import { generateText, Output } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
+import { getBlogChatRerankModel } from '@/features/chat/config/chat-models'
 import { reorderChatEvidenceMatches } from '@/features/chat/lib/reorder-chat-evidence-matches'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 
@@ -49,7 +50,7 @@ export async function rerankChatEvidence({
 
   try {
     const { output } = await generateText({
-      model: openai(BLOG_CHAT.RERANK.MODEL_ID),
+      model: openai(getBlogChatRerankModel()),
       temperature: 0,
       output: ChatEvidenceRankingSchema,
       system: CHAT_RERANK_PROMPT.SYSTEM,

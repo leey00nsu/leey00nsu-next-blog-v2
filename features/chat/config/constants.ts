@@ -46,10 +46,6 @@ export const BLOG_CHAT = {
   },
   PLANNER: {
     MAXIMUM_QUESTION_CHARACTERS: 300,
-    MODEL_ID:
-      process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL ??
-      process.env.OPENAI_BLOG_CHAT_MODEL ??
-      'gpt-5.4-mini',
   },
   CACHE: {
     TTL_MILLISECONDS: parseIntegerEnvironmentValue(
@@ -83,10 +79,6 @@ export const BLOG_CHAT = {
       process.env.BLOG_CHAT_RERANK_MINIMUM_MATCH_COUNT,
       2,
     ),
-    MODEL_ID:
-      process.env.OPENAI_BLOG_CHAT_RERANK_MODEL ??
-      process.env.OPENAI_BLOG_CHAT_MODEL ??
-      'gpt-5.4-mini',
   },
   FOLLOW_UP: {
     MAXIMUM_SUGGESTION_COUNT: parseIntegerEnvironmentValue(

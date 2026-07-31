@@ -25,6 +25,8 @@ function buildRequest(params?: {
   origin?: string
   body?: Record<string, unknown>
   clientAddress?: string
+  forwardedProtocol?: string
+  forwardedHost?: string
 }) {
   return new NextRequest('http://localhost/api/engagement-events', {
     method: 'POST',
@@ -35,6 +37,12 @@ function buildRequest(params?: {
         'engagement_visitor=1b554880-5ac5-4fe6-b5ba-635c2c90fbdb; engagement_session=7866fed2-d329-47e0-b608-2f6c49acfdd8',
       'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Mobile',
       'x-forwarded-for': params?.clientAddress ?? '203.0.113.10',
+      ...(params?.forwardedProtocol
+        ? { 'x-forwarded-proto': params.forwardedProtocol }
+        : {}),
+      ...(params?.forwardedHost
+        ? { 'x-forwarded-host': params.forwardedHost }
+        : {}),
     },
     body: JSON.stringify(params?.body ?? VALID_PAYLOAD),
   })
@@ -77,6 +85,32 @@ describe('POST /api/engagement-events', () => {
   it('다른 출처에서 전송한 요청을 거부한다', async () => {
     const response = await POST(
       buildRequest({ origin: 'https://untrusted.example' }),
+    )
+
+    expect(response.status).toBe(403)
+    expect(recordEngagementEventMock).not.toHaveBeenCalled()
+  })
+
+  it('리버스 프록시가 전달한 공개 출처의 요청을 허용한다', async () => {
+    const response = await POST(
+      buildRequest({
+        origin: 'https://blog2.leey00nsu.com',
+        forwardedProtocol: 'https',
+        forwardedHost: 'blog2.leey00nsu.com',
+      }),
+    )
+
+    expect(response.status).toBe(204)
+    expect(recordEngagementEventMock).toHaveBeenCalledOnce()
+  })
+
+  it('리버스 프록시 환경에서도 다른 출처의 요청을 거부한다', async () => {
+    const response = await POST(
+      buildRequest({
+        origin: 'https://untrusted.example',
+        forwardedProtocol: 'https',
+        forwardedHost: 'blog2.leey00nsu.com',
+      }),
     )
 
     expect(response.status).toBe(403)

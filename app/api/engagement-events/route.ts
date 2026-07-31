@@ -21,7 +21,10 @@ const ENGAGEMENT_EVENT_ROUTE = {
     PATH: '/',
   },
   HEADER: {
+    ORIGIN: 'origin',
     FORWARDED_PROTOCOL: 'x-forwarded-proto',
+    FORWARDED_HOST: 'x-forwarded-host',
+    HOST: 'host',
     CLIENT_HINT_MOBILE: 'sec-ch-ua-mobile',
     CONTENT_LENGTH: 'content-length',
     RETRY_AFTER: 'Retry-After',
@@ -124,10 +127,36 @@ function isSecureRequest(request: NextRequest): boolean {
     : request.nextUrl.protocol === 'https:'
 }
 
-function isAllowedOrigin(request: NextRequest): boolean {
-  const requestOrigin = request.headers.get('origin')
+function getFirstForwardedHeaderValue(headerValue: string | null): string {
+  return headerValue?.split(',')[0]?.trim() ?? ''
+}
 
-  return requestOrigin === request.nextUrl.origin
+function getPublicRequestOrigin(request: NextRequest): string {
+  const forwardedProtocol = getFirstForwardedHeaderValue(
+    request.headers.get(ENGAGEMENT_EVENT_ROUTE.HEADER.FORWARDED_PROTOCOL),
+  )
+  const forwardedHost = getFirstForwardedHeaderValue(
+    request.headers.get(ENGAGEMENT_EVENT_ROUTE.HEADER.FORWARDED_HOST),
+  )
+  const requestHost = getFirstForwardedHeaderValue(
+    request.headers.get(ENGAGEMENT_EVENT_ROUTE.HEADER.HOST),
+  )
+  const protocol = forwardedProtocol || request.nextUrl.protocol.slice(0, -1)
+  const host = forwardedHost || requestHost || request.nextUrl.host
+
+  try {
+    return new URL(`${protocol}://${host}`).origin
+  } catch {
+    return request.nextUrl.origin
+  }
+}
+
+function isAllowedOrigin(request: NextRequest): boolean {
+  const requestOrigin = request.headers.get(
+    ENGAGEMENT_EVENT_ROUTE.HEADER.ORIGIN,
+  )
+
+  return requestOrigin === getPublicRequestOrigin(request)
 }
 
 function setEngagementIdentityCookies(params: {

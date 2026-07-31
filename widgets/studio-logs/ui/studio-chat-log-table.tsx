@@ -126,8 +126,11 @@ export function StudioChatLogTable({
     {
       accessorKey: 'createdAt',
       header: t('columns.createdAt'),
-      cell: ({ row: tableRow }) =>
-        formatCreatedAt(tableRow.original.createdAt, locale),
+      cell: ({ row: tableRow }) => (
+        <span className="whitespace-nowrap">
+          {formatCreatedAt(tableRow.original.createdAt, locale)}
+        </span>
+      ),
     },
     {
       accessorKey: 'locale',
@@ -207,7 +210,7 @@ export function StudioChatLogTable({
   })
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       {isDatabaseUnavailable ? (
         <div
           role="status"
@@ -289,7 +292,7 @@ export function StudioChatLogTable({
 
       <div className="overflow-hidden rounded-lg border">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[76rem] text-sm">
+          <table className="w-full min-w-[96rem] text-sm">
             <thead className="bg-muted/60">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -297,7 +300,7 @@ export function StudioChatLogTable({
                     <th
                       key={header.id}
                       scope="col"
-                      className="text-muted-foreground px-4 py-3 text-left font-medium"
+                      className="text-muted-foreground whitespace-nowrap px-4 py-3 text-left font-medium"
                     >
                       {header.isPlaceholder
                         ? null

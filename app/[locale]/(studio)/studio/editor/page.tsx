@@ -1,6 +1,6 @@
 import { Studio } from '@/widgets/studio/ui/studio'
 import { getAllPosts } from '@/entities/post/lib/post'
-import { SupportedLocale } from '@/shared/config/constants'
+import type { SupportedLocale } from '@/shared/config/constants'
 
 interface StudioEditorPageProps {
   params: Promise<{ locale: string }>

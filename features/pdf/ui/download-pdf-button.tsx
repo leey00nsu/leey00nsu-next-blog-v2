@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import {
+  commitEngagementEvent,
+  getDownloadEngagementEventName,
+} from '@/features/engagement/api/commit-engagement-event'
 import { Button } from '@/shared/ui/button'
 import {
   buildPdfFileName,
@@ -68,6 +72,11 @@ export function DownloadPdfButton({
       anchor.click()
       anchor.remove()
       globalThis.URL.revokeObjectURL(url)
+      void commitEngagementEvent({
+        eventName: getDownloadEngagementEventName(documentKind),
+        locale,
+        documentKind,
+      }).catch(() => null)
       toast.success(
         translate(
           PDF_DOWNLOAD_TRANSLATION_KEY_BY_DOCUMENT_KIND.success[documentKind],
@@ -90,7 +99,9 @@ export function DownloadPdfButton({
       {isLoading
         ? translate('loading')
         : translate(
-            PDF_DOWNLOAD_TRANSLATION_KEY_BY_DOCUMENT_KIND.download[documentKind],
+            PDF_DOWNLOAD_TRANSLATION_KEY_BY_DOCUMENT_KIND.download[
+              documentKind
+            ],
           )}
     </Button>
   )

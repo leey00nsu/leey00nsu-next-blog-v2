@@ -1,5 +1,5 @@
 import { StudioLanding } from '@/widgets/studio-landing/ui/studio-landing'
-import { SupportedLocale } from '@/shared/config/constants'
+import type { SupportedLocale } from '@/shared/config/constants'
 
 interface StudioPageProps {
   params: Promise<{ locale: string }>

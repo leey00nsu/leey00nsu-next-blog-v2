@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAllPostSummaries, getPostBySlug } from '@/entities/post/lib/post'
+import { ENGAGEMENT } from '@/features/engagement/config/constants'
+import { EngagementPageView } from '@/features/engagement/ui/engagement-page-view'
 import { PostDetail } from '@/widgets/post/ui/post-detail'
 import {
   LOCALES,
@@ -77,5 +79,14 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
-  return <PostDetail post={post} locale={locale} />
+  return (
+    <>
+      <EngagementPageView
+        eventName={ENGAGEMENT.EVENT_NAME.BLOG_POST_VIEW}
+        locale={locale}
+        contentSlug={slug}
+      />
+      <PostDetail post={post} locale={locale} />
+    </>
+  )
 }

@@ -36,7 +36,7 @@
     "landing": {
       "eyebrow": "Studio",
       "title": "관리할 작업을 선택하세요",
-      "description": "글 작성 에디터와 챗봇 로그 관리를 분리해 필요한 작업으로 바로 이동합니다.",
+      "description": "글 작성, 챗봇 로그, 관심 이벤트 관리 중 필요한 작업으로 바로 이동합니다.",
       "editor": {
         "title": "에디터",
         "description": "MDX 글을 작성하고 번역한 뒤 GitHub에 커밋합니다.",
@@ -48,6 +48,12 @@
         "description": "챗봇 질문, 검색 결과, citation, 처리 시간을 확인합니다.",
         "meta": "Postgres에 저장된 chat observability 이벤트를 조회합니다.",
         "action": "로그 보기"
+      },
+      "events": {
+        "title": "이벤트 관리",
+        "description": "소개 페이지에서 발생한 관심 행동과 전환을 확인합니다.",
+        "meta": "익명 방문자의 페이지 조회, PDF 다운로드, 연락 클릭을 조회합니다.",
+        "action": "이벤트 보기"
       }
     },
     "logs": {
@@ -106,6 +112,66 @@
         "citations": "Citations",
         "finalMatches": "최종 근거 후보"
       }
+    },
+    "events": {
+      "title": "이벤트 관리",
+      "description": "블로그와 소개 페이지 조회부터 PDF 다운로드와 연락 클릭까지 관심 행동을 확인합니다.",
+      "refresh": "새로고침",
+      "listSummary": "검색 결과 {totalCount}개 · {currentPage}/{pageCount} 페이지",
+      "empty": "조건에 맞는 이벤트가 없습니다.",
+      "databaseUnavailable": "이벤트 데이터베이스에 연결할 수 없습니다. Postgres 연결 설정과 실행 상태를 확인해주세요.",
+      "summaryCards": {
+        "totalEvents": "전체 이벤트",
+        "uniqueVisitors": "고유 방문자",
+        "aboutViews": "소개 페이지 조회",
+        "blogListViews": "블로그 홈 조회",
+        "blogPostViews": "블로그 글 조회",
+        "resumeDownloads": "이력서 다운로드",
+        "portfolioDownloads": "포트폴리오 다운로드",
+        "contactClicks": "연락 클릭"
+      },
+      "eventNames": {
+        "about_view": "소개 페이지 조회",
+        "blog_list_view": "블로그 홈 조회",
+        "blog_post_view": "블로그 글 조회",
+        "resume_download": "이력서 다운로드",
+        "portfolio_download": "포트폴리오 다운로드",
+        "contact_click": "연락 클릭"
+      },
+      "deviceCategories": {
+        "desktop": "데스크톱",
+        "mobile": "모바일",
+        "tablet": "태블릿",
+        "unknown": "알 수 없음"
+      },
+      "columns": {
+        "createdAt": "발생 시각",
+        "eventName": "이벤트",
+        "locale": "언어",
+        "pagePath": "페이지",
+        "contentSlug": "글 슬러그",
+        "documentKind": "문서",
+        "referrerHost": "유입 호스트",
+        "campaign": "UTM",
+        "deviceCategory": "기기",
+        "visitor": "방문자"
+      },
+      "filter": {
+        "label": "이벤트 필터",
+        "all": "전체 이벤트"
+      },
+      "pageSize": {
+        "label": "페이지 행 수",
+        "option": "{pageSize}개씩 보기"
+      },
+      "sort": {
+        "label": "날짜 정렬",
+        "createdAtDescending": "최신순",
+        "createdAtAscending": "오래된순"
+      },
+      "previous": "이전",
+      "next": "다음",
+      "pageIndicator": "{currentPage}/{pageCount}"
     },
     "actions": {
       "save": "저장",

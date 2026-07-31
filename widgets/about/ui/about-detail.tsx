@@ -3,11 +3,9 @@ import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
 import { ProjectSection } from '@/widgets/about/ui/project-section'
 import { AboutProfileImage } from '@/widgets/about/ui/about-profile-image'
 import { EntranceMotionBlock } from '@/shared/ui/entrance-motion-block'
-import {
-  PDF,
-  SupportedLocale,
-} from '@/shared/config/constants'
+import { PDF, SupportedLocale } from '@/shared/config/constants'
 import { DownloadPdfButton } from '@/features/pdf/ui/download-pdf-button'
+import { EngagementMdxAnchor } from '@/features/engagement/ui/engagement-mdx-anchor'
 import type { ProjectSummaryCardLinkVariant } from '@/entities/project/ui/project-summary-card'
 
 const ABOUT_DETAIL_BLOCK_ANIMATION = {
@@ -39,7 +37,9 @@ export function AboutDetail({
       {showDownloadButton ? (
         <EntranceMotionBlock
           className="not-prose"
-          delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.DOWNLOAD_BUTTONS_DELAY_SECONDS}
+          delaySeconds={
+            ABOUT_DETAIL_BLOCK_ANIMATION.DOWNLOAD_BUTTONS_DELAY_SECONDS
+          }
           disabled={!enableBlockEntranceAnimation}
         >
           <div className="mb-6 flex flex-wrap justify-end gap-2">
@@ -65,12 +65,17 @@ export function AboutDetail({
         delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.CONTENT_DELAY_SECONDS}
         disabled={!enableBlockEntranceAnimation}
       >
-        <MdxRenderer content={about.content} />
+        <MdxRenderer
+          content={about.content}
+          components={{ a: EngagementMdxAnchor }}
+        />
       </EntranceMotionBlock>
       {showProjectSection ? (
         <EntranceMotionBlock
           className="not-prose"
-          delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.PROJECT_SECTION_DELAY_SECONDS}
+          delaySeconds={
+            ABOUT_DETAIL_BLOCK_ANIMATION.PROJECT_SECTION_DELAY_SECONDS
+          }
           disabled={!enableBlockEntranceAnimation}
         >
           <ProjectSection

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { getAllPostSummaries } from '@/entities/post/lib/post'
+import { ENGAGEMENT } from '@/features/engagement/config/constants'
+import { EngagementPageView } from '@/features/engagement/ui/engagement-page-view'
 import { FilterablePostList } from '@/widgets/post/ui/filterable-post-list'
 import {
   LOCALES,
@@ -63,5 +65,13 @@ export default async function BlogPage({ params }: BlogPageProps) {
   const { locale } = await params
   const allPosts = await getAllPostSummaries(locale)
 
-  return <FilterablePostList posts={allPosts} locale={locale} />
+  return (
+    <>
+      <EngagementPageView
+        eventName={ENGAGEMENT.EVENT_NAME.BLOG_LIST_VIEW}
+        locale={locale}
+      />
+      <FilterablePostList posts={allPosts} locale={locale} />
+    </>
+  )
 }

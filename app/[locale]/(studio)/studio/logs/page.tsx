@@ -1,5 +1,5 @@
 import { StudioChatLogs } from '@/widgets/studio-logs/ui/studio-chat-logs'
-import { SupportedLocale } from '@/shared/config/constants'
+import type { SupportedLocale } from '@/shared/config/constants'
 
 interface StudioLogsPageProps {
   params: Promise<{ locale: string }>

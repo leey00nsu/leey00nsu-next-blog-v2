@@ -68,12 +68,14 @@ export const ROUTES = {
   PROJECTS: '/projects' as Route,
   STUDIO: '/studio' as Route,
   STUDIO_EDITOR: '/studio/editor' as Route,
+  STUDIO_EVENTS: '/studio/events' as Route,
   STUDIO_LOGS: '/studio/logs' as Route,
   PLAYGROUND: '/playground' as Route,
   AUTH_SIGNIN: '/auth/signin' as Route,
   AUTH_UNAUTHORIZED: '/auth/unauthorized' as Route,
   API: {
     CHAT: '/api/chat' as Route,
+    ENGAGEMENT_EVENTS: '/api/engagement-events' as Route,
     STUDIO_COMMIT: '/api/studio/commit' as Route,
     STUDIO_CHAT_LOGS: '/api/studio/chat-logs' as Route,
     STUDIO_SAVE_LOCAL: '/api/studio/save-local' as Route,
@@ -96,7 +98,8 @@ export const PDF = {
   FILE_EXTENSION: 'pdf',
 } as const
 
-export type PdfDocumentKind = (typeof PDF.DOCUMENT_KIND)[keyof typeof PDF.DOCUMENT_KIND]
+export type PdfDocumentKind =
+  (typeof PDF.DOCUMENT_KIND)[keyof typeof PDF.DOCUMENT_KIND]
 
 export function buildPdfFileName(
   documentKind: PdfDocumentKind,

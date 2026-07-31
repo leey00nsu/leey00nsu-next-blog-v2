@@ -3,7 +3,7 @@ import {
   defaultRemarkPlugins,
   defaultRehypePlugins,
 } from '@/features/mdx/lib/mdx-options'
-import { MdxAnchor } from '@/features/mdx/ui/mdx-anchor'
+import { MdxAnchor } from '@/shared/ui/mdx-anchor'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
 import { CustomImage } from '@/shared/ui/custom-image'
 import type React from 'react'

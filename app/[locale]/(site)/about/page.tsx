@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { getAbout } from '@/entities/about/lib/about'
 import { AboutDetail } from '@/widgets/about/ui/about-detail'
 import { ComingSoon } from '@/shared/ui/coming-soon'
+import { ENGAGEMENT } from '@/features/engagement/config/constants'
+import { EngagementPageView } from '@/features/engagement/ui/engagement-page-view'
 import {
   LOCALES,
   ROUTES,
@@ -82,5 +84,13 @@ export default async function AboutPage({ params }: AboutPageProps) {
     )
   }
 
-  return <AboutDetail about={about} locale={locale} />
+  return (
+    <>
+      <EngagementPageView
+        eventName={ENGAGEMENT.EVENT_NAME.ABOUT_VIEW}
+        locale={locale}
+      />
+      <AboutDetail about={about} locale={locale} />
+    </>
+  )
 }

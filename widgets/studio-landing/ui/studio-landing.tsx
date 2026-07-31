@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FilePenLine, ListChecks } from 'lucide-react'
+import { ChartNoAxesCombined, FilePenLine, ListChecks } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/shared/ui/button'
 import {
@@ -31,6 +31,11 @@ const STUDIO_LANDING_OPTIONS = [
     href: ROUTES.STUDIO_LOGS,
     icon: ListChecks,
   },
+  {
+    translationKey: 'events',
+    href: ROUTES.STUDIO_EVENTS,
+    icon: ChartNoAxesCombined,
+  },
 ] as const
 
 export function StudioLanding({ locale }: StudioLandingProps) {
@@ -50,7 +55,7 @@ export function StudioLanding({ locale }: StudioLandingProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         {STUDIO_LANDING_OPTIONS.map((option) => {
           const Icon = option.icon
           const href = buildLocalizedRoutePath(option.href, locale)
@@ -75,7 +80,9 @@ export function StudioLanding({ locale }: StudioLandingProps) {
               </CardContent>
               <CardFooter>
                 <Button asChild>
-                  <Link href={href}>{t(`${option.translationKey}.action`)}</Link>
+                  <Link href={href}>
+                    {t(`${option.translationKey}.action`)}
+                  </Link>
                 </Button>
               </CardFooter>
             </Card>

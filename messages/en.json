@@ -36,7 +36,7 @@
     "landing": {
       "eyebrow": "Studio",
       "title": "Choose a management task",
-      "description": "Open the writing editor or inspect chatbot logs from one place.",
+      "description": "Open the writing editor, inspect chatbot logs, or review interest events from one place.",
       "editor": {
         "title": "Editor",
         "description": "Write MDX posts, translate them, and commit them to GitHub.",
@@ -48,6 +48,12 @@
         "description": "Review chatbot questions, retrieval results, citations, and latency.",
         "meta": "Reads chat observability events stored in Postgres.",
         "action": "View logs"
+      },
+      "events": {
+        "title": "Event Management",
+        "description": "Review interest signals and conversions from the About page.",
+        "meta": "Reads anonymous page views, PDF downloads, and contact clicks.",
+        "action": "View events"
       }
     },
     "logs": {
@@ -106,6 +112,66 @@
         "citations": "Citations",
         "finalMatches": "Final evidence candidates"
       }
+    },
+    "events": {
+      "title": "Event Management",
+      "description": "Review interest signals from blog and About page views through PDF downloads and contact clicks.",
+      "refresh": "Refresh",
+      "listSummary": "{totalCount} matching events · page {currentPage}/{pageCount}",
+      "empty": "No events match the current filter.",
+      "databaseUnavailable": "Unable to connect to the event database. Check the Postgres connection settings and runtime status.",
+      "summaryCards": {
+        "totalEvents": "Total events",
+        "uniqueVisitors": "Unique visitors",
+        "aboutViews": "About views",
+        "blogListViews": "Blog home views",
+        "blogPostViews": "Blog post views",
+        "resumeDownloads": "Resume downloads",
+        "portfolioDownloads": "Portfolio downloads",
+        "contactClicks": "Contact clicks"
+      },
+      "eventNames": {
+        "about_view": "About view",
+        "blog_list_view": "Blog home view",
+        "blog_post_view": "Blog post view",
+        "resume_download": "Resume download",
+        "portfolio_download": "Portfolio download",
+        "contact_click": "Contact click"
+      },
+      "deviceCategories": {
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet",
+        "unknown": "Unknown"
+      },
+      "columns": {
+        "createdAt": "Occurred",
+        "eventName": "Event",
+        "locale": "Locale",
+        "pagePath": "Page",
+        "contentSlug": "Post slug",
+        "documentKind": "Document",
+        "referrerHost": "Referrer host",
+        "campaign": "UTM",
+        "deviceCategory": "Device",
+        "visitor": "Visitor"
+      },
+      "filter": {
+        "label": "Event filter",
+        "all": "All events"
+      },
+      "pageSize": {
+        "label": "Rows per page",
+        "option": "{pageSize} rows"
+      },
+      "sort": {
+        "label": "Date sort",
+        "createdAtDescending": "Newest first",
+        "createdAtAscending": "Oldest first"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "pageIndicator": "{currentPage}/{pageCount}"
     },
     "actions": {
       "save": "Save",

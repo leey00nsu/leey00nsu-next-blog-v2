@@ -474,9 +474,9 @@ export const THUMBNAIL_METADATA_MAP = {
     "isAnimated": false
   },
   "/public/projects/lee-spec-kit/spec-workflow.png": {
-    "width": 1448,
-    "height": 1086,
-    "base64": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAABwAQCdASoQAAwABUB8JZ2DrAHJgAD+79bxysK6103Bm3G3l+SG2qIqYQAAAA==",
+    "width": 2800,
+    "height": 1640,
+    "base64": "data:image/webp;base64,UklGRi4AAABXRUJQVlA4ICIAAAAwAQCdASoQAAkABUB8JZwAA3AA/vARX+hxdldItCWgQAAA",
     "isAnimated": false
   },
   "/public/projects/leemage/cloudy.png": {

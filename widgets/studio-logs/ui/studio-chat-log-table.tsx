@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
@@ -26,11 +25,9 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/lib/utils'
-import {
-  ROUTES,
-  SupportedLocale,
-  buildLocalizedRoutePath,
-} from '@/shared/config/constants'
+import { buildStudioListHref } from '@/features/studio-analytics/lib/build-studio-list-href'
+import { ROUTES, SupportedLocale } from '@/shared/config/constants'
+import type { AnalyticsDateRange } from '@/shared/model/analytics'
 
 const STUDIO_CHAT_LOG_TABLE = {
   FIRST_PAGE: 1,
@@ -63,14 +60,12 @@ function buildStudioLogHref(params: {
   page: number
   pageSize: number
   sortDirection: string
-}): Route {
-  const searchParams = new URLSearchParams({
-    page: String(params.page),
-    pageSize: String(params.pageSize),
-    sortDirection: params.sortDirection,
+  dateRange: AnalyticsDateRange
+}) {
+  return buildStudioListHref({
+    routePath: ROUTES.STUDIO_LOGS,
+    ...params,
   })
-
-  return `${buildLocalizedRoutePath(ROUTES.STUDIO_LOGS, params.locale)}?${searchParams.toString()}` as Route
 }
 
 function renderNullableText(value: string | null | undefined): string {
@@ -109,6 +104,7 @@ export function StudioChatLogTable({
         page: STUDIO_CHAT_LOG_TABLE.FIRST_PAGE,
         pageSize: Number(nextPageSize),
         sortDirection,
+        dateRange: logPage.dateRange,
       }),
     )
   }
@@ -119,6 +115,7 @@ export function StudioChatLogTable({
         page: STUDIO_CHAT_LOG_TABLE.FIRST_PAGE,
         pageSize: logPage.pageSize,
         sortDirection: nextSortDirection,
+        dateRange: logPage.dateRange,
       }),
     )
   }
@@ -281,6 +278,7 @@ export function StudioChatLogTable({
                 page: logPage.page,
                 pageSize: logPage.pageSize,
                 sortDirection,
+                dateRange: logPage.dateRange,
               })}
             >
               <RotateCw aria-hidden="true" className="size-4" />
@@ -300,7 +298,7 @@ export function StudioChatLogTable({
                     <th
                       key={header.id}
                       scope="col"
-                      className="text-muted-foreground whitespace-nowrap px-4 py-3 text-left font-medium"
+                      className="text-muted-foreground px-4 py-3 text-left font-medium whitespace-nowrap"
                     >
                       {header.isPlaceholder
                         ? null
@@ -359,6 +357,7 @@ export function StudioChatLogTable({
               page: previousPage,
               pageSize: logPage.pageSize,
               sortDirection,
+              dateRange: logPage.dateRange,
             })}
           >
             <ChevronLeft aria-hidden="true" className="size-4" />
@@ -386,6 +385,7 @@ export function StudioChatLogTable({
               page: nextPage,
               pageSize: logPage.pageSize,
               sortDirection,
+              dateRange: logPage.dateRange,
             })}
           >
             {t('next')}

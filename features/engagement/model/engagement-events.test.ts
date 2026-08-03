@@ -159,15 +159,34 @@ describe('engagement-events', () => {
       page: 1,
       pageSize: 20,
       eventName: ENGAGEMENT.EVENT_NAME.RESUME_DOWNLOAD,
+      dateRange: {
+        startDate: '2026-07-01',
+        endDate: '2026-07-31',
+      },
     })
 
     expect(queryMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('COUNT(DISTINCT anonymous_visitor_id_hash)'),
+      ['2026-07-01T00:00:00+09:00', '2026-08-01T00:00:00+09:00'],
+    )
+    expect(queryMock).toHaveBeenNthCalledWith(
       3,
       expect.stringContaining('ORDER BY created_at DESC'),
-      [ENGAGEMENT.EVENT_NAME.RESUME_DOWNLOAD, 20, 0],
+      [
+        '2026-07-01T00:00:00+09:00',
+        '2026-08-01T00:00:00+09:00',
+        ENGAGEMENT.EVENT_NAME.RESUME_DOWNLOAD,
+        20,
+        0,
+      ],
     )
     expect(result).toMatchObject({
       totalCount: 2,
+      dateRange: {
+        startDate: '2026-07-01',
+        endDate: '2026-07-31',
+      },
       summary: {
         totalEventCount: 7,
         uniqueVisitorCount: 3,

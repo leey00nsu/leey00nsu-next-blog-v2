@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
 import {
   flexRender,
@@ -21,7 +20,6 @@ import type {
 } from '@/features/engagement/model/engagement-events'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
   Select,
   SelectContent,
@@ -30,11 +28,9 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/lib/utils'
-import {
-  ROUTES,
-  buildLocalizedRoutePath,
-  type SupportedLocale,
-} from '@/shared/config/constants'
+import { buildStudioListHref } from '@/features/studio-analytics/lib/build-studio-list-href'
+import { ROUTES, type SupportedLocale } from '@/shared/config/constants'
+import type { AnalyticsDateRange } from '@/shared/model/analytics'
 
 const STUDIO_ENGAGEMENT_EVENT_TABLE = {
   FIRST_PAGE: 1,
@@ -62,18 +58,19 @@ function buildStudioEventHref(params: {
   pageSize: number
   sortDirection: string
   eventName?: EngagementEventName
-}): Route {
-  const searchParameters = new URLSearchParams({
-    page: String(params.page),
-    pageSize: String(params.pageSize),
+  dateRange: AnalyticsDateRange
+}) {
+  return buildStudioListHref({
+    routePath: ROUTES.STUDIO_EVENTS,
+    locale: params.locale,
+    page: params.page,
+    pageSize: params.pageSize,
     sortDirection: params.sortDirection,
+    dateRange: params.dateRange,
+    additionalSearchParameters: {
+      eventName: params.eventName,
+    },
   })
-
-  if (params.eventName) {
-    searchParameters.set('eventName', params.eventName)
-  }
-
-  return `${buildLocalizedRoutePath(ROUTES.STUDIO_EVENTS, params.locale)}?${searchParameters.toString()}` as Route
 }
 
 function renderNullableText(value: string | null | undefined): string {
@@ -104,40 +101,6 @@ export function StudioEngagementEventTable({
   )
   const nextPage = Math.min(pageCount, eventPage.page + 1)
   const eventFilterValue = eventPage.eventName ?? ENGAGEMENT.FILTER.ALL_EVENTS
-  const summaryItems = [
-    {
-      label: translate('summaryCards.totalEvents'),
-      value: eventPage.summary.totalEventCount,
-    },
-    {
-      label: translate('summaryCards.uniqueVisitors'),
-      value: eventPage.summary.uniqueVisitorCount,
-    },
-    {
-      label: translate('summaryCards.aboutViews'),
-      value: eventPage.summary.aboutViewCount,
-    },
-    {
-      label: translate('summaryCards.blogListViews'),
-      value: eventPage.summary.blogListViewCount,
-    },
-    {
-      label: translate('summaryCards.blogPostViews'),
-      value: eventPage.summary.blogPostViewCount,
-    },
-    {
-      label: translate('summaryCards.resumeDownloads'),
-      value: eventPage.summary.resumeDownloadCount,
-    },
-    {
-      label: translate('summaryCards.portfolioDownloads'),
-      value: eventPage.summary.portfolioDownloadCount,
-    },
-    {
-      label: translate('summaryCards.contactClicks'),
-      value: eventPage.summary.contactClickCount,
-    },
-  ]
   const columns: ColumnDef<EngagementEventRecord>[] = [
     {
       accessorKey: 'createdAt',
@@ -232,6 +195,7 @@ export function StudioEngagementEventTable({
         pageSize: Number(nextPageSize),
         sortDirection: eventPage.sortDirection,
         eventName: eventPage.eventName,
+        dateRange: eventPage.dateRange,
       }),
     )
   }
@@ -243,6 +207,7 @@ export function StudioEngagementEventTable({
         pageSize: eventPage.pageSize,
         sortDirection: nextSortDirection,
         eventName: eventPage.eventName,
+        dateRange: eventPage.dateRange,
       }),
     )
   }
@@ -257,6 +222,7 @@ export function StudioEngagementEventTable({
           nextEventName === ENGAGEMENT.FILTER.ALL_EVENTS
             ? undefined
             : (nextEventName as EngagementEventName),
+        dateRange: eventPage.dateRange,
       }),
     )
   }
@@ -271,23 +237,6 @@ export function StudioEngagementEventTable({
           {translate('databaseUnavailable')}
         </div>
       ) : null}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {summaryItems.map((summaryItem) => (
-          <Card key={summaryItem.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-muted-foreground text-sm font-medium">
-                {summaryItem.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold">
-                {summaryItem.value.toLocaleString(locale)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <p className="text-muted-foreground text-sm">
@@ -375,6 +324,7 @@ export function StudioEngagementEventTable({
                 pageSize: eventPage.pageSize,
                 sortDirection: eventPage.sortDirection,
                 eventName: eventPage.eventName,
+                dateRange: eventPage.dateRange,
               })}
             >
               <RotateCw aria-hidden="true" className="size-4" />
@@ -394,7 +344,7 @@ export function StudioEngagementEventTable({
                     <th
                       key={header.id}
                       scope="col"
-                      className="text-muted-foreground whitespace-nowrap px-4 py-3 text-left font-medium"
+                      className="text-muted-foreground px-4 py-3 text-left font-medium whitespace-nowrap"
                     >
                       {header.isPlaceholder
                         ? null
@@ -456,6 +406,7 @@ export function StudioEngagementEventTable({
               pageSize: eventPage.pageSize,
               sortDirection: eventPage.sortDirection,
               eventName: eventPage.eventName,
+              dateRange: eventPage.dateRange,
             })}
           >
             <ChevronLeft aria-hidden="true" className="size-4" />
@@ -484,6 +435,7 @@ export function StudioEngagementEventTable({
               pageSize: eventPage.pageSize,
               sortDirection: eventPage.sortDirection,
               eventName: eventPage.eventName,
+              dateRange: eventPage.dateRange,
             })}
           >
             {translate('next')}

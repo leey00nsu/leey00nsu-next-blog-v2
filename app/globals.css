@@ -69,6 +69,13 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  --analytics-chart-1: #8bc1f6;
+  --analytics-chart-2: #347ff4;
+  --analytics-chart-3: #2563eb;
+  --analytics-chart-4: #2354e5;
+  --analytics-chart-5: #2148d0;
+  --analytics-chart-6: #263faf;
+  --analytics-chart-7: #1e3a8a;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -103,6 +110,13 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  --analytics-chart-1: #93c5fd;
+  --analytics-chart-2: #3b82f6;
+  --analytics-chart-3: #347ff4;
+  --analytics-chart-4: #2563eb;
+  --analytics-chart-5: #2354e5;
+  --analytics-chart-6: #2148d0;
+  --analytics-chart-7: #263faf;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -179,14 +193,16 @@
   }
 }
 
-.portfolio-print-root .prose :where(blockquote, pre, table):not(
-    :where([class~='not-prose'] *)
-  ) {
+.portfolio-print-root
+  .prose
+  :where(blockquote, pre, table):not(:where([class~='not-prose'] *)) {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.portfolio-print-root .prose :where(h2, h3, h4):not(:where([class~='not-prose'] *)) {
+.portfolio-print-root
+  .prose
+  :where(h2, h3, h4):not(:where([class~='not-prose'] *)) {
   break-after: avoid;
   page-break-after: avoid;
 }
@@ -196,8 +212,12 @@
   page-break-inside: avoid;
 }
 
-.portfolio-print-root .prose :where(p:has(img)):not(:where([class~='not-prose'] *)),
-.portfolio-print-root .prose :where(figure):not(:where([class~='not-prose'] *)) {
+.portfolio-print-root
+  .prose
+  :where(p:has(img)):not(:where([class~='not-prose'] *)),
+.portfolio-print-root
+  .prose
+  :where(figure):not(:where([class~='not-prose'] *)) {
   break-inside: avoid;
   page-break-inside: avoid;
 }

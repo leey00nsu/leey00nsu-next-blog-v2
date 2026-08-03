@@ -1,5 +1,6 @@
 import { StudioChatLogs } from '@/widgets/studio-logs/ui/studio-chat-logs'
 import type { SupportedLocale } from '@/shared/config/constants'
+import { normalizeAnalyticsDateRange } from '@/shared/lib/analytics-date-range'
 
 interface StudioLogsPageProps {
   params: Promise<{ locale: string }>
@@ -7,6 +8,8 @@ interface StudioLogsPageProps {
     page?: string
     pageSize?: string
     sortDirection?: string
+    startDate?: string
+    endDate?: string
   }>
 }
 
@@ -35,7 +38,8 @@ export default async function StudioLogsPage({
   searchParams,
 }: StudioLogsPageProps) {
   const { locale: localeParam } = await params
-  const { page, pageSize, sortDirection } = await searchParams
+  const { page, pageSize, sortDirection, startDate, endDate } =
+    await searchParams
   const locale = localeParam as SupportedLocale
 
   return (
@@ -47,6 +51,7 @@ export default async function StudioLogsPage({
         STUDIO_LOGS_PAGE.DEFAULT_PAGE_SIZE,
       )}
       sortDirection={sortDirection}
+      dateRange={normalizeAnalyticsDateRange({ startDate, endDate })}
     />
   )
 }

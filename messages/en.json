@@ -64,6 +64,28 @@
       "summary": "{totalCount} total · page {currentPage}/{pageCount}",
       "empty": "No chatbot logs have been stored yet.",
       "databaseUnavailable": "Unable to connect to the log database. Check the Postgres connection settings and runtime status.",
+      "dateRange": {
+        "description": "Choose the date range to inspect.",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "apply": "Apply",
+        "quickRanges": "Quick date ranges",
+        "lastSevenDays": "Last 7 days including today",
+        "currentWeek": "Current week",
+        "currentMonth": "Current month"
+      },
+      "summaryCards": {
+        "totalRequests": "Total requests",
+        "averageDuration": "Average duration",
+        "groundedRate": "Grounded rate",
+        "cacheHitRate": "Cache hit rate"
+      },
+      "chart": {
+        "title": "Daily chatbot requests",
+        "requests": "Chatbot requests",
+        "accessibilityLabel": "Daily chatbot request count for the selected date range",
+        "empty": "No chatbot requests are available for the selected period."
+      },
       "pageSize": {
         "label": "Rows per page",
         "option": "{pageSize} rows"
@@ -120,6 +142,21 @@
       "listSummary": "{totalCount} matching events · page {currentPage}/{pageCount}",
       "empty": "No events match the current filter.",
       "databaseUnavailable": "Unable to connect to the event database. Check the Postgres connection settings and runtime status.",
+      "dateRange": {
+        "description": "Choose the date range to inspect.",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "apply": "Apply",
+        "quickRanges": "Quick date ranges",
+        "lastSevenDays": "Last 7 days including today",
+        "currentWeek": "Current week",
+        "currentMonth": "Current month"
+      },
+      "chart": {
+        "title": "Daily event activity",
+        "accessibilityLabel": "Daily event counts by event type for the selected date range",
+        "empty": "No events are available for the selected period."
+      },
       "summaryCards": {
         "totalEvents": "Total events",
         "uniqueVisitors": "Unique visitors",

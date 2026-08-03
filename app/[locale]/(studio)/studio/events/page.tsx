@@ -1,5 +1,6 @@
 import { StudioEngagementEvents } from '@/widgets/studio-events/ui/studio-engagement-events'
 import type { SupportedLocale } from '@/shared/config/constants'
+import { normalizeAnalyticsDateRange } from '@/shared/lib/analytics-date-range'
 
 interface StudioEventsPageProps {
   params: Promise<{ locale: string }>
@@ -8,6 +9,8 @@ interface StudioEventsPageProps {
     pageSize?: string
     sortDirection?: string
     eventName?: string
+    startDate?: string
+    endDate?: string
   }>
 }
 
@@ -36,7 +39,8 @@ export default async function StudioEventsPage({
   searchParams,
 }: StudioEventsPageProps) {
   const { locale: localeParameter } = await params
-  const { page, pageSize, sortDirection, eventName } = await searchParams
+  const { page, pageSize, sortDirection, eventName, startDate, endDate } =
+    await searchParams
   const locale = localeParameter as SupportedLocale
 
   return (
@@ -49,6 +53,7 @@ export default async function StudioEventsPage({
       )}
       sortDirection={sortDirection}
       eventName={eventName}
+      dateRange={normalizeAnalyticsDateRange({ startDate, endDate })}
     />
   )
 }

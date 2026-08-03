@@ -150,18 +150,26 @@ describe('chat-observability', () => {
       databaseClient,
       page: 2,
       pageSize: 10,
+      dateRange: {
+        startDate: '2026-05-01',
+        endDate: '2026-05-31',
+      },
     })
 
     expect(queryMock).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('ORDER BY created_at DESC'),
-      [10, 10],
+      ['2026-05-01T00:00:00+09:00', '2026-06-01T00:00:00+09:00', 10, 10],
     )
     expect(result).toMatchObject({
       totalCount: 1,
       page: 2,
       pageSize: 10,
       sortDirection: 'created_at_desc',
+      dateRange: {
+        startDate: '2026-05-01',
+        endDate: '2026-05-31',
+      },
       records: [
         {
           id: '42',
@@ -196,12 +204,16 @@ describe('chat-observability', () => {
       page: 1,
       pageSize: 20,
       sortDirection: 'created_at_asc',
+      dateRange: {
+        startDate: '2026-05-01',
+        endDate: '2026-05-31',
+      },
     })
 
     expect(queryMock).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('ORDER BY created_at ASC'),
-      [20, 0],
+      ['2026-05-01T00:00:00+09:00', '2026-06-01T00:00:00+09:00', 20, 0],
     )
     expect(result.sortDirection).toBe('created_at_asc')
   })

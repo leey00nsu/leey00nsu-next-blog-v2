@@ -7,6 +7,11 @@ import {
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
+import {
+  getDefaultAnalyticsDateRange,
+  toAnalyticsDatabaseRange,
+} from '@/shared/lib/analytics-date-range'
+import type { AnalyticsDateRange } from '@/shared/model/analytics'
 
 const CHAT_OBSERVABILITY = {
   TABLE: 'chat_observability_events',
@@ -76,9 +81,30 @@ export interface ChatObservabilityLogPage {
   page: number
   pageSize: number
   sortDirection: ChatObservabilitySortDirection
+  dateRange: AnalyticsDateRange
 }
 
 let hasInitializedChatObservabilityDatabase = false
+let chatObservabilityDatabaseInitializationPromise: Promise<void> | null = null
+
+export async function ensureChatObservabilityDatabaseInitialized(
+  databaseClient: Pool | PoolClient,
+): Promise<void> {
+  if (hasInitializedChatObservabilityDatabase) {
+    return
+  }
+
+  chatObservabilityDatabaseInitializationPromise ??=
+    initializeChatObservabilityDatabase(databaseClient)
+
+  try {
+    await chatObservabilityDatabaseInitializationPromise
+    hasInitializedChatObservabilityDatabase = true
+  } catch (error) {
+    chatObservabilityDatabaseInitializationPromise = null
+    throw error
+  }
+}
 
 function parseJsonArray<T>(jsonValue: unknown): T[] {
   if (Array.isArray(jsonValue)) {
@@ -178,9 +204,7 @@ function mapChatObservabilityRow(
       typeof row.source_strategy === 'string' ? row.source_strategy : null,
     sourceCategories: parseJsonArray<string>(row.source_categories_json),
     temporalStrategy:
-      typeof row.temporal_strategy === 'string'
-        ? row.temporal_strategy
-        : null,
+      typeof row.temporal_strategy === 'string' ? row.temporal_strategy : null,
     temporalOrder:
       typeof row.temporal_order === 'string' ? row.temporal_order : null,
     executionKind:
@@ -404,10 +428,7 @@ export async function recordChatObservabilityEvent(
 
   const databasePool = await getChatRagDatabasePool()
 
-  if (!hasInitializedChatObservabilityDatabase) {
-    await initializeChatObservabilityDatabase(databasePool)
-    hasInitializedChatObservabilityDatabase = true
-  }
+  await ensureChatObservabilityDatabaseInitialized(databasePool)
 
   const limitedEvent = {
     ...event,
@@ -440,6 +461,7 @@ export async function selectChatObservabilityLogPage(params: {
   page: number
   pageSize: number
   sortDirection?: string
+  dateRange?: AnalyticsDateRange
 }): Promise<ChatObservabilityLogPage> {
   const page = normalizeChatObservabilityPage(params.page)
   const pageSize = normalizeChatObservabilityPageSize(params.pageSize)
@@ -451,8 +473,16 @@ export async function selectChatObservabilityLogPage(params: {
       ? 'ASC'
       : 'DESC'
   const offset = (page - CHAT_OBSERVABILITY.MINIMUM_PAGE) * pageSize
+  const dateRange = params.dateRange ?? getDefaultAnalyticsDateRange()
+  const databaseRange = toAnalyticsDatabaseRange(dateRange)
   const countResult = await params.databaseClient.query(
-    `SELECT COUNT(*)::int AS total_count FROM ${CHAT_OBSERVABILITY.TABLE}`,
+    `
+      SELECT COUNT(*)::int AS total_count
+      FROM ${CHAT_OBSERVABILITY.TABLE}
+      WHERE created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
+    `,
+    [databaseRange.startDateTime, databaseRange.endDateTimeExclusive],
   )
   const recordsResult = await params.databaseClient.query(
     `
@@ -496,10 +526,17 @@ export async function selectChatObservabilityLogPage(params: {
         refusal_reason,
         duration_milliseconds
       FROM ${CHAT_OBSERVABILITY.TABLE}
+      WHERE created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
       ORDER BY created_at ${orderDirection}
-      LIMIT $1 OFFSET $2
+      LIMIT $3 OFFSET $4
     `,
-    [pageSize, offset],
+    [
+      databaseRange.startDateTime,
+      databaseRange.endDateTimeExclusive,
+      pageSize,
+      offset,
+    ],
   )
 
   return {
@@ -510,6 +547,7 @@ export async function selectChatObservabilityLogPage(params: {
     page,
     pageSize,
     sortDirection,
+    dateRange,
   }
 }
 
@@ -517,12 +555,14 @@ export async function getChatObservabilityLogPage(params: {
   page: number
   pageSize: number
   sortDirection?: string
+  dateRange?: AnalyticsDateRange
 }): Promise<ChatObservabilityLogPage> {
   const page = normalizeChatObservabilityPage(params.page)
   const pageSize = normalizeChatObservabilityPageSize(params.pageSize)
   const sortDirection = normalizeChatObservabilitySortDirection(
     params.sortDirection,
   )
+  const dateRange = params.dateRange ?? getDefaultAnalyticsDateRange()
 
   if (!isChatRagDatabaseConfigured()) {
     return {
@@ -531,20 +571,19 @@ export async function getChatObservabilityLogPage(params: {
       page,
       pageSize,
       sortDirection,
+      dateRange,
     }
   }
 
   const databasePool = await getChatRagDatabasePool()
 
-  if (!hasInitializedChatObservabilityDatabase) {
-    await initializeChatObservabilityDatabase(databasePool)
-    hasInitializedChatObservabilityDatabase = true
-  }
+  await ensureChatObservabilityDatabaseInitialized(databasePool)
 
   return selectChatObservabilityLogPage({
     databaseClient: databasePool,
     page,
     pageSize,
     sortDirection,
+    dateRange,
   })
 }

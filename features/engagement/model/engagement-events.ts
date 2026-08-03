@@ -11,6 +11,11 @@ import type {
   PdfDocumentKind,
   SupportedLocale,
 } from '@/shared/config/constants'
+import {
+  getDefaultAnalyticsDateRange,
+  toAnalyticsDatabaseRange,
+} from '@/shared/lib/analytics-date-range'
+import type { AnalyticsDateRange } from '@/shared/model/analytics'
 
 const ENGAGEMENT_DATABASE = {
   TABLE: 'engagement_events',
@@ -69,6 +74,7 @@ export interface EngagementEventPage {
   pageSize: number
   sortDirection: EngagementEventSortDirection
   eventName?: EngagementEventName
+  dateRange: AnalyticsDateRange
 }
 
 export interface StoredEngagementEvent extends EngagementEventPayload {
@@ -173,8 +179,7 @@ function mapEngagementEventRow(
     eventName: row.event_name as EngagementEventName,
     locale: row.locale as SupportedLocale,
     pagePath: String(row.page_path),
-    contentSlug:
-      typeof row.content_slug === 'string' ? row.content_slug : null,
+    contentSlug: typeof row.content_slug === 'string' ? row.content_slug : null,
     documentKind:
       typeof row.document_kind === 'string'
         ? (row.document_kind as PdfDocumentKind)
@@ -258,6 +263,9 @@ export async function initializeEngagementDatabase(
     CREATE INDEX IF NOT EXISTS engagement_events_name_created_at_index
     ON ${ENGAGEMENT_DATABASE.TABLE}(event_name, created_at DESC);
 
+    CREATE INDEX IF NOT EXISTS engagement_events_created_at_index
+    ON ${ENGAGEMENT_DATABASE.TABLE}(created_at DESC);
+
     CREATE INDEX IF NOT EXISTS engagement_events_visitor_created_at_index
     ON ${ENGAGEMENT_DATABASE.TABLE}(anonymous_visitor_id_hash, created_at DESC);
 
@@ -267,7 +275,7 @@ export async function initializeEngagementDatabase(
   `)
 }
 
-async function ensureEngagementDatabaseInitialized(
+export async function ensureEngagementDatabaseInitialized(
   databaseClient: Pool,
 ): Promise<void> {
   if (!engagementDatabaseInitializationPromise) {
@@ -345,6 +353,7 @@ export async function selectEngagementEventPage(params: {
   pageSize: number
   sortDirection?: string
   eventName?: string
+  dateRange?: AnalyticsDateRange
 }): Promise<EngagementEventPage> {
   const page = normalizePage(params.page)
   const pageSize = normalizePageSize(params.pageSize)
@@ -356,37 +365,50 @@ export async function selectEngagementEventPage(params: {
       : 'DESC'
   const offset = (page - ENGAGEMENT_DATABASE.MINIMUM_PAGE) * pageSize
   const eventNameFilter = eventName ?? null
-  const summaryResult = await params.databaseClient.query(`
-    SELECT
-      COUNT(*)::int AS total_event_count,
-      COUNT(DISTINCT anonymous_visitor_id_hash)::int AS unique_visitor_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.ABOUT_VIEW}'
-      )::int AS about_view_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.BLOG_LIST_VIEW}'
-      )::int AS blog_list_view_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.BLOG_POST_VIEW}'
-      )::int AS blog_post_view_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.RESUME_DOWNLOAD}'
-      )::int AS resume_download_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.PORTFOLIO_DOWNLOAD}'
-      )::int AS portfolio_download_count,
-      COUNT(*) FILTER (
-        WHERE event_name = '${ENGAGEMENT.EVENT_NAME.CONTACT_CLICK}'
-      )::int AS contact_click_count
-    FROM ${ENGAGEMENT_DATABASE.TABLE}
-  `)
+  const dateRange = params.dateRange ?? getDefaultAnalyticsDateRange()
+  const databaseRange = toAnalyticsDatabaseRange(dateRange)
+  const summaryResult = await params.databaseClient.query(
+    `
+      SELECT
+        COUNT(*)::int AS total_event_count,
+        COUNT(DISTINCT anonymous_visitor_id_hash)::int AS unique_visitor_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.ABOUT_VIEW}'
+        )::int AS about_view_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.BLOG_LIST_VIEW}'
+        )::int AS blog_list_view_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.BLOG_POST_VIEW}'
+        )::int AS blog_post_view_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.RESUME_DOWNLOAD}'
+        )::int AS resume_download_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.PORTFOLIO_DOWNLOAD}'
+        )::int AS portfolio_download_count,
+        COUNT(*) FILTER (
+          WHERE event_name = '${ENGAGEMENT.EVENT_NAME.CONTACT_CLICK}'
+        )::int AS contact_click_count
+      FROM ${ENGAGEMENT_DATABASE.TABLE}
+      WHERE created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
+    `,
+    [databaseRange.startDateTime, databaseRange.endDateTimeExclusive],
+  )
   const countResult = await params.databaseClient.query(
     `
       SELECT COUNT(*)::int AS total_count
       FROM ${ENGAGEMENT_DATABASE.TABLE}
-      WHERE ($1::text IS NULL OR event_name = $1)
+      WHERE created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
+        AND ($3::text IS NULL OR event_name = $3)
     `,
-    [eventNameFilter],
+    [
+      databaseRange.startDateTime,
+      databaseRange.endDateTimeExclusive,
+      eventNameFilter,
+    ],
   )
   const recordsResult = await params.databaseClient.query(
     `
@@ -407,11 +429,19 @@ export async function selectEngagementEventPage(params: {
         utm_campaign,
         device_category
       FROM ${ENGAGEMENT_DATABASE.TABLE}
-      WHERE ($1::text IS NULL OR event_name = $1)
+      WHERE created_at >= $1::timestamptz
+        AND created_at < $2::timestamptz
+        AND ($3::text IS NULL OR event_name = $3)
       ORDER BY created_at ${orderDirection}
-      LIMIT $2 OFFSET $3
+      LIMIT $4 OFFSET $5
     `,
-    [eventNameFilter, pageSize, offset],
+    [
+      databaseRange.startDateTime,
+      databaseRange.endDateTimeExclusive,
+      eventNameFilter,
+      pageSize,
+      offset,
+    ],
   )
   const summaryRow = summaryResult.rows[0] ?? {}
 
@@ -432,6 +462,7 @@ export async function selectEngagementEventPage(params: {
     pageSize,
     sortDirection,
     eventName,
+    dateRange,
   }
 }
 
@@ -440,6 +471,7 @@ export async function getEngagementEventPage(params: {
   pageSize: number
   sortDirection?: string
   eventName?: string
+  dateRange?: AnalyticsDateRange
 }): Promise<EngagementEventPage> {
   const databasePool = getEngagementDatabasePool()
   await ensureEngagementDatabaseInitialized(databasePool)

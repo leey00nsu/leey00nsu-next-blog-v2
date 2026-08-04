@@ -59,7 +59,8 @@ describe('chat semantic map', () => {
       locale: 'en',
       slug: 'lee-spec-kit',
       title: 'lee-spec-kit',
-      summary: 'CLI to generate a project docs structure for AI-assisted development',
+      summary:
+        'CLI to generate a project docs structure for AI-assisted development',
       keyFeatures: ['Spec-driven development workflow templates'],
       techStacks: ['Node.js', 'TypeScript'],
     })
@@ -101,6 +102,21 @@ describe('chat semantic map', () => {
 
     expect(searchTerms).toEqual(
       expect.arrayContaining(['what is his name', 'who is the author']),
+    )
+  })
+
+  it('배포 프로젝트도 생성된 semantic 검색어에 포함한다', () => {
+    const searchTerms = getSemanticSearchTerms({
+      locale: 'ko',
+      slug: 'day-7',
+      sourceCategory: 'project',
+    })
+
+    expect(searchTerms).toEqual(
+      expect.arrayContaining([
+        '정규직까지 d 7',
+        '정규직까지 d 7 프로젝트 뭐야',
+      ]),
     )
   })
 })

@@ -1,0 +1,78 @@
+---
+slug: day-7
+title: Seven Days to Full-Time
+summary: An interactive AI-video office drama where your choices lead to one of three endings
+keyFeatures:
+  - A cinematic story combining AI video, captions, narration, and music
+  - Three endings shaped by decisions remembered throughout the story
+  - Reliable playback through media preloading and a streaming fallback
+links:
+  github: https://github.com/leey00nsu/day-7
+  demo: https://day7.leey00nsu.com/
+period:
+  start: 2026-07
+  end: 2026-07
+techStacks:
+  - Next.js
+  - TypeScript
+  - Zustand
+  - PostgreSQL
+  - Cloudflare R2
+thumbnail: /public/projects/day-7/og-image.png
+draft: true
+type: solo
+deployment:
+  status: active
+  kind: service
+  category: interactiveContent
+  url: https://day7.leey00nsu.com/
+  order: 1
+  coverImage: /public/projects/day-7/og-image.png
+---
+
+![Seven Days to Full-Time main screen](/public/projects/day-7/og-image.png)
+
+## Project Overview
+
+GitHub: [https://github.com/leey00nsu/day-7](https://github.com/leey00nsu/day-7)<br />
+Demo: [https://day7.leey00nsu.com/](https://day7.leey00nsu.com/)
+
+An **AI-video interactive office drama** that follows an intern during the final week before a full-time employment decision. The story runs from an unsettling assignment on Monday to the final interview on Friday, combining video, timed dialogue captions, narration, and music.
+
+The game remembers every decision made from Monday through Thursday. Those accumulated choices shape one of three endings. Rather than simply playing videos in order, the project connects **choice, memory, media playback, and ending collection into one game flow**.
+
+## Key Features
+
+- Seamless scene transitions using alternating video layers
+- JSON-based speakers, dialogue captions, timecodes, and chapter narration
+- Choice feedback and three endings determined by accumulated decisions
+- An ending album that stores unlocked endings and recent choices
+- Controls for master volume, music, sound effects, and caption size
+- First-visit media preloading with a network streaming fallback
+- PostgreSQL reports that accumulate choices and endings per playthrough
+- Letterboxed video that preserves the full frame on mobile screens
+
+## Problem
+
+- **Gaps between videos**: Switching sources between multiple scenes can expose loading states or black frames.
+- **Consistent choice state**: Decisions, feedback, and ending evaluation must use the same state across several screens and four in-story days.
+- **Reliable mobile playback**: Network and browser differences make it difficult to guarantee smooth transitions with streaming alone.
+- **Different audio lifecycles**: Dialogue, narration, music, and sound effects must stay synchronized with scene changes and player preferences.
+- **Play history persistence**: Browser-side ending progress and server-side playthrough reports need different storage lifecycles.
+
+## Solution
+
+- **Alternating video layers**: Prepare the current and next scenes on two video layers and swap them to reduce visible gaps during transitions.
+- **Separate content from state transitions**: Keep scene videos, choices, and feedback in content data while implementing choice accumulation and ending evaluation as pure state rules.
+- **Media manifest and playback fallback**: With player consent, preload about 36 MB of video and audio as session Blob URLs; fall back to streaming when preparation is declined or fails.
+- **Scoped Zustand stores**: Persist volume and caption preferences while keeping one playthrough's story progress in a page-lifetime store.
+- **Separate client and server records**: Store unlocked and recent endings in `localStorage`, while accumulating every playthrough's choices and ending in PostgreSQL.
+- **Responsive video stage**: Preserve the entire video frame with letterboxing on mobile and allow settings to change during playback.
+
+## Impact
+
+- **Continuous story experience**: Video, captions, narration, and music flow from the prologue through Friday's final interview as a cohesive scene.
+- **Visible consequences**: Four accumulated choices lead to three endings and an ending album, encouraging repeat playthroughs.
+- **Playback across environments**: Preloading and streaming fallback support different desktop and mobile network conditions.
+- **Maintainable content model**: Separating story data, state transitions, and media control makes scenes and choices easier to update.
+- **Playthrough analytics foundation**: Anonymous browser identifiers allow repeated choices and endings to be accumulated for later analysis.

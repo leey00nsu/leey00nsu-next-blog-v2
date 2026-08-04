@@ -20,7 +20,7 @@ import { ROUTES } from '@/shared/config/constants'
 import { BlogChatSubmitContent } from '@/widgets/chatbot/ui/blog-chat-submit-content'
 
 const BLOG_CHAT_WIDGET_PATH = {
-  VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about)(\/|$)/,
+  VISIBLE_PATH_PATTERN: /^\/(ko|en)\/(blog|about|projects)(\/|$)/,
   BLOG_DETAIL_PATH_PATTERN: /^\/(ko|en)\/blog\/([^/?#]+)$/,
 } as const
 const BLOG_CHAT_SDK = {
@@ -31,7 +31,9 @@ const BLOG_CHAT_SDK = {
 } as const
 
 function resolveCurrentPostSlug(pathname: string): string | undefined {
-  const matchedPath = pathname.match(BLOG_CHAT_WIDGET_PATH.BLOG_DETAIL_PATH_PATTERN)
+  const matchedPath = pathname.match(
+    BLOG_CHAT_WIDGET_PATH.BLOG_DETAIL_PATH_PATTERN,
+  )
 
   return matchedPath?.[2]
 }
@@ -39,10 +41,7 @@ function resolveCurrentPostSlug(pathname: string): string | undefined {
 interface BlogChatWidgetViewProps {
   locale: SupportedLocale
   currentPostSlug?: string
-  translate: (
-    key: string,
-    values?: Record<string, string | number>,
-  ) => string
+  translate: (key: string, values?: Record<string, string | number>) => string
 }
 
 interface BlogChatMessageMetadata {
@@ -158,7 +157,7 @@ export function BlogChatWidgetView({
             <button
               type="button"
               aria-label={isOpen ? t('close') : t('open')}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium shadow-lg transition-colors"
               onClick={toggle}
             >
               <MessageCircleMore className="size-5" />
@@ -176,10 +175,7 @@ function BlogChatMessageFooter({
   translate,
 }: {
   response?: BlogChatResponse
-  translate: (
-    key: string,
-    values?: Record<string, string | number>,
-  ) => string
+  translate: (key: string, values?: Record<string, string | number>) => string
 }) {
   const t = translate
   const hasCitations = Boolean(

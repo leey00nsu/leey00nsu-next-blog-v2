@@ -285,11 +285,11 @@
     "trigger": "블로그 Q&A",
     "open": "블로그 Q&A 열기",
     "close": "블로그 Q&A 닫기",
-    "emptyTitle": "질문을 남겨주시면 먼저 관련 글을 찾아볼게요.",
+    "emptyTitle": "질문을 남겨주시면 먼저 관련 콘텐츠를 찾아볼게요.",
     "emptyDescription": "예: React Query에서 staleTime은 왜 중요한가요?",
     "you": "나",
     "assistant": "블로그 챗봇",
-    "sources": "관련 글",
+    "sources": "관련 콘텐츠",
     "followUpSuggestions": "이어서 물어보기",
     "sourcesCategory": {
       "blog": "블로그",
@@ -301,7 +301,7 @@
     "inputPlaceholder": "질문을 입력하세요",
     "inputCounter": "{current}/{max}자",
     "send": "질문 보내기",
-    "sending": "관련 글을 찾고 답변을 정리하고 있어요...",
+    "sending": "관련 콘텐츠를 찾고 답변을 정리하고 있어요...",
     "errors": {
       "request_failed": "응답을 가져오는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요."
     }
@@ -324,8 +324,30 @@
   "project": {
     "list": {
       "title": "프로젝트",
-      "description": "진행한 프로젝트와 결과물을 한눈에 확인하세요.",
-      "empty": "등록된 프로젝트가 없습니다."
+      "description": "현재 배포하고 있는 서비스와 도구입니다.",
+      "empty": "현재 공개된 프로젝트가 없습니다.",
+      "status": {
+        "active": "운영 중",
+        "maintained": "유지보수 중"
+      },
+      "category": {
+        "aiService": "AI 서비스",
+        "infrastructure": "개발 인프라",
+        "developerTool": "개발자 도구",
+        "dataVisualization": "데이터 시각화",
+        "interactiveContent": "인터랙티브 콘텐츠",
+        "interactiveWeb": "인터랙티브 웹"
+      },
+      "viewService": "서비스 보기",
+      "viewPackage": "패키지 보기",
+      "viewDetail": "자세히 보기",
+      "viewGithub": "GitHub",
+      "viewServiceAria": "{project} 서비스 열기",
+      "viewPackageAria": "{project} 패키지 페이지 열기",
+      "viewDetailAria": "{project} 상세 페이지 열기",
+      "viewGithubAria": "{project} GitHub 저장소 열기",
+      "coverImageAlt": "{project} 대표 화면",
+      "techStackAria": "{project} 기술 스택"
     }
   },
   "pdf": {

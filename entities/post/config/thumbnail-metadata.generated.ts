@@ -467,6 +467,12 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAsABUB8JaQAA3AA/vBjGsh6pQAA",
     "isAnimated": false
   },
+  "/public/projects/day-7/og-image.png": {
+    "width": 1200,
+    "height": 630,
+    "base64": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAABwAQCdASoQAAgABUB8JQAAQgjAAAD+6SxJPEVTotEivh5lIigRKzGss9Wvpxtz2vXQOlUaWgEnVgAA",
+    "isAnimated": false
+  },
   "/public/projects/lee-spec-kit/logo.png": {
     "width": 692,
     "height": 730,
@@ -519,6 +525,18 @@ export const THUMBNAIL_METADATA_MAP = {
     "width": 512,
     "height": 512,
     "base64": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAABQAgCdASoQABAABUB8JbAAD4MNamfT5SxPtAAA/tOHZMZe8tICJbq0YwqBhVDucCt/KICy8i6rE61LybC8QiOsJ2Bfa/FQCYfurd2Jnphdodm4WAzYSlwx///DQiIf4Nf3wynkeLtYdEGoAAA=",
+    "isAnimated": false
+  },
+  "/public/projects/stock-aquarium/stock-aquarium-icon.png": {
+    "width": 512,
+    "height": 512,
+    "base64": "data:image/webp;base64,UklGRogAAABXRUJQVlA4IHwAAAAwAgCdASoQABAABUB8JbACdDBJ0aARhUSI8AD+72A+ZoKetHyVlTCR7bIGrRUMd3j0xwuh9+/eL0Y5AAcHFUEANCXuysghAmVtIYn1N8InZTYFnjKXXJz17QZSGK0Re0IBWi+PTnczBv3/z4selVJo7+GWoDP48BfzCfgA",
+    "isAnimated": false
+  },
+  "/public/projects/stock-aquarium/stock-aquarium-screen.png": {
+    "width": 3500,
+    "height": 1726,
+    "base64": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADwAQCdASoQAAgABUB8JZgC7ADw3XoPawAA/tzxxtmZ7VBMtW+GII6BAHvTLWx1AAA=",
     "isAnimated": false
   },
   "/public/projects/syu-character-maker/syu-character-maker.webp": {

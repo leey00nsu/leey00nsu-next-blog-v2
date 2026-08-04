@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllPosts } from '@/entities/post/lib/post'
-import { getAllProjects } from '@/entities/project/lib/project'
+import { getPublishedAndDeployedProjects } from '@/entities/project/lib/project'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 import {
   buildPostChatSemanticEntry,
@@ -36,7 +36,7 @@ async function collectGeneratedChatSemanticMap(): Promise<GeneratedChatSemanticM
   for (const locale of LOCALES.SUPPORTED) {
     const semanticEntries = []
     const about = getAbout(locale)
-    const projects = await getAllProjects(locale)
+    const projects = await getPublishedAndDeployedProjects(locale)
     const posts = await getAllPosts(locale)
 
     if (about) {
@@ -94,7 +94,9 @@ async function main(): Promise<void> {
     return count + generatedChatSemanticMap[locale].length
   }, 0)
 
-  console.log(`✅ Generated ${totalEntryCount} chat semantic entr${totalEntryCount === 1 ? 'y' : 'ies'}.`)
+  console.log(
+    `✅ Generated ${totalEntryCount} chat semantic entr${totalEntryCount === 1 ? 'y' : 'ies'}.`,
+  )
 }
 
 // eslint-disable-next-line unicorn/prefer-top-level-await

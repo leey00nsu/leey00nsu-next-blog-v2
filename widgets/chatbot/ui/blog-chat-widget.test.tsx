@@ -175,8 +175,26 @@ describe('BlogChatWidget', () => {
     )
   })
 
-  it('챗봇 대상 경로가 아니면 SDK 위젯을 렌더링하지 않는다', () => {
+  it('프로젝트 페이지에서는 SDK React 위젯을 렌더링한다', () => {
     usePathnameMock.mockReturnValue('/ko/projects')
+
+    render(<BlogChatWidget />)
+
+    expect(screen.getByTestId('lee-chat-widget')).toBeInTheDocument()
+    expect(leeChatProviderMock).toHaveBeenCalled()
+  })
+
+  it('프로젝트 상세 페이지에서도 SDK React 위젯을 렌더링한다', () => {
+    usePathnameMock.mockReturnValue('/ko/projects/stock-aquarium')
+
+    render(<BlogChatWidget />)
+
+    expect(screen.getByTestId('lee-chat-widget')).toBeInTheDocument()
+    expect(leeChatProviderMock).toHaveBeenCalled()
+  })
+
+  it('챗봇 대상 경로가 아니면 SDK 위젯을 렌더링하지 않는다', () => {
+    usePathnameMock.mockReturnValue('/ko/studio')
 
     const { container } = render(<BlogChatWidget />)
 

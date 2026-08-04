@@ -43,7 +43,9 @@ function mapFrontmatterToProject(
   content: string,
 ): GeneratedProjectSerialized {
   const frontmatter = ProjectMetaDataSchema.parse(rawData)
-  const thumbnailMetadata = resolveThumbnailMetadata(frontmatter.thumbnail ?? null)
+  const thumbnailMetadata = resolveThumbnailMetadata(
+    frontmatter.thumbnail ?? null,
+  )
 
   return {
     slug: frontmatter.slug,
@@ -59,6 +61,7 @@ function mapFrontmatterToProject(
     thumbnail: frontmatter.thumbnail ?? null,
     draft: frontmatter.draft ?? false,
     type: frontmatter.type,
+    deployment: frontmatter.deployment,
     content,
     width: thumbnailMetadata?.width ?? 0,
     height: thumbnailMetadata?.height ?? 0,

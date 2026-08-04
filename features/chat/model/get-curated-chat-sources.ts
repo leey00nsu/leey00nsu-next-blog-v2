@@ -1,7 +1,11 @@
 import { cache } from 'react'
 import { getAbout } from '@/entities/about/lib/about'
-import { getAllProjects } from '@/entities/project/lib/project'
-import type { Project } from '@/entities/project/model/types'
+import {
+  getAllProjects,
+  getDeployedProjects,
+  getPublishedAndDeployedProjects,
+} from '@/entities/project/lib/project'
+import type { DeployedProject, Project } from '@/entities/project/model/types'
 import { CHAT_ASSISTANT } from '@/features/chat/config/chat-assistant'
 import { buildCuratedChatSourceRecords } from '@/features/chat/lib/chat-curated-source-records'
 import type {
@@ -66,12 +70,73 @@ const PROJECT_METADATA_LABELS = {
     github: 'GitHub',
     demo: 'Demo',
     npm: 'npm',
+    deploymentStatus: '배포 상태',
+    deploymentUrl: '배포 URL',
   },
   en: {
     period: 'Project period',
     github: 'GitHub',
     demo: 'Demo',
     npm: 'npm',
+    deploymentStatus: 'Deployment status',
+    deploymentUrl: 'Deployment URL',
+  },
+} as const
+
+const DEPLOYED_PROJECT_SOURCE = {
+  SLUG: 'projects',
+  TITLE: {
+    ko: '배포 프로젝트',
+    en: 'Deployed Projects',
+  },
+  INTRODUCTION: {
+    ko: '현재 배포하고 있는 서비스와 도구입니다.',
+    en: 'Services and tools currently deployed.',
+  },
+  STATUS_LABELS: {
+    ko: {
+      active: '운영 중',
+      maintained: '유지보수 중',
+    },
+    en: {
+      active: 'Live',
+      maintained: 'Maintained',
+    },
+  },
+  CATEGORY_LABELS: {
+    ko: {
+      aiService: 'AI 서비스',
+      infrastructure: '개발 인프라',
+      developerTool: '개발자 도구',
+      dataVisualization: '데이터 시각화',
+      interactiveContent: '인터랙티브 콘텐츠',
+      interactiveWeb: '인터랙티브 웹',
+    },
+    en: {
+      aiService: 'AI Service',
+      infrastructure: 'Developer Infrastructure',
+      developerTool: 'Developer Tool',
+      dataVisualization: 'Data Visualization',
+      interactiveContent: 'Interactive Content',
+      interactiveWeb: 'Interactive Web',
+    },
+  },
+  SEARCH_TERMS: {
+    ko: [
+      '배포 프로젝트',
+      '배포된 프로젝트',
+      '운영 중인 프로젝트',
+      '운영 중인 서비스',
+      '현재 서비스',
+      '사용 가능한 프로젝트',
+    ],
+    en: [
+      'deployed projects',
+      'live projects',
+      'shipped projects',
+      'live services',
+      'currently available projects',
+    ],
   },
 } as const
 
@@ -191,11 +256,64 @@ function buildProjectMetadataLines(params: {
       return label ? [`${label}: ${linkUrl}`] : []
     },
   )
+  const deploymentLines = params.project.deployment
+    ? [
+        `${labels.deploymentStatus}: ${DEPLOYED_PROJECT_SOURCE.STATUS_LABELS[params.locale][params.project.deployment.status]}`,
+        `${labels.deploymentUrl}: ${params.project.deployment.url}`,
+      ]
+    : []
 
   return [
     `${labels.period}: ${params.project.period.start} ~ ${periodEnd}`,
     ...linkLines,
+    ...deploymentLines,
   ]
+}
+
+function buildDeployedProjectOverviewSource(params: {
+  locale: SupportedLocale
+  projects: DeployedProject[]
+}): ChatEvidenceRecord | null {
+  if (params.projects.length === 0) {
+    return null
+  }
+
+  const title = DEPLOYED_PROJECT_SOURCE.TITLE[params.locale]
+  const introduction = DEPLOYED_PROJECT_SOURCE.INTRODUCTION[params.locale]
+  const projectLines = params.projects.map((project) => {
+    const status =
+      DEPLOYED_PROJECT_SOURCE.STATUS_LABELS[params.locale][
+        project.deployment.status
+      ]
+    const category =
+      DEPLOYED_PROJECT_SOURCE.CATEGORY_LABELS[params.locale][
+        project.deployment.category
+      ]
+
+    return `- ${project.title} (${status}, ${category}): ${project.summary} ${project.deployment.url}`
+  })
+  const searchTerms = [
+    ...DEPLOYED_PROJECT_SOURCE.SEARCH_TERMS[params.locale],
+    ...params.projects.flatMap((project) => [
+      project.title,
+      project.summary,
+      ...project.techStacks,
+    ]),
+  ]
+
+  return {
+    id: `${params.locale}/project/deployed-overview`,
+    locale: params.locale,
+    slug: DEPLOYED_PROJECT_SOURCE.SLUG,
+    title,
+    url: buildLocalizedRoutePath(ROUTES.PROJECTS, params.locale),
+    excerpt: introduction,
+    content: [title, introduction, ...projectLines].join('\n'),
+    sectionTitle: title,
+    tags: [...new Set([...CURATED_SOURCE_TAGS.PROJECT, ...searchTerms])],
+    searchTerms: [...new Set(searchTerms)],
+    sourceCategory: 'project',
+  }
 }
 
 function toProjectEvidenceTime(project: Project): ChatEvidenceTime | null {
@@ -260,7 +378,11 @@ export const getCuratedChatSources = cache(
   async (locale: SupportedLocale): Promise<ChatEvidenceRecord[]> => {
     const about = getAbout(locale)
     const assistantProfile = getChatAssistantProfile(locale)
-    const projects = await getAllProjects(locale)
+    const [publishedProjects, deployedProjects, projects] = await Promise.all([
+      getAllProjects(locale),
+      getDeployedProjects(locale),
+      getPublishedAndDeployedProjects(locale),
+    ])
     const curatedSources: ChatEvidenceRecord[] = []
 
     if (assistantProfile) {
@@ -359,12 +481,21 @@ export const getCuratedChatSources = cache(
       const profileTechStackSource = buildProfileTechStackSource({
         locale,
         aboutTitle: about.title,
-        projects,
+        projects: publishedProjects,
       })
 
       if (profileTechStackSource) {
         curatedSources.push(profileTechStackSource)
       }
+    }
+
+    const deployedProjectOverviewSource = buildDeployedProjectOverviewSource({
+      locale,
+      projects: deployedProjects,
+    })
+
+    if (deployedProjectOverviewSource) {
+      curatedSources.push(deployedProjectOverviewSource)
     }
 
     for (const project of projects) {
@@ -376,6 +507,9 @@ export const getCuratedChatSources = cache(
       const projectTags = [
         ...CURATED_SOURCE_TAGS.PROJECT,
         ...project.techStacks.map((stack) => stack.toLowerCase()),
+        ...(project.deployment
+          ? DEPLOYED_PROJECT_SOURCE.SEARCH_TERMS[locale]
+          : []),
       ]
       const projectMetadataLines = buildProjectMetadataLines({
         locale,
@@ -394,6 +528,9 @@ export const getCuratedChatSources = cache(
             project.keyFeatures.join(' '),
             project.techStacks.join(' '),
             ...projectMetadataLines,
+            ...(project.deployment
+              ? DEPLOYED_PROJECT_SOURCE.SEARCH_TERMS[locale]
+              : []),
           ]
             .filter(Boolean)
             .join(' '),

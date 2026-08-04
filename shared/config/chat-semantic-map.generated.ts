@@ -161,6 +161,84 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "day-7",
+      "sourceCategory": "project",
+      "entityNames": [
+        "정규직까지 d 7"
+      ],
+      "aliases": [
+        "정규직까지 d 7",
+        "선택에 따라 세 가지 결말로 이어지는 ai 영상 기반 인터랙티브 오피스 드라마",
+        "ai 영상과 자막, 내레이션을 연결한 시네마틱 스토리",
+        "플레이어의 선택을 기억해 달라지는 세 가지 엔딩",
+        "미디어 사전 다운로드와 스트리밍 폴백을 통한 안정적인 재생",
+        "next.js",
+        "typescript",
+        "zustand",
+        "postgresql",
+        "cloudflare r2",
+        "project"
+      ],
+      "faqQueries": [
+        "정규직까지 d 7 프로젝트 뭐야",
+        "정규직까지 d 7는 뭐야",
+        "next.js 사용하는 프로젝트 뭐야",
+        "typescript 사용하는 프로젝트 뭐야"
+      ]
+    },
+    {
+      "locale": "ko",
+      "slug": "stock-aquarium",
+      "sourceCategory": "project",
+      "entityNames": [
+        "stock aquarium"
+      ],
+      "aliases": [
+        "stock aquarium",
+        "실시간 주식 체결 데이터를 3d 수조 속 물고기로 표현한 데이터 시각화 서비스",
+        "매수·매도 방향과 체결량을 물고기의 색상과 크기로 표현",
+        "kis websocket 데이터를 단일 서버 연결과 sse로 재배포",
+        "객체 풀을 활용해 고빈도 체결에서도 안정적인 3d 렌더링",
+        "next.js",
+        "typescript",
+        "three.js",
+        "react three fiber",
+        "server sent events",
+        "project"
+      ],
+      "faqQueries": [
+        "stock aquarium 프로젝트 뭐야",
+        "stock aquarium는 뭐야",
+        "next.js 사용하는 프로젝트 뭐야",
+        "typescript 사용하는 프로젝트 뭐야"
+      ]
+    },
+    {
+      "locale": "ko",
+      "slug": "syu-character-maker",
+      "sourceCategory": "project",
+      "entityNames": [
+        "나만의 수야,수호 만들기"
+      ],
+      "aliases": [
+        "나만의 수야,수호 만들기",
+        "삼육대 마스코트 꾸미기, 공유 웹 프로그램",
+        "react",
+        "typescript",
+        "tailwind css",
+        "zustand",
+        "react konva",
+        "project"
+      ],
+      "faqQueries": [
+        "나만의 수야,수호 만들기 프로젝트 뭐야",
+        "나만의 수야,수호 만들기는 뭐야",
+        "react 사용하는 프로젝트 뭐야",
+        "typescript 사용하는 프로젝트 뭐야"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "building-ai-interactive-movie-d7",
       "sourceCategory": "blog",
       "entityNames": [
@@ -811,6 +889,84 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what is leemage",
         "what does leemage do",
         "which project uses next.js",
+        "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "day-7",
+      "sourceCategory": "project",
+      "entityNames": [
+        "seven days to full time"
+      ],
+      "aliases": [
+        "seven days to full time",
+        "an interactive ai video office drama where your choices lead to one of three endings",
+        "a cinematic story combining ai video, captions, narration, and music",
+        "three endings shaped by decisions remembered throughout the story",
+        "reliable playback through media preloading and a streaming fallback",
+        "next.js",
+        "typescript",
+        "zustand",
+        "postgresql",
+        "cloudflare r2",
+        "project"
+      ],
+      "faqQueries": [
+        "what is seven days to full time",
+        "what does seven days to full time do",
+        "which project uses next.js",
+        "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "stock-aquarium",
+      "sourceCategory": "project",
+      "entityNames": [
+        "stock aquarium"
+      ],
+      "aliases": [
+        "stock aquarium",
+        "a data visualization service that turns real time stock trades into fish swimming through a 3d aquarium",
+        "trade direction and volume represented through fish color and scale",
+        "kis websocket data fanned out from one server connection over sse",
+        "stable high frequency 3d rendering through object pooling",
+        "next.js",
+        "typescript",
+        "three.js",
+        "react three fiber",
+        "server sent events",
+        "project"
+      ],
+      "faqQueries": [
+        "what is stock aquarium",
+        "what does stock aquarium do",
+        "which project uses next.js",
+        "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "syu-character-maker",
+      "sourceCategory": "project",
+      "entityNames": [
+        "create your own suya and suho"
+      ],
+      "aliases": [
+        "create your own suya and suho",
+        "a web app to customize and share sahmyook university mascots",
+        "react",
+        "typescript",
+        "tailwind css",
+        "zustand",
+        "react konva",
+        "project"
+      ],
+      "faqQueries": [
+        "what is create your own suya and suho",
+        "what does create your own suya and suho do",
+        "which project uses react",
         "which project uses typescript"
       ]
     },

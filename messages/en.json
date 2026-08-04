@@ -324,8 +324,30 @@
   "project": {
     "list": {
       "title": "Projects",
-      "description": "Browse recent work and shipped products.",
-      "empty": "No projects available yet."
+      "description": "Services and tools currently deployed.",
+      "empty": "No public projects are available right now.",
+      "status": {
+        "active": "Live",
+        "maintained": "Maintained"
+      },
+      "category": {
+        "aiService": "AI Service",
+        "infrastructure": "Developer Infrastructure",
+        "developerTool": "Developer Tool",
+        "dataVisualization": "Data Visualization",
+        "interactiveContent": "Interactive Content",
+        "interactiveWeb": "Interactive Web"
+      },
+      "viewService": "View service",
+      "viewPackage": "View package",
+      "viewDetail": "View details",
+      "viewGithub": "GitHub",
+      "viewServiceAria": "Open the {project} service",
+      "viewPackageAria": "Open the {project} package page",
+      "viewDetailAria": "Open the {project} detail page",
+      "viewGithubAria": "Open the {project} GitHub repository",
+      "coverImageAlt": "Preview of {project}",
+      "techStackAria": "Technology stack for {project}"
     }
   },
   "pdf": {

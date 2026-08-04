@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import {
+  DeployedProject,
   GeneratedProjectSerialized,
   GeneratedProjectsMap,
   Project,
@@ -43,9 +44,7 @@ export const getProjectBySlug = async (
 }
 
 export const getAllProjects = cache(
-  async (
-    locale: SupportedLocale = DEFAULT_LOCALE,
-  ): Promise<Project[]> => {
+  async (locale: SupportedLocale = DEFAULT_LOCALE): Promise<Project[]> => {
     const localeEntries = GENERATED_PROJECTS_MAP[locale]
     const fallbackEntries = GENERATED_PROJECTS_MAP[DEFAULT_LOCALE]
 
@@ -72,5 +71,53 @@ export const getAllProjects = cache(
       const bPeriod = b.period.start ?? ''
       return bPeriod.localeCompare(aPeriod)
     })
+  },
+)
+
+export const getDeployedProjects = cache(
+  async (
+    locale: SupportedLocale = DEFAULT_LOCALE,
+  ): Promise<DeployedProject[]> => {
+    const localeEntries = GENERATED_PROJECTS_MAP[locale]
+    const fallbackEntries = GENERATED_PROJECTS_MAP[DEFAULT_LOCALE]
+
+    if (!localeEntries && !fallbackEntries) {
+      return []
+    }
+
+    const mergedSlugs = new Set<string>([
+      ...Object.keys(localeEntries ?? {}),
+      ...Object.keys(fallbackEntries ?? {}),
+    ])
+
+    const projects: DeployedProject[] = []
+
+    for (const slug of mergedSlugs) {
+      const project = hydrateProject(resolveGeneratedProject(slug, locale))
+
+      if (!project?.deployment) continue
+      projects.push({ ...project, deployment: project.deployment })
+    }
+
+    return projects.sort(
+      (firstProject, secondProject) =>
+        firstProject.deployment.order - secondProject.deployment.order,
+    )
+  },
+)
+
+export const getPublishedAndDeployedProjects = cache(
+  async (locale: SupportedLocale = DEFAULT_LOCALE): Promise<Project[]> => {
+    const [publishedProjects, deployedProjects] = await Promise.all([
+      getAllProjects(locale),
+      getDeployedProjects(locale),
+    ])
+    const projectsBySlug = new Map<string, Project>()
+
+    for (const project of [...publishedProjects, ...deployedProjects]) {
+      projectsBySlug.set(project.slug, project)
+    }
+
+    return [...projectsBySlug.values()]
   },
 )

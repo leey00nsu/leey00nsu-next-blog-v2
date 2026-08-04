@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import {
-  getAllProjects,
+  getPublishedAndDeployedProjects,
   getProjectBySlug,
 } from '@/entities/project/lib/project'
 import { ProjectDetail } from '@/widgets/project/ui/project-detail'
@@ -21,7 +21,7 @@ interface ProjectPageProps {
 export const dynamicParams = false
 
 export async function generateStaticParams() {
-  const projects = await getAllProjects()
+  const projects = await getPublishedAndDeployedProjects()
   return projects.map((project) => ({ slug: project.slug }))
 }
 

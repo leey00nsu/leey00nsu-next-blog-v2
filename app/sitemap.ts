@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllPosts } from '@/entities/post/lib/post'
-import { getAllProjects } from '@/entities/project/lib/project'
+import { getPublishedAndDeployedProjects } from '@/entities/project/lib/project'
 import {
   LOCALES,
   ROUTES,
@@ -30,6 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'monthly',
         priority: 0.5,
       },
+      {
+        url: toAbs(buildLocalizedRoutePath(ROUTES.PROJECTS, locale)),
+        lastModified: now,
+        changeFrequency: 'monthly',
+        priority: 0.7,
+      },
     )
   }
 
@@ -50,7 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 프로젝트 상세 동적 경로 (로케일별)
   for (const locale of LOCALES.SUPPORTED) {
-    const projects = await getAllProjects(locale)
+    const projects = await getPublishedAndDeployedProjects(locale)
     for (const project of projects) {
       const periodForModified = project.period.end ?? project.period.start
       const periodIso = periodForModified

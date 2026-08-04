@@ -116,4 +116,36 @@ describe('getCuratedChatSources', () => {
     )
     expect(leeSpecIntroSource?.content).toContain('2025-12 ~ 2026-02')
   })
+
+  it('배포 프로젝트 전체를 요약한 검색 근거를 포함한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+    const deployedProjectOverviewSource = curatedChatSources.find((source) => {
+      return source.id === 'ko/project/deployed-overview'
+    })
+
+    expect(deployedProjectOverviewSource?.url).toBe('/ko/projects')
+    expect(deployedProjectOverviewSource?.content).toContain('정규직까지 D-7')
+    expect(deployedProjectOverviewSource?.content).toContain('Stock Aquarium')
+    expect(deployedProjectOverviewSource?.content).toContain(
+      '나만의 수야,수호 만들기',
+    )
+    expect(deployedProjectOverviewSource?.searchTerms).toEqual(
+      expect.arrayContaining(['배포된 프로젝트', '운영 중인 서비스']),
+    )
+  })
+
+  it('소개 목록에 없는 배포 프로젝트도 개별 근거로 포함한다', async () => {
+    const curatedChatSources = await getCuratedChatSources('ko')
+    const daySevenSource = curatedChatSources.find((source) => {
+      return (
+        source.sourceCategory === 'project' &&
+        source.slug === 'day-7' &&
+        source.sectionTitle === null
+      )
+    })
+
+    expect(daySevenSource?.url).toBe('/ko/projects/day-7')
+    expect(daySevenSource?.content).toContain('배포 상태: 운영 중')
+    expect(daySevenSource?.content).toContain('https://day7.leey00nsu.com/')
+  })
 })

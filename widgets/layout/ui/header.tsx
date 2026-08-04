@@ -32,7 +32,7 @@ export function Header({ locale, isFullWidth = false }: HeaderProps) {
       <Logo className={cn('block', !isFullWidth && 'md:hidden')} />
       <div
         className={cn(
-          'flex h-16 items-center justify-center gap-8',
+          'flex h-16 items-center justify-center gap-3 text-sm sm:gap-6 sm:text-base md:gap-8',
           isFullWidth ? 'col-span-2 md:col-span-1' : 'col-span-2',
         )}
       >
@@ -47,6 +47,12 @@ export function Header({ locale, isFullWidth = false }: HeaderProps) {
           className="hover:text-primary"
         >
           {t('about')}
+        </Link>
+        <Link
+          href={buildLocalizedRoutePath(ROUTES.PROJECTS, locale)}
+          className="hover:text-primary"
+        >
+          {t('projects')}
         </Link>
         <Link
           href={buildLocalizedRoutePath(ROUTES.STUDIO, locale)}

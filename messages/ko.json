@@ -326,10 +326,6 @@
       "title": "프로젝트",
       "description": "현재 배포하고 있는 서비스와 도구입니다.",
       "empty": "현재 공개된 프로젝트가 없습니다.",
-      "status": {
-        "active": "운영 중",
-        "maintained": "유지보수 중"
-      },
       "category": {
         "aiService": "AI 서비스",
         "infrastructure": "개발 인프라",

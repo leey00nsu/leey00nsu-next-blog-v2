@@ -1,5 +1,6 @@
+import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, ExternalLink, Github } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'
 import type { DeployedProject } from '@/entities/project/model/types'
 import { PROJECT_SUMMARY_CARD } from '@/entities/project/config/constants'
 import { CustomImage } from '@/shared/ui/custom-image'
@@ -10,7 +11,6 @@ import {
 } from '@/shared/config/constants'
 
 export interface DeployedProjectCardLabels {
-  status: string
   category: string
   primaryAction: string
   primaryActionAriaLabel: string
@@ -57,16 +57,9 @@ export function DeployedProjectCard({
       </Link>
 
       <div className="flex flex-1 flex-col gap-4 p-5">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-          <span className="text-primary inline-flex items-center gap-1.5">
-            <span aria-hidden className="bg-primary size-1.5 rounded-full" />
-            {labels.status}
-          </span>
-          <span aria-hidden className="text-border">
-            /
-          </span>
-          <span className="text-muted-foreground">{labels.category}</span>
-        </div>
+        <p className="text-muted-foreground text-xs font-medium">
+          {labels.category}
+        </p>
 
         <div className="space-y-2">
           <h2 className="text-xl font-semibold tracking-tight">
@@ -124,7 +117,14 @@ export function DeployedProjectCard({
               aria-label={labels.githubActionAriaLabel}
               className="border-border hover:bg-muted inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition"
             >
-              <Github aria-hidden className="size-4" />
+              <Image
+                src="/github-mark.svg"
+                alt=""
+                aria-hidden
+                width={16}
+                height={16}
+                className="dark:invert"
+              />
               {labels.githubAction}
             </a>
           ) : null}

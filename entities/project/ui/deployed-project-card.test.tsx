@@ -41,7 +41,6 @@ const STOCK_AQUARIUM_PROJECT: DeployedProject = {
 }
 
 const CARD_LABELS = {
-  status: '운영 중',
   category: '데이터 시각화',
   primaryAction: '서비스 보기',
   primaryActionAriaLabel: 'Stock Aquarium 서비스 열기',
@@ -82,5 +81,7 @@ describe('DeployedProjectCard', () => {
         name: 'Stock Aquarium GitHub 저장소 열기',
       }),
     ).toHaveAttribute('href', 'https://github.com/leey00nsu/stock-aquarium')
+    expect(screen.getByText('데이터 시각화')).toBeInTheDocument()
+    expect(screen.queryByText('운영 중')).not.toBeInTheDocument()
   })
 })

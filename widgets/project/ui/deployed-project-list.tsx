@@ -33,7 +33,6 @@ export async function DeployedProjectList({
     const isPackage = project.deployment.kind === 'package'
 
     return {
-      status: translate(`status.${project.deployment.status}`),
       category: translate(`category.${project.deployment.category}`),
       primaryAction: translate(isPackage ? 'viewPackage' : 'viewService'),
       primaryActionAriaLabel: translate(

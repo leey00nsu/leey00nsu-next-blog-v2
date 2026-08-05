@@ -326,10 +326,6 @@
       "title": "Projects",
       "description": "Services and tools currently deployed.",
       "empty": "No public projects are available right now.",
-      "status": {
-        "active": "Live",
-        "maintained": "Maintained"
-      },
       "category": {
         "aiService": "AI Service",
         "infrastructure": "Developer Infrastructure",

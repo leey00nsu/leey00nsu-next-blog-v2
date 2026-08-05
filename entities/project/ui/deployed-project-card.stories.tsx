@@ -33,7 +33,6 @@ const DEPLOYED_PROJECT: DeployedProject = {
 }
 
 const DEPLOYED_PROJECT_CARD_LABELS = {
-  status: '운영 중',
   category: '데이터 시각화',
   primaryAction: '서비스 보기',
   primaryActionAriaLabel: 'Stock Aquarium 서비스 열기',

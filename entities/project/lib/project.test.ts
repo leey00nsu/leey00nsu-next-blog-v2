@@ -8,12 +8,14 @@ import {
 
 const ABOUT_PROJECT_SLUGS = [
   'blog',
+  'copysinger',
   'lee-spec-kit',
   'leemage',
   'leesfield',
 ] as const
 
 const DEPLOYED_PROJECT_SLUGS = [
+  'copysinger',
   'day-7',
   'stock-aquarium',
   'leesfield',
@@ -72,6 +74,8 @@ describe('project queries', () => {
   })
 
   it.each([
+    ['copysinger', 'ko'],
+    ['copysinger', 'en'],
     ['day-7', 'ko'],
     ['day-7', 'en'],
     ['stock-aquarium', 'ko'],

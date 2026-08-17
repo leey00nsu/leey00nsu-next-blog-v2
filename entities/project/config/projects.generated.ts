@@ -72,6 +72,50 @@ export const GENERATED_PROJECTS = {
       "width": 2048,
       "height": 2048
     },
+    "copysinger": {
+      "slug": "copysinger",
+      "title": "Copysinger",
+      "summary": "목소리를 분석해 잘 맞는 노래와 키를 추천하고 AI 믹싱까지 연결하는 보컬 서비스",
+      "keyFeatures": [
+        "한 소절의 음역·중심음·피치 흐름을 분석하는 보컬 프로필",
+        "보컬 프로필과 곡 카탈로그를 비교한 노래·키 추천",
+        "선택한 곡의 보컬 분리·피치 이동·반주 재결합을 수행하는 AI 믹싱"
+      ],
+      "links": {
+        "github": "https://github.com/leey00nsu/copy-singer",
+        "demo": "https://copysinger.leey00nsu.com/"
+      },
+      "period": {
+        "start": "2026-08",
+        "end": null
+      },
+      "techStacks": [
+        "Next.js",
+        "TypeScript",
+        "PostgreSQL",
+        "Prisma",
+        "Tailwind CSS",
+        "TanStack Query",
+        "Modal",
+        "SoulX-Singer",
+        "Demucs",
+        "librosa"
+      ],
+      "thumbnail": "/public/projects/copysinger/copysinger-og.png",
+      "draft": false,
+      "type": "solo",
+      "deployment": {
+        "status": "active",
+        "kind": "service",
+        "category": "aiService",
+        "url": "https://copysinger.leey00nsu.com/",
+        "order": 0,
+        "coverImage": "/public/projects/copysinger/copysinger-home.png"
+      },
+      "content": "\n![Copysinger 홈 화면](/public/projects/copysinger/copysinger-home.png)\n\n![Copysinger 보컬 분석 결과](/public/projects/copysinger/vocal-profile-result.png)\n\n## 프로젝트 소개\n\nGitHub : [https://github.com/leey00nsu/copy-singer](https://github.com/leey00nsu/copy-singer)\nDemo : [https://copysinger.leey00nsu.com/](https://copysinger.leey00nsu.com/)\n\n평소 TTS와 voice cloning 기술에 관심이 많아 이를 활용한 서비스를 직접 만들어 보고 싶었습니다. 하지만 기존에 검토한 방식은 사용자 목소리마다 `.pth` 모델 가중치를 만들기 위한 별도 학습이 필요했고, GPU 비용과 준비 시간이 큰 진입 장벽이 되었습니다.\n\n그러던 중 별도의 사용자별 학습 없이 짧은 레퍼런스 음성만으로 노래 목소리를 변환하는 zero-shot 오픈소스 `SoulX-Singer`를 접했습니다. 이를 활용하면 모델을 매번 학습하지 않고도 voice cloning 경험을 제품으로 구현할 수 있다고 판단해 `Copysinger`를 만들게 되었습니다.\n\n단순한 음성 변환 데모에 그치지 않고, 한 소절을 분석해 내 목소리에 잘 맞는 노래와 키를 추천하고 선택한 곡의 AI 믹싱까지 이어지는 서비스로 확장했습니다.\n\n## 핵심 기능\n\n- 목소리 분석: 브라우저 녹음 또는 오디오 파일에서 관측 음역, 주요 음역, 중심음과 피치 흐름 분석\n- 노래·키 추천: 보컬 프로필과 곡별 음역·원키를 비교해 적합도, 추천 키와 추천 이유 제공\n- AI 믹싱: 선택한 곡만 보컬 분리, 자동 피치 이동과 반주 재결합 수행\n- 라이브러리: 보컬 프로필과 분석 레퍼런스, 믹싱 결과 및 처리 이력 관리\n- 관리자 도구: 추천곡과 원곡 음원, 분석 상태, 공개 여부를 운영하고 카탈로그 스냅샷 관리\n\n## Problem\n\n- **Voice cloning의 높은 진입 비용**: 사용자별 모델 학습이 필요한 방식은 GPU 비용과 준비 시간이 커 서비스로 확장하기 어려움\n- **선곡 기준의 모호함**: 최저·최고음만으로는 어떤 곡이 잘 맞고 키를 얼마나 조정해야 하는지 판단하기 어려움\n- **추천 근거 부족**: 단순 음역 겹침만 사용하면 녹음 품질과 실제 곡 적합도가 섞여 추천 순위를 신뢰하기 어려움\n- **분석과 합성의 목적 차이**: 자연스러운 음역 분포를 보는 분석과 깨끗한 AI 믹싱에는 서로 다른 음성 구간이 필요\n- **긴 오디오 작업의 안정성**: 분석과 믹싱을 웹 요청 안에서 처리하면 화면 이탈이나 서버 재시작 시 작업이 유실될 수 있음\n\n## Solution\n\n- 별도의 사용자별 사전 학습이 필요 없는 zero-shot 기반 `SoulX-Singer`로 짧은 레퍼런스 음성만 사용해 노래 목소리 변환\n- `librosa`/pYIN으로 관측 음역, 주요 음역, 중심음과 피치 흐름을 분석해 보컬 프로필 생성\n- 음역 겹침, 고·저음 부담과 키 이동 비용을 함께 계산해 전체 곡의 추천 점수·추천 키·이유 제공\n- 분석용 원본과 합성용 레퍼런스를 분리하고, AI 믹싱에는 품질이 좋은 중음 구간만 선별해 사용\n- Modal CPU/GPU와 PostgreSQL 영속 큐를 이용해 분석·보컬 분리·AI 믹싱을 백그라운드에서 처리\n- Google OAuth로 사용자 데이터를 분리하고 Leemage 미디어 저장, 티켓 원장과 관리자 카탈로그 도구 구성\n\n## Impact\n\n- **학습 과정 제거**: 사용자별 `.pth` 모델 가중치를 별도로 학습하지 않고 레퍼런스 음성만으로 AI 믹싱 생성\n- **선곡 흐름 연결**: 목소리 분석부터 전체 곡 비교, 추천 키와 선택형 AI 믹싱까지 하나의 흐름으로 제공\n- **추천 신뢰도 향상**: 음역 적합도와 키 조정 이유를 함께 보여주고 같은 입력에 동일한 결과를 제공\n- **운영 안정성 확보**: 재접속 가능한 작업 큐, 사용자별 라이브러리와 관리자 도구로 서비스 운영 기반 마련\n",
+      "width": 1200,
+      "height": 630
+    },
     "day-7": {
       "slug": "day-7",
       "title": "정규직까지 D-7",
@@ -377,6 +421,50 @@ export const GENERATED_PROJECTS = {
       "content": "\n![blog list screen](/public/projects/blog/blog-list-screen.png)\n\n![blog studio editor screen](/public/projects/blog/studio-editor-screen.png)\n\n## Project Overview\n\nGitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)\nDemo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)\n\nThis is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.\nRecently, I added a grounded Q&A chatbot that answers from blog posts, profile content, and project documents, so visitors can ask for context instead of manually browsing every article.\n**An automated blog pipeline from writing and deployment to content discovery** is a key feature.\n\n## Key Features\n\n- MDX-based blog (syntax highlighting, image metadata, etc.)\n- Studio editor (Tiptap) for authoring frontmatter/body and uploading images\n- GitHub API (Octokit) auto-commit for MDX/images\n- i18n: next-intl + OpenAI-powered translation\n- AI image generation from selected text (requires a Leesfield API key)\n- Blog Q&A chatbot: Question Planner, lexical/curated search, PostgreSQL(pgvector) Graph-RAG, citation validation\n- Playwright-based portfolio PDF generation\n\n## Problem\n\n- **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions\n- **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone\n- **Content discovery overhead**: As posts and projects grow, visitors need a faster way to find the right context\n- **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS\n- **Access control**: Editing capabilities need protection to prevent abuse\n\n## Solution\n\n- Standardize the authoring flow with a web-based MDX editor\n- Synchronize Korean/English content with OpenAI-powered translation\n- Automate commits to a branch via GitHub API (Octokit) to streamline deployment\n- Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance\n- Generate lexical search records from MDX at build time, then combine curated sources with PostgreSQL(pgvector) Graph-RAG for grounded Q&A\n- Use a question router to choose direct response, clarification, or lexical/semantic retrieval first, then restrict answers through citation validation\n- Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach\n- Automate portfolio PDF output with a Playwright-based pipeline\n- Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)\n\n## Impact\n\n- **Lower ops cost**: Less repetitive work thanks to automated translation and deployment\n- **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates\n- **Better discovery**: Visitors can quickly ask about blog posts, profile content, and projects in natural language\n- **Improved web performance**: More stable image rendering contributes to better LCP/CLS\n- **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing\n\n",
       "width": 2048,
       "height": 2048
+    },
+    "copysinger": {
+      "slug": "copysinger",
+      "title": "Copysinger",
+      "summary": "A vocal service that analyzes your voice, recommends matching songs and keys, and connects them to AI mixing",
+      "keyFeatures": [
+        "Vocal profiles that analyze range, center pitch, and pitch contours from a short recording",
+        "Song and key recommendations based on vocal profile and catalog comparisons",
+        "AI mixing that separates vocals, shifts pitch, and recombines the accompaniment"
+      ],
+      "links": {
+        "github": "https://github.com/leey00nsu/copy-singer",
+        "demo": "https://copysinger.leey00nsu.com/"
+      },
+      "period": {
+        "start": "2026-08",
+        "end": null
+      },
+      "techStacks": [
+        "Next.js",
+        "TypeScript",
+        "PostgreSQL",
+        "Prisma",
+        "Tailwind CSS",
+        "TanStack Query",
+        "Modal",
+        "SoulX-Singer",
+        "Demucs",
+        "librosa"
+      ],
+      "thumbnail": "/public/projects/copysinger/copysinger-og.png",
+      "draft": false,
+      "type": "solo",
+      "deployment": {
+        "status": "active",
+        "kind": "service",
+        "category": "aiService",
+        "url": "https://copysinger.leey00nsu.com/",
+        "order": 0,
+        "coverImage": "/public/projects/copysinger/copysinger-home.png"
+      },
+      "content": "\n![Copysinger home screen](/public/projects/copysinger/copysinger-home.png)\n\n![Copysinger vocal analysis results](/public/projects/copysinger/vocal-profile-result.png)\n\n## Project Overview\n\nGitHub : [https://github.com/leey00nsu/copy-singer](https://github.com/leey00nsu/copy-singer)\nDemo : [https://copysinger.leey00nsu.com/](https://copysinger.leey00nsu.com/)\n\nI have long been interested in TTS and voice cloning and wanted to build a service around them. However, the approaches I initially explored required training separate `.pth` model weights for each voice, making GPU cost and preparation time a significant barrier.\n\nI then discovered `SoulX-Singer`, an open-source zero-shot system that can transform a singing voice from a short reference without training a model for each user. It made it possible to turn voice cloning into a product without repeating an expensive training process, which became the starting point for `Copysinger`.\n\nRather than stopping at a voice-conversion demo, I expanded it into a service that analyzes a short recording, recommends songs and keys that fit the user's voice, and continues into AI mixing for a selected song.\n\n## Key Features\n\n- Voice analysis: measures observed range, core range, center pitch, and pitch contours from a browser recording or audio file\n- Song and key recommendations: compares a vocal profile with each song's range and original key to explain fit and suggest a key\n- AI mixing: separates vocals, applies automatic pitch shifting, and recombines the accompaniment for selected songs\n- Library: manages vocal profiles, reference audio, mixing results, and processing history\n- Admin tools: operates the recommendation catalog, source audio, analysis readiness, publication state, and catalog snapshots\n\n## Problem\n\n- **High entry cost of voice cloning**: approaches that require per-user model training are difficult to scale because of GPU cost and preparation time\n- **Unclear song-selection criteria**: lowest and highest notes alone do not reveal which songs fit or how far their keys should move\n- **Limited recommendation evidence**: simple range overlap can mix recording quality with actual song fit, making rankings difficult to trust\n- **Different goals for analysis and synthesis**: natural range analysis and clean AI mixing require different parts of a recording\n- **Reliability of long-running audio jobs**: analysis and mixing can be lost if they remain tied to a web request when users leave or servers restart\n\n## Solution\n\n- Use the zero-shot `SoulX-Singer` to transform singing voices from short references without per-user model training\n- Build vocal profiles with `librosa`/pYIN to analyze observed range, core range, center pitch, and pitch contours\n- Compare range overlap, high/low burden, and transposition cost to provide a score, recommended key, and reasons across the full catalog\n- Separate analysis audio from synthesis references and select high-quality midrange phrases for AI mixing\n- Process analysis, vocal separation, and AI mixing in the background with Modal CPU/GPU and PostgreSQL durable queues\n- Isolate users with Google OAuth and provide Leemage media storage, a ticket ledger, and administrator catalog tools\n\n## Impact\n\n- **No per-user training step**: AI mixes can be created from a reference recording without training separate `.pth` model weights\n- **Connected song-selection journey**: voice analysis, full-catalog comparison, key recommendations, and user-selected AI mixing work as one flow\n- **More trustworthy recommendations**: range fit and key-change reasons remain explainable and deterministic for the same inputs\n- **Operational reliability**: reconnectable job queues, user libraries, and administrator tools provide a foundation for running the service\n",
+      "width": 1200,
+      "height": 630
     },
     "day-7": {
       "slug": "day-7",

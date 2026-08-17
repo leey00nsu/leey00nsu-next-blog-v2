@@ -467,6 +467,24 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAsABUB8JaQAA3AA/vBjGsh6pQAA",
     "isAnimated": false
   },
+  "/public/projects/copysinger/copysinger-home.png": {
+    "width": 2572,
+    "height": 1850,
+    "base64": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoQAAwABUB8JaQAApKbPwAA/vHgwne2oukKMR2MUzQPeXd+cGdAAA==",
+    "isAnimated": false
+  },
+  "/public/projects/copysinger/copysinger-og.png": {
+    "width": 1200,
+    "height": 630,
+    "base64": "data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAAAwAQCdASoQAAgABUB8JaQAA3AA/vCTzBQ1mVb6SAAAAA==",
+    "isAnimated": false
+  },
+  "/public/projects/copysinger/vocal-profile-result.png": {
+    "width": 2644,
+    "height": 1854,
+    "base64": "data:image/webp;base64,UklGRiYAAABXRUJQVlA4IBoAAAAwAQCdASoQAAsABUB8JaQAA3AA/vBhbXcgAA==",
+    "isAnimated": false
+  },
   "/public/projects/day-7/og-image.png": {
     "width": 1200,
     "height": 630,

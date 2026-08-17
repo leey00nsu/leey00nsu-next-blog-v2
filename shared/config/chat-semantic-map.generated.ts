@@ -36,6 +36,38 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "copysinger",
+      "sourceCategory": "project",
+      "entityNames": [
+        "copysinger"
+      ],
+      "aliases": [
+        "copysinger",
+        "목소리를 분석해 잘 맞는 노래와 키를 추천하고 ai 믹싱까지 연결하는 보컬 서비스",
+        "한 소절의 음역·중심음·피치 흐름을 분석하는 보컬 프로필",
+        "보컬 프로필과 곡 카탈로그를 비교한 노래·키 추천",
+        "선택한 곡의 보컬 분리·피치 이동·반주 재결합을 수행하는 ai 믹싱",
+        "next.js",
+        "typescript",
+        "postgresql",
+        "prisma",
+        "tailwind css",
+        "tanstack query",
+        "modal",
+        "soulx singer",
+        "demucs",
+        "librosa",
+        "project"
+      ],
+      "faqQueries": [
+        "copysinger 프로젝트 뭐야",
+        "copysinger는 뭐야",
+        "next.js 사용하는 프로젝트 뭐야",
+        "typescript 사용하는 프로젝트 뭐야"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "leesfield",
       "sourceCategory": "project",
       "entityNames": [
@@ -765,6 +797,38 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what kind of person is the author",
         "who is the blog owner",
         "what kind of person is the blog owner"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "copysinger",
+      "sourceCategory": "project",
+      "entityNames": [
+        "copysinger"
+      ],
+      "aliases": [
+        "copysinger",
+        "a vocal service that analyzes your voice, recommends matching songs and keys, and connects them to ai mixing",
+        "vocal profiles that analyze range, center pitch, and pitch contours from a short recording",
+        "song and key recommendations based on vocal profile and catalog comparisons",
+        "ai mixing that separates vocals, shifts pitch, and recombines the accompaniment",
+        "next.js",
+        "typescript",
+        "postgresql",
+        "prisma",
+        "tailwind css",
+        "tanstack query",
+        "modal",
+        "soulx singer",
+        "demucs",
+        "librosa",
+        "project"
+      ],
+      "faqQueries": [
+        "what is copysinger",
+        "what does copysinger do",
+        "which project uses next.js",
+        "which project uses typescript"
       ]
     },
     {

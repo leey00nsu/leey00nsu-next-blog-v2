@@ -1,9 +1,25 @@
 #!/usr/bin/env sh
 set -e
 
+echo "[husky] Generating image metadata before push..."
+pnpm run gen:image-metadata
+
 echo "[husky] Type checking (tsc --noEmit) before push..."
 pnpm exec tsc --noEmit
 
 echo "[husky] Running build before push..."
 pnpm build
+
+if ! git diff --quiet HEAD -- \
+  entities/post/config/thumbnail-metadata.generated.ts \
+  entities/post/config/posts.generated.ts \
+  entities/project/config/projects.generated.ts \
+  entities/post/config/blog-search-records.generated.ts \
+  shared/config/chat-semantic-map.generated.ts
+then
+  echo "[husky] Generated files are not committed."
+  echo "[husky] Commit the generated changes and push again."
+  exit 1
+fi
+
 echo "[husky] Build passed. Proceeding with push."

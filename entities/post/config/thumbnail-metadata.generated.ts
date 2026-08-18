@@ -212,7 +212,7 @@ export const THUMBNAIL_METADATA_MAP = {
   "/public/posts/nextjs-github-action-ci-cd/actions_success.webp": {
     "width": 3768,
     "height": 1580,
-    "base64": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAACQAQCdASoQAAcABUB8JaQAAudZtgAA/thlFkCwOZoeWybGSVjAC4YCwSMDG9RwAAA=",
+    "base64": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACQAQCdASoQAAcABUB8JaQAAudZtgAA/thlFkCwOZoeWybGSVjAC4YCwSMDGAAA",
     "isAnimated": false
   },
   "/public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp": {
@@ -458,7 +458,7 @@ export const THUMBNAIL_METADATA_MAP = {
   "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/vibe-cut-real-screen.webp": {
     "width": 3838,
     "height": 2106,
-    "base64": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoQAAkABUB8JZwAApKfUUoAAP7rHFSE3+vfoq6n2Bv/34oF9Mv46F5dkXzw/l41CtaVh9QAAAA=",
+    "base64": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoQAAkABUB8JZwAApKfUUoAAP7rHFSE3+vfoq6n2Bv/343K+mX8dEa7FXdKD5eNQVt14EbAAAA=",
     "isAnimated": false
   },
   "/public/posts/why-use-react-query/description.webp": {

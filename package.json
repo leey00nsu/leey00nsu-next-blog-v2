@@ -5,9 +5,9 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "next dev",
-    "predev": "pnpm run gen:image-metadata && pnpm run gen:posts && pnpm run gen:projects && pnpm run gen:chat-semantic && pnpm run gen:blog-search",
+    "predev": "pnpm run gen:posts && pnpm run gen:projects && pnpm run gen:chat-semantic && pnpm run gen:blog-search",
     "build": "next build",
-    "prebuild": "pnpm run gen:image-metadata && pnpm run gen:posts && pnpm run gen:projects && pnpm run gen:chat-semantic && pnpm run gen:blog-search",
+    "prebuild": "pnpm run gen:posts && pnpm run gen:projects && pnpm run gen:chat-semantic && pnpm run gen:blog-search",
     "postbuild": "pnpm run gen:resume-pdf",
     "start": "pnpm run db:migrate -- --allow-missing-database && next start",
     "lint": "eslint",

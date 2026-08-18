@@ -68,12 +68,12 @@ Rather than stopping at a voice-conversion demo, I expanded it into a service th
 
 ## Solution
 
-- Use the zero-shot `SoulX-Singer` to transform singing voices from short references without per-user model training
-- Build vocal profiles with `librosa`/pYIN to analyze observed range, core range, center pitch, and pitch contours
-- Compare range overlap, high/low burden, and transposition cost to provide a score, recommended key, and reasons across the full catalog
-- Separate analysis audio from synthesis references and select high-quality midrange phrases for AI mixing
-- Process analysis, vocal separation, and AI mixing in the background with Modal CPU/GPU and PostgreSQL durable queues
-- Isolate users with Google OAuth and provide Leemage media storage, a ticket ledger, and administrator catalog tools
+- **Zero-shot voice cloning**: use `SoulX-Singer` and a short reference to transform singing voices without per-user model training
+- **Vocal profile analysis**: use `librosa`/pYIN to extract observed range, core range, center pitch, and pitch contours
+- **Explainable recommendations**: calculate range overlap, high/low burden, and transposition cost to provide scores, recommended keys, and reasons across the full catalog
+- **Midrange-focused references**: separate analysis audio from synthesis references and select high-quality midrange phrases for AI mixing
+- **Durable job queues**: process analysis, vocal separation, and AI mixing in the background with Modal CPU/GPU and PostgreSQL queues
+- **User and operations data**: isolate users with Google OAuth and provide Leemage media storage, a ticket ledger, and administrator catalog tools
 
 ## Impact
 

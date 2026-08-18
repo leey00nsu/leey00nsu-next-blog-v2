@@ -211,11 +211,9 @@ pnpm run gen:chat-rag-postgres
 
 ### 챗봇 인덱스 생성
 
-- `predev`, `prebuild` 단계에서는 아래 deterministic 스크립트만 자동 실행됩니다.
-  - `pnpm run gen:posts`
-  - `pnpm run gen:projects`
-  - `pnpm run gen:chat-semantic`
-  - `pnpm run gen:blog-search`
+- `predev`, `prebuild`, 테스트 단계에서는 `pnpm run gen:content`가 이미지 메타데이터, 게시물, 프로젝트, 챗봇 및 검색 데이터를 생성합니다.
+- 생성된 `*.generated.ts` 파일은 빌드 산출물이므로 Git에서 추적하지 않습니다.
+- 원본 MDX와 이미지만 커밋하면 개발·테스트·빌드 시작 전에 필요한 데이터가 자동으로 갱신됩니다.
 - 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.

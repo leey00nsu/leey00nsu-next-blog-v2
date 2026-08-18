@@ -211,11 +211,9 @@ pnpm run gen:chat-rag-postgres
 
 ### Chat Index Generation
 
-- The following deterministic scripts run automatically in `predev` and `prebuild`
-  - `pnpm run gen:posts`
-  - `pnpm run gen:projects`
-  - `pnpm run gen:chat-semantic`
-  - `pnpm run gen:blog-search`
+- During `predev`, `prebuild`, and test lifecycles, `pnpm run gen:content` generates image metadata, post, project, chat, and search data.
+- Generated `*.generated.ts` files are build artifacts and are not tracked by Git.
+- Commit only the source MDX and images; the required data is refreshed automatically before development, testing, and builds.
 - Instead of crawling `.next` HTML output, this project generates **lexical search records and Postgres RAG input data directly from source MDX**.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
 - `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.

@@ -46,6 +46,11 @@ yarn-error.log*
 next-env.d.ts
 
 # generated files
+/entities/post/config/blog-search-records.generated.ts
+/entities/post/config/posts.generated.ts
+/entities/post/config/thumbnail-metadata.generated.ts
+/entities/project/config/projects.generated.ts
+/shared/config/chat-semantic-map.generated.ts
 /public/pdf/
 /public/pagefind/
 /data/*.sqlite

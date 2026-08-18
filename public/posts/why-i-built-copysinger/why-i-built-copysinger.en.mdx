@@ -1,0 +1,119 @@
+---
+slug: why-i-built-copysinger
+title: Turning Voice Cloning into a Product Without Per-User Training
+tags:
+  - AI
+  - Voice Cloning
+  - SoulX-Singer
+  - Copysinger
+description: How per-user model training costs led me to SoulX-Singer-SVC and how a zero-shot voice conversion experiment grew into a voice analysis, song recommendation, and AI mixing service
+date: 2026-08-18
+section: blog
+series:
+thumbnail: /public/projects/copysinger/copysinger-og.png
+draft: false
+writer: leey00nsu
+---
+
+## Turning Voice Cloning into a Product Without Per-User Training
+
+I have been interested in TTS and voice cloning for a long time. The process of reproducing someone's timbre from a few short recordings fascinated me, and I wanted to turn the technology into a web service of my own.
+
+The cost barrier appeared as soon as I explored implementation options. The training-based SVC (Singing Voice Conversion) approaches I considered required collecting and preprocessing voice samples for each user, fine-tuning a separate model on a GPU, and managing dedicated `.pth` weights.
+
+Running a training pipeline for every user was not sustainable for a personal project, both in GPU cost and waiting time. I wanted to build a voice cloning product, but the project was becoming an exercise in operating model-training infrastructure.
+
+## SoulX-Singer: Moving to a Zero-Shot Model
+
+The breakthrough was [`SoulX-Singer`](https://github.com/Soul-AILab/SoulX-Singer). SoulX-Singer-SVC is an open-source zero-shot model that can convert a song into the timbre of a short reference recording without additional training for each user.
+
+The key change was a simpler workflow. Once per-user training disappeared, a `user voice reference + target vocal track` could produce a result through a single inference pipeline.
+
+![Comparison between per-user data preparation and GPU training in training-based SVC and SoulX-Singer-SVC zero-shot inference from a short reference](/public/posts/why-i-built-copysinger/training-vs-zero-shot.en.webp)
+
+Zero-shot inference still needs GPU compute and remains sensitive to noise and reference quality. What disappeared was the structural bottleneck of training a model every time a new voice was registered. That let me move my attention from training-infrastructure cost to an experience people could actually use.
+
+## From a Demo to a Product: The Missing Song Choice
+
+I first built a small demo that validated only the minimum pipeline.
+
+1. Separate the vocals and accompaniment from the original song
+2. Convert the isolated vocals into the user's timbre with SoulX-Singer-SVC
+3. Remix the converted vocals with the accompaniment
+
+The output worked, but using the demo revealed its limits.
+
+* Users did not know which songs would fit their voices.
+* If the original key did not fit, it was unclear how many semitones to move it.
+* When a result sounded unnatural, it was difficult to tell whether the reference quality or the range mismatch was responsible.
+
+A converter that accepted two files risked becoming a demo people tried once for fun rather than a product they would keep using.
+
+## Voice Analysis and Song-Catalog Matching
+
+I changed `Copysinger` to fill that decision gap. Instead of converting audio immediately, the service first analyzes the user's range, recommends suitable songs and keys, and then connects that choice to AI mixing.
+
+![Copysinger home screen](/public/projects/copysinger/copysinger-home.png)
+
+When a user records a short phrase in the browser, the analysis pipeline—including librosa's pYIN algorithm—extracts the following metrics.
+
+* **Observed range:** The lowest and highest notes detected in the recording
+* **Core range:** The pitch region observed most frequently among valid frames
+* **Center pitch and pitch trajectory:** The median valid pitch and how pitch changes over time
+
+![Copysinger product flow from a short recording and song catalog through shared analysis and recommendations to user-selected AI mixing](/public/posts/why-i-built-copysinger/product-flow.en.webp)
+
+One important UI decision was to avoid presenting the result as a judgment of singing ability. A short recording cannot establish someone's absolute skill or voice type. Copysinger therefore does not assign a score to singing ability or classify a voice type. Its recommendation score is only a reference value describing how the range observed in this recording relates to a song's range, accompanied by the semitone shift that moves the song into a more comfortable region.
+
+## Separating Analysis Audio from the Synthesis Reference
+
+During development, I found that the same recording could not be used unchanged for both analysis and synthesis. The two tasks needed different properties from the input.
+
+* **Voice analysis:** The full natural distribution, from low to high notes, must be preserved to measure the recorded range.
+* **SoulX-Singer-SVC synthesis:** A longer reference is not automatically better. Breathing noise, silence, unstable pitch, and clipped segments can distort the output.
+
+I split the preprocessing of a single input into two paths.
+
+1. **Analysis pipeline:** Preserve the complete pitch distribution and create the vocal profile from the full recording
+2. **Synthesis-reference pipeline:** Select midrange segments that satisfy voiced-density, loudness, and clipping criteria, then join them in their original order. The reference is capped at 30 seconds; if less good material is available, the pipeline uses the shorter result without repetition or padding from other ranges
+
+![Preprocessing split from one recording into a full-distribution analysis path and a SoulX-Singer-SVC synthesis path using up to 30 seconds of stable midrange audio](/public/posts/why-i-built-copysinger/preprocessing-split.en.webp)
+
+After this split, stable midrange-only references produced cleaner synthesis than references that distributed time evenly across low, middle, and high ranges.
+
+## A Durable Job Lifecycle with Modal and PostgreSQL
+
+Pitch analysis takes tens of seconds, while SVC inference and mixing take roughly three to four minutes per song. Handling that pipeline inside a single HTTP request would make it vulnerable to browser exits, network interruptions, and server restarts.
+
+I separated the work into asynchronous durable queues.
+
+![Durable audio job flow from web request through a PostgreSQL queue and lease worker to Modal CPU analysis, L4 GPU mixing, and reconnectable result storage](/public/posts/why-i-built-copysinger/durable-job-flow.en.webp)
+
+* **State and durable queues:** The web server accepts a request, inserts it into a PostgreSQL queue, and immediately returns a job ID. A worker claims the job, and if that worker stops unexpectedly, another worker can recover it after the lease expires.
+* **Compute separation with Modal:**
+  * CPU-intensive pitch analysis and preprocessing run in Modal's CPU environment.
+  * SoulX-Singer-SVC inference runs on an on-demand L4 GPU.
+  * Containers scale to zero when unused, reducing idle GPU cost and keeping the resources for each task separate.
+* **Storage separation with Leemage:** Large source audio and converted results are stored in [Leemage](https://leemage.leey00nsu.com/), a media platform I built. PostgreSQL keeps metadata and file URL references instead of the audio binaries.
+
+I also calculated the operating cost from observed execution time. As of August 2026, the [Modal Starter plan](https://modal.com/pricing) includes $30 of free compute credit each month. An L4 costs $0.000222 per second, and a Copysinger mix takes about three to four minutes, putting GPU execution at roughly $0.040–$0.053 per song. Based only on active GPU time, the free credit could theoretically cover about 560–750 mixes per month.
+
+That number is an upper bound. CPU and memory usage, cold starts, and the time a container remains warm after a job are billed separately, so actual capacity is lower. Voice analysis runs without a GPU, and six remote benchmark runs put its average compute cost below $0.001 per analysis. Compared with GPU mixing, its contribution to the overall budget is small.
+
+With this structure, a job can continue safely after the user closes the browser, and the completed result remains available when they return.
+
+## Closing Thoughts
+
+`Copysinger` turned an idea I had postponed because of per-user GPU training costs into a working service by using an open-source zero-shot model.
+
+Model quality mattered, but it was only one part of the product. Input preprocessing, the analysis and recommendation experience, and a backend lifecycle that moves heavy AI work outside the web request were all necessary to make the model usable as a service.
+
+## References
+
+- [Copysinger](https://copysinger.leey00nsu.com/)
+- [Copysinger GitHub](https://github.com/leey00nsu/copy-singer)
+- [SoulX-Singer GitHub](https://github.com/Soul-AILab/SoulX-Singer)
+- [Leemage](https://leemage.leey00nsu.com/)
+- [Modal Documentation](https://modal.com/docs)
+- [Modal Pricing](https://modal.com/pricing)
+- [librosa pYIN](https://librosa.org/doc/latest/generated/librosa.pyin.html)

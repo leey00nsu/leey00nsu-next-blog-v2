@@ -212,7 +212,7 @@ export const THUMBNAIL_METADATA_MAP = {
   "/public/posts/nextjs-github-action-ci-cd/actions_success.webp": {
     "width": 3768,
     "height": 1580,
-    "base64": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACQAQCdASoQAAcABUB8JaQAAudZtgAA/thlFkCwOZoeWybGSVjAC4YCwSMDGAAA",
+    "base64": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAACQAQCdASoQAAcABUB8JaQAAudZtgAA/thlFkCwOZoeWybGSVjAC4YCwSMDG9RwAAA=",
     "isAnimated": false
   },
   "/public/posts/nextjs-github-action-ci-cd/oracle_cloud.webp": {
@@ -335,6 +335,54 @@ export const THUMBNAIL_METADATA_MAP = {
     "base64": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAACQAQCdASoQAAkABUB8JbACdACX64AA1wl6934E0wCXI4Vx/1tsXBU/ayn138gN/4ECFTHSi+JyGSUv5h53cj+AAAA=",
     "isAnimated": false
   },
+  "/public/posts/why-i-built-copysinger/durable-job-flow.en.webp": {
+    "width": 2800,
+    "height": 1400,
+    "base64": "data:image/webp;base64,UklGRioAAABXRUJQVlA4IB4AAAAwAQCdASoQAAgABUB8JaQAA3AA/vBKJbih2U0BMAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/durable-job-flow.ko.webp": {
+    "width": 2800,
+    "height": 1400,
+    "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAgABUB8JaQAA3AA/vBKGjZS/AAA",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/preprocessing-split.en.webp": {
+    "width": 2800,
+    "height": 1440,
+    "base64": "data:image/webp;base64,UklGRioAAABXRUJQVlA4IB4AAAAwAQCdASoQAAgABUB8JZwAA3AA/vAuyVgPuE8AAAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/preprocessing-split.ko.webp": {
+    "width": 2800,
+    "height": 1440,
+    "base64": "data:image/webp;base64,UklGRioAAABXRUJQVlA4IB4AAAAwAQCdASoQAAgABUB8JZwAA3AA/vAuXEYF9wLoAAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/product-flow.en.webp": {
+    "width": 2800,
+    "height": 1520,
+    "base64": "data:image/webp;base64,UklGRioAAABXRUJQVlA4IB4AAAAwAQCdASoQAAkABUB8JZwAA3AA/vAu6ha1Jq3AAAA=",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/product-flow.ko.webp": {
+    "width": 2800,
+    "height": 1520,
+    "base64": "data:image/webp;base64,UklGRiwAAABXRUJQVlA4ICAAAACQAQCdASoQAAkABUB8JZwAAxf7+RAA/u2a43s5rAAAAA==",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/training-vs-zero-shot.en.webp": {
+    "width": 2800,
+    "height": 1440,
+    "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAgABUB8JaQAA3AA/vBKGio14sAA",
+    "isAnimated": false
+  },
+  "/public/posts/why-i-built-copysinger/training-vs-zero-shot.ko.webp": {
+    "width": 2800,
+    "height": 1440,
+    "base64": "data:image/webp;base64,UklGRigAAABXRUJQVlA4IBwAAAAwAQCdASoQAAgABUB8JaQAA3AA/vBKGjosO5AA",
+    "isAnimated": false
+  },
   "/public/posts/why-i-built-lee-spec-kit/ai-harness-structure.png": {
     "width": 1536,
     "height": 1024,
@@ -410,7 +458,7 @@ export const THUMBNAIL_METADATA_MAP = {
   "/public/posts/why-i-gave-up-on-building-an-ai-video-editor/vibe-cut-real-screen.webp": {
     "width": 3838,
     "height": 2106,
-    "base64": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoQAAkABUB8JZwAApKfUUoAAP7rHFSE3+vfoq6n2Bv/343K+mX8dEa7FXdKD5eNQVt14EbAAAA=",
+    "base64": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACwAQCdASoQAAkABUB8JZwAApKfUUoAAP7rHFSE3+vfoq6n2Bv/34oF9Mv46F5dkXzw/l41CtaVh9QAAAA=",
     "isAnimated": false
   },
   "/public/posts/why-use-react-query/description.webp": {

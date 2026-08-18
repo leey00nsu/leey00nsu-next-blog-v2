@@ -271,6 +271,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
     },
     {
       "locale": "ko",
+      "slug": "why-i-built-copysinger",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "사용자별 학습 비용 없이 voice cloning을 제품으로 만들기까지"
+      ],
+      "aliases": [
+        "사용자별 학습 비용 없이 voice cloning을 제품으로 만들기까지",
+        "사용자별 모델 학습 비용 문제에서 출발해 soulx singer svc의 zero shot 음성 변환을 분석·추천·ai 믹싱 서비스로 확장한 이야기",
+        "ai",
+        "voice cloning",
+        "soulx singer",
+        "copysinger"
+      ],
+      "faqQueries": [
+        "사용자별 학습 비용 없이 voice cloning을 제품으로 만들기까지 글 뭐야",
+        "사용자별 학습 비용 없이 voice cloning을 제품으로 만들기까지 글 추천해줘",
+        "ai 글 뭐야",
+        "ai 글 추천해줘",
+        "voice cloning 글 뭐야",
+        "voice cloning 글 추천해줘"
+      ]
+    },
+    {
+      "locale": "ko",
       "slug": "building-ai-interactive-movie-d7",
       "sourceCategory": "blog",
       "entityNames": [
@@ -1032,6 +1056,30 @@ export const GENERATED_CHAT_SEMANTIC_MAP = {
         "what does create your own suya and suho do",
         "which project uses react",
         "which project uses typescript"
+      ]
+    },
+    {
+      "locale": "en",
+      "slug": "why-i-built-copysinger",
+      "sourceCategory": "blog",
+      "entityNames": [
+        "turning voice cloning into a product without per user training"
+      ],
+      "aliases": [
+        "turning voice cloning into a product without per user training",
+        "how per user model training costs led me to soulx singer svc and how a zero shot voice conversion experiment grew into a voice analysis, song recommendation, and ai mixing service",
+        "ai",
+        "voice cloning",
+        "soulx singer",
+        "copysinger"
+      ],
+      "faqQueries": [
+        "what is turning voice cloning into a product without per user training",
+        "post about turning voice cloning into a product without per user training",
+        "what is ai",
+        "post about ai",
+        "what is voice cloning",
+        "post about voice cloning"
       ]
     },
     {

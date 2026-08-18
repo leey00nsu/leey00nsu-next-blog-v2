@@ -5,8 +5,8 @@ import {
   buildProfileChatSemanticEntry,
   buildProjectChatSemanticEntry,
   buildSemanticSearchTerms,
-  getSemanticSearchTerms,
-} from '@/shared/lib/chat-semantic-map'
+} from '@/shared/lib/chat-semantic-entry'
+import { getSemanticSearchTerms } from '@/shared/lib/chat-semantic-map'
 
 describe('chat semantic map', () => {
   it('의도별 템플릿으로 profile name 질의를 생성한다', () => {

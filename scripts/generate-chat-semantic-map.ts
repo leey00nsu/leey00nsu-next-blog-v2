@@ -8,7 +8,7 @@ import {
   buildPostChatSemanticEntry,
   buildProfileChatSemanticEntry,
   buildProjectChatSemanticEntry,
-} from '@/shared/lib/chat-semantic-map'
+} from '@/shared/lib/chat-semantic-entry'
 import type { GeneratedChatSemanticMap } from '@/shared/model/chat-semantic-map'
 
 const OUTPUT_PATH = path.join(

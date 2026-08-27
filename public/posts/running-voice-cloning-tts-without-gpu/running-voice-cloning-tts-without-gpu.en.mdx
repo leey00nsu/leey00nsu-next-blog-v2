@@ -1,0 +1,303 @@
+---
+slug: running-voice-cloning-tts-without-gpu
+title: Running Voice Cloning TTS Without a GPU
+tags:
+  - AI
+  - TTS
+  - Voice Cloning
+  - Supertonic
+description: An experiment in creating custom Supertonic 3 voices on a CPU, registering them on an Oracle ARM64 server, and running them in production
+date: 2026-08-27
+section: blog
+series:
+thumbnail: /public/posts/running-voice-cloning-tts-without-gpu/supertonic-inference-pipeline.svg
+draft: false
+writer: leey00nsu
+---
+
+## Running Voice Cloning TTS Without a GPU
+
+I have long been interested in Voice Cloning: creating a new voice from a short reference recording. But when you try to operate it as a service, GPU costs and deployment architecture often become more immediate concerns than model quality.
+
+If every new voice requires retraining a model, GPU jobs and dedicated weights grow with the number of voices. If synthesis also requires a GPU, you either keep that resource running while idle or accept a cold start on every request.
+
+I wanted to approach the problem differently.
+
+`Could I create a voice without a GPU, then keep using it on a small CPU server?`
+
+After several experiments, I built a pipeline that creates Supertonic 3 custom voice JSON on a CPU, registers multiple voices by name on an Oracle Cloud ARM64 server, and uses them for synthesis.
+
+## What Is Supertonic TTS?
+
+![Supertonic 3 supports 31 languages and runs on-device using only a CPU](/public/posts/running-voice-cloning-tts-without-gpu/supertonic-3-overview.png)
+
+[Supertonic](https://github.com/supertone-inc/supertonic) is an open-source, on-device multilingual TTS model from Supertone. It is distributed for inference with ONNX Runtime, so it does not require a heavyweight server framework. It can run without a GPU in Python, browsers, and mobile environments.
+
+Supertonic 3, the version used in this article, has roughly 99 million parameters, supports 31 languages, and generates 44.1kHz audio. The official model includes ten voices: five male and five female. What interested me most was not the model size itself, but the separation between the synthesis model and the voice. A single TTS model can produce multiple voices by swapping a small voice style. The [official README](https://github.com/supertone-inc/supertonic#readme) and [Supertonic 3 model card](https://huggingface.co/Supertone/supertonic-3) cover the model specifications and supported environments in more detail.
+
+The official [Python SDK](https://supertone-inc.github.io/supertonic-py/) also includes a local server. After downloading the model, `supertonic serve` starts a CPU-based TTS API, and custom voice JSON files can be loaded into the same runtime. The result is not tied to a specific cloud provider or GPU.
+
+## The Problem Started with the Voice Builder Shutdown Notice
+
+Supertonic once provided Voice Builder, an official tool for creating custom voices. You supplied a short reference recording, generated a voice JSON compatible with your Supertonic version, downloaded it, and loaded it into the local runtime.
+
+On July 23, 2026, however, the [official repository announced the end of service](https://github.com/supertone-inc/supertonic#notice). Official support for the repository ended, and Voice Builder would no longer be accessible after August 31, 2026. Existing JSON files would continue to work, but the official path for creating new voices was no longer a sustainable option.
+
+When a production TTS system depends on a single external web tool to add voices, its voice creation pipeline can stop even while the serving infrastructure remains healthy. That prompted me to look for another way to produce the same kind of artifact as Voice Builder.
+
+## How Supertonic Generates Speech
+
+According to the [SupertonicTTS paper](https://arxiv.org/abs/2503.23108), the model has three main components:
+
+1. A speech autoencoder that converts audio into a temporally compressed continuous latent representation and reconstructs it as a waveform
+2. A flow-matching model that generates speech latents from character-level text
+3. An utterance-level duration predictor that estimates the total length of the utterance
+
+Input characters enter the text encoder without a separate phoneme converter or external aligner. The duration predictor determines the total utterance length, the text-to-latent path creates a speech representation of that length, and the autoencoder decoder reconstructs the waveform. The low-dimensional latent space and temporal compression make synthesis fast despite the model's relatively small size.
+
+![Supertonic 3 synthesis pipeline in which character-level text and the style_dp and style_ttl tensors from a voice JSON pass through duration prediction and flow matching to produce a 44.1kHz waveform](/public/posts/running-voice-cloning-tts-without-gpu/supertonic-inference-pipeline.svg)
+
+A custom voice JSON is not a copy of the entire model. The [official SDK guide for custom voices](https://supertone-inc.github.io/supertonic-py/quickstart/) and the [published voice style files](https://huggingface.co/Supertone/supertonic-3/tree/main/voice_styles) show two tensors stored as `data` and `dims`.
+
+```json
+{
+  "style_dp": {
+    "data": ["... 128 floating-point values ..."],
+    "dims": [1, 8, 16]
+  },
+  "style_ttl": {
+    "data": ["... 12,800 floating-point values ..."],
+    "dims": [1, 50, 256]
+  }
+}
+```
+
+`style_dp` contains 128 values and conditions the duration predictor. `style_ttl` contains 12,800 values and conditions the text-to-latent path. This connection is also visible in the [official Supertonic implementation](https://github.com/supertone-inc/supertonic). The former affects duration and rhythm, while the latter influences timbre and speaking characteristics. Still, they should not be reduced to two independent semantic vectors. The final voice is determined jointly by both tensors, the input text, and the synthesis settings.
+
+From an operational perspective, the process can be divided into two stages:
+
+```text
+one-time Voice Cloning
+reference audio
+  -> voice style search
+  -> custom_voice.json
+
+repeated TTS
+custom_voice.json + text
+  -> Supertonic 3 ONNX runtime
+  -> audio
+```
+
+If this JSON format can be generated directly, there is no need to copy the ONNX model or run a dedicated server for every voice. The first stage can also be reframed: instead of fine-tuning the entire model, search for a style inside the fixed Supertonic model that resembles the reference.
+
+## I Initially Thought I Had to Train the Model
+
+I first evaluated projects that optimize a Supertonic voice embedding against a reference recording. Some resynthesized the reference transcript and updated the embedding until the result approached the original. Others used speaker encoders such as `ECAPA` or `WavLM` to measure similarity between the two recordings.
+
+The pipelines ran successfully. On Modal GPUs, I preprocessed references, performed hundreds or thousands of optimization steps, and produced JSON files compatible with Supertonic 3.
+
+Listening to the results exposed several problems:
+
+- A male reference sometimes produced a voice that sounded female.
+- Speaker similarity scores improved even when the result did not sound much closer to human listeners.
+- Some checkpoints moved closer in timbre but introduced more synthetic artifacts.
+- In some approaches, the starting point changed depending on the reference language and transcription result.
+
+At first, I assumed more optimization steps would solve the problem. Comparing multiple checkpoints with the same sentence showed that iteration count was not the main issue. It mattered more which features the system treated as speaker identity and which region of the voice style space it searched.
+
+That changed the question.
+
+`Do I really need to retrain the model?`
+
+`Or can I search the voice space already learned by Supertonic for a style close to the reference?`
+
+## Recovering a Voice Style from Speaker Features
+
+The final approach extracts speaker features from the reference first, then searches backward for a Supertonic voice style that reproduces those features as closely as possible.
+
+The process works as follows:
+
+1. Convert the reference to 24kHz mono and use its first 12 seconds.
+2. Extract a 2,048-dimensional speaker feature with the `Qwen3-TTS` speaker encoder.
+3. Use a pretrained translation head to predict initial `style_ttl` and `style_dp` values.
+4. Generate candidates in a 384-dimensional PCA space built from real voice styles.
+5. Synthesize every candidate with Supertonic 3.
+6. Measure centered Qwen cosine similarity between the synthesized audio and the reference.
+7. Let `separable CMA-ES` choose the next candidates and repeat.
+
+```text
+reference audio
+  -> speaker feature
+  -> initial voice style
+  -> candidates in PCA space
+  -> synthesize probe text with Supertonic
+  -> compare speaker similarity with reference
+  -> search for a better candidate
+  -> custom voice JSON
+```
+
+Qwen does not generate the final audio here. It acts as an “ear” that compares the reference with each synthesized candidate. Supertonic 3 generates all production audio from beginning to end.
+
+There is no gradient computation or backpropagation in this process. It repeatedly performs forward passes through existing ONNX models to extract features and evaluate candidates. Strictly speaking, it is closer to maximizing an objective within a constrained voice style space than fine-tuning a new model. That is why it can run without a GPU.
+
+The exact transcript of the reference is not required either. A style extracted from a Japanese reference can later synthesize Korean text. Speaker feature extraction and the new text supplied to Supertonic are separate stages.
+
+## How Long Did Voice Cloning Take on a CPU?
+
+I ran the process on Modal CPU using a 13.74-second recording of a Korean male speaker. The first 12 seconds were used for feature analysis.
+
+| Item | Result |
+|---|---:|
+| Modal resources | 8 CPU cores, 32 GiB memory |
+| Maximum search budget | 120 generations × 20 candidates |
+| Actual stopping point | 88 generations |
+| Candidate evaluations | 1,761 |
+| Initial centered Qwen cosine | 0.732 |
+| Final centered Qwen cosine | 0.783 |
+| Voice refinement time | 571.638 seconds |
+
+Numbers are useful, but listening is faster. The reference and generated sample below use the same Korean script.
+
+> 여러분 오늘은 제가 찾은 진짜 꿀팁 하나 알려드릴게요. 살 빼려고 이것저것 다 해봤는데 이게 최고더라고요. 한 달 만에 복부 사이즈가 이렇게나 줄었어요. 비밀이라서 댓글 남기신 분들께만 자세히 알려드릴게요. 진짜 놀라실 거예요!
+
+<AudioSample
+  title="Reference voice"
+  description="13.74 seconds · original MP3 · first 12 seconds used for analysis"
+  src="/posts/running-voice-cloning-tts-without-gpu/adam-reference.mp3"
+/>
+
+<AudioSample
+  title="Supertonic 3 output"
+  description="22.38 seconds · Oracle ARM64 · 5 steps · 44.1kHz mono WAV"
+  src="/posts/running-voice-cloning-tts-without-gpu/adam-supertonic3-oracle-steps5.wav"
+/>
+
+The refinement took about nine and a half minutes. That is not short, but it only runs once when registering a new voice. Synthesizing text from the finished JSON does not load the speaker encoder or CMA search again.
+
+One candidate reached 0.811 during the search. When evaluated again with a different full-fidelity probe and final quality settings, however, it scored 0.783. That is why I recorded the final full-fidelity validation score rather than the best number printed in the search log.
+
+The score does not guarantee voice quality. Cosine similarity provides an optimization direction; it is not a MOS score for perceived speaker similarity. I made the final selection by synthesizing the same script with different approaches and listening to the results.
+
+## Separating Voice Cloning from the TTS Server
+
+Even when Voice Cloning runs on a CPU, it does not need to share a server with real-time TTS requests. The two workloads have different lifecycles.
+
+- **Voice Cloning:** Runs once per new voice and uses relatively more CPU and memory.
+- **TTS serving:** Loads an existing JSON and handles short, repeated requests.
+
+I ran Voice Cloning as a Modal CPU job and downloaded only the resulting JSON. The production TTS server runs on an Oracle Cloud Ampere A1 ARM64 instance.
+
+![A one-time Modal CPU Voice Cloning job creates a custom voice JSON, which an Oracle ARM64 server then uses for repeated TTS requests](/public/posts/running-voice-cloning-tts-without-gpu/voice-cloning-serving-split.svg)
+
+The server image is based on `python:3.11-slim` and installs only `supertonic==1.3.1` and the ONNX Runtime CPU provider. It does not need CUDA, a PyTorch GPU image, or NVIDIA Container Runtime.
+
+I started with a limit of two CPU cores and 4GB of memory. The model cache and custom voices are stored in separate Docker volumes, while the container root filesystem is read-only. Because the official Supertonic server does not include authentication, I also added ASGI middleware that validates an API key of at least 32 characters.
+
+## How Fast Was It on Oracle ARM64?
+
+I synthesized a single line, multiple lines, and a paragraph three times each with the registered custom voice at five steps. The latency below is not limited to ONNX inference inside the server. It measures the time from sending a request to the public HTTPS endpoint until the complete WAV response arrives, including Cloudflare, network round trips, and WAV encoding.
+
+| Item | Configuration |
+|---|---|
+| Instance | Oracle Cloud Ampere A1, ARM64 |
+| Resource limit | 2 CPU cores, 4GB memory |
+| Runtime | `supertonic==1.3.1`, ONNX Runtime CPUExecutionProvider |
+| Synthesis | 5 steps, 44.1kHz mono WAV |
+| Measurement | Public HTTPS requests after warm-up, mean of three runs |
+
+| Input | Response time | Audio duration | RTF | Speed relative to playback |
+|---|---:|---:|---:|---:|
+| One line, 27 characters | 3.36s | 4.74s | 0.709 | 1.41× |
+| Multiple lines, 93 characters | 6.98s | 14.07s | 0.496 | 2.02× |
+| Paragraph, 206 characters | 13.87s | 30.67s | 0.452 | 2.21× |
+
+![Oracle ARM64 benchmark comparing response time and generated audio duration for a single line, multiple lines, and a paragraph using five synthesis steps](/public/posts/running-voice-cloning-tts-without-gpu/oracle-arm64-benchmark.svg)
+
+RTF, or Real-Time Factor, is `response time ÷ generated audio duration`. A value below 1 means generation finishes faster than playback. The server returned 30.67 seconds of speech in 13.87 seconds, making batch synthesis practical even on a small ARM CPU. RTF also improved for longer inputs because fixed costs such as model loading and request handling were spread across more audio.
+
+This is not streaming latency. The official Python server returns a complete WAV only after synthesis finishes, so the paragraph test waits roughly 13.87 seconds before the first sound can play. A service that must begin playback after the first sentence would need a wrapper that splits text and synthesizes each sentence sequentially. Fast total generation and a fast first audio chunk are different metrics.
+
+This table measures the **serving performance** of a registered custom voice. It says nothing about how closely the voice resembles the reference speaker.
+
+## Register Once, Then Call the Voice by Name
+
+The completed JSON can be registered through the API without rebuilding the server.
+
+```bash
+curl -X POST "https://tts.example.com/v1/styles/import" \
+  -H "Authorization: Bearer ${SUPERTONIC_API_KEY}" \
+  -F "file=@voices/adam.json"
+```
+
+The stem of `adam.json` becomes the voice name, `adam`. Subsequent synthesis requests only need to pass that name.
+
+```bash
+curl -X POST "https://tts.example.com/v1/tts" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${SUPERTONIC_API_KEY}" \
+  -d '{
+    "text": "Hello. This is a custom voice created on a CPU.",
+    "voice": "adam",
+    "lang": "en",
+    "steps": 5,
+    "response_format": "wav"
+  }' \
+  --output adam.wav
+```
+
+Registering multiple JSON files makes voices such as `adam` and `airi` available on the same server. To replace an existing custom voice with the same name, add `?overwrite=true` to the import request.
+
+Registered JSON files remain in the named volume mounted at `/var/lib/supertonic/voices`. They are automatically reloaded after a normal image redeploy or container restart, so adding one voice does not require redeploying the server.
+
+I still do not treat the volume as the only backup. A voice JSON may be reproducible, but it represents minutes of search and repeated listening comparisons. I keep an encrypted backup outside the server volume and do not commit voice JSON files to Git.
+
+## Choosing Between Two and Five Steps
+
+Supertonic trades speed for quality through its synthesis step count. I generated the same single line, multiline input, and paragraph at both two and five steps with the same voice.
+
+Two steps responded faster, but synthetic artifacts were more noticeable in long sentences and custom voices. Five steps took longer but produced more stable pronunciation and timbre. I therefore use five steps as the default quality setting in production and consider two steps only for cases such as short previews where latency matters more.
+
+The official documentation does not mandate five steps. SDK examples and defaults vary by environment, so this is an operational choice based on direct listening rather than an official recommendation.
+
+## Removing the GPU Did Not Remove the Quality Limits
+
+This architecture eliminated GPU costs, but it cannot reproduce every voice accurately.
+
+The main limitation is that the final result remains inside the style space that Supertonic can express. Even if the speaker encoder captures the reference correctly, the result cannot move any closer once the Supertonic decoder reaches the edge of its representational range.
+
+Several problems remained in my tests:
+
+- Unusual delivery and whispered speech produced lower similarity than ordinary speech.
+- Some candidates had a vocal range that did not match the speaker's gender.
+- The PCA space reduced abnormal styles but did not eliminate synthetic artifacts.
+- Background music, reverberation, or another speaker in the reference quickly degraded the result.
+
+The reference recording mattered more than anything else. The most reliable input was 8–15 seconds of clean speech from one person, with natural delivery, minimal aggressive noise removal, and a speaking style close to the intended use case.
+
+I also avoided selecting a result solely because its score increased. I compared candidates with the same script and step count, listening for gender, vocal range, synthetic artifacts, and stability over long sentences. In Voice Cloning, repeated listening was a more honest evaluation than a single benchmark number.
+
+## Closing Thoughts
+
+After listening to voices produced in several ways, I found that some aspects were clearly less similar than the results from other Voice Cloning models. Those models, however, often require high-end GPUs. This experiment taught me that finding the best practical option within limited resources can be just as important as pursuing the highest possible quality.
+
+## References
+
+### Official Resources
+
+- [Supertonic repository and end-of-service notice](https://github.com/supertone-inc/supertonic)
+- [Supertonic Python SDK repository](https://github.com/supertone-inc/supertonic-py)
+- [SupertonicTTS paper](https://arxiv.org/abs/2503.23108)
+- [Supertonic Python SDK documentation](https://supertone-inc.github.io/supertonic-py/)
+- [Supertonic 3 model card and voice styles](https://huggingface.co/Supertone/supertonic-3)
+- [Modal documentation](https://modal.com/docs)
+- [ONNX Runtime](https://onnxruntime.ai/)
+
+### Open-Source Projects Evaluated
+
+- [Mimocro/supertonic-voice-cloning](https://github.com/Mimocro/supertonic-voice-cloning)
+- [Fawzan09/voice-builder-for-supertonic-3](https://github.com/Fawzan09/voice-builder-for-supertonic-3)
+- [saurabhv749/supertonic3-voice-clone](https://github.com/saurabhv749/supertonic3-voice-clone)
+- [Saganaki22/supertonic_embeddings_trainer](https://github.com/Saganaki22/supertonic_embeddings_trainer)
+- [kdrkdrkdr/supertonic.embed](https://github.com/kdrkdrkdr/supertonic.embed)
+- [maxfridbe/vibe_supertonic_voice_cloner](https://github.com/maxfridbe/vibe_supertonic_voice_cloner)
+- [maxfridbe/vibe_android_tts_runner](https://github.com/maxfridbe/vibe_android_tts_runner)

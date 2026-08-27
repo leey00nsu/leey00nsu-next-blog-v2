@@ -170,7 +170,7 @@ export function CustomImage({
         loading={resolvedLoading}
         priority={priority}
         sizes={resolvedSizes}
-        unoptimized={isAnimated || isExternal}
+        unoptimized={isSvg || isAnimated || isExternal}
       />
     </span>
   )

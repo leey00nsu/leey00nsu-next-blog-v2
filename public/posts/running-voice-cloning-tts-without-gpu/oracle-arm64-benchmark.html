@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oracle ARM64 5-step TTS 벤치마크</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: grid; place-items: center; background: #FBFAF7; padding: 24px; }
+    svg { width: min(100%, 1280px); height: auto; display: block; }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oracle-arm64-benchmark-title oracle-arm64-benchmark-desc">
+    <title id="oracle-arm64-benchmark-title">Oracle ARM64 5-step TTS 벤치마크</title>
+    <desc id="oracle-arm64-benchmark-desc">한 줄, 여러 줄, 문단 입력에 대해 공개 HTTPS 응답 시간과 생성된 음성 길이를 0초 기준의 grouped bar chart로 비교한다.</desc>
+    <defs>
+      <marker id="oab-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#595959"/></marker>
+      <marker id="oab-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#BD746D"/></marker>
+      <marker id="oab-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563EB"/></marker>
+    </defs>
+
+    <rect width="1280" height="720" fill="#FBFAF7"/>
+    <text x="48" y="64" fill="#111111" font-size="28" font-weight="800" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">생성된 음성보다 응답 시간이 짧았다</text>
+    <text x="48" y="96" fill="#595959" font-size="12" font-weight="500" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Oracle Ampere A1 · CPU 2 cores · 5 steps · 공개 HTTPS 요청 · 각 3회 평균</text>
+    <rect x="1184" y="40" width="48" height="32" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <text x="1208" y="61" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">03</text>
+
+    <line x1="112" y1="160" x2="1200" y2="160" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+    <line x1="112" y1="238" x2="1200" y2="238" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+    <line x1="112" y1="315" x2="1200" y2="315" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+    <line x1="112" y1="393" x2="1200" y2="393" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+    <line x1="112" y1="470" x2="1200" y2="470" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+    <line x1="112" y1="548" x2="1200" y2="548" stroke="rgba(17,17,17,0.30)" stroke-width="1.2"/>
+    <line x1="112" y1="160" x2="112" y2="548" stroke="rgba(17,17,17,0.30)" stroke-width="1.2"/>
+
+    <text x="96" y="164" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">35</text>
+    <text x="96" y="242" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">28</text>
+    <text x="96" y="319" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">21</text>
+    <text x="96" y="397" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">14</text>
+    <text x="96" y="474" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">7</text>
+    <text x="96" y="552" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">0</text>
+    <text x="40" y="356" fill="#737373" font-size="8" text-anchor="middle" transform="rotate(-90 40 356)" letter-spacing="1.4" font-family="'SF Mono','Menlo',monospace">SECONDS</text>
+
+    <rect x="244" y="511" width="72" height="37" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+    <rect x="340" y="495" width="72" height="53" fill="#F9E8DF" stroke="#595959" stroke-width="1.2"/>
+    <text x="280" y="499" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">3.36s</text>
+    <text x="376" y="483" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">4.74s</text>
+
+    <rect x="556" y="471" width="72" height="77" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+    <rect x="652" y="392" width="72" height="156" fill="#F9E8DF" stroke="#595959" stroke-width="1.2"/>
+    <text x="592" y="459" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">6.98s</text>
+    <text x="688" y="380" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">14.07s</text>
+
+    <rect x="868" y="394" width="72" height="154" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+    <rect x="964" y="208" width="72" height="340" fill="#F9E8DF" stroke="#595959" stroke-width="1.2"/>
+    <text x="904" y="382" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">13.87s</text>
+    <text x="1000" y="196" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">30.67s</text>
+
+    <text x="328" y="580" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">한 줄 · 27자</text>
+    <text x="640" y="580" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">여러 줄 · 93자</text>
+    <text x="952" y="580" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">문단 · 206자</text>
+    <text x="328" y="604" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">RTF 0.709 · 1.41×</text>
+    <text x="640" y="604" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">RTF 0.496 · 2.02×</text>
+    <text x="952" y="604" fill="#595959" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">RTF 0.452 · 2.21×</text>
+
+    <line x1="48" y1="648" x2="1232" y2="648" stroke="rgba(17,17,17,0.14)" stroke-width="1"/>
+    <rect x="48" y="672" width="16" height="16" rx="4" fill="#F4B9A4" stroke="#BD746D"/>
+    <text x="76" y="684" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">응답 시간</text>
+    <rect x="176" y="672" width="16" height="16" rx="4" fill="#F9E8DF" stroke="#595959"/>
+    <text x="204" y="684" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">생성 음성 길이</text>
+    <text x="1232" y="684" fill="#737373" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">RTF = RESPONSE TIME ÷ AUDIO DURATION</text>
+  </svg>
+</body>
+</html>

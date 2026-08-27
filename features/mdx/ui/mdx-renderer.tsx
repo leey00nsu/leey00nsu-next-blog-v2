@@ -4,6 +4,7 @@ import {
   defaultRehypePlugins,
 } from '@/features/mdx/lib/mdx-options'
 import { MdxAnchor } from '@/shared/ui/mdx-anchor'
+import { AudioSample } from '@/features/post/ui/audio-sample'
 import { CustomFigcaption } from '@/features/post/ui/custom-figcaption'
 import { CustomImage } from '@/shared/ui/custom-image'
 import type React from 'react'
@@ -33,6 +34,7 @@ export function MdxRenderer({
     <MDXRemote
       source={content}
       components={{
+        AudioSample,
         a: MdxAnchor,
         figcaption: CustomFigcaption,
         img: CustomImage,

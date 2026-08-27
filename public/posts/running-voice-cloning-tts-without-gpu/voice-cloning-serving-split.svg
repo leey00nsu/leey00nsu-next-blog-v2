@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="voice-cloning-serving-split-title voice-cloning-serving-split-desc">
+    <title id="voice-cloning-serving-split-title">Voice cloning과 TTS serving 분리 구조</title>
+    <desc id="voice-cloning-serving-split-desc">Modal CPU에서 레퍼런스 음성을 custom voice JSON으로 한 번 변환하고, Oracle ARM64 서버가 그 JSON을 반복 사용해 여러 TTS 요청을 처리하는 구조를 보여준다.</desc>
+    <defs>
+      <marker id="vcss-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#595959"/></marker>
+      <marker id="vcss-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#BD746D"/></marker>
+      <marker id="vcss-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563EB"/></marker>
+    </defs>
+
+    <rect width="1280" height="720" fill="#FBFAF7"/>
+    <text x="48" y="64" fill="#111111" font-size="28" font-weight="800" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">목소리는 한 번 만들고, TTS 서버는 계속 재사용한다</text>
+    <text x="48" y="96" fill="#595959" font-size="12" font-weight="500" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">CPU 작업의 생명주기를 분리하면 voice 추가와 실시간 serving이 서로 영향을 덜 받는다.</text>
+    <rect x="1184" y="40" width="48" height="32" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <text x="1208" y="61" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">02</text>
+
+    <rect x="48" y="136" width="1184" height="232" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <rect x="48" y="396" width="1184" height="232" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <text x="72" y="168" fill="#595959" font-size="12" font-weight="700" letter-spacing="1.4" font-family="'SF Mono','Menlo',monospace">MODAL CPU · VOICE CLONING · 1회성</text>
+    <text x="72" y="428" fill="#595959" font-size="12" font-weight="700" letter-spacing="1.4" font-family="'SF Mono','Menlo',monospace">ORACLE ARM64 · TTS SERVING · 반복</text>
+
+    <line x1="264" y1="256" x2="320" y2="256" stroke="#595959" stroke-width="1.2" marker-end="url(#vcss-arrow)"/>
+    <line x1="536" y1="256" x2="592" y2="256" stroke="#595959" stroke-width="1.2" marker-end="url(#vcss-arrow)"/>
+    <line x1="808" y1="256" x2="864" y2="256" stroke="#BD746D" stroke-width="1.6" marker-end="url(#vcss-arrow-accent)"/>
+    <line x1="968" y1="316" x2="968" y2="468" stroke="#BD746D" stroke-width="1.6" marker-end="url(#vcss-arrow-accent)"/>
+    <line x1="536" y1="536" x2="864" y2="536" stroke="#2563EB" stroke-width="1.4" marker-end="url(#vcss-arrow-link)"/>
+    <line x1="1072" y1="536" x2="1128" y2="536" stroke="#2563EB" stroke-width="1.4" marker-end="url(#vcss-arrow-link)"/>
+
+    <rect x="272" y="228" width="40" height="16" rx="4" fill="#FFFDF9"/>
+    <text x="292" y="240" fill="#737373" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">24kHz</text>
+    <rect x="544" y="228" width="40" height="16" rx="4" fill="#FFFDF9"/>
+    <text x="564" y="240" fill="#737373" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">FEATURE</text>
+    <rect x="816" y="228" width="40" height="16" rx="4" fill="#FFFDF9"/>
+    <text x="836" y="240" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">REFINE</text>
+    <rect x="652" y="508" width="96" height="16" rx="4" fill="#FFFDF9"/>
+    <text x="700" y="520" fill="#2563EB" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">POST /v1/tts</text>
+    <rect x="1080" y="508" width="40" height="16" rx="4" fill="#FFFDF9"/>
+    <text x="1100" y="520" fill="#2563EB" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">WAV</text>
+
+    <rect x="80" y="196" width="184" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <rect x="92" y="208" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="112" y="220" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">INPUT</text>
+    <text x="172" y="252" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Reference Audio</text>
+    <text x="172" y="280" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">한 명의 깨끗한 음성</text>
+
+    <rect x="320" y="196" width="216" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <rect x="332" y="208" width="48" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="356" y="220" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">ANALYZE</text>
+    <text x="428" y="252" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Speaker Feature</text>
+    <text x="428" y="280" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">Qwen3-TTS · 2,048 dims</text>
+
+    <rect x="592" y="196" width="216" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <rect x="604" y="208" width="48" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="628" y="220" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">SEARCH</text>
+    <text x="700" y="252" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">PCA + CMA-ES</text>
+    <text x="700" y="280" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">후보 합성 · 유사도 비교</text>
+
+    <rect x="864" y="196" width="208" height="120" rx="8" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.6"/>
+    <rect x="876" y="208" width="56" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="904" y="220" fill="#BD746D" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">ARTIFACT</text>
+    <text x="968" y="252" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">custom_voice.json</text>
+    <text x="968" y="280" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">작고 영속적인 voice style</text>
+
+    <rect x="320" y="476" width="216" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <rect x="332" y="488" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="352" y="500" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">INPUT</text>
+    <text x="428" y="532" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Text Request</text>
+    <text x="428" y="560" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">text · voice=adam · 5 steps</text>
+
+    <rect x="864" y="476" width="208" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <rect x="876" y="488" width="56" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="904" y="500" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">RUNTIME</text>
+    <text x="968" y="532" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Supertonic 3</text>
+    <text x="968" y="560" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">ONNX CPUExecutionProvider</text>
+
+    <rect x="1128" y="476" width="72" height="120" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <text x="1164" y="528" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Audio</text>
+    <text x="1164" y="556" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">44.1kHz</text>
+
+    <line x1="48" y1="660" x2="1232" y2="660" stroke="rgba(17,17,17,0.14)" stroke-width="1"/>
+    <line x1="48" y1="684" x2="88" y2="684" stroke="#595959" stroke-width="1.2" marker-end="url(#vcss-arrow)"/>
+    <text x="100" y="688" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">1회성 CPU 탐색</text>
+    <rect x="264" y="676" width="16" height="16" rx="4" fill="#F4B9A4" stroke="#BD746D"/>
+    <text x="292" y="688" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">영속 artifact</text>
+    <line x1="444" y1="684" x2="484" y2="684" stroke="#2563EB" stroke-width="1.4" marker-end="url(#vcss-arrow-link)"/>
+    <text x="496" y="688" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">반복 HTTPS 요청</text>
+    <text x="1232" y="688" fill="#737373" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">CPU ONLY · JSON separates cloning from serving</text>
+  </svg>

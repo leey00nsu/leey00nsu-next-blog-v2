@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supertonic 3 음성 합성 구조</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: grid; place-items: center; background: #FBFAF7; padding: 24px; }
+    svg { width: min(100%, 1280px); height: auto; display: block; }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="supertonic-inference-pipeline-title supertonic-inference-pipeline-desc">
+    <title id="supertonic-inference-pipeline-title">Supertonic 3 음성 합성 구조</title>
+    <desc id="supertonic-inference-pipeline-desc">문자 입력이 duration predictor와 flow matching을 거쳐 음성 latent와 waveform으로 바뀌며, voice JSON의 style_dp와 style_ttl이 각각 두 생성 경로를 조건화하는 과정을 보여준다.</desc>
+    <defs>
+      <marker id="sip-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#595959"/></marker>
+      <marker id="sip-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#BD746D"/></marker>
+      <marker id="sip-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563EB"/></marker>
+    </defs>
+
+    <rect width="1280" height="720" fill="#FBFAF7"/>
+    <text x="48" y="64" fill="#111111" font-size="28" font-weight="800" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Supertonic 3는 text와 voice style을 함께 합성한다</text>
+    <text x="48" y="96" fill="#595959" font-size="12" font-weight="500" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">문자 단위 입력은 압축된 speech latent를 거쳐 44.1kHz waveform으로 복원된다.</text>
+    <rect x="1184" y="40" width="48" height="32" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+    <text x="1208" y="61" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">01</text>
+
+    <line x1="240" y1="336" x2="296" y2="336" stroke="#595959" stroke-width="1.2" marker-end="url(#sip-arrow)"/>
+    <line x1="496" y1="336" x2="552" y2="336" stroke="#BD746D" stroke-width="1.6" marker-end="url(#sip-arrow-accent)"/>
+    <line x1="752" y1="336" x2="808" y2="336" stroke="#BD746D" stroke-width="1.6" marker-end="url(#sip-arrow-accent)"/>
+    <line x1="1008" y1="336" x2="1064" y2="336" stroke="#595959" stroke-width="1.2" marker-end="url(#sip-arrow)"/>
+    <line x1="396" y1="512" x2="396" y2="400" stroke="#595959" stroke-width="1.2" marker-end="url(#sip-arrow)"/>
+    <line x1="652" y1="512" x2="652" y2="400" stroke="#595959" stroke-width="1.2" marker-end="url(#sip-arrow)"/>
+
+    <rect x="248" y="308" width="40" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="268" y="320" fill="#737373" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">TEXT</text>
+    <rect x="504" y="308" width="40" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="524" y="320" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">LENGTH</text>
+    <rect x="760" y="308" width="40" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="780" y="320" fill="#BD746D" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">LATENT</text>
+    <rect x="1016" y="308" width="40" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="1036" y="320" fill="#737373" font-size="8" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">DECODE</text>
+
+    <rect x="64" y="272" width="176" height="128" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <rect x="76" y="284" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="96" y="296" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">INPUT</text>
+    <text x="152" y="332" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">문자 단위 text</text>
+    <text x="152" y="360" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">raw characters</text>
+
+    <rect x="296" y="272" width="200" height="128" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <rect x="308" y="284" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="328" y="296" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">MODEL</text>
+    <text x="396" y="332" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Duration Predictor</text>
+    <text x="396" y="360" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">전체 발화 길이 예측</text>
+
+    <rect x="552" y="272" width="200" height="128" rx="8" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.6"/>
+    <rect x="564" y="284" width="40" height="16" rx="4" fill="#FBFAF7"/>
+    <text x="584" y="296" fill="#BD746D" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">FOCAL</text>
+    <text x="652" y="324" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Text Encoder</text>
+    <text x="652" y="348" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">+ Flow Matching</text>
+    <text x="652" y="376" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">text → speech latent</text>
+
+    <rect x="808" y="272" width="200" height="128" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <rect x="820" y="284" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="840" y="296" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">STATE</text>
+    <text x="908" y="332" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Compressed Latent</text>
+    <text x="908" y="360" fill="#595959" font-size="12" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">시간축으로 압축된 음성 표현</text>
+
+    <rect x="1064" y="272" width="152" height="128" rx="8" fill="#FFFDF9" stroke="#111111" stroke-width="1.2"/>
+    <rect x="1076" y="284" width="40" height="16" rx="4" fill="#F9E8DF"/>
+    <text x="1096" y="296" fill="#595959" font-size="8" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">OUTPUT</text>
+    <text x="1140" y="332" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif">Speech Decoder</text>
+    <text x="1140" y="360" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">44.1kHz WAV</text>
+
+    <rect x="296" y="512" width="200" height="88" rx="8" fill="#F9E8DF" stroke="#595959" stroke-width="1"/>
+    <text x="396" y="548" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">style_dp</text>
+    <text x="396" y="576" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">[1, 8, 16] · 128 values</text>
+
+    <rect x="552" y="512" width="200" height="88" rx="8" fill="#F9E8DF" stroke="#595959" stroke-width="1"/>
+    <text x="652" y="548" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">style_ttl</text>
+    <text x="652" y="576" fill="#595959" font-size="12" text-anchor="middle" font-family="'SF Mono','Menlo',monospace">[1, 50, 256] · 12,800 values</text>
+
+    <line x1="48" y1="648" x2="1232" y2="648" stroke="rgba(17,17,17,0.14)" stroke-width="1"/>
+    <rect x="48" y="672" width="16" height="16" rx="4" fill="#F4B9A4" stroke="#BD746D"/>
+    <text x="76" y="684" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">flow-matching 중심 경로</text>
+    <rect x="300" y="672" width="16" height="16" rx="4" fill="#F9E8DF" stroke="#595959"/>
+    <text x="328" y="684" fill="#595959" font-size="8" font-family="'SF Mono','Menlo',monospace">voice JSON tensor</text>
+    <text x="1232" y="684" fill="#737373" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo',monospace">SOURCE · SupertonicTTS paper + official runtime</text>
+  </svg>
+</body>
+</html>

@@ -14,7 +14,14 @@ const OUTPUT_PATH = path.join(
   'entities/post/config/thumbnail-metadata.generated.ts',
 )
 
-const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif'])
+const IMAGE_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.gif',
+  '.svg',
+])
 
 async function ensureDirExists(filePath: string): Promise<void> {
   const dir = path.dirname(filePath)
@@ -36,6 +43,23 @@ async function readImageMetadata(
 
   try {
     const imageBuffer = await fs.readFile(absolutePath)
+
+    // SVG는 LQIP를 만들지 않고 viewBox/width/height만 사용한다.
+    // sharp는 width/height 속성이 없는 SVG도 viewBox에서 크기를 읽을 수 있다.
+    if (path.extname(absolutePath).toLowerCase() === '.svg') {
+      const svgMetadata = await sharp(imageBuffer).metadata()
+      if (!svgMetadata.width || !svgMetadata.height) {
+        return null
+      }
+
+      return {
+        width: svgMetadata.width,
+        height: svgMetadata.height,
+        base64: '',
+        isAnimated: false,
+      }
+    }
+
     const { metadata } = await lqipModern(imageBuffer)
 
     if (!metadata) {

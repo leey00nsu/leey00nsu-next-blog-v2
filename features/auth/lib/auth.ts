@@ -1,11 +1,16 @@
 import NextAuth from 'next-auth'
 import GitHub from 'next-auth/providers/github'
+import { AUTH_PROVIDER_CONFIG } from '@/features/auth/config/constants'
 import { ROUTES } from '@/shared/config/constants'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: { strategy: 'jwt' },
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      issuer: AUTH_PROVIDER_CONFIG.GITHUB_ISSUER,
+    }),
+  ],
   pages: {
     signIn: ROUTES.AUTH_SIGNIN,
     error: ROUTES.AUTH_UNAUTHORIZED,

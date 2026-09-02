@@ -49,11 +49,9 @@ vi.mock('@/shared/ui/json-ld', () => {
 
 vi.mock('@/shared/ui/entrance-motion-block', () => {
   return {
-    EntranceMotionBlock: ({
-      children,
-    }: {
-      children?: React.ReactNode
-    }) => <div data-testid="entrance-block">{children}</div>,
+    EntranceMotionBlock: ({ children }: { children?: React.ReactNode }) => (
+      <div data-testid="entrance-block">{children}</div>
+    ),
   }
 })
 
@@ -74,6 +72,16 @@ const POST: Post = {
 }
 
 describe('PostDetail', () => {
+  it('게시글 제목 바로 아래에 설명을 표시한다', () => {
+    render(<PostDetail post={POST} locale="ko" />)
+
+    const title = screen.getByRole('heading', { name: POST.title, level: 1 })
+    const description = screen.getByText(POST.description)
+
+    expect(title.nextElementSibling).toBe(description)
+    expect(description).toHaveClass('text-muted-foreground')
+  })
+
   it('게시글 주요 블록을 공통 등장 애니메이션 래퍼로 감싼다', () => {
     render(<PostDetail post={POST} locale="ko" />)
 

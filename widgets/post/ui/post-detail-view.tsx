@@ -47,6 +47,9 @@ export function PostDetailView({
             <span>{post.writer}</span>
           </div>
           <h1>{post.title}</h1>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            {post.description}
+          </p>
           <div className="my-4 flex justify-center gap-2">
             <ShareButton />
           </div>

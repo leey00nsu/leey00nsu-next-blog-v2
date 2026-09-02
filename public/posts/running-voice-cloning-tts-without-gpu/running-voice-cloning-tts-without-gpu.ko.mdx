@@ -6,7 +6,8 @@ tags:
   - TTS
   - Voice Cloning
   - Supertonic
-description: Supertonic 3의 custom voice를 CPU에서 만들고 Oracle ARM64 서버에 등록해 운영하기까지의 실험과 한계
+  - Audio8
+description: Supertonic 3와 Audio8의 Voice Cloning을 CPU에서 구성하고 Oracle ARM64 서버에서 속도와 화자 유사도 비교 해보기
 date: 2026-08-27
 section: blog
 series:
@@ -25,7 +26,7 @@ writer: leey00nsu
 
 `목소리를 만들 때도 GPU를 사용하지 않고, 완성된 목소리는 작은 CPU 서버에서 계속 호출할 수 없을까?`
 
-실험 끝에 Supertonic 3의 custom voice JSON을 CPU에서 만들고 Oracle Cloud의 ARM64 서버에 여러 목소리를 이름으로 등록해 합성하는 구조까지 연결했습니다.
+실험 끝에 Supertonic 3의 custom voice JSON을 CPU에서 만들고 Oracle Cloud의 ARM64 서버에 여러 목소리를 이름으로 등록해 합성하는 구조까지 연결했습니다. 이후에는 같은 레퍼런스로 Audio8의 zero-shot Voice Cloning도 구성해 두 방식의 화자 유사도와 CPU 성능을 비교했습니다.
 
 ## Supertonic TTS란
 
@@ -36,6 +37,14 @@ writer: leey00nsu
 이 글에서 사용한 Supertonic 3는 약 9,900만 개의 parameter로 31개 언어를 지원하고 44.1kHz 음성을 출력합니다. 공식 모델에는 남성 5개와 여성 5개, 모두 10개의 voice가 들어 있습니다. 제가 특히 마음에 든 건 모델 크기보다 voice와 합성 모델을 분리한 구조였습니다. 하나의 TTS 모델을 그대로 두고 작은 voice style만 바꾸면 여러 목소리를 낼 수 있습니다. 자세한 모델 사양과 지원 범위는 [공식 README](https://github.com/supertone-inc/supertonic#readme)와 [Supertonic 3 모델 카드](https://huggingface.co/Supertone/supertonic-3)에 나와 있습니다.
 
 공식 [Python SDK](https://supertone-inc.github.io/supertonic-py/)에는 로컬 서버도 들어 있습니다. 모델을 내려받아 `supertonic serve`를 실행하면 CPU 기반 TTS API가 열리고 별도로 만든 custom voice JSON도 같은 런타임에 불러올 수 있습니다. 특정 클라우드나 GPU에 묶이지 않는 형태였습니다.
+
+## Audio8 TTS란
+
+[Audio8 TTS](https://github.com/Audio8-AI/Audio8_TTS)는 레퍼런스 음성과 전사를 직접 참고해 새 문장을 말하게 만드는 zero-shot Voice Cloning 모델입니다. 이 글에서는 CPU 배포를 목표로 공개된 [0.1B ONNX INT8 모델](https://huggingface.co/Audio8/audio8-TTS-0.1B-ONNX-INT8)을 사용했습니다.
+
+핵심은 Neural Audio Codec과 DualAR 구조입니다. Neural Audio Codec은 긴 파형을 그대로 다루는 대신 음성을 작은 코드 묶음으로 압축합니다. DualAR은 먼저 문장의 내용과 흐름을 담당하는 큰 단위의 코드를 만들고, 이어서 음색과 세부 소리를 채우는 코드를 생성합니다. 레퍼런스에서 뽑은 음성 코드를 조건으로 사용하므로 원래 화자의 특징을 비교적 직접적으로 따라갈 수 있습니다.
+
+대신 코드를 앞에서부터 하나씩 생성해야 합니다. 여러 음성 구간을 한꺼번에 처리하는 Supertonic보다 화자 유사도에는 유리하지만 CPU에서는 시간이 오래 걸릴 수 있습니다. 후반부의 음질과 속도 차이는 이 구조에서 시작됩니다.
 
 ## Voice Builder 종료 공지에서 시작된 문제
 
@@ -49,11 +58,11 @@ Supertonic에도 공식 custom voice 제작 도구인 Voice Builder가 있었습
 
 [SupertonicTTS 논문](https://arxiv.org/abs/2503.23108)에 따르면 모델은 세 부분으로 이뤄집니다.
 
-1. 음성을 시간축으로 압축된 연속 latent로 바꾸고 다시 waveform으로 복원하는 speech autoencoder
-2. 문자 단위 text에서 음성 latent를 만드는 flow-matching 모델
-3. 문장의 발화 길이를 예측하는 utterance-level duration predictor
+1. 음성을 작은 표현으로 압축하고 다시 소리로 복원하는 장치(speech autoencoder)
+2. 입력 문자를 압축된 음성 표현으로 바꾸는 생성기(flow-matching 모델)
+3. 문장을 얼마나 길게 말할지 정하는 예측기(duration predictor)
 
-입력 문자는 별도의 phoneme 변환기나 외부 aligner를 거치지 않고 text encoder에 들어갑니다. duration predictor가 전체 발화 길이를 정하면 text-to-latent 경로가 그 길이에 맞는 음성 표현을 만들고 autoencoder의 decoder가 실제 waveform으로 복원합니다. 낮은 차원의 latent와 시간축 압축 덕분에 작은 모델인데도 합성이 빠릅니다.
+간단히 말하면 먼저 문장의 재생 시간을 정하고, 그 길이에 맞는 압축 음성을 만든 다음, 마지막에 우리가 듣는 파형으로 복원합니다. 중간 표현을 작게 유지하고 여러 구간을 함께 처리하기 때문에 작은 모델에서도 합성이 빠릅니다.
 
 ![문자 입력과 voice JSON의 style_dp·style_ttl이 duration predictor와 flow matching을 거쳐 44.1kHz 음성으로 합성되는 Supertonic 3 구조](/public/posts/running-voice-cloning-tts-without-gpu/supertonic-inference-pipeline.svg)
 
@@ -103,7 +112,7 @@ custom_voice.json + text
 - 특정 체크포인트에서는 음색이 조금 가까워졌지만 기계음이 함께 늘었습니다.
 - 레퍼런스의 언어와 전사 결과에 따라 출발점이 흔들리는 방식도 있었습니다.
 
-처음에는 학습 횟수를 더 늘리면 해결될 것이라고 생각했습니다. 여러 체크포인트를 같은 문장으로 비교해보니 횟수만의 문제는 아니었습니다. 어떤 특징을 화자의 정체성으로 볼지, 어느 범위 안에서 voice style을 탐색할지가 더 중요했습니다.
+처음에는 학습 횟수를 더 늘리면 해결될 것이라고 생각했습니다. 여러 체크포인트를 같은 문장으로 비교해보니 횟수만의 문제는 아니었습니다. 화자의 어떤 특징을 기준으로 삼고, Supertonic이 표현할 수 있는 목소리 중 어디까지 비교할지가 더 중요했습니다.
 
 이때부터 질문을 바꿨습니다.
 
@@ -113,113 +122,46 @@ custom_voice.json + text
 
 ## 화자 특징으로 voice style을 역으로 찾기
 
-마지막에 선택한 방법은 레퍼런스의 화자 특징을 먼저 추출하고 그 특징을 가장 비슷하게 재현하는 Supertonic voice style을 역으로 찾는 방식입니다.
+마지막에 선택한 방법은 레퍼런스의 화자 특징을 먼저 요약하고, 그 특징과 가장 가까운 Supertonic 목소리를 찾는 방식입니다.
 
 흐름은 이렇습니다.
 
-1. 레퍼런스를 24kHz mono로 변환하고 처음 12초를 사용합니다.
-2. `Qwen3-TTS` speaker encoder로 2,048차원 화자 특징을 추출합니다.
-3. 미리 준비된 translation head가 초기 `style_ttl`과 `style_dp`를 예측합니다.
-4. 실제 voice style들로 만든 384차원 PCA 공간에서 후보를 생성합니다.
-5. 각 후보를 Supertonic 3로 실제 합성합니다.
-6. 합성 음성과 레퍼런스의 centered Qwen cosine을 계산합니다.
-7. `separable CMA-ES`가 다음 후보를 고르고 이 과정을 반복합니다.
+1. 레퍼런스 음성에서 화자를 구분하는 특징을 추출합니다.
+2. 그 특징을 바탕으로 첫 번째 custom voice 후보를 만듭니다.
+3. 후보 목소리로 짧은 문장을 실제 합성합니다.
+4. 합성 결과가 레퍼런스와 얼마나 가까운지 비교합니다.
+5. 더 나은 후보를 만들고 같은 과정을 반복합니다.
 
 ```text
 reference audio
-  -> speaker feature
-  -> initial voice style
-  -> PCA 안에서 후보 생성
-  -> Supertonic으로 probe 문장 합성
-  -> reference와 화자 유사도 비교
-  -> 더 나은 후보 탐색
+  -> 화자 특징 요약
+  -> custom voice 후보 생성
+  -> Supertonic으로 짧은 문장 합성
+  -> reference와 비교
+  -> 후보 개선
   -> custom voice JSON
 ```
 
 여기서 Qwen은 최종 음성을 만드는 모델이 아니라 레퍼런스와 합성 후보를 비교하는 “귀”로 사용됩니다. 실제 서비스 음성은 처음부터 끝까지 Supertonic 3가 생성합니다.
 
-이 과정에는 gradient 계산과 backpropagation이 없습니다. 이미 준비된 ONNX 모델로 feature를 추출하고 후보를 평가하는 forward pass만 반복합니다. 엄밀히 말하면 새로운 모델을 학습하는 Fine-tuning보다 제한된 voice style 공간에서 목적 함수를 최대화하는 탐색에 가깝습니다. 그래서 GPU 없이 실행했습니다.
+후보를 만드는 데는 PCA와 CMA-ES를 사용했지만, 원리는 어렵지 않습니다. 모델을 새로 학습하는 대신 기존 모델로 여러 후보를 만들어 직접 들어보고 가장 가까운 값을 남깁니다. 무거운 학습 과정이 없기 때문에 CPU에서도 실행할 수 있었습니다.
 
 레퍼런스의 정확한 대본도 필요하지 않았습니다. 일본어 레퍼런스로 style을 만든 뒤 한국어 문장을 합성할 수도 있습니다. speaker feature를 찾는 단계와 Supertonic에 새 문장을 입력하는 단계가 분리되어 있기 때문입니다.
 
-## Voice Cloning은 CPU에서 얼마나 걸렸을까
-
-13.74초 길이의 한국어 남성 음성을 기준으로 Modal CPU 환경에서 실행했습니다. 실제 분석에는 앞의 12초가 사용됐습니다.
-
-| 항목 | 결과 |
-|---|---:|
-| Modal 자원 | CPU 8 cores, memory 32 GiB |
-| 최대 탐색 예산 | 120 generations × 20 candidates |
-| 실제 종료 | 88 generations |
-| 후보 평가 | 1,761회 |
-| 초기 centered Qwen cosine | 0.732 |
-| 최종 centered Qwen cosine | 0.783 |
-| voice refine 시간 | 571.638초 |
-
-숫자만 보는 것보다 직접 들어보는 편이 빠릅니다. 아래 레퍼런스와 생성 결과는 같은 대본을 사용했습니다.
-
-> 여러분 오늘은 제가 찾은 진짜 꿀팁 하나 알려드릴게요. 살 빼려고 이것저것 다 해봤는데 이게 최고더라고요. 한 달 만에 복부 사이즈가 이렇게나 줄었어요. 비밀이라서 댓글 남기신 분들께만 자세히 알려드릴게요. 진짜 놀라실 거예요!
-
-<AudioSample
-  title="레퍼런스 음성"
-  description="13.74초 · 원본 MP3 · 실제 분석에는 앞의 12초 사용"
-  src="/posts/running-voice-cloning-tts-without-gpu/adam-reference.mp3"
-/>
-
-<AudioSample
-  title="Supertonic 3 생성 결과"
-  description="22.38초 · Oracle ARM64 · 5 steps · 44.1kHz mono WAV"
-  src="/posts/running-voice-cloning-tts-without-gpu/adam-supertonic3-oracle-steps5.wav"
-/>
-
-약 9분 30초가 걸렸습니다. 짧지는 않습니다. 다만 새로운 목소리를 등록할 때 한 번만 실행하는 작업이고, 완성된 JSON으로 문장을 합성할 때는 speaker encoder와 CMA 탐색기를 다시 사용하지 않습니다.
-
-탐색 도중에는 0.811까지 올라간 후보도 있었습니다. 하지만 다른 문장과 최종 품질 설정으로 다시 계산하니 0.783이 나왔습니다. 탐색 로그의 최고값 대신 최종 full-fidelity 검증값을 결과로 남긴 이유입니다.
-
-이 숫자가 목소리 품질을 보장하는 것은 아닙니다. cosine은 최적화 방향을 정하는 지표일 뿐, 사람이 들었을 때 얼마나 닮았는지 평가하는 MOS가 아닙니다. 실제 선택은 같은 대본을 여러 방식으로 합성해 직접 듣고 결정했습니다.
-
-## 클로닝과 TTS 서버를 분리하기
+## 목소리는 한 번 등록하고 이름으로 호출하기
 
 CPU에서 실행되더라도 voice cloning과 실시간 요청 처리를 같은 서버에 넣을 필요는 없었습니다. 두 작업의 생명주기가 다르기 때문입니다.
 
 - **Voice Cloning:** 목소리 하나를 만들 때만 실행하며 CPU와 메모리를 비교적 많이 사용합니다.
-- **TTS serving:** 이미 만들어진 JSON을 읽고 짧은 요청을 반복해서 처리합니다.
+- **TTS serving:** 이미 만들어진 JSON이나 voice profile을 읽고 짧은 요청을 반복해서 처리합니다.
 
-클로닝은 Modal CPU 작업으로 실행하고 결과 JSON만 내려받았습니다. 실제 TTS 서버는 Oracle Cloud의 Ampere A1 ARM64 인스턴스에 배포했습니다.
+Voice Cloning은 Modal CPU 작업으로 실행하고 결과 JSON이나 voice profile만 내려받았습니다. 실제 TTS 서버는 Oracle Cloud의 Ampere A1 ARM64 인스턴스에 배포했습니다.
 
 ![Modal CPU의 1회성 Voice Cloning이 custom voice JSON을 만들고 Oracle ARM64가 이를 반복 TTS 요청에 사용하는 구조](/public/posts/running-voice-cloning-tts-without-gpu/voice-cloning-serving-split.svg)
 
-서버는 `python:3.11-slim` 이미지에 `supertonic==1.3.1`과 ONNX Runtime CPU provider만 설치했습니다. CUDA, PyTorch GPU image와 NVIDIA Container Runtime은 필요하지 않습니다.
+Supertonic 서버는 `python:3.11-slim` 이미지에 `supertonic==1.3.1`과 ONNX Runtime CPU provider만 설치했습니다. CUDA, PyTorch GPU image와 NVIDIA Container Runtime은 필요하지 않습니다.
 
 초기 운영값은 CPU 2코어와 메모리 4GB로 잡았습니다. 모델 cache와 custom voice는 서로 다른 Docker volume에 저장했고 컨테이너의 root filesystem은 read-only로 두었습니다. 공식 Supertonic 서버에는 인증이 없어서 최소 32자의 API key를 검사하는 ASGI middleware도 추가했습니다.
-
-## Oracle ARM64에서 실제로 얼마나 빨랐을까
-
-등록한 custom voice를 5 step으로 호출해 한 줄, 여러 줄, 문단을 각각 세 번씩 합성했습니다. 표의 latency는 서버 내부의 ONNX 추론 시간만 잰 값이 아닙니다. 공개 HTTPS endpoint에 요청을 보낸 시점부터 완성된 WAV를 받을 때까지 측정해 Cloudflare와 네트워크 왕복, WAV 인코딩 시간이 모두 들어 있습니다.
-
-| 항목 | 설정 |
-|---|---|
-| 인스턴스 | Oracle Cloud Ampere A1, ARM64 |
-| 제한 자원 | CPU 2 cores, memory 4 GB |
-| 런타임 | `supertonic==1.3.1`, ONNX Runtime CPUExecutionProvider |
-| 합성 설정 | 5 steps, 44.1kHz mono WAV |
-| 측정 방식 | warm-up 후 공개 HTTPS 요청, 각 3회 평균 |
-
-| 입력 | 응답 시간 | 생성 음성 | RTF | 재생 시간 대비 속도 |
-|---|---:|---:|---:|---:|
-| 한 줄, 27자 | 3.36초 | 4.74초 | 0.709 | 1.41× |
-| 여러 줄, 93자 | 6.98초 | 14.07초 | 0.496 | 2.02× |
-| 문단, 206자 | 13.87초 | 30.67초 | 0.452 | 2.21× |
-
-![Oracle ARM64에서 5-step 합성 시 한 줄·여러 줄·문단별 응답 시간과 생성 음성 길이를 비교한 차트](/public/posts/running-voice-cloning-tts-without-gpu/oracle-arm64-benchmark.svg)
-
-RTF(Real-Time Factor)는 `응답 시간 ÷ 생성된 음성 길이`입니다. 1보다 작으면 음성을 재생하는 시간보다 빠르게 생성했다는 뜻입니다. 30.67초짜리 문단을 13.87초 만에 받았으니 작은 ARM CPU에서도 batch 합성은 충분히 실용적이었습니다. 입력이 길어질수록 모델 로딩과 요청 처리 같은 고정 비용이 분산되어 RTF도 좋아졌습니다.
-
-다만 이것은 streaming latency가 아닙니다. 공식 Python 서버는 내부 합성이 끝난 WAV 전체를 반환하므로 문단 테스트에서는 첫 소리를 듣기까지 약 13.87초를 기다립니다. 첫 문장부터 재생해야 한다면 문장 단위로 나눠 순차 합성하는 wrapper가 별도로 필요합니다. 빠른 생성과 빠른 첫 audio chunk는 다른 지표였습니다.
-
-이 표는 등록된 custom voice의 **서빙 성능**을 측정한 결과입니다. 레퍼런스 화자와 얼마나 닮았는지를 나타내는 voice cloning 품질 점수와는 관계가 없습니다.
-
-## 목소리는 한 번 등록하고 이름으로 호출하기
 
 완성된 JSON은 서버를 다시 빌드하지 않고 API로 등록합니다.
 
@@ -259,26 +201,86 @@ Supertonic은 합성 step을 줄이면 빨라지고 늘리면 품질이 좋아�
 
 공식 문서가 5 step을 반드시 권장하는 것은 아닙니다. SDK 예제와 기본값도 환경에 따라 다르기 때문에 이 값은 직접 청취한 결과를 바탕으로 정한 운영 기준입니다.
 
-## GPU를 없애도 품질 한계는 남았다
+## Oracle ARM64에서 Supertonic과 Audio8 비교하기
 
-이번 구조로 GPU 비용은 없앴지만 어떤 목소리든 정확하게 복제할 수 있는 것은 아닙니다.
+Supertonic의 목소리 생성부터 등록, 합성 설정까지 정리한 뒤 같은 Oracle 서버에 Audio8 0.1B를 별도 컨테이너로 배포했습니다. Audio8은 CPU 4코어와 메모리 6GB, Supertonic은 CPU 2코어와 메모리 4GB를 사용했습니다. Audio8에는 `top_k=1`과 미리 계산한 레퍼런스 cache를 적용했습니다.
 
-가장 큰 한계는 최종 결과가 Supertonic이 표현하는 style 공간 안에 머문다는 것입니다. speaker encoder가 레퍼런스의 특징을 잘 찾더라도 Supertonic의 decoder가 그 음색을 표현하지 못하면 결과는 어느 지점 이상 가까워지지 않습니다.
+### 같은 대본으로 직접 들어보기
+
+수치보다 차이를 빠르게 확인하는 방법은 직접 듣는 것입니다. 아래 세 파일은 모두 같은 대본을 사용했습니다.
+
+> 여러분 오늘은 제가 찾은 진짜 꿀팁 하나 알려드릴게요. 살 빼려고 이것저것 다 해봤는데 이게 최고더라고요. 한 달 만에 복부 사이즈가 이렇게나 줄었어요. 비밀이라서 댓글 남기신 분들께만 자세히 알려드릴게요. 진짜 놀라실 거예요!
+
+<AudioSample
+  title="1. 원본 레퍼런스"
+  description="13.74초 · 원본 MP3 · Supertonic 분석에는 앞의 12초 사용"
+  src="/posts/running-voice-cloning-tts-without-gpu/adam-reference.mp3"
+/>
+
+<AudioSample
+  title="2. Supertonic 3 생성 결과"
+  description="22.38초 · Oracle ARM64 · 5 steps · 44.1kHz mono WAV"
+  src="/posts/running-voice-cloning-tts-without-gpu/adam-supertonic3-oracle-steps5.wav"
+/>
+
+<AudioSample
+  title="3. Audio8 0.1B 생성 결과"
+  description="13.37초 · Oracle Ampere A1 4 OCPU · top_k 1 · seed 42 · 44.1kHz mono WAV"
+  src="/posts/running-voice-cloning-tts-without-gpu/adam-audio8-01b-oracle-same-script.wav"
+/>
+
+직접 들어보면 Audio8이 원본의 음색과 음역을 더 가깝게 따라갑니다. Supertonic은 차이가 더 남지만 훨씬 빠르게 생성됩니다.
+
+### 실제 응답 속도 비교
+
+등록한 목소리로 한 줄, 여러 줄, 문단을 각각 합성했습니다. 응답 시간은 서버 내부 추론만 잰 값이 아니라 공개 HTTPS endpoint에 요청한 시점부터 완성된 WAV를 받을 때까지의 시간입니다. 따라서 Cloudflare, 네트워크 왕복과 WAV 인코딩도 포함됩니다.
+
+| 모델 | 제한 자원 | 입력 | 응답 시간 | 생성 음성 | RTF | 재생 시간 대비 속도 |
+|---|---|---|---:|---:|---:|---:|
+| Supertonic 3 | CPU 2 cores · 4GB | 한 줄, 27자 | 3.36초 | 4.74초 | 0.709 | 1.41× |
+| Audio8 0.1B | CPU 4 cores · 6GB | 한 줄, 27자 | 14.12초 | 3.20초 | 4.406 | 0.23× |
+| Supertonic 3 | CPU 2 cores · 4GB | 여러 줄, 93자 | 6.98초 | 14.07초 | 0.496 | 2.02× |
+| Audio8 0.1B | CPU 4 cores · 6GB | 여러 줄, 97자 | 44.56초 | 10.68초 | 4.171 | 0.24× |
+| Supertonic 3 | CPU 2 cores · 4GB | 문단, 206자 | 13.87초 | 30.67초 | 0.452 | 2.21× |
+| Audio8 0.1B | CPU 4 cores · 6GB | 문단, 215자 | 101.32초 | 22.76초 | 4.452 | 0.22× |
+
+![Oracle ARM64에서 Supertonic 3와 Audio8 0.1B의 한 줄·여러 줄·문단 RTF를 비교한 차트](/public/posts/running-voice-cloning-tts-without-gpu/oracle-arm64-benchmark.svg)
+
+RTF(Real-Time Factor)는 `응답 시간 ÷ 생성된 음성 길이`입니다. 1보다 작으면 재생 시간보다 빠르게 생성했다는 뜻입니다. Supertonic은 문장이 길어질수록 요청 처리 같은 고정 비용이 분산되어 RTF가 0.709에서 0.452까지 낮아졌습니다. 반면 Audio8은 세 입력에서 약 4.2–4.5를 기록했습니다.
+
+차이는 생성 방식에서 나옵니다. Supertonic은 음성 구간을 묶어서 처리하므로 문장이 길어질수록 준비 비용이 나뉘고 RTF가 낮아졌습니다. Audio8은 앞서 설명한 음성 코드를 순서대로 만들어야 하므로 긴 문장에서도 RTF가 약 4.2–4.5에 머물렀습니다. 더 닮은 목소리를 얻는 대신 기다리는 시간이 길어진 셈입니다.
+
+### CPU 환경에서는 무엇을 선택할까
+
+CPU 환경에서는 결국 용도에 맞춰 선택할 수 있습니다.
+
+| 우선순위 | 더 어울리는 선택 |
+|---|---|
+| 빠른 응답, 많은 요청, 작은 메모리 | Supertonic 3 |
+| 레퍼런스와 가까운 음색과 음역 | Audio8 0.1B |
+| 실시간보다 빠른 일괄 합성 | Supertonic 3 |
+| 기다려도 유사도가 중요한 비동기 생성 | Audio8 0.1B |
+
+하나가 모든 면에서 앞서는 것은 아니었습니다. Supertonic은 빠른 CPU TTS에 가깝고, Audio8은 속도를 양보해 화자를 더 직접적으로 복제하는 선택지였습니다.
+
+## Supertonic의 품질 한계는 남았다
+
+이번 Supertonic 구조로 GPU 비용은 없앴지만 어떤 목소리든 정확하게 복제할 수 있는 것은 아닙니다. Supertonic 자체가 레퍼런스를 직접 받는 Voice Cloning 모델은 아니기 때문입니다. 화자 특징을 잘 찾더라도 기본 모델이 그 음색을 낼 수 없으면 결과에는 차이가 남습니다.
 
 실제로 비교해 보니 이런 문제가 남았습니다.
 
 - 특이한 발성이나 속삭이는 음성은 일반적인 발성보다 유사도가 낮았습니다.
 - 남성·여성의 음역이 크게 어긋나는 후보가 만들어지기도 했습니다.
-- PCA 공간이 비정상적인 style을 줄여주지만 기계음을 완전히 제거하지는 못했습니다.
+- 후보 범위를 실제 목소리 주변으로 제한해도 기계음을 완전히 제거하지는 못했습니다.
 - 레퍼런스에 배경 음악, 리버브, 다른 화자가 섞이면 결과가 빠르게 나빠졌습니다.
 
 무엇보다 좋은 레퍼런스가 중요했습니다. 한 명이 말하는 8–15초 정도의 깨끗한 음성, 과도한 노이즈 제거가 없는 자연스러운 발성, 실제 서비스에서 사용할 말투와 가까운 구간이 안정적이었습니다.
 
-수치가 올랐다는 이유만으로 결과를 자동 채택하지도 않았습니다. 같은 대본과 동일한 step으로 후보를 비교하고 성별과 음역, 기계음, 긴 문장에서의 안정성을 직접 들었습니다. Voice Cloning에서는 benchmark 한 줄보다 반복 청취가 더 정직한 검증 방법이었습니다.
-
 ## 정리하며
 
-여러 방식으로 만든 음성을 직접 들어보니 다른 Voice Cloning 모델보다 닮지 않은 부분이 분명 있었습니다. 하지만 그런 모델들이 고사양 GPU를 요구한다는 점을 생각하면, 언제나 최고 품질만 좇기보다 제한된 자원 안에서 현실적인 최선의 선택을 찾는 일도 중요하다는 걸 배웠습니다.
+같은 레퍼런스로 만든 음성을 직접 들어보니 Audio8은 화자를 더 정확하게 따라왔고, Supertonic은 닮지 않은 부분이 분명 남았습니다. Supertonic이 레퍼런스를 직접 조건으로 사용하는 Voice Cloning 모델이 아니라는 점을 생각하면 자연스러운 한계였습니다.
+
+대신 Supertonic은 작은 CPU에서 실시간보다 빠르게 음성을 만들었고, Audio8은 더 비슷한 목소리를 위해 훨씬 긴 대기 시간과 많은 메모리를 사용했습니다. GPU 없는 CPU 환경에서는 하나가 무조건 낫다고 정하기보다, 응답 속도와 화자 유사도 중 무엇이 중요한지에 따라 선택하는 편이 현실적이라는 걸 배웠습니다.
 
 ## 참고 링크
 
@@ -289,6 +291,8 @@ Supertonic은 합성 step을 줄이면 빨라지고 늘리면 품질이 좋아�
 - [SupertonicTTS 논문](https://arxiv.org/abs/2503.23108)
 - [Supertonic Python SDK 문서](https://supertone-inc.github.io/supertonic-py/)
 - [Supertonic 3 모델 카드와 voice styles](https://huggingface.co/Supertone/supertonic-3)
+- [Audio8 TTS 공식 저장소](https://github.com/Audio8-AI/Audio8_TTS)
+- [Audio8 0.1B ONNX INT8 모델 카드](https://huggingface.co/Audio8/audio8-TTS-0.1B-ONNX-INT8)
 - [Modal Documentation](https://modal.com/docs)
 - [ONNX Runtime](https://onnxruntime.ai/)
 

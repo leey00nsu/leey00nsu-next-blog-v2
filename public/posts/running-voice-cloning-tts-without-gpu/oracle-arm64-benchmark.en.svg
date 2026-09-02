@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="oracle-rtf-en-title oracle-rtf-en-desc">
+  <title id="oracle-rtf-en-title">RTF comparison of Supertonic and Audio8 measured on Oracle ARM64</title>
+  <desc id="oracle-rtf-en-desc">Across one-line, multi-line, and paragraph inputs, Supertonic stayed below RTF 1 while Audio8 0.1B ranged from about 4.2 to 4.5.</desc>
+  <defs>
+    <marker id="oracle-rtf-en-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#595959"/></marker>
+    <marker id="oracle-rtf-en-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#BD746D"/></marker>
+    <marker id="oracle-rtf-en-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2563EB"/></marker>
+  </defs>
+
+  <rect width="1280" height="720" fill="#FBFAF7"/>
+  <text x="48" y="64" fill="#111111" font-size="28" font-weight="800" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Supertonic beat real time; Audio8 took longer</text>
+  <text x="48" y="96" fill="#595959" font-size="12" font-weight="500" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Oracle Ampere A1 · public HTTPS response time ÷ generated audio duration · successful-run averages</text>
+  <rect x="1184" y="40" width="48" height="32" rx="8" fill="#FBFAF7" stroke="#111111" stroke-width="1.2"/>
+  <text x="1208" y="61" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">03</text>
+
+  <line x1="128" y1="144" x2="1200" y2="144" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+  <line x1="128" y1="224" x2="1200" y2="224" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+  <line x1="128" y1="304" x2="1200" y2="304" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+  <line x1="128" y1="384" x2="1200" y2="384" stroke="rgba(17,17,17,0.10)" stroke-width="0.8"/>
+  <line x1="128" y1="464" x2="1200" y2="464" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="8 8"/>
+  <line x1="128" y1="544" x2="1200" y2="544" stroke="rgba(17,17,17,0.30)" stroke-width="1.2"/>
+  <line x1="128" y1="144" x2="128" y2="544" stroke="rgba(17,17,17,0.30)" stroke-width="1.2"/>
+
+  <text x="112" y="148" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">5.0</text>
+  <text x="112" y="228" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">4.0</text>
+  <text x="112" y="308" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">3.0</text>
+  <text x="112" y="388" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">2.0</text>
+  <text x="112" y="468" fill="#2563EB" font-size="8" font-weight="700" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">1.0</text>
+  <text x="112" y="548" fill="#595959" font-size="8" text-anchor="end" font-family="'SF Mono','Menlo','Consolas',monospace">0</text>
+  <text x="48" y="348" fill="#595959" font-size="8" text-anchor="middle" transform="rotate(-90 48 348)" font-family="'SF Mono','Menlo','Consolas',monospace" letter-spacing="1.2">RTF · LOWER IS FASTER</text>
+
+  <rect x="228" y="487.28" width="80" height="56.72" fill="#111111"/>
+  <rect x="332" y="191.52" width="80" height="352.48" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+  <text x="268" y="475" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">0.709</text>
+  <text x="372" y="180" fill="#BD746D" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">4.406</text>
+  <text x="320" y="576" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">One line</text>
+  <text x="320" y="596" fill="#737373" font-size="12" font-weight="500" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Both models · 27 chars</text>
+
+  <rect x="564" y="504.32" width="80" height="39.68" fill="#111111"/>
+  <rect x="668" y="210.32" width="80" height="333.68" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+  <text x="604" y="492" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">0.496</text>
+  <text x="708" y="199" fill="#BD746D" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">4.171</text>
+  <text x="656" y="576" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Multiple lines</text>
+  <text x="656" y="596" fill="#737373" font-size="12" font-weight="500" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Supertonic 93 · Audio8 97 chars</text>
+
+  <rect x="900" y="507.84" width="80" height="36.16" fill="#111111"/>
+  <rect x="1004" y="187.84" width="80" height="356.16" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+  <text x="940" y="496" fill="#111111" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">0.452</text>
+  <text x="1044" y="176" fill="#BD746D" font-size="12" font-weight="700" text-anchor="middle" font-family="'SF Mono','Menlo','Consolas',monospace">4.452</text>
+  <text x="992" y="576" fill="#111111" font-size="16" font-weight="700" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Paragraph</text>
+  <text x="992" y="596" fill="#737373" font-size="12" font-weight="500" text-anchor="middle" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Supertonic 206 · Audio8 215 chars</text>
+
+  <text x="1192" y="454" fill="#2563EB" font-size="12" font-weight="600" text-anchor="end" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Real-time threshold · RTF 1.0</text>
+
+  <line x1="48" y1="624" x2="1232" y2="624" stroke="rgba(17,17,17,0.12)" stroke-width="0.8"/>
+  <rect x="48" y="644" width="16" height="16" fill="#111111"/>
+  <text x="76" y="657" fill="#111111" font-size="12" font-weight="600" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Supertonic 3</text>
+  <text x="184" y="657" fill="#737373" font-size="12" font-weight="500" font-family="'Inter','Helvetica Neue','Arial',sans-serif">CPU 2 cores · 4GB · 5 steps</text>
+  <rect x="484" y="644" width="16" height="16" fill="#F4B9A4" stroke="#BD746D" stroke-width="1.2"/>
+  <text x="512" y="657" fill="#111111" font-size="12" font-weight="600" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Audio8 0.1B</text>
+  <text x="624" y="657" fill="#737373" font-size="12" font-weight="500" font-family="'Inter','Helvetica Neue','Arial',sans-serif">CPU 4 cores · 6GB · top_k=1</text>
+  <text x="1232" y="657" fill="#737373" font-size="12" font-weight="500" text-anchor="end" font-family="'Inter','Helvetica Neue','Arial',sans-serif">Production settings on the same server · similar, not identical, input lengths</text>
+</svg>

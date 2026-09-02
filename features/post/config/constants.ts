@@ -22,3 +22,8 @@ export const POST_TOC = {
     EASE: [0.22, 1, 0.36, 1],
   },
 } as const
+
+export const POST_IMAGE_ZOOM = {
+  DIALOG_CLASS_NAME: 'post-image-zoom-dialog',
+  VIEWPORT_MARGIN_PX: 32,
+} as const

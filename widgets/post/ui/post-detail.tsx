@@ -1,6 +1,7 @@
 import { Post } from '@/entities/post/model/types'
 
 import { MdxRenderer } from '@/features/mdx/ui/mdx-renderer'
+import { ZoomablePostImage } from '@/features/post/ui/zoomable-post-image'
 import { getTableOfContents } from '@/shared/lib/toc'
 import {
   SITE,
@@ -20,7 +21,10 @@ interface PostDetailProps {
 export function PostDetail({ post, locale }: PostDetailProps) {
   const headings = getTableOfContents(post.content)
   const siteUrl = getSiteUrl()
-  const postUrl = new URL(buildBlogPostHref(post.slug, locale), siteUrl).toString()
+  const postUrl = new URL(
+    buildBlogPostHref(post.slug, locale),
+    siteUrl,
+  ).toString()
   const postImagePath = post.thumbnail
     ? removePublic(post.thumbnail)
     : buildBlogOgImagePath(post.slug, locale)
@@ -54,7 +58,10 @@ export function PostDetail({ post, locale }: PostDetailProps) {
       headings={headings}
       jsonLdData={jsonLdData}
     >
-      <MdxRenderer content={post.content} />
+      <MdxRenderer
+        content={post.content}
+        components={{ img: ZoomablePostImage }}
+      />
     </PostDetailView>
   )
 }

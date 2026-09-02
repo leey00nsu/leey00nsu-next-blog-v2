@@ -263,6 +263,10 @@
     "remove": "Remove {tag}"
   },
   "post": {
+    "imageZoom": {
+      "expand": "Expand image",
+      "collapse": "Minimize image"
+    },
     "toc": {
       "title": "Table of contents"
     },

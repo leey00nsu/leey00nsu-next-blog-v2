@@ -263,6 +263,10 @@
     "remove": "{tag} 제거"
   },
   "post": {
+    "imageZoom": {
+      "expand": "이미지 확대",
+      "collapse": "이미지 축소"
+    },
     "toc": {
       "title": "목차"
     },

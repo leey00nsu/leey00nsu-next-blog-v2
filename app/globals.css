@@ -191,6 +191,25 @@
     max-width: 100%;
     height: auto;
   }
+
+  .post-zoomable-image,
+  .post-zoomable-image > [data-rmiz],
+  .post-zoomable-image [data-rmiz-content] {
+    display: block;
+    width: 100%;
+  }
+
+  .post-image-zoom-dialog [data-rmiz-modal-overlay='hidden'] {
+    background-color: transparent;
+  }
+
+  .post-image-zoom-dialog [data-rmiz-modal-overlay='visible'] {
+    background-color: var(--background);
+  }
+
+  .post-image-zoom-dialog [data-rmiz-modal-img] {
+    border-radius: var(--radius);
+  }
 }
 
 .portfolio-print-root

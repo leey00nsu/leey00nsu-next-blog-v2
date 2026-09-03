@@ -9,7 +9,7 @@ Modal 위에 문서 임베딩과 질문 임베딩을 같은 모델로 처리하�
 - 기본 모델: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 - 응답 형식: OpenAI embeddings API 호환
 
-이 서비스는 현재 Next.js 앱의 SQLite Chat RAG가 요구하는 형태에 맞춰 설계되어 있습니다.
+이 서비스는 현재 Next.js 앱의 Postgres Chat RAG가 요구하는 형태에 맞춰 설계되어 있습니다. 요청의 모델 ID가 서버에 로드된 모델과 다르면 잘못된 차원의 임베딩을 반환하지 않고 요청을 거부합니다.
 
 ## 로컬 개발
 

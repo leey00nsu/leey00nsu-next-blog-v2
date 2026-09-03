@@ -2,7 +2,10 @@ import GithubSlugger from 'github-slugger'
 import { POST_SEARCH } from '@/entities/post/config/constants'
 import type { BlogSearchRecord } from '@/entities/post/model/search-types'
 import type { Post } from '@/entities/post/model/types'
-import { buildBlogPostHref, type SupportedLocale } from '@/shared/config/constants'
+import {
+  buildBlogPostHref,
+  type SupportedLocale,
+} from '@/shared/config/constants'
 import { getSemanticSearchTerms } from '@/shared/lib/chat-semantic-map'
 import { collectSearchTerms } from '@/shared/lib/search-terms'
 
@@ -31,6 +34,12 @@ const MARKDOWN_PATTERNS = {
   HTML_TAG: /<[^>]+>/g,
   MARKERS: /[*_>#~-]/g,
   WHITESPACE: /\s+/g,
+} as const
+
+const CONTENT_CHUNK_PATTERNS = {
+  SENTENCE_BOUNDARY: /[.!?。！？](?:\s+|$)/gu,
+  WHITESPACE_BOUNDARY: /\s+/gu,
+  WHITESPACE: /\s/u,
 } as const
 
 const SCRIPT_BOUNDARY_PATTERNS = {
@@ -66,8 +75,142 @@ function trimText(text: string, maximumLength: number): string {
   return `${text.slice(0, maximumLength - 1).trimEnd()}…`
 }
 
-function createRecordId(locale: SupportedLocale, slug: string, anchor: string): string {
+function resolveContentChunkEnd(params: {
+  text: string
+  startIndex: number
+  maximumLength: number
+}): number {
+  const maximumEndIndex = Math.min(
+    params.text.length,
+    params.startIndex + params.maximumLength,
+  )
+
+  if (maximumEndIndex >= params.text.length) {
+    return params.text.length
+  }
+
+  const boundarySearchStartIndex =
+    params.startIndex +
+    Math.floor(
+      params.maximumLength * POST_SEARCH.CONTENT_CHUNK_BOUNDARY_SEARCH_RATIO,
+    )
+  const boundarySearchText = params.text.slice(
+    boundarySearchStartIndex,
+    maximumEndIndex,
+  )
+  const findBoundaryEndIndex = (boundaryPattern: RegExp): number => {
+    let boundaryEndIndex = 0
+
+    for (const boundaryMatch of boundarySearchText.matchAll(boundaryPattern)) {
+      boundaryEndIndex =
+        boundarySearchStartIndex +
+        (boundaryMatch.index ?? 0) +
+        boundaryMatch[0].length
+    }
+
+    return boundaryEndIndex
+  }
+  const sentenceEndIndex = findBoundaryEndIndex(
+    CONTENT_CHUNK_PATTERNS.SENTENCE_BOUNDARY,
+  )
+
+  if (sentenceEndIndex) {
+    return sentenceEndIndex
+  }
+
+  const whitespaceEndIndex = findBoundaryEndIndex(
+    CONTENT_CHUNK_PATTERNS.WHITESPACE_BOUNDARY,
+  )
+
+  return whitespaceEndIndex || maximumEndIndex
+}
+
+function resolveNextContentChunkStart(params: {
+  text: string
+  currentStartIndex: number
+  currentEndIndex: number
+}): number {
+  const overlapStartIndex = Math.max(
+    params.currentStartIndex + 1,
+    params.currentEndIndex - POST_SEARCH.CONTENT_CHUNK_OVERLAP_LENGTH,
+  )
+  const overlapText = params.text.slice(
+    overlapStartIndex,
+    params.currentEndIndex,
+  )
+  const nextBoundaryOffset = overlapText.search(
+    CONTENT_CHUNK_PATTERNS.WHITESPACE,
+  )
+
+  return nextBoundaryOffset === -1
+    ? overlapStartIndex
+    : overlapStartIndex + nextBoundaryOffset + 1
+}
+
+function splitSearchContent(text: string, maximumLength: number): string[] {
+  if (text.length <= maximumLength) {
+    return [text]
+  }
+
+  const chunks: string[] = []
+  let startIndex = 0
+
+  while (startIndex < text.length) {
+    const endIndex = resolveContentChunkEnd({
+      text,
+      startIndex,
+      maximumLength,
+    })
+    const chunk = text.slice(startIndex, endIndex).trim()
+
+    if (chunk) {
+      chunks.push(chunk)
+    }
+
+    if (endIndex >= text.length) {
+      break
+    }
+
+    startIndex = resolveNextContentChunkStart({
+      text,
+      currentStartIndex: startIndex,
+      currentEndIndex: endIndex,
+    })
+  }
+
+  return chunks
+}
+
+function createRecordId(
+  locale: SupportedLocale,
+  slug: string,
+  anchor: string,
+): string {
   return `${locale}/${slug}/${anchor}`
+}
+
+function allocateUniqueRecordAnchor(params: {
+  preferredAnchor: string
+  usedRecordAnchors: Set<string>
+  reservedHeadingAnchors: Set<string>
+  allowReservedHeadingAnchor: boolean
+}): string {
+  let recordAnchor = params.preferredAnchor
+  let collisionIndex = 2
+
+  while (
+    params.usedRecordAnchors.has(recordAnchor) ||
+    (params.reservedHeadingAnchors.has(recordAnchor) &&
+      (!params.allowReservedHeadingAnchor ||
+        recordAnchor !== params.preferredAnchor))
+  ) {
+    recordAnchor = `${params.preferredAnchor}${POST_SEARCH.CONTENT_CHUNK_IDENTIFIER_SUFFIX}${collisionIndex}`
+    collisionIndex += 1
+  }
+
+  params.usedRecordAnchors.add(recordAnchor)
+
+  return recordAnchor
 }
 
 function createRecordUrl(
@@ -137,14 +280,16 @@ function buildHeadingSections(content: string): {
   }
 }
 
-function createSearchRecord(params: {
+function createSearchRecords(params: {
   anchor: string
   title: string
   sectionTitle: string | null
   body: string
   post: Post
   locale: SupportedLocale
-}): BlogSearchRecord | null {
+  usedRecordAnchors: Set<string>
+  reservedHeadingAnchors: Set<string>
+}): BlogSearchRecord[] {
   const sanitizedBody = sanitizeMarkdownToSearchText(params.body)
   const semanticSearchTerms = getSemanticSearchTerms({
     locale: params.locale,
@@ -153,39 +298,54 @@ function createSearchRecord(params: {
   })
 
   if (!sanitizedBody) {
-    return null
+    return []
   }
 
-  return {
-    id: createRecordId(params.locale, params.post.slug, params.anchor),
-    locale: params.locale,
-    slug: params.post.slug,
-    title: params.post.title,
-    url: createRecordUrl(
-      params.post.slug,
-      params.locale,
-      params.sectionTitle ? params.anchor : undefined,
-    ),
-    excerpt: trimText(sanitizedBody, POST_SEARCH.EXCERPT_MAX_LENGTH),
-    content: trimText(
-      params.sectionTitle
-        ? `${params.sectionTitle}\n${sanitizedBody}`
-        : sanitizedBody,
-      POST_SEARCH.CONTENT_MAX_LENGTH,
-    ),
-    sectionTitle: params.sectionTitle,
-    tags: params.post.tags,
-    publishedAt: params.post.date.toISOString(),
-    searchTerms: collectSearchTerms({
-      texts: [params.post.title, params.sectionTitle ?? '', sanitizedBody],
-      phrases: [
-        ...semanticSearchTerms,
-        params.post.title,
-        params.sectionTitle ?? '',
-        ...params.post.tags,
-      ],
-    }),
-  }
+  const contentPrefix = params.sectionTitle ? `${params.sectionTitle}\n` : ''
+  const maximumBodyLength = Math.max(
+    1,
+    POST_SEARCH.CONTENT_MAX_LENGTH - contentPrefix.length,
+  )
+  const contentChunks = splitSearchContent(sanitizedBody, maximumBodyLength)
+
+  return contentChunks.map((contentChunk, chunkIndex) => {
+    const preferredRecordAnchor =
+      chunkIndex === 0
+        ? params.anchor
+        : `${params.anchor}${POST_SEARCH.CONTENT_CHUNK_IDENTIFIER_SUFFIX}${chunkIndex + 1}`
+    const recordAnchor = allocateUniqueRecordAnchor({
+      preferredAnchor: preferredRecordAnchor,
+      usedRecordAnchors: params.usedRecordAnchors,
+      reservedHeadingAnchors: params.reservedHeadingAnchors,
+      allowReservedHeadingAnchor: chunkIndex === 0,
+    })
+
+    return {
+      id: createRecordId(params.locale, params.post.slug, recordAnchor),
+      locale: params.locale,
+      slug: params.post.slug,
+      title: params.post.title,
+      url: createRecordUrl(
+        params.post.slug,
+        params.locale,
+        params.sectionTitle ? params.anchor : undefined,
+      ),
+      excerpt: trimText(contentChunk, POST_SEARCH.EXCERPT_MAX_LENGTH),
+      content: `${contentPrefix}${contentChunk}`,
+      sectionTitle: params.sectionTitle,
+      tags: params.post.tags,
+      publishedAt: params.post.date.toISOString(),
+      searchTerms: collectSearchTerms({
+        texts: [params.post.title, params.sectionTitle ?? '', contentChunk],
+        phrases: [
+          ...semanticSearchTerms,
+          params.post.title,
+          params.sectionTitle ?? '',
+          ...params.post.tags,
+        ],
+      }),
+    }
+  })
 }
 
 export function buildPostSearchRecords({
@@ -194,35 +354,38 @@ export function buildPostSearchRecords({
 }: BuildPostSearchRecordsParams): BlogSearchRecord[] {
   const { introLines, headingSections } = buildHeadingSections(post.content)
   const records: BlogSearchRecord[] = []
+  const usedRecordAnchors = new Set<string>()
+  const reservedHeadingAnchors = new Set([
+    POST_SEARCH.INTRO_SECTION_SLUG,
+    ...headingSections.map((headingSection) => headingSection.anchor),
+  ])
 
-  const introRecord = createSearchRecord({
+  const introRecords = createSearchRecords({
     anchor: POST_SEARCH.INTRO_SECTION_SLUG,
     title: post.title,
     sectionTitle: null,
     body: introLines.join('\n'),
     post,
     locale,
+    usedRecordAnchors,
+    reservedHeadingAnchors,
   })
 
-  if (introRecord) {
-    records.push(introRecord)
-  }
+  records.push(...introRecords)
 
   for (const headingSection of headingSections) {
-    const sectionRecord = createSearchRecord({
+    const sectionRecords = createSearchRecords({
       anchor: headingSection.anchor,
       title: post.title,
       sectionTitle: headingSection.title,
       body: headingSection.lines.join('\n'),
       post,
       locale,
+      usedRecordAnchors,
+      reservedHeadingAnchors,
     })
 
-    if (!sectionRecord) {
-      continue
-    }
-
-    records.push(sectionRecord)
+    records.push(...sectionRecords)
   }
 
   return records

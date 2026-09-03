@@ -55,9 +55,25 @@ function collectChunkEntityCandidates(
   ]
 }
 
+function assertUniqueChatEvidenceRecordIds(
+  records: ChatEvidenceRecord[],
+): void {
+  const recordIds = new Set<string>()
+
+  for (const record of records) {
+    if (recordIds.has(record.id)) {
+      throw new Error(`Duplicate Chat RAG chunk ID: ${record.id}`)
+    }
+
+    recordIds.add(record.id)
+  }
+}
+
 export function buildGraphRagChunks(
   records: ChatEvidenceRecord[],
 ): GraphRagChunk[] {
+  assertUniqueChatEvidenceRecordIds(records)
+
   return records.map((record) => {
     const entityIds = [
       ...new Set(

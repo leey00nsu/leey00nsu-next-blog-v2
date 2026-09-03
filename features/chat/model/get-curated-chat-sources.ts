@@ -52,6 +52,10 @@ const CURATED_SOURCE_TAGS = {
   PROJECT: ['project', 'side project', 'portfolio'],
 } as const
 
+const CURATED_SOURCE_IDENTIFIER = {
+  NAMESPACE: 'curated',
+} as const
+
 const CROSS_LOCALE_PROFILE_REFERENCE = {
   SEARCH_PHRASES: {
     ko: ['영어 이름', 'english name'],
@@ -302,7 +306,7 @@ function buildDeployedProjectOverviewSource(params: {
   ]
 
   return {
-    id: `${params.locale}/project/deployed-overview`,
+    id: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${params.locale}/project/deployed-overview`,
     locale: params.locale,
     slug: DEPLOYED_PROJECT_SOURCE.SLUG,
     title,
@@ -352,7 +356,7 @@ function buildProfileTechStackSource(params: {
   ]
 
   return {
-    id: `${params.locale}/about/${PROFILE_TECH_STACK_SOURCE.ID_SUFFIX}`,
+    id: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${params.locale}/about/${PROFILE_TECH_STACK_SOURCE.ID_SUFFIX}`,
     locale: params.locale,
     slug: PROFILE_TECH_STACK_SOURCE.SLUG,
     title: params.aboutTitle,
@@ -388,7 +392,7 @@ export const getCuratedChatSources = cache(
     if (assistantProfile) {
       curatedSources.push(
         ...buildCuratedChatSourceRecords({
-          idPrefix: `${locale}/assistant/profile`,
+          idPrefix: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${locale}/assistant/profile`,
           locale,
           slug: 'assistant-profile',
           title: assistantProfile.title,
@@ -423,7 +427,7 @@ export const getCuratedChatSources = cache(
 
       curatedSources.push(
         ...buildCuratedChatSourceRecords({
-          idPrefix: `${locale}/about/profile`,
+          idPrefix: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${locale}/about/profile`,
           locale,
           slug: 'about',
           title: about.title,
@@ -458,7 +462,7 @@ export const getCuratedChatSources = cache(
 
         curatedSources.push(
           ...buildCuratedChatSourceRecords({
-            idPrefix: `${locale}/about/profile-reference-${alternateLocale}`,
+            idPrefix: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${locale}/about/profile-reference-${alternateLocale}`,
             locale,
             slug: 'about',
             title: alternateAbout.title,
@@ -518,7 +522,7 @@ export const getCuratedChatSources = cache(
 
       curatedSources.push(
         ...buildCuratedChatSourceRecords({
-          idPrefix: `${locale}/project/${project.slug}`,
+          idPrefix: `${CURATED_SOURCE_IDENTIFIER.NAMESPACE}/${locale}/project/${project.slug}`,
           locale,
           slug: project.slug,
           title: project.title,

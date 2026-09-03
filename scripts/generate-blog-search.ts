@@ -19,6 +19,7 @@ function serializeSearchRecords(
 
   return `// 이 파일은 scripts/generate-blog-search.ts 스크립트에 의해 생성되었습니다.
 // 직접 수정하지 마세요.
+/* eslint-disable unicorn/prefer-string-raw */
 
 import { GeneratedBlogSearchRecordMap } from '@/entities/post/model/search-types'
 

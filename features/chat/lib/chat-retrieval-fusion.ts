@@ -9,6 +9,7 @@ interface FuseChatRetrievalMatchesParams {
   semanticMatches: ChatEvidenceRecord[]
   preferredSourceCategories?: ChatSourceCategory[]
   currentPostSlug?: string
+  maximumMatchCount?: number
 }
 
 interface RankedChatEvidenceRecord extends ChatEvidenceRecord {
@@ -47,10 +48,10 @@ function upsertRankedRecord(params: {
   source: 'lexical' | 'semantic'
   rank: number
 }): void {
-  const existingRankedRecord = params.rankedRecordMap.get(params.record.url)
+  const existingRankedRecord = params.rankedRecordMap.get(params.record.id)
 
   if (!existingRankedRecord) {
-    params.rankedRecordMap.set(params.record.url, {
+    params.rankedRecordMap.set(params.record.id, {
       ...params.record,
       score: params.scoreDelta,
       lexicalRank: params.source === 'lexical' ? params.rank : null,
@@ -60,7 +61,7 @@ function upsertRankedRecord(params: {
     return
   }
 
-  params.rankedRecordMap.set(params.record.url, {
+  params.rankedRecordMap.set(params.record.id, {
     ...existingRankedRecord,
     score: existingRankedRecord.score + params.scoreDelta,
     lexicalRank:
@@ -79,6 +80,7 @@ export function fuseChatRetrievalMatches({
   semanticMatches,
   preferredSourceCategories = [],
   currentPostSlug,
+  maximumMatchCount = BLOG_CHAT.SEARCH.TOP_K,
 }: FuseChatRetrievalMatchesParams): ChatEvidenceRecord[] {
   const rankedRecordMap = new Map<string, RankedChatEvidenceRecord>()
   const preferredSourceCategorySet = new Set(preferredSourceCategories)
@@ -146,7 +148,7 @@ export function fuseChatRetrievalMatches({
           buildPublishedAtTimestamp(leftMatch)
       )
     })
-    .slice(0, BLOG_CHAT.SEARCH.TOP_K)
+    .slice(0, maximumMatchCount)
     .map(({ score, lexicalRank, semanticRank, ...match }) => {
       return match
     })

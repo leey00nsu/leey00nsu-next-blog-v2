@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
@@ -410,5 +411,29 @@ describe('selectChatSearchMatches', () => {
         return match.slug === 'why-i-do-not-use-vercel-anymore'
       }),
     ).toBe(true)
+  })
+
+  it('글 전체 요약에 같은 키워드가 있어도 키워드가 제목에 있는 섹션을 보존한다', () => {
+    const locale = 'ko'
+    const records: ChatEvidenceRecord[] = GENERATED_BLOG_SEARCH_RECORDS[locale]
+      .filter((record) => record.slug === 'building-ai-chat-for-my-blog')
+      .map((record) => {
+        return {
+          ...record,
+          sourceCategory: 'blog' as const,
+        }
+      })
+
+    const result = selectChatSearchMatches({
+      question: '임베딩 서버를 Lightning AI 대신 Modal로 옮긴 이유는?',
+      locale,
+      records,
+      rankingConcepts: ['Modal', 'Lightning AI', '임베딩'],
+      maximumMatchCount: BLOG_CHAT.SEARCH.TOP_K,
+    })
+
+    expect(result.matches[0]?.url).toBe(
+      '/ko/blog/building-ai-chat-for-my-blog#그래서-modal로-옮겼다',
+    )
   })
 })

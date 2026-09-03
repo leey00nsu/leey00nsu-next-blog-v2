@@ -17,6 +17,7 @@ interface FindSemanticCachedBlogChatResponseParams {
   question: string
   currentPostSlug?: string
   intentCacheKey?: string
+  resolveQuestionEmbedding?: () => Promise<number[]>
 }
 
 interface StoreSemanticCachedBlogChatResponseParams
@@ -40,7 +41,14 @@ function calcVectorMagnitude(vector: number[]): number {
   )
 }
 
-function calcCosineSimilarity(leftVector: number[], rightVector: number[]): number {
+function calcCosineSimilarity(
+  leftVector: number[],
+  rightVector: number[],
+): number {
+  if (leftVector.length !== rightVector.length) {
+    return 0
+  }
+
   const denominator =
     calcVectorMagnitude(leftVector) * calcVectorMagnitude(rightVector)
 
@@ -71,6 +79,7 @@ export async function findSemanticCachedBlogChatResponse({
   question,
   currentPostSlug,
   intentCacheKey,
+  resolveQuestionEmbedding,
 }: FindSemanticCachedBlogChatResponseParams): Promise<
   BlogChatResponse | undefined
 > {
@@ -80,7 +89,15 @@ export async function findSemanticCachedBlogChatResponse({
     return undefined
   }
 
-  const questionEmbedding = await embedChatRagQuestion(question)
+  let questionEmbedding: number[]
+
+  try {
+    questionEmbedding = resolveQuestionEmbedding
+      ? await resolveQuestionEmbedding()
+      : await embedChatRagQuestion(question)
+  } catch {
+    return undefined
+  }
 
   for (const cacheEntry of semanticCacheEntries) {
     if (cacheEntry.locale !== locale) {
@@ -112,6 +129,7 @@ export async function storeSemanticCachedBlogChatResponse({
   currentPostSlug,
   intentCacheKey,
   response,
+  resolveQuestionEmbedding,
 }: StoreSemanticCachedBlogChatResponseParams): Promise<void> {
   cleanupExpiredSemanticCacheEntries()
 
@@ -119,7 +137,15 @@ export async function storeSemanticCachedBlogChatResponse({
     return
   }
 
-  const questionEmbedding = await embedChatRagQuestion(question)
+  let questionEmbedding: number[]
+
+  try {
+    questionEmbedding = resolveQuestionEmbedding
+      ? await resolveQuestionEmbedding()
+      : await embedChatRagQuestion(question)
+  } catch {
+    return
+  }
 
   semanticCacheEntries.push({
     createdAt: Date.now(),

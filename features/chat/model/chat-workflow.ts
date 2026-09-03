@@ -24,6 +24,7 @@ import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-cand
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
+import { embedChatRagQuestion } from '@/features/chat/model/chat-rag-embedding-provider'
 import {
   findSemanticCachedBlogChatResponse,
   storeSemanticCachedBlogChatResponse,
@@ -71,6 +72,7 @@ interface ChatWorkflowDependencies {
   executeRetrievalPlan: (params: {
     plan: ChatRetrievalPlan
     locale: BlogChatRequest['locale']
+    embedQuestion?: (question: string) => Promise<number[]>
   }) => Promise<ExecuteChatRetrievalPlanResult>
   answerQuestion: (params: {
     question: string
@@ -83,6 +85,7 @@ interface ChatWorkflowDependencies {
   }) => void
   findSemanticResponse: typeof findSemanticCachedBlogChatResponse
   storeSemanticResponse: typeof storeSemanticCachedBlogChatResponse
+  embedQuestion: typeof embedChatRagQuestion
 }
 
 interface RunChatWorkflowParams {
@@ -317,6 +320,7 @@ function buildContactResponse(params: {
 async function executeDefaultRetrievalPlan(params: {
   plan: ChatRetrievalPlan
   locale: BlogChatRequest['locale']
+  embedQuestion?: (question: string) => Promise<number[]>
 }): Promise<ExecuteChatRetrievalPlanResult> {
   const blogRecords: ChatEvidenceRecord[] = (
     GENERATED_BLOG_SEARCH_RECORDS[params.locale] ?? []
@@ -336,6 +340,7 @@ async function executeDefaultRetrievalPlan(params: {
     locale: params.locale,
     blogRecords,
     curatedRecords,
+    embedQuestion: params.embedQuestion,
   })
 }
 
@@ -348,10 +353,10 @@ const DEFAULT_DEPENDENCIES: ChatWorkflowDependencies = {
   setCachedResponse: setCachedBlogChatResponse,
   findSemanticResponse: findSemanticCachedBlogChatResponse,
   storeSemanticResponse: storeSemanticCachedBlogChatResponse,
+  embedQuestion: embedChatRagQuestion,
 }
 
-type BlogChatActivityStepId =
-  keyof typeof BLOG_CHAT.ACTIVITY.STEP_LABELS.ko
+type BlogChatActivityStepId = keyof typeof BLOG_CHAT.ACTIVITY.STEP_LABELS.ko
 
 function reportChatActivityStep(params: {
   reportProgress?: (event: ChatActivityEvent) => void
@@ -362,8 +367,7 @@ function reportChatActivityStep(params: {
     type: 'step',
     step: {
       id: params.stepId,
-      label:
-        BLOG_CHAT.ACTIVITY.STEP_LABELS[params.locale][params.stepId],
+      label: BLOG_CHAT.ACTIVITY.STEP_LABELS[params.locale][params.stepId],
     },
   })
 }
@@ -372,6 +376,25 @@ function buildChatWorkflow(
   dependencies: ChatWorkflowDependencies,
   reportProgress?: (event: ChatActivityEvent) => void,
 ) {
+  const questionEmbeddingPromises = new Map<string, Promise<number[]>>()
+  const resolveQuestionEmbedding = (question: string): Promise<number[]> => {
+    const cachedPromise = questionEmbeddingPromises.get(question)
+
+    if (cachedPromise) {
+      return cachedPromise
+    }
+
+    const embeddingPromise = dependencies
+      .embedQuestion(question)
+      .catch((error) => {
+        questionEmbeddingPromises.delete(question)
+        throw error
+      })
+    questionEmbeddingPromises.set(question, embeddingPromise)
+
+    return embeddingPromise
+  }
+
   return new StateGraph(CHAT_WORKFLOW_STATE)
     .addNode('resolve-context', async (state) => {
       reportChatActivityStep({
@@ -463,6 +486,7 @@ function buildChatWorkflow(
         return { graphPath: ['cache-lookup'] }
       }
 
+      const standaloneQuestion = state.retrievalPlan.standaloneQuestion
       const cacheKey = buildChatRetrievalPlanCacheKey({
         locale: state.request.locale,
         retrievalPlan: state.retrievalPlan,
@@ -482,9 +506,12 @@ function buildChatWorkflow(
 
       const semanticResponse = await dependencies.findSemanticResponse({
         locale: state.request.locale,
-        question: state.retrievalPlan.standaloneQuestion,
+        question: standaloneQuestion,
         currentPostSlug: state.request.currentPostSlug,
         intentCacheKey: cacheKey,
+        resolveQuestionEmbedding: () => {
+          return resolveQuestionEmbedding(standaloneQuestion)
+        },
       })
 
       return semanticResponse
@@ -588,6 +615,7 @@ function buildChatWorkflow(
       const execution = await dependencies.executeRetrievalPlan({
         plan: retrievalPlan,
         locale: state.request.locale,
+        embedQuestion: resolveQuestionEmbedding,
       })
 
       return {
@@ -617,6 +645,7 @@ function buildChatWorkflow(
       const execution = await dependencies.executeRetrievalPlan({
         plan: state.retrievalPlan,
         locale: state.request.locale,
+        embedQuestion: resolveQuestionEmbedding,
       })
 
       if (execution.matches.length > 0) {
@@ -737,6 +766,11 @@ function buildChatWorkflow(
         currentPostSlug: state.request.currentPostSlug,
         intentCacheKey: state.cacheKey,
         response: state.response,
+        resolveQuestionEmbedding: () => {
+          return resolveQuestionEmbedding(
+            state.retrievalPlan?.standaloneQuestion ?? '',
+          )
+        },
       })
 
       return { graphPath: ['store-cache'] }

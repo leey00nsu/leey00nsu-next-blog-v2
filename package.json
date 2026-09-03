@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "next dev",
-    "predev": "pnpm run gen:content",
+    "predev": "pnpm run db:migrate -- --allow-missing-database && pnpm run gen:content",
     "build": "next build",
     "prebuild": "pnpm run gen:content",
     "postbuild": "pnpm run gen:resume-pdf",
@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "db:migrate": "tsx scripts/migrate-database.ts",
+    "preeval:chat-retrieval": "pnpm run db:migrate -- --allow-missing-database && pnpm run gen:content",
     "eval:chat-retrieval": "tsx scripts/evaluate-chat-retrieval.ts",
     "eval:chat-planner": "tsx scripts/evaluate-chat-planner.ts",
     "storybook": "storybook dev -p 6006",

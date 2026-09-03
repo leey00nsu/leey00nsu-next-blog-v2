@@ -245,6 +245,87 @@ describe('runChatRagWorkflow', () => {
     ])
   })
 
+  it('같은 slug의 세 chunk가 각각 담당하는 required concept을 모두 보존한다', async () => {
+    const requiredConcepts = ['Alpha', 'Beta', 'Gamma']
+    const semanticCandidates = requiredConcepts.map(
+      (requiredConcept, conceptIndex) => {
+        return buildSemanticCandidate({
+          id: `ko/blog/shared/${requiredConcept.toLowerCase()}`,
+          slug: 'shared',
+          title: '분산된 필수 근거',
+          url: `/ko/blog/shared#${requiredConcept.toLowerCase()}`,
+          content: `${requiredConcept}에 대한 독립 근거입니다.`,
+          semanticSimilarity: 0.99 - conceptIndex * 0.01,
+        })
+      },
+    )
+    const retrievalPlan: ChatRetrievalPlan = {
+      executionKind: 'retrieve_and_generate',
+      standaloneQuestion: 'Alpha, Beta, Gamma를 함께 설명해줘',
+      operation: 'compare',
+      canonicalTargets: [],
+      sourceStrategy: 'all',
+      sourceCategories: [],
+      requiredConcepts,
+      optionalConcepts: [],
+      requestedFields: ['content'],
+      temporalStrategy: 'none',
+      temporalOrder: null,
+      maximumEvidenceCount: 3,
+    }
+
+    const result = await runChatRagWorkflow({
+      question: retrievalPlan.standaloneQuestion,
+      locale: 'ko',
+      retrievalPlan,
+      embedQuestion: async () => [1, 1],
+      selectSearchData: async () => {
+        return buildSearchData({ semanticCandidates })
+      },
+    })
+
+    expect(result.matches.map((match) => match.id)).toEqual(
+      semanticCandidates.map((semanticCandidate) => semanticCandidate.id),
+    )
+  })
+
+  it('entity와 lexical boost가 있어도 원본 semantic 유사도가 낮으면 제외한다', async () => {
+    const weakSemanticChunk = buildSemanticCandidate({
+      id: 'ko/blog/weak-semantic-match',
+      slug: 'weak-semantic-match',
+      title: 'Next.js 배포 구조',
+      url: '/ko/blog/weak-semantic-match',
+      excerpt: '질문 토큰은 일치하지만 의미 유사도는 낮습니다.',
+      content: 'Next.js 배포 구조를 설명합니다.',
+      entityIds: ['ko:term:next.js'],
+      semanticSimilarity: 0.01,
+    })
+    const matchingEntity = buildGraphRagEntity({
+      id: 'ko:term:next.js',
+      name: 'Next.js',
+      normalizedName: 'next.js',
+      chunkIds: [weakSemanticChunk.id],
+    })
+
+    const result = await runChatRagWorkflow({
+      question: 'Next.js 배포 구조',
+      locale: 'ko',
+      embedQuestion: async () => [1, 0],
+      selectSearchData: async () => {
+        return buildSearchData({
+          semanticCandidates: [weakSemanticChunk],
+          entities: [matchingEntity],
+        })
+      },
+    })
+
+    expect(result).toEqual({
+      grounded: false,
+      matches: [],
+      failureKind: null,
+    })
+  })
+
   it('semantic retrieval 중 예외가 발생하면 실패 상태와 빈 결과를 반환한다', async () => {
     const consoleErrorSpy = vi
       .spyOn(console, 'error')

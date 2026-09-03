@@ -106,18 +106,18 @@ pnpm dev
 
 ## 기술 스택
 
-| 영역              | 기술                                            |
-| ----------------- | ----------------------------------------------- |
-| **Framework**     | Next.js 16.1.1 (App Router), React 19.1.0       |
-| **Styling**       | Tailwind CSS 4, shadcn/ui                       |
-| **MDX**           | next-mdx-remote, remark-gfm, rehype-pretty-code |
-| **i18n**          | next-intl v4                                    |
-| **Editor**        | Tiptap (Notion 스타일)                          |
-| **Auth**          | next-auth@5 (GitHub Provider)                   |
+| 영역              | 기술                                                                      |
+| ----------------- | ------------------------------------------------------------------------- |
+| **Framework**     | Next.js 16.1.1 (App Router), React 19.1.0                                 |
+| **Styling**       | Tailwind CSS 4, shadcn/ui                                                 |
+| **MDX**           | next-mdx-remote, remark-gfm, rehype-pretty-code                           |
+| **i18n**          | next-intl v4                                                              |
+| **Editor**        | Tiptap (Notion 스타일)                                                    |
+| **Auth**          | next-auth@5 (GitHub Provider)                                             |
 | **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, PostgreSQL (`pgvector`), Modal, Octokit |
-| **Image**         | sharp, lqip-modern                              |
-| **Test**          | Vitest, Playwright, Storybook 10                |
-| **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
+| **Image**         | sharp, lqip-modern                                                        |
+| **Test**          | Vitest, Playwright, Storybook 10                                          |
+| **DevOps**        | ESLint 9, Prettier, Husky, lint-staged                                    |
 
 ## 설치 및 설정
 
@@ -215,9 +215,23 @@ pnpm run gen:chat-rag-postgres
 - 생성된 `*.generated.ts` 파일은 빌드 산출물이므로 Git에서 추적하지 않습니다.
 - 원본 MDX와 이미지만 커밋하면 개발·테스트·빌드 시작 전에 필요한 데이터가 자동으로 갱신됩니다.
 - 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
+- 긴 섹션은 문장 경계를 우선한 겹침 하위 청크로 나누므로 섹션 뒷부분의 근거도 인덱스에 남습니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
+- 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 청킹 버전을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
 - 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
+
+실제 생성 코퍼스의 lexical 검색 회귀 평가는 다음 명령으로 실행합니다. 평가 전에 생성 파일을 자동으로 갱신하며 Recall@1, Recall@3, MRR, 거절 정확도를 모두 통과 기준에 포함합니다.
+
+```bash
+pnpm run eval:chat-retrieval
+```
+
+활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색을 평가하려면 다음처럼 실행합니다. 이 모드는 실제 semantic 검색 호출 여부와 기대 근거를 찾은 semantic match 비율도 검사하므로, lexical 결과만으로는 통과하지 않습니다.
+
+```bash
+BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
+```
 
 ### Coolify / CI-CD 운영 메모
 

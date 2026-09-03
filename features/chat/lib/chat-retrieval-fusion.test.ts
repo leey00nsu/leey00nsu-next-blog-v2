@@ -86,4 +86,29 @@ describe('fuseChatRetrievalMatches', () => {
       '/ko/blog/current-post',
     ])
   })
+
+  it('같은 section URL을 공유하는 서로 다른 하위 chunk를 보존한다', () => {
+    const firstChunk = buildChatEvidenceRecord({
+      id: 'ko/blog/long-section/section',
+      slug: 'long-section',
+      url: '/ko/blog/long-section#section',
+      content: '긴 섹션의 앞부분입니다.',
+    })
+    const secondChunk = buildChatEvidenceRecord({
+      id: 'ko/blog/long-section/section-part-2',
+      slug: 'long-section',
+      url: '/ko/blog/long-section#section',
+      content: '긴 섹션의 뒷부분에 있는 핵심 근거입니다.',
+    })
+
+    const fusedMatches = fuseChatRetrievalMatches({
+      lexicalMatches: [firstChunk],
+      semanticMatches: [secondChunk],
+    })
+
+    expect(fusedMatches.map((match) => match.id)).toEqual([
+      firstChunk.id,
+      secondChunk.id,
+    ])
+  })
 })

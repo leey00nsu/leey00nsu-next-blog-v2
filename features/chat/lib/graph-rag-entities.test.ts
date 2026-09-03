@@ -50,4 +50,15 @@ describe('buildGraphRagEntities', () => {
       value: '2026-03-20T00:00:00.000Z',
     })
   })
+
+  it('서로 다른 source가 같은 chunk ID를 사용하면 index 생성을 중단한다', () => {
+    const duplicateRecord = {
+      ...CHAT_EVIDENCE_RECORDS[0],
+      sourceCategory: 'profile' as const,
+    }
+
+    expect(() => {
+      buildGraphRagChunks([...CHAT_EVIDENCE_RECORDS, duplicateRecord])
+    }).toThrow('Duplicate Chat RAG chunk ID')
+  })
 })

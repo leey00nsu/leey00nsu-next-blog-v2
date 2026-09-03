@@ -3,6 +3,7 @@ import {
   doesChatEvidenceMatchConcept,
   selectEvidenceCoveringRequiredConcepts,
 } from '@/features/chat/lib/chat-required-concepts'
+import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
@@ -13,6 +14,7 @@ import type { SupportedLocale } from '@/shared/config/constants'
 interface RetrieveSemanticMatchesParams {
   plan: ChatRetrievalPlan
   locale: SupportedLocale
+  embedQuestion?: (question: string) => Promise<number[]>
 }
 
 type RetrieveSemanticMatches = (
@@ -24,6 +26,7 @@ interface ExecuteChatRetrievalPlanParams {
   locale: SupportedLocale
   blogRecords: ChatEvidenceRecord[]
   curatedRecords: ChatEvidenceRecord[]
+  embedQuestion?: (question: string) => Promise<number[]>
   retrieveSemanticMatches?: RetrieveSemanticMatches
 }
 
@@ -119,9 +122,11 @@ const TECH_STACK_PROFILE_RESPONSE = {
     answerSuffix: '입니다.',
   },
   en: {
-    questionPattern: /primary\s+tech|tech(?:nology)?\s+stack|main\s+technologies/iu,
+    questionPattern:
+      /primary\s+tech|tech(?:nology)?\s+stack|main\s+technologies/iu,
     contentLabel: 'Common/repeated technologies:',
-    answerPrefix: 'The primary technologies used repeatedly across projects are',
+    answerPrefix:
+      'The primary technologies used repeatedly across projects are',
     answerSuffix: '.',
   },
 } as const
@@ -186,20 +191,6 @@ function filterRecordsByPlan(
   })
 }
 
-function mergeUniqueMatches(
-  matchGroups: ChatEvidenceRecord[][],
-): ChatEvidenceRecord[] {
-  const matchMap = new Map<string, ChatEvidenceRecord>()
-
-  for (const match of matchGroups.flat()) {
-    if (!matchMap.has(match.id)) {
-      matchMap.set(match.id, match)
-    }
-  }
-
-  return [...matchMap.values()]
-}
-
 function sortMatchesByPlan(
   matches: ChatEvidenceRecord[],
   plan: ChatRetrievalPlan,
@@ -244,11 +235,32 @@ function limitMatchesWithDiversity(
   matches: ChatEvidenceRecord[],
   maximumEvidenceCount: number,
   maximumMatchesPerSlug: number,
+  requiredMatchIds: Set<string>,
 ): ChatEvidenceRecord[] {
   const slugCountMap = new Map<string, number>()
-  const selectedMatches: ChatEvidenceRecord[] = []
+  const selectedMatchIds = new Set(requiredMatchIds)
+
+  if (selectedMatchIds.size > maximumEvidenceCount) {
+    return []
+  }
 
   for (const match of matches) {
+    if (!selectedMatchIds.has(match.id)) {
+      continue
+    }
+
+    slugCountMap.set(match.slug, (slugCountMap.get(match.slug) ?? 0) + 1)
+  }
+
+  for (const match of matches) {
+    if (selectedMatchIds.has(match.id)) {
+      continue
+    }
+
+    if (selectedMatchIds.size >= maximumEvidenceCount) {
+      break
+    }
+
     const slugMatchCount = slugCountMap.get(match.slug) ?? 0
 
     if (slugMatchCount >= maximumMatchesPerSlug) {
@@ -256,14 +268,40 @@ function limitMatchesWithDiversity(
     }
 
     slugCountMap.set(match.slug, slugMatchCount + 1)
-    selectedMatches.push(match)
+    selectedMatchIds.add(match.id)
+  }
 
-    if (selectedMatches.length >= maximumEvidenceCount) {
-      break
+  return matches.filter((match) => selectedMatchIds.has(match.id))
+}
+
+function collectRequiredMatchIds(params: {
+  matches: ChatEvidenceRecord[]
+  requiredConcepts: string[]
+}): Set<string> {
+  const requiredMatchIds = new Set<string>()
+
+  for (const requiredConcept of params.requiredConcepts) {
+    const requiredMatch = params.matches.find((match) => {
+      return doesChatEvidenceMatchConcept(match, requiredConcept)
+    })
+
+    if (requiredMatch) {
+      requiredMatchIds.add(requiredMatch.id)
     }
   }
 
-  return selectedMatches
+  return requiredMatchIds
+}
+
+function doMatchesCoverRequiredConcepts(params: {
+  matches: ChatEvidenceRecord[]
+  requiredConcepts: string[]
+}): boolean {
+  return params.requiredConcepts.every((requiredConcept) => {
+    return params.matches.some((match) => {
+      return doesChatEvidenceMatchConcept(match, requiredConcept)
+    })
+  })
 }
 
 function selectSingleDocumentMatches(
@@ -371,9 +409,7 @@ function buildStructuredProfileResult(params: {
   const responseConfig = STRUCTURED_PROFILE_RESPONSE[params.locale]
   const techStackResponseConfig = TECH_STACK_PROFILE_RESPONSE[params.locale]
 
-  if (
-    responseConfig.recentCareerPattern.test(params.plan.standaloneQuestion)
-  ) {
+  if (responseConfig.recentCareerPattern.test(params.plan.standaloneQuestion)) {
     const careerSectionPrefix = `${responseConfig.careerSection} > `
     const careerRecords = params.records.filter((record) => {
       return (
@@ -420,9 +456,7 @@ function buildStructuredProfileResult(params: {
   }
 
   if (
-    techStackResponseConfig.questionPattern.test(
-      params.plan.standaloneQuestion,
-    )
+    techStackResponseConfig.questionPattern.test(params.plan.standaloneQuestion)
   ) {
     const techStackRecord = params.records.find((record) => {
       return record.id.endsWith(
@@ -524,6 +558,7 @@ async function retrieveDefaultSemanticMatches(
     question: params.plan.standaloneQuestion,
     locale: params.locale,
     retrievalPlan: params.plan,
+    embedQuestion: params.embedQuestion,
   })
 
   if (result.failureKind) {
@@ -538,6 +573,7 @@ export async function executeChatRetrievalPlan({
   locale,
   blogRecords,
   curatedRecords,
+  embedQuestion,
   retrieveSemanticMatches = retrieveDefaultSemanticMatches,
 }: ExecuteChatRetrievalPlanParams): Promise<ExecuteChatRetrievalPlanResult> {
   const scopedRecords = filterRecordsByPlan(
@@ -598,7 +634,11 @@ export async function executeChatRetrievalPlan({
   let semanticRetrievalError: unknown = null
 
   try {
-    rawSemanticMatches = await retrieveSemanticMatches({ plan, locale })
+    rawSemanticMatches = await retrieveSemanticMatches({
+      plan,
+      locale,
+      embedQuestion,
+    })
   } catch (error) {
     semanticRetrievalError = error
 
@@ -608,13 +648,24 @@ export async function executeChatRetrievalPlan({
   }
 
   const semanticMatches = filterRecordsByPlan(rawSemanticMatches, plan)
+  const fusedMatches = fuseChatRetrievalMatches({
+    lexicalMatches: lexicalSelection.matches,
+    semanticMatches,
+    preferredSourceCategories,
+    currentPostSlug: currentSourceTarget?.slug ?? undefined,
+    maximumMatchCount: lexicalSelection.matches.length + semanticMatches.length,
+  })
   const coveredMatches = selectEvidenceCoveringRequiredConcepts({
-    matches: mergeUniqueMatches([lexicalSelection.matches, semanticMatches]),
+    matches: fusedMatches,
     requiredConcepts: plan.requiredConcepts,
     locale,
   })
   const sortedMatches = sortMatchesByPlan(coveredMatches, plan)
-  const matches =
+  const requiredMatchIds = collectRequiredMatchIds({
+    matches: sortedMatches,
+    requiredConcepts: plan.requiredConcepts,
+  })
+  const limitedMatches =
     plan.temporalStrategy === 'single'
       ? selectSingleDocumentMatches(sortedMatches, plan.maximumEvidenceCount)
       : limitMatchesWithDiversity(
@@ -623,7 +674,14 @@ export async function executeChatRetrievalPlan({
           shouldUseSingleMatchPerSlug
             ? BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE
             : BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG,
+          requiredMatchIds,
         )
+  const matches = doMatchesCoverRequiredConcepts({
+    matches: limitedMatches,
+    requiredConcepts: plan.requiredConcepts,
+  })
+    ? limitedMatches
+    : []
 
   if (matches.length === 0) {
     if (semanticRetrievalError) {

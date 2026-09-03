@@ -8,7 +8,12 @@ SERVICE_ROOT_PATH = Path(__file__).resolve().parents[1]
 if str(SERVICE_ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(SERVICE_ROOT_PATH))
 
-from app.request import InvalidEmbeddingRequestError, normalize_embedding_input
+from app.request import (
+    InvalidEmbeddingModelError,
+    InvalidEmbeddingRequestError,
+    normalize_embedding_input,
+    validate_embedding_model,
+)
 from app.response import build_embedding_response
 from server import MODAL_IMAGE, app
 
@@ -29,6 +34,22 @@ class ModalEmbeddingRequestResponseTestCase(unittest.TestCase):
     def test_normalize_embedding_input_rejects_invalid_input(self) -> None:
         with self.assertRaises(InvalidEmbeddingRequestError):
             normalize_embedding_input({"input": None})
+
+    def test_validate_embedding_model_accepts_configured_model(self) -> None:
+        self.assertEqual(
+            validate_embedding_model(
+                requested_model_id="configured-model",
+                available_model_id="configured-model",
+            ),
+            "configured-model",
+        )
+
+    def test_validate_embedding_model_rejects_unavailable_model(self) -> None:
+        with self.assertRaises(InvalidEmbeddingModelError):
+            validate_embedding_model(
+                requested_model_id="different-model",
+                available_model_id="configured-model",
+            )
 
     def test_build_embedding_response_matches_openai_like_shape(self) -> None:
         response = build_embedding_response(

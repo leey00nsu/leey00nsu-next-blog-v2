@@ -45,6 +45,16 @@ export interface ChatRagIndexRun {
   indexVersion: string
   status: (typeof CHAT_RAG_DATABASE.INDEX_STATUSES)[keyof typeof CHAT_RAG_DATABASE.INDEX_STATUSES]
   commitSha: string | null
+  embeddingProvider: string
+  embeddingModelId: string
+  embeddingDimension: number | null
+  chunkingVersion: string
+}
+
+interface ChatRagIndexConfigurationCheck {
+  name: string
+  indexedValue: unknown
+  configuredValue: unknown
 }
 
 let chatRagDatabasePoolSingleton: Pool | null = null
@@ -188,6 +198,60 @@ function buildChatRagIndexVersionId(commitSha?: string): string {
   return `chat-rag-${normalizedTimestamp}-${normalizedCommitSha}-${randomUUID().slice(0, 8)}`
 }
 
+function isLegacyChatRagIndex(row: Record<string, unknown>): boolean {
+  const indexMetadataValues = [
+    row.embedding_provider,
+    row.embedding_model_id,
+    row.embedding_dimension,
+    row.chunking_version,
+  ]
+
+  return indexMetadataValues.every((metadataValue) => {
+    return metadataValue === null || metadataValue === undefined
+  })
+}
+
+function assertActiveChatRagIndexConfiguration(params: {
+  row: Record<string, unknown>
+  questionEmbeddingDimension?: number
+}): void {
+  const configurationChecks: ChatRagIndexConfigurationCheck[] = [
+    {
+      name: 'embedding provider',
+      indexedValue: params.row.embedding_provider,
+      configuredValue: CHAT_RAG.EMBEDDING.PROVIDER,
+    },
+    {
+      name: 'embedding model',
+      indexedValue: params.row.embedding_model_id,
+      configuredValue: CHAT_RAG.EMBEDDING.MODEL_ID,
+    },
+    {
+      name: 'chunking version',
+      indexedValue: params.row.chunking_version,
+      configuredValue: CHAT_RAG.INDEX.CHUNKING_VERSION,
+    },
+  ]
+
+  if (params.questionEmbeddingDimension !== undefined) {
+    configurationChecks.push({
+      name: 'embedding dimension',
+      indexedValue: params.row.embedding_dimension,
+      configuredValue: params.questionEmbeddingDimension,
+    })
+  }
+
+  for (const configurationCheck of configurationChecks) {
+    if (
+      configurationCheck.indexedValue !== configurationCheck.configuredValue
+    ) {
+      throw new Error(
+        `Active Chat RAG ${configurationCheck.name} does not match the current configuration. Rebuild the index before semantic retrieval.`,
+      )
+    }
+  }
+}
+
 export function isChatRagDatabaseConfigured(): boolean {
   return Boolean(CHAT_RAG.DATABASE.URL)
 }
@@ -214,6 +278,10 @@ export async function initializeChatRagDatabase(
       id TEXT PRIMARY KEY,
       status TEXT NOT NULL,
       commit_sha TEXT,
+      embedding_provider TEXT,
+      embedding_model_id TEXT,
+      embedding_dimension INTEGER,
+      chunking_version TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       activated_at TIMESTAMPTZ
     );
@@ -291,6 +359,18 @@ export async function initializeChatRagDatabase(
 
     ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.CHUNKS}
       ADD COLUMN IF NOT EXISTS evidence_time_value TIMESTAMPTZ;
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+      ADD COLUMN IF NOT EXISTS embedding_provider TEXT;
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+      ADD COLUMN IF NOT EXISTS embedding_model_id TEXT;
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+      ADD COLUMN IF NOT EXISTS embedding_dimension INTEGER;
+
+    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+      ADD COLUMN IF NOT EXISTS chunking_version TEXT;
   `)
 }
 
@@ -305,13 +385,21 @@ export async function createChatRagIndexRun(params: {
       INSERT INTO ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS} (
         id,
         status,
-        commit_sha
-      ) VALUES ($1, $2, $3)
+        commit_sha,
+        embedding_provider,
+        embedding_model_id,
+        embedding_dimension,
+        chunking_version
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     `,
     [
       indexVersion,
       CHAT_RAG_DATABASE.INDEX_STATUSES.BUILDING,
       params.commitSha ?? null,
+      CHAT_RAG.EMBEDDING.PROVIDER,
+      CHAT_RAG.EMBEDDING.MODEL_ID,
+      null,
+      CHAT_RAG.INDEX.CHUNKING_VERSION,
     ],
   )
 
@@ -319,6 +407,10 @@ export async function createChatRagIndexRun(params: {
     indexVersion,
     status: CHAT_RAG_DATABASE.INDEX_STATUSES.BUILDING,
     commitSha: params.commitSha ?? null,
+    embeddingProvider: CHAT_RAG.EMBEDDING.PROVIDER,
+    embeddingModelId: CHAT_RAG.EMBEDDING.MODEL_ID,
+    embeddingDimension: null,
+    chunkingVersion: CHAT_RAG.INDEX.CHUNKING_VERSION,
   }
 }
 
@@ -474,8 +566,9 @@ export async function replaceChatRagLocaleIndex(params: {
 }
 
 export async function activateChatRagIndexRun(params: {
-  databaseClient: Pool | PoolClient
+  databaseClient: PoolClient
   indexVersion: string
+  embeddingDimension: number
 }): Promise<void> {
   await params.databaseClient.query('BEGIN')
 
@@ -491,12 +584,17 @@ export async function activateChatRagIndexRun(params: {
         activated_at = CASE
           WHEN id = $1 THEN NOW()
           ELSE activated_at
+        END,
+        embedding_dimension = CASE
+          WHEN id = $1 THEN $4
+          ELSE embedding_dimension
         END
       `,
       [
         params.indexVersion,
         CHAT_RAG_DATABASE.INDEX_STATUSES.ACTIVE,
         CHAT_RAG_DATABASE.INDEX_STATUSES.STALE,
+        params.embeddingDimension,
       ],
     )
 
@@ -561,17 +659,36 @@ export async function deleteChatRagIndexRunData(params: {
 
 export async function selectActiveChatRagIndexVersion(params: {
   databaseClient: Pool | PoolClient
+  questionEmbeddingDimension?: number
 }): Promise<string | null> {
   const activeIndexResult = await params.databaseClient.query(
     `
-      SELECT active_index_version
-      FROM ${CHAT_RAG_DATABASE.TABLES.ACTIVE_INDEX}
-      WHERE singleton_id = $1
+      SELECT
+        active_index.active_index_version,
+        index_versions.embedding_provider,
+        index_versions.embedding_model_id,
+        index_versions.embedding_dimension,
+        index_versions.chunking_version
+      FROM ${CHAT_RAG_DATABASE.TABLES.ACTIVE_INDEX} AS active_index
+      INNER JOIN ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS} AS index_versions
+        ON index_versions.id = active_index.active_index_version
+      WHERE active_index.singleton_id = $1
     `,
     [CHAT_RAG_DATABASE.ACTIVE_INDEX_SINGLETON_ID],
   )
 
   const activeIndexRow = activeIndexResult.rows[0]
+
+  if (activeIndexRow && isLegacyChatRagIndex(activeIndexRow)) {
+    return null
+  }
+
+  if (activeIndexRow) {
+    assertActiveChatRagIndexConfiguration({
+      row: activeIndexRow,
+      questionEmbeddingDimension: params.questionEmbeddingDimension,
+    })
+  }
 
   return typeof activeIndexRow?.active_index_version === 'string'
     ? activeIndexRow.active_index_version
@@ -588,6 +705,10 @@ export async function selectChatRagLocaleSearchData(params: {
 }): Promise<ChatRagLocaleSearchData> {
   const activeIndexVersion = await selectActiveChatRagIndexVersion({
     databaseClient: params.databaseClient,
+    questionEmbeddingDimension:
+      params.questionEmbedding.length > 0
+        ? params.questionEmbedding.length
+        : undefined,
   })
 
   if (!activeIndexVersion) {

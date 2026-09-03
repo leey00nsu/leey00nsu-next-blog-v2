@@ -345,6 +345,22 @@ function recordMatchesToken(
   return normalizedRecordText.includes(token)
 }
 
+function selectBestKeywordMatch(
+  scoredMatches: ScoredChatEvidenceRecord[],
+  token: string,
+): ScoredChatEvidenceRecord | undefined {
+  return scoredMatches
+    .filter((scoredMatch) => recordMatchesToken(scoredMatch, token))
+    .toSorted((leftMatch, rightMatch) => {
+      const fieldPriorityDifference =
+        buildFieldMatchMultiplier(rightMatch, token) -
+        buildFieldMatchMultiplier(leftMatch, token)
+
+      return fieldPriorityDifference || rightMatch.score - leftMatch.score
+    })
+    .at(0)
+}
+
 function preserveAdditionalKeywordMatches(params: {
   scoredMatches: ScoredChatEvidenceRecord[]
   limitedMatches: ScoredChatEvidenceRecord[]
@@ -354,9 +370,10 @@ function preserveAdditionalKeywordMatches(params: {
   const preservedMatchMap = new Map<string, ScoredChatEvidenceRecord>()
 
   for (const rankingConceptToken of params.rankingConceptTokens) {
-    const keywordMatch = params.scoredMatches.find((scoredMatch) => {
-      return recordMatchesToken(scoredMatch, rankingConceptToken)
-    })
+    const keywordMatch = selectBestKeywordMatch(
+      params.scoredMatches,
+      rankingConceptToken,
+    )
 
     if (keywordMatch) {
       preservedMatchMap.set(keywordMatch.id, keywordMatch)

@@ -6,6 +6,7 @@ import {
   buildGraphRagEntities,
 } from '@/features/chat/lib/graph-rag-entities'
 import { buildGraphRagRelations } from '@/features/chat/lib/graph-rag-relations'
+import { validateChatRagEmbeddingBatch } from '@/features/chat/lib/validate-chat-rag-embeddings'
 import {
   createChatRagIndexRun,
   failChatRagIndexRun,
@@ -26,6 +27,11 @@ import { LOCALES } from '@/shared/config/constants'
 interface ChatRagChunkEmbedding {
   chunkId: string
   embedding: number[]
+}
+
+interface EmbeddedChatRagChunkRecords {
+  embeddings: ChatRagChunkEmbedding[]
+  embeddingDimension: number
 }
 
 function buildBlogEvidenceRecords(
@@ -57,8 +63,10 @@ function buildChunkEmbeddingText(record: ChatEvidenceRecord): string {
 
 async function embedChunkRecords(
   records: ChatEvidenceRecord[],
-): Promise<ChatRagChunkEmbedding[]> {
+  expectedEmbeddingDimension?: number,
+): Promise<EmbeddedChatRagChunkRecords> {
   const chunkEmbeddings: ChatRagChunkEmbedding[] = []
+  let embeddingDimension = expectedEmbeddingDimension
 
   for (
     let startIndex = 0;
@@ -72,18 +80,36 @@ async function embedChunkRecords(
     const embeddings = await embedChatRagTexts(
       currentRecords.map((record) => buildChunkEmbeddingText(record)),
     )
+    embeddingDimension = validateChatRagEmbeddingBatch({
+      embeddings,
+      expectedEmbeddingCount: currentRecords.length,
+      expectedEmbeddingDimension: embeddingDimension,
+    })
 
     chunkEmbeddings.push(
       ...currentRecords.map((record, index) => {
+        const embedding = embeddings[index]
+
+        if (!embedding) {
+          throw new Error(`Missing embedding for chunk ${record.id}.`)
+        }
+
         return {
           chunkId: record.id,
-          embedding: embeddings[index] ?? [],
+          embedding,
         }
       }),
     )
   }
 
-  return chunkEmbeddings
+  if (embeddingDimension === undefined) {
+    throw new Error('Cannot build a Chat RAG index without embeddings.')
+  }
+
+  return {
+    embeddings: chunkEmbeddings,
+    embeddingDimension,
+  }
 }
 
 async function main(): Promise<void> {
@@ -113,6 +139,7 @@ async function main(): Promise<void> {
   })
 
   let totalChunkCount = 0
+  let indexEmbeddingDimension: number | undefined
 
   try {
     for (const locale of LOCALES.SUPPORTED) {
@@ -123,7 +150,11 @@ async function main(): Promise<void> {
       const chunks = buildGraphRagChunks(records)
       const entities = buildGraphRagEntities(records)
       const relations = buildGraphRagRelations(chunks)
-      const embeddings = await embedChunkRecords(records)
+      const embeddedRecords = await embedChunkRecords(
+        records,
+        indexEmbeddingDimension,
+      )
+      indexEmbeddingDimension = embeddedRecords.embeddingDimension
 
       await replaceChatRagLocaleIndex({
         databaseClient: databasePool,
@@ -132,16 +163,27 @@ async function main(): Promise<void> {
         chunks,
         entities,
         relations,
-        embeddings,
+        embeddings: embeddedRecords.embeddings,
       })
 
       totalChunkCount += chunks.length
     }
 
-    await activateChatRagIndexRun({
-      databaseClient: databasePool,
-      indexVersion: indexRun.indexVersion,
-    })
+    if (indexEmbeddingDimension === undefined) {
+      throw new Error('Cannot activate a Chat RAG index without embeddings.')
+    }
+
+    const activationDatabaseClient = await databasePool.connect()
+
+    try {
+      await activateChatRagIndexRun({
+        databaseClient: activationDatabaseClient,
+        indexVersion: indexRun.indexVersion,
+        embeddingDimension: indexEmbeddingDimension,
+      })
+    } finally {
+      activationDatabaseClient.release()
+    }
 
     console.log(
       `✅ Indexed ${totalChunkCount} chunk(s) into Postgres Chat RAG. Active version: ${indexRun.indexVersion}`,

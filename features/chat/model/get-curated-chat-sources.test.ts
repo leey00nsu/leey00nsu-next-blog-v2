@@ -64,7 +64,7 @@ describe('getCuratedChatSources', () => {
     const curatedChatSources = await getCuratedChatSources('ko')
 
     const profileTechStackSource = curatedChatSources.find((source) => {
-      return source.id === 'ko/about/profile-tech-stack'
+      return source.id === 'curated/ko/about/profile-tech-stack'
     })
 
     expect(profileTechStackSource).toBeDefined()
@@ -120,7 +120,7 @@ describe('getCuratedChatSources', () => {
   it('배포 프로젝트 전체를 요약한 검색 근거를 포함한다', async () => {
     const curatedChatSources = await getCuratedChatSources('ko')
     const deployedProjectOverviewSource = curatedChatSources.find((source) => {
-      return source.id === 'ko/project/deployed-overview'
+      return source.id === 'curated/ko/project/deployed-overview'
     })
 
     expect(deployedProjectOverviewSource?.url).toBe('/ko/projects')

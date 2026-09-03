@@ -148,8 +148,7 @@ describe('executeChatRetrievalPlan', () => {
     const result = await executeChatRetrievalPlan({
       plan: {
         ...RECENT_PROJECT_AI_PLAN,
-        standaloneQuestion:
-          '이윤수가 프로젝트에서 주로 쓰는 기술 스택은 뭐야?',
+        standaloneQuestion: '이윤수가 프로젝트에서 주로 쓰는 기술 스택은 뭐야?',
         operation: 'lookup',
         canonicalTargets: [
           {
@@ -292,6 +291,47 @@ describe('executeChatRetrievalPlan', () => {
     expect(result.matches[0]?.slug).toBe('older-ai')
   })
 
+  it('같은 slug의 서로 다른 chunk가 필수 개념을 담당하면 다양성 제한 후에도 모두 보존한다', async () => {
+    const alphaChunk: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/blog/shared-section/alpha',
+      slug: 'shared-section',
+      title: '비교 분석',
+      url: '/ko/blog/shared-section#comparison',
+      content: 'Alpha의 특징을 설명합니다.',
+      searchTerms: ['Alpha'],
+      sourceCategory: 'blog',
+    }
+    const betaChunk: ChatEvidenceRecord = {
+      ...alphaChunk,
+      id: 'ko/blog/shared-section/beta',
+      content: 'Beta의 특징을 설명합니다.',
+      searchTerms: ['Beta'],
+    }
+
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion: 'Alpha와 Beta를 비교해줘',
+        operation: 'compare',
+        sourceStrategy: 'all',
+        sourceCategories: [],
+        requiredConcepts: ['Alpha', 'Beta'],
+        temporalStrategy: 'none',
+        temporalOrder: null,
+      },
+      locale: 'ko',
+      blogRecords: [alphaChunk, betaChunk],
+      curatedRecords: [],
+      retrieveSemanticMatches: async () => [],
+    })
+
+    expect(result.matches.map((match) => match.id)).toEqual([
+      alphaChunk.id,
+      betaChunk.id,
+    ])
+  })
+
   it('prefer source는 다른 category를 제거하지 않고 우선순위만 높인다', async () => {
     const result = await executeChatRetrievalPlan({
       plan: {
@@ -368,6 +408,43 @@ describe('executeChatRetrievalPlan', () => {
       matches: [expect.objectContaining({ slug: 'recent-ai' })],
       semanticMatches: [],
     })
+  })
+
+  it('lexical과 semantic에 모두 검색된 근거를 RRF로 우선한다', async () => {
+    const lexicalOnlyRecord: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/project/next-deployment',
+      slug: 'next-deployment',
+      title: 'Next.js 배포 구조',
+      url: '/ko/projects/next-deployment',
+      content: 'Next.js 배포 구조를 설명합니다.',
+      searchTerms: ['Next.js', '배포 구조'],
+    }
+    const hybridRecord: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/project/deployment-retrospective',
+      slug: 'deployment-retrospective',
+      title: '배포 회고',
+      url: '/ko/projects/deployment-retrospective',
+      content: 'Next.js의 배포 구조와 운영 경험을 설명합니다.',
+      searchTerms: ['Next.js', '배포 구조'],
+    }
+
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion: 'Next.js 배포 구조',
+        temporalStrategy: 'none',
+        temporalOrder: null,
+        requiredConcepts: [],
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [lexicalOnlyRecord, hybridRecord],
+      retrieveSemanticMatches: async () => [hybridRecord],
+    })
+
+    expect(result.matches[0]?.id).toBe(hybridRecord.id)
   })
 
   it('semantic 검색 실패를 근거 없음으로 숨기지 않는다', async () => {

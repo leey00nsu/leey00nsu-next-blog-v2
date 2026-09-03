@@ -542,6 +542,109 @@ describe('runChatWorkflow', () => {
     ])
   })
 
+  it('한 요청의 semantic cache와 retrieval은 질문 임베딩을 한 번만 공유한다', async () => {
+    const dependencies = buildDependencies()
+    const embedQuestion = vi.fn(async () => [1, 0, 0])
+    const findSemanticResponse = vi.fn(
+      async (params: {
+        resolveQuestionEmbedding?: () => Promise<number[]>
+      }): Promise<BlogChatResponse | undefined> => {
+        await params.resolveQuestionEmbedding?.()
+        return undefined
+      },
+    )
+    const executeRetrievalPlanWithEmbedding = vi.fn(
+      async (params: {
+        embedQuestion?: (question: string) => Promise<number[]>
+      }): Promise<ExecuteChatRetrievalPlanResult> => {
+        await params.embedQuestion?.(REQUEST.question)
+
+        return {
+          kind: 'evidence',
+          matches: [LEEMAGE_MATCH],
+          lexicalMatches: [LEEMAGE_MATCH],
+          semanticMatches: [LEEMAGE_MATCH],
+          reranked: false,
+        }
+      },
+    )
+    const storeSemanticResponse = vi.fn(
+      async (params: {
+        resolveQuestionEmbedding?: () => Promise<number[]>
+      }): Promise<void> => {
+        await params.resolveQuestionEmbedding?.()
+      },
+    )
+
+    const result = await runChatWorkflow({
+      request: REQUEST,
+      dependencies: {
+        ...dependencies,
+        embedQuestion,
+        findSemanticResponse,
+        executeRetrievalPlan: executeRetrievalPlanWithEmbedding,
+        storeSemanticResponse,
+      },
+    })
+
+    expect(result.applicationResponse.response.grounded).toBe(true)
+    expect(findSemanticResponse).toHaveBeenCalledTimes(1)
+    expect(executeRetrievalPlanWithEmbedding).toHaveBeenCalledTimes(1)
+    expect(storeSemanticResponse).toHaveBeenCalledTimes(1)
+    expect(embedQuestion).toHaveBeenCalledTimes(1)
+    expect(embedQuestion).toHaveBeenCalledWith(REQUEST.question)
+  })
+
+  it('cache lookup의 임베딩이 일시 실패하면 retrieval에서 다시 시도한다', async () => {
+    const dependencies = buildDependencies()
+    const embedQuestion = vi
+      .fn<() => Promise<number[]>>()
+      .mockRejectedValueOnce(new Error('temporary embedding failure'))
+      .mockResolvedValueOnce([1, 0, 0])
+    const findSemanticResponse = vi.fn(
+      async (params: {
+        resolveQuestionEmbedding?: () => Promise<number[]>
+      }): Promise<BlogChatResponse | undefined> => {
+        try {
+          await params.resolveQuestionEmbedding?.()
+        } catch {
+          return undefined
+        }
+
+        return undefined
+      },
+    )
+    const executeRetrievalPlanWithRetry = vi.fn(
+      async (params: {
+        embedQuestion?: (question: string) => Promise<number[]>
+      }): Promise<ExecuteChatRetrievalPlanResult> => {
+        await params.embedQuestion?.(REQUEST.question)
+
+        return {
+          kind: 'evidence',
+          matches: [LEEMAGE_MATCH],
+          lexicalMatches: [],
+          semanticMatches: [LEEMAGE_MATCH],
+          reranked: false,
+        }
+      },
+    )
+
+    const result = await runChatWorkflow({
+      request: REQUEST,
+      dependencies: {
+        ...dependencies,
+        embedQuestion,
+        findSemanticResponse,
+        executeRetrievalPlan: executeRetrievalPlanWithRetry,
+      },
+    })
+
+    expect(result.applicationResponse.response.grounded).toBe(true)
+    expect(embedQuestion).toHaveBeenCalledTimes(2)
+    expect(executeRetrievalPlanWithRetry).toHaveBeenCalledTimes(1)
+  })
+
   it('공개 근거가 없으면 사용자 메시지를 반환하고 answer model을 호출하지 않는다', async () => {
     const dependencies = buildDependencies()
     dependencies.executeRetrievalPlan.mockResolvedValueOnce({

@@ -1,5 +1,5 @@
 import modal
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from app.config import (
@@ -8,7 +8,11 @@ from app.config import (
     get_modal_embedding_cpu_count,
     get_modal_embedding_model_id,
 )
-from app.request import normalize_embedding_input
+from app.request import (
+    InvalidEmbeddingModelError,
+    normalize_embedding_input,
+    validate_embedding_model,
+)
 from app.response import build_embedding_response
 
 MODAL_APPLICATION_NAME = get_modal_embedding_application_name()
@@ -71,13 +75,21 @@ def create_embedding_web_application() -> FastAPI:
         request: EmbeddingRequest,
     ) -> dict[str, object]:
         normalized_inputs = normalize_embedding_input(request.model_dump())
+        try:
+            embedding_model_id = validate_embedding_model(
+                requested_model_id=request.model,
+                available_model_id=MODAL_MODEL_ID,
+            )
+        except InvalidEmbeddingModelError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
         embeddings = text_embedding_model.embed_texts.remote(
             normalized_inputs,
         )
 
         return build_embedding_response(
             embeddings=embeddings,
-            model_id=request.model or MODAL_MODEL_ID,
+            model_id=embedding_model_id,
         )
 
     return fastapi_application

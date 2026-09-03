@@ -1,6 +1,7 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
+import { doesChatEvidenceMatchConcept } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import {
   getChatRagDatabasePool,
@@ -165,6 +166,11 @@ function buildRankedChunks(params: {
   )
 
   return params.semanticCandidates
+    .filter((chunk) => {
+      return (
+        chunk.semanticSimilarity >= CHAT_RAG.SEARCH.MINIMUM_SIMILARITY_SCORE
+      )
+    })
     .map((chunk) => {
       const directEntityScore = chunk.entityIds.reduce((score, entityId) => {
         return matchedEntityIds.has(entityId)
@@ -190,9 +196,6 @@ function buildRankedChunks(params: {
           currentPostScore,
       }
     })
-    .filter((chunk) => {
-      return chunk.score >= CHAT_RAG.SEARCH.MINIMUM_SIMILARITY_SCORE
-    })
     .sort((leftChunk, rightChunk) => {
       return (
         rightChunk.score - leftChunk.score ||
@@ -204,11 +207,45 @@ function buildRankedChunks(params: {
 
 function buildSelectedMatches(
   rankedChunks: RankedGraphRagChunk[],
+  requiredConcepts: string[],
 ): ChatEvidenceRecord[] {
   const slugMatchCountMap = new Map<string, number>()
-  const selectedChunks: RankedGraphRagChunk[] = []
+  const selectedChunkIds = new Set<string>()
+
+  for (const requiredConcept of requiredConcepts) {
+    const requiredChunk = rankedChunks.find((rankedChunk) => {
+      return doesChatEvidenceMatchConcept(rankedChunk, requiredConcept)
+    })
+
+    if (requiredChunk) {
+      selectedChunkIds.add(requiredChunk.id)
+    }
+  }
+
+  if (selectedChunkIds.size > CHAT_RAG.SEARCH.TOP_K) {
+    return []
+  }
 
   for (const rankedChunk of rankedChunks) {
+    if (!selectedChunkIds.has(rankedChunk.id)) {
+      continue
+    }
+
+    slugMatchCountMap.set(
+      rankedChunk.slug,
+      (slugMatchCountMap.get(rankedChunk.slug) ?? 0) + 1,
+    )
+  }
+
+  for (const rankedChunk of rankedChunks) {
+    if (selectedChunkIds.has(rankedChunk.id)) {
+      continue
+    }
+
+    if (selectedChunkIds.size >= CHAT_RAG.SEARCH.TOP_K) {
+      break
+    }
+
     const slugMatchCount = slugMatchCountMap.get(rankedChunk.slug) ?? 0
 
     if (slugMatchCount >= CHAT_RAG.SEARCH.MAXIMUM_MATCHES_PER_SLUG) {
@@ -216,26 +253,30 @@ function buildSelectedMatches(
     }
 
     slugMatchCountMap.set(rankedChunk.slug, slugMatchCount + 1)
-    selectedChunks.push(rankedChunk)
+    selectedChunkIds.add(rankedChunk.id)
   }
 
-  return selectedChunks.slice(0, CHAT_RAG.SEARCH.TOP_K).map((chunk) => {
-    return {
-      id: chunk.id,
-      locale: chunk.locale,
-      slug: chunk.slug,
-      title: chunk.title,
-      url: chunk.url,
-      excerpt: chunk.excerpt,
-      content: chunk.content,
-      sectionTitle: chunk.sectionTitle,
-      tags: chunk.tags,
-      publishedAt: chunk.publishedAt,
-      evidenceTime: chunk.evidenceTime,
-      searchTerms: chunk.searchTerms,
-      sourceCategory: chunk.sourceCategory,
-    }
-  })
+  return rankedChunks
+    .filter((rankedChunk) => {
+      return selectedChunkIds.has(rankedChunk.id)
+    })
+    .map((chunk) => {
+      return {
+        id: chunk.id,
+        locale: chunk.locale,
+        slug: chunk.slug,
+        title: chunk.title,
+        url: chunk.url,
+        excerpt: chunk.excerpt,
+        content: chunk.content,
+        sectionTitle: chunk.sectionTitle,
+        tags: chunk.tags,
+        publishedAt: chunk.publishedAt,
+        evidenceTime: chunk.evidenceTime,
+        searchTerms: chunk.searchTerms,
+        sourceCategory: chunk.sourceCategory,
+      }
+    })
 }
 
 function buildChatRagWorkflow(params: {
@@ -269,7 +310,10 @@ function buildChatRagWorkflow(params: {
         question: state.question,
         currentPostSlug: state.currentPostSlug,
       })
-      const matches = buildSelectedMatches(rankedChunks)
+      const matches = buildSelectedMatches(
+        rankedChunks,
+        state.retrievalPlan?.requiredConcepts ?? [],
+      )
 
       return {
         grounded: matches.length > 0,

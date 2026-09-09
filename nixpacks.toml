@@ -1,0 +1,3 @@
+[phases.setup]
+# Node.js 22.14.0; Prisma 7 requires Node.js 22.12 or newer.
+nixpkgsArchive = "e6f23dc08d3624daab7094b701aa3954923c6bbb"

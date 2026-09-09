@@ -161,5 +161,8 @@
     "tw-animate-css": "^1.3.7",
     "typescript": "^5",
     "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=22.12.0 <23"
   }
 }

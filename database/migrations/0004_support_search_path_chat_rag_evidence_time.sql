@@ -1,6 +1,6 @@
 DO $migration$
 BEGIN
-  IF to_regclass('public.chat_rag_chunks') IS NOT NULL THEN
+  IF to_regclass('chat_rag_chunks') IS NOT NULL THEN
     ALTER TABLE chat_rag_chunks
     ADD COLUMN IF NOT EXISTS evidence_time_kind TEXT;
 

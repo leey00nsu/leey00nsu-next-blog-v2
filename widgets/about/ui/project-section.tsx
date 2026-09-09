@@ -80,7 +80,7 @@ export function ProjectSectionView({
         </h2>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {projects.map((project) => (
           <ProjectSummaryCardView
             key={project.slug}

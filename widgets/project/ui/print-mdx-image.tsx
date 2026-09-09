@@ -22,7 +22,7 @@ export function PrintMdxImage({
         src={normalizedSource}
         alt={alt}
         className={cn(
-          'block h-auto max-h-[600px] w-full object-contain',
+          'block h-auto max-h-[390px] w-full object-contain',
           className,
         )}
         loading="eager"

@@ -83,18 +83,18 @@ describe('getCuratedChatSources', () => {
     )
   })
 
-  it('프로필 하위 항목에 Career와 Education 계층을 보존한다', async () => {
+  it('프로필 하위 항목에 경력과 학력 계층을 보존한다', async () => {
     const curatedChatSources = await getCuratedChatSources('ko')
     const careerSource = curatedChatSources.find((source) => {
-      return source.sectionTitle === 'Ecount ERP'
+      return source.sectionTitle === 'Ecount ERP | 서버 개발자'
     })
     const educationSource = curatedChatSources.find((source) => {
       return source.sectionTitle === '삼육대학교'
     })
 
-    expect(careerSource?.content).toContain('Career > Ecount ERP')
+    expect(careerSource?.content).toContain('경력 > Ecount ERP | 서버 개발자')
     expect(careerSource?.searchTerms).toContain('career')
-    expect(educationSource?.content).toContain('Education > 삼육대학교')
+    expect(educationSource?.content).toContain('학력 > 삼육대학교')
     expect(educationSource?.searchTerms).toContain('education')
   })
 

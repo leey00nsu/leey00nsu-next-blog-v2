@@ -73,10 +73,6 @@ export function ProjectSummaryCardView({
   const ariaLabel = shouldLinkToGithub
     ? labels.githubAriaLabel
     : labels.detailAriaLabel
-  const visibleTechStacks = project.techStacks.slice(
-    0,
-    PROJECT_SUMMARY_CARD.MAX_VISIBLE_TECH_STACK_COUNT,
-  )
   const visibleKeyFeatures = project.keyFeatures.slice(
     0,
     PROJECT_SUMMARY_CARD.MAX_VISIBLE_KEY_FEATURE_COUNT,
@@ -85,27 +81,26 @@ export function ProjectSummaryCardView({
   const hasDimensions = project.width > 0 && project.height > 0
 
   const className =
-    'group border-border bg-card hover:border-primary/60 focus-visible:ring-primary/60 block break-inside-avoid rounded-lg border p-5 transition hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none [page-break-inside:avoid]'
+    'group border-border bg-card hover:border-primary/60 focus-visible:ring-primary/60 block min-w-0 break-inside-avoid rounded-lg border p-4 transition hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none [page-break-inside:avoid]'
 
   const content = (
-    <article className="flex items-start gap-4">
-      {hasThumbnail ? (
-        <span className="border-border bg-muted flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border">
-          <CustomImage
-            src={removePublic(project.thumbnail!)}
-            alt=""
-            aria-hidden
-            className="h-full w-full object-cover"
-            imageClassName="scale-110"
-            width={hasDimensions ? project.width : undefined}
-            height={hasDimensions ? project.height : undefined}
-          />
-        </span>
-      ) : null}
-
+    <article>
       <div className="min-w-0 flex-1 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg leading-tight font-semibold">
+        <div className="flex items-center gap-3">
+          {hasThumbnail ? (
+            <span className="border-border bg-muted flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border">
+              <CustomImage
+                src={removePublic(project.thumbnail!)}
+                alt=""
+                aria-hidden
+                className="h-full w-full object-cover"
+                imageClassName="scale-110"
+                width={hasDimensions ? project.width : undefined}
+                height={hasDimensions ? project.height : undefined}
+              />
+            </span>
+          ) : null}
+          <h3 className="min-w-0 flex-1 text-lg leading-tight font-semibold">
             {project.title}
           </h3>
           <ArrowUpRight
@@ -128,14 +123,6 @@ export function ProjectSummaryCardView({
 
         <dl className="space-y-2 text-sm">
           <div className="flex flex-col gap-1">
-            <dt className="text-muted-foreground">{labels.typeLabel}</dt>
-            <dd>
-              <span className="border-border bg-muted inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
-                {labels.projectTypeLabel}
-              </span>
-            </dd>
-          </div>
-          <div className="flex flex-col gap-1">
             <dt className="text-muted-foreground">{labels.periodLabel}</dt>
             <dd className="font-medium">
               {formatProjectPeriod(project.period, labels.inProgressLabel)}
@@ -145,12 +132,12 @@ export function ProjectSummaryCardView({
             <dt className="text-muted-foreground">{labels.techStackLabel}</dt>
             <dd>
               <ul className="flex flex-wrap gap-2">
-                {visibleTechStacks.map((stack) => (
+                {project.techStacks.map((techStack) => (
                   <li
-                    key={stack}
+                    key={techStack}
                     className="border-border bg-muted rounded-full border px-2.5 py-1 text-xs font-medium"
                   >
-                    {stack}
+                    {techStack}
                   </li>
                 ))}
               </ul>

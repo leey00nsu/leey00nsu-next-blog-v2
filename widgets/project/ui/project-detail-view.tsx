@@ -8,7 +8,6 @@ import { cn } from '@/shared/lib/utils'
 
 const PROJECT_DETAIL_BLOCK_ANIMATION = {
   HEADER_DELAY_SECONDS: 0,
-  META_DELAY_SECONDS: 0.06,
   CONTENT_DELAY_SECONDS: 0.12,
 } as const
 
@@ -75,41 +74,29 @@ export function ProjectDetailView({
                   {labels.projectTypeLabel}
                 </span>
               </div>
+              <p className="text-muted-foreground text-sm tabular-nums">
+                <span className="sr-only">{labels.periodLabel}: </span>
+                {formattedPeriod}
+              </p>
               <p className="text-muted-foreground text-base leading-relaxed">
                 {project.summary}
               </p>
+              <ul
+                aria-label={labels.techStackLabel}
+                className="flex flex-wrap gap-2"
+              >
+                {project.techStacks.map((techStack) => (
+                  <li
+                    key={techStack}
+                    className="border-border bg-muted rounded-full border px-2.5 py-1 text-xs font-medium"
+                  >
+                    {techStack}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </header>
-      </EntranceMotionBlock>
-
-      <EntranceMotionBlock
-        delaySeconds={PROJECT_DETAIL_BLOCK_ANIMATION.META_DELAY_SECONDS}
-        disabled={!enableBlockEntranceAnimation}
-      >
-        <section className="grid gap-6 md:grid-cols-2">
-          <div className="border-border bg-card rounded-lg border p-4">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {labels.periodLabel}
-            </h2>
-            <p className="mt-2 text-lg font-medium">{formattedPeriod}</p>
-          </div>
-          <div className="border-border bg-card rounded-lg border p-4">
-            <h2 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-              {labels.techStackLabel}
-            </h2>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {project.techStacks.map((stack) => (
-                <li
-                  key={stack}
-                  className="border-border bg-muted rounded-full border px-3 py-1 text-xs font-medium"
-                >
-                  {stack}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
       </EntranceMotionBlock>
 
       <EntranceMotionBlock

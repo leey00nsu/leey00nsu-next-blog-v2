@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx scripts/generate-resume-pdf.ts --dev",
     "predev": "pnpm run db:migrate -- --allow-missing-database && pnpm run gen:content",
     "build": "next build",
     "prebuild": "pnpm run gen:content",

@@ -27,19 +27,22 @@ export async function ProjectPrintDetail({
     project.content,
     PRINT_SPLIT_LEADING_MDX_IMAGES_OPTIONS,
   )
+  const featuresHeading = /^## (?:핵심 기능|Key Features)\s*$/mu.exec(remainingContent)
+  const introductionContent = featuresHeading
+    ? remainingContent.slice(0, featuresHeading.index)
+    : remainingContent
+  const detailContent = featuresHeading
+    ? remainingContent.slice(featuresHeading.index)
+    : null
 
   return (
     <ProjectDetailView
       project={project}
       enableBlockEntranceAnimation={false}
-      articleClassName={
-        firstImageContent
-          ? 'break-before-page [page-break-before:always]'
-          : undefined
-      }
+      articleClassName={firstImageContent ? 'pt-8' : undefined}
       beforeContent={
         firstImageContent ? (
-          <div className="mt-6 break-inside-avoid [page-break-inside:avoid]">
+          <div className="break-inside-avoid [page-break-inside:avoid]">
             <MdxRenderer
               content={firstImageContent}
               components={{ img: PrintMdxImage }}
@@ -55,10 +58,20 @@ export async function ProjectPrintDetail({
         projectTypeLabel: t(`type.${project.type}`),
       }}
     >
-      <MdxRenderer
-        content={remainingContent}
-        components={{ img: PrintMdxImage }}
-      />
+      <div className="text-base leading-6 [&_h2]:mt-0 [&_p]:my-3">
+        <MdxRenderer
+          content={introductionContent}
+          components={{ img: PrintMdxImage }}
+        />
+      </div>
+      {detailContent ? (
+        <div className="break-before-page [page-break-before:always]">
+          <MdxRenderer
+            content={detailContent}
+            components={{ img: PrintMdxImage }}
+          />
+        </div>
+      ) : null}
     </ProjectDetailView>
   )
 }

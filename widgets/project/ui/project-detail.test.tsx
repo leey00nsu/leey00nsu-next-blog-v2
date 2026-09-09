@@ -70,7 +70,7 @@ describe('ProjectDetail', () => {
   it('프로젝트 소개 주요 블록을 공통 등장 애니메이션 래퍼로 감싼다', async () => {
     render(await ProjectDetail({ project: PROJECT, locale: 'ko' }))
 
-    expect(screen.getAllByTestId('entrance-block')).toHaveLength(3)
+    expect(screen.getAllByTestId('entrance-block')).toHaveLength(2)
     expect(screen.getByText('Sample Project')).toBeInTheDocument()
   })
 
@@ -83,7 +83,7 @@ describe('ProjectDetail', () => {
       }),
     )
 
-    expect(screen.getAllByTestId('entrance-block')).toHaveLength(3)
+    expect(screen.getAllByTestId('entrance-block')).toHaveLength(2)
     expect(screen.getAllByTestId('entrance-block')[0]).toHaveAttribute(
       'data-disabled',
       'true',

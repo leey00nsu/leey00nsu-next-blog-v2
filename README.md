@@ -302,7 +302,8 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 ### About · 프로젝트 PDF 다운로드
 
 - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 클릭
-- PDF는 빌드 시점(`postbuild`)에 자동 생성되어 `public/pdf/portfolio-{locale}.pdf`에 저장
+- PDF는 `pnpm dev` 시작 시와 빌드 후(`postbuild`) 자동 생성됩니다. 한국어·영어 이력서는 `public/pdf/resume-{locale}.pdf`, 포트폴리오는 `public/pdf/portfolio-{locale}.pdf`에 저장됩니다.
+- 개발 모드는 서버가 준비된 뒤 PDF 4개를 재생성하고 서버를 계속 유지합니다. 실행 중 문서 변경은 다음 `pnpm dev` 시작 시 PDF에 반영됩니다. 개발 서버는 기본 3000번 포트를 사용하며, `PORT=3001 pnpm dev`처럼 터미널에서 지정한 값만 반영합니다(`.env`의 `PORT`는 무시). 개발 모드 PDF는 같은 서버를 사용하고, 빌드 후 PDF 생성용 서버는 `PDF_SERVER_PORT`로 설정합니다.
 
 ### 블로그 Q&A 안전성 제한
 

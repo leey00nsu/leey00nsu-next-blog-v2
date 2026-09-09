@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getAbout } from '@/entities/about/lib/about'
-import { AboutDetail } from '@/widgets/about/ui/about-detail'
+import { ResumePrintDetail } from '@/widgets/about/ui/resume-print-detail'
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
 export default async function ResumePrintPage() {
@@ -14,15 +14,5 @@ export default async function ResumePrintPage() {
     notFound()
   }
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
-      <AboutDetail
-        about={about}
-        locale={locale}
-        showDownloadButton={false}
-        projectCardLinkVariant="github"
-        enableBlockEntranceAnimation={false}
-      />
-    </div>
-  )
+  return <ResumePrintDetail about={about} locale={locale} />
 }

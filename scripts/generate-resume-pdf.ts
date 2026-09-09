@@ -1,17 +1,18 @@
 /**
- * 빌드 시점에 PDF를 생성하는 스크립트
+ * 빌드 및 개발 서버 시작 시 PDF를 생성하는 스크립트
  *
- * postbuild에서 실행되며:
- * 1. 임시로 Next.js 서버 시작 (기본 포트 3000, PDF_SERVER_PORT 환경변수로 변경 가능)
+ * pnpm dev 또는 postbuild에서 실행되며:
+ * 1. Next.js 서버 시작 (개발: PORT, 빌드 후: PDF_SERVER_PORT, 기본 3000)
  * 2. Playwright로 /print/resume, /print/portfolio 페이지 렌더링
  * 3. 모든 로케일/문서 종류에 대해 PDF 생성
- * 4. 서버 종료
+ * 4. 빌드 모드는 서버 종료, --dev 모드는 개발 서버 유지
  *
  * PDF는 public/pdf/{documentKind}-{locale}.pdf에 저장됩니다.
  */
 
-import 'dotenv/config'
+import dotenv from 'dotenv'
 import { spawn, type ChildProcess } from 'node:child_process'
+import { createRequire } from 'node:module'
 import fs from 'node:fs'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
@@ -24,12 +25,31 @@ import {
   type SupportedLocale,
 } from '@/shared/config/constants'
 
+// next dev와 동일하게 .env의 PORT는 개발 서버 포트로 사용하지 않습니다.
+const DEVELOPMENT_SERVER_PORT = process.env.PORT
+dotenv.config()
+
 const PDF_DIR = path.join(process.cwd(), 'public', 'pdf')
-const SERVER_PORT = Number(process.env.PDF_SERVER_PORT ?? 3000)
+const PDF_SERVER = {
+  DEVELOPMENT_ARGUMENT: '--dev',
+  DEFAULT_PORT: 3000,
+  DEVELOPMENT_STARTUP_TIMEOUT_MS: 120_000,
+  REQUEST_TIMEOUT_MS: 5000,
+} as const
+const IS_DEVELOPMENT = process.argv.includes(PDF_SERVER.DEVELOPMENT_ARGUMENT)
+const SERVER_PORT = Number(
+  (IS_DEVELOPMENT ? DEVELOPMENT_SERVER_PORT : process.env.PDF_SERVER_PORT) ??
+    PDF_SERVER.DEFAULT_PORT,
+)
+const requireFromProject = createRequire(
+  path.join(process.cwd(), 'package.json'),
+)
 const BASE_URL = `http://localhost:${SERVER_PORT}`
 const SERVER_STARTUP_TIMEOUT_MS = 30_000
 const SERVER_STARTUP_CHECK_INTERVAL_MS = 500
 const PDF_RENDER = {
+  SCALE: 0.85,
+  PAGE_MARGIN: '10mm',
   VIEWPORT_WIDTH_PX: 1440,
   VIEWPORT_HEIGHT_PX: 1080,
   DEVICE_SCALE_FACTOR: 2,
@@ -136,13 +156,31 @@ async function startServer(): Promise<ChildProcess> {
   console.log(`  Starting Next.js server on port ${SERVER_PORT}...`)
 
   const serverProcess = spawn(
-    'pnpm',
-    ['next', 'start', '-p', String(SERVER_PORT)],
-    {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: false,
-    },
+    process.execPath,
+    [
+      requireFromProject.resolve('next/dist/bin/next'),
+      IS_DEVELOPMENT ? 'dev' : 'start',
+      '-p',
+      String(SERVER_PORT),
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
   )
+  let startupError: Error | null = null
+  serverProcess.on('error', (error) => {
+    startupError = error
+  })
+  const handleShutdown = () => {
+    stopServer(serverProcess)
+  }
+  process.once('SIGINT', handleShutdown)
+  process.once('SIGTERM', handleShutdown)
+  serverProcess.once('exit', (exitCode, signal) => {
+    process.removeListener('SIGINT', handleShutdown)
+    process.removeListener('SIGTERM', handleShutdown)
+    if (IS_DEVELOPMENT && !signal && exitCode) {
+      process.exitCode = exitCode
+    }
+  })
 
   serverProcess.stdout?.on('data', (data) => {
     const message = data.toString().trim()
@@ -156,9 +194,18 @@ async function startServer(): Promise<ChildProcess> {
 
   // 서버가 준비될 때까지 대기
   const startTime = Date.now()
-  while (Date.now() - startTime < SERVER_STARTUP_TIMEOUT_MS) {
+  const startupTimeout = IS_DEVELOPMENT
+    ? PDF_SERVER.DEVELOPMENT_STARTUP_TIMEOUT_MS
+    : SERVER_STARTUP_TIMEOUT_MS
+  while (Date.now() - startTime < startupTimeout) {
+    if (startupError) throw startupError
+    if (serverProcess.exitCode !== null || serverProcess.signalCode !== null) {
+      throw new Error('Next.js server exited before PDF generation could start')
+    }
     try {
-      const response = await fetch(`${BASE_URL}${PDF.PRINT_ROUTE.RESUME}`)
+      const response = await fetch(`${BASE_URL}${PDF.PRINT_ROUTE.RESUME}`, {
+        signal: AbortSignal.timeout(PDF_SERVER.REQUEST_TIMEOUT_MS),
+      })
       if (response.ok) {
         console.log('  Server is ready!')
         return serverProcess
@@ -295,8 +342,7 @@ async function preparePageForPdf(page: Page): Promise<void> {
       imagePreloadScrollWaitMilliseconds:
         PDF_RENDER.IMAGE_PRELOAD_SCROLL_WAIT_MS,
       imagePreloadTimeoutMilliseconds: PDF_RENDER.IMAGE_PRELOAD_TIMEOUT_MS,
-      imagePreloadRetryWaitMilliseconds:
-        PDF_RENDER.IMAGE_PRELOAD_RETRY_WAIT_MS,
+      imagePreloadRetryWaitMilliseconds: PDF_RENDER.IMAGE_PRELOAD_RETRY_WAIT_MS,
     },
   )
 }
@@ -340,17 +386,25 @@ async function generatePdfForLocale(
     ])
 
     const page = await context.newPage()
-    await page.goto(targetUrl.toString(), { waitUntil: 'networkidle' })
+    const response = await page.goto(targetUrl.toString(), {
+      waitUntil: 'networkidle',
+      timeout: PDF_SERVER.DEVELOPMENT_STARTUP_TIMEOUT_MS,
+    })
+    if (!response?.ok()) {
+      throw new Error(`Print page returned HTTP ${response?.status()}`)
+    }
+    await page.evaluate(() => document.fonts.ready)
     await preparePageForPdf(page)
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
+      scale: PDF_RENDER.SCALE,
       printBackground: true,
       margin: {
-        top: '15mm',
-        bottom: '15mm',
-        left: '15mm',
-        right: '15mm',
+        top: PDF_RENDER.PAGE_MARGIN,
+        bottom: PDF_RENDER.PAGE_MARGIN,
+        left: PDF_RENDER.PAGE_MARGIN,
+        right: PDF_RENDER.PAGE_MARGIN,
       },
     })
 
@@ -382,6 +436,8 @@ async function main(): Promise<void> {
   await fsp.mkdir(PDF_DIR, { recursive: true })
 
   let serverProcess: ChildProcess | null = null
+  let generationCompleted = false
+  const failedPdfFiles: string[] = []
 
   try {
     serverProcess = await startServer()
@@ -394,16 +450,28 @@ async function main(): Promise<void> {
         )
 
         try {
-          await generatePdfForLocale(executablePath, locale, pdfGenerationTarget)
+          await generatePdfForLocale(
+            executablePath,
+            locale,
+            pdfGenerationTarget,
+          )
         } catch (error) {
+          failedPdfFiles.push(pdfFileName)
           console.error(`  ❌ Failed to generate ${pdfFileName}:`, error)
         }
       }
     }
 
+    if (failedPdfFiles.length > 0) {
+      throw new Error(`PDF generation failed: ${failedPdfFiles.join(', ')}`)
+    }
+    generationCompleted = true
     console.log('[gen:resume-pdf] Done!')
+    if (IS_DEVELOPMENT) {
+      console.log(`Development server remains available at ${BASE_URL}`)
+    }
   } finally {
-    if (serverProcess) {
+    if (serverProcess && (!IS_DEVELOPMENT || !generationCompleted)) {
       stopServer(serverProcess)
     }
   }

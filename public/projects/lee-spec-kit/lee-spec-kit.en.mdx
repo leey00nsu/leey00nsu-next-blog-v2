@@ -5,7 +5,7 @@ summary: CLI to generate a project docs structure for AI-assisted development
 keyFeatures:
   - Spec-driven development workflow templates
   - Feature-based documentation for simpler progress/review/history tracking
-  - Agent-friendly context/status summaries and doc structure validation
+  - Agent context, document validation, and OpenWiki-based onboarding documentation sync
 links:
   github: https://github.com/leey00nsu/lee-spec-kit
   npm: https://www.npmjs.com/package/lee-spec-kit
@@ -29,6 +29,8 @@ deployment:
 
 ![lee-spec-kit documentation workflow](/public/projects/lee-spec-kit/spec-workflow.png)
 
+![Copysinger onboarding documentation and knowledge graph generated with OpenWiki](/public/projects/lee-spec-kit/openwiki-onboarding.png)
+
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/lee-spec-kit](https://github.com/leey00nsu/lee-spec-kit)  
@@ -38,6 +40,12 @@ When working with AI coding assistants, the biggest bottleneck often becomes **i
 `lee-spec-kit` is a CLI that helps you **bootstrap a predictable docs structure** and keep a consistent feature workflow (`spec → plan → tasks → decisions`) so both humans and agents can collaborate with less friction.
 Based on spec-kit’s docs structure and workflow, it was designed to make Spec-driven development (SDD) easy to adopt in real projects.
 
+Keeping specifications, implementation plans, and decision records for each Feature made it easier to trace the intent and history of changes. Over time, however, understanding the project as it currently stood required reading across multiple Feature documents and source files.
+
+To address this, I integrated OpenWiki to generate onboarding material that explains the project's structure and main flows, with the current codebase as its foundation. Existing specifications and decision records are also referenced where needed to explain the background behind the current implementation.
+
+When features change, the OpenWiki documentation is synchronized and its supporting evidence is verified so that historical change records are not confused with the current implementation. These documents give new developers and agents a starting point for understanding the project as it exists today and navigating the relevant code and documentation.
+
 ## Key Features
 
 - Enforces Spec-driven development workflow: standardizes the “spec → plan → tasks → decisions” flow per feature so intent, design, execution, and decisions stay traceable.
@@ -45,6 +53,7 @@ Based on spec-kit’s docs structure and workflow, it was designed to make Spec-
 - Feature-centric doc management: organizes artifacts in per-feature folders so progress is visible at a glance and review, prioritization, and history tracking are straightforward.
 - Agent-friendly context: outputs the current feature’s key context and next actions so humans and agents follow the same process.
 - Template updates: provides a maintenance path to keep templates and guides (agents, skills, etc.) up to date.
+- OpenWiki integration: `knowledge doctor`, `sync`, and `audit` check readiness, synchronize documentation, and validate it. When enabled, synchronization and a dedicated Knowledge commit are required before Feature review. A bundled technical-writing skill maintains writing guidelines for generated documentation.
 
 ## Problem
 

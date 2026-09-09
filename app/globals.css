@@ -240,3 +240,123 @@
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+/* 이력서 전용 3페이지 구성. 웹 소개와 포트폴리오에는 적용하지 않습니다. */
+.resume-print-career,
+.resume-print-projects {
+  break-before: page;
+  page-break-before: always;
+}
+
+.resume-print-root .prose :where(h2, h3, h4) {
+  break-after: avoid;
+}
+
+.resume-print-root .prose :where(li) {
+  break-inside: avoid;
+}
+
+.resume-print-career .prose {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.resume-print-career .prose :where(h3) {
+  margin-top: 24px;
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+
+.resume-print-career .prose :where(h3):first-child {
+  margin-top: 0;
+}
+
+.resume-print-career .prose :where(h4) {
+  margin-top: 16px;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+
+.resume-print-career .prose :where(p, ul) {
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.resume-print-career .prose :where(li) {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.resume-print-projects > section {
+  margin-top: 0;
+}
+
+.resume-print-projects a {
+  padding: 12px;
+}
+
+.resume-print-projects dl > div {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.resume-print-projects dt {
+  flex-shrink: 0;
+}
+
+.resume-print-projects dd ul {
+  gap: 4px;
+}
+
+.resume-print-projects dd li {
+  padding: 2px 6px;
+}
+
+.resume-print-projects a > article > div > * + * {
+  margin-top: 8px;
+}
+
+.resume-print-projects a :where(p, ul, dl) {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.resume-print-projects a h3 {
+  font-size: 16px;
+}
+
+/* 소개 본문의 섹션 → 소속/역할 → 기간 계층. 프로젝트 카드에는 적용하지 않습니다. */
+.about-profile-content :where(h3) {
+  margin-top: 36px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.about-profile-content :where(h4) {
+  margin-top: 24px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.about-profile-content :where(h4 + p) {
+  margin-top: 4px;
+  margin-bottom: 12px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.resume-print-career .about-profile-content :where(h3) {
+  padding-bottom: 6px;
+}
+
+.resume-print-career .about-profile-content :where(h4 + p) {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}

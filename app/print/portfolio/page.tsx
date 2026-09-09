@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getAbout } from '@/entities/about/lib/about'
 import { getAllProjects } from '@/entities/project/lib/project'
-import { AboutDetail } from '@/widgets/about/ui/about-detail'
+import { PortfolioPrintCover } from '@/widgets/about/ui/portfolio-print-cover'
 import { ProjectPrintDetail } from '@/widgets/project/ui/project-print-detail'
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
 
@@ -20,14 +20,7 @@ export default async function PortfolioPrintPage() {
 
   return (
     <div className="portfolio-print-root mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
-      <AboutDetail
-        about={about}
-        locale={locale}
-        showDownloadButton={false}
-        showProjectSection={false}
-        projectCardLinkVariant="github"
-        enableBlockEntranceAnimation={false}
-      />
+      <PortfolioPrintCover about={about} locale={locale} />
 
       {projects.map((project) => (
         <div

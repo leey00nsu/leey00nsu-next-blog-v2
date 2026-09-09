@@ -62,6 +62,7 @@ export function AboutDetail({
         <AboutProfileImage />
       </EntranceMotionBlock>
       <EntranceMotionBlock
+        className="about-profile-content"
         delaySeconds={ABOUT_DETAIL_BLOCK_ANIMATION.CONTENT_DELAY_SECONDS}
         disabled={!enableBlockEntranceAnimation}
       >

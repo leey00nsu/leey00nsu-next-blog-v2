@@ -1,11 +1,11 @@
 ---
 slug: leesfield
 title: Leesfield
-summary: AI 이미지/비디오 생성 플랫폼
+summary: 이미지·비디오·오디오 생성 모델을 한곳에서 사용하고 관리하는 AI 생성 플랫폼
 keyFeatures:
-  - 어댑터 패턴 기반 이미지/비디오 생성 (현재는 Hugging Face Space 어댑터 제공)
-  - 모니터링 대시보드 제공
-  - 외부 API 제공
+  - 여러 AI 모델을 하나의 인터페이스에서 실행하는 통합 생성 환경
+  - 생성 결과와 프롬프트·설정을 함께 관리하는 히스토리 및 모니터링
+  - 노드 기반 워크플로우와 통합 API를 통한 AI 생성 기능 확장
 links:
   github: https://github.com/leey00nsu/leesfield
   demo: https://leesfield.leey00nsu.com/
@@ -38,7 +38,7 @@ deployment:
 
 ![leesfield landing page](/public/projects/leesfield/landing.png)
 
-![leesfield image generation page](/public/projects/leesfield/image-generation.png)
+![Leesfield AI 생성 화면](/public/projects/leesfield/image-generation.png)
 
 ## 프로젝트 소개
 
@@ -48,15 +48,17 @@ Demo : [https://leesfield.leey00nsu.com/](https://leesfield.leey00nsu.com/)
 사이드 프로젝트에 AI 이미지/비디오 생성 기능을 추가할 때 **자체 파이프라인**을 구축하고 싶었습니다.
 대부분의 이미지/비디오 생성 API는 유료로 제공되지만, **Hugging Face Zero GPU**는 제한적이지만 무료로 사용할 수 있어 비용 부담 없이 시작할 수 있었습니다.
 
-현재는 Hugging Face 어댑터만 구현되어 있지만, **어댑터 패턴으로 설계**되어 추후 다른 AI API(OpenAI, Replicate 등)도 쉽게 연동할 수 있습니다.
-다양한 AI 모델(FLUX 등)을 통합 UI/API로 제공하고, Leemage와 연동하여 생성된 결과를 자동으로 스토리지에 저장합니다.
+이미지·비디오·오디오 모델을 하나의 생성 화면에서 선택하고 실행하며, 생성 결과와 프롬프트·설정을 히스토리에서 함께 관리합니다. 모델별 입력과 기본값은 카탈로그로 관리하고, 프로바이더별 어댑터를 통해 생성 요청을 처리합니다.
+
+노드 기반 작업 공간인 **Spaces**에서는 입력·생성·편집·출력을 연결하고 선택한 노드를 실행할 수 있습니다. 외부 API와 Leemage 저장소 연동으로 다른 서비스에서도 생성 기능과 결과를 활용할 수 있습니다.
 
 ## 핵심 기능
 
-- AI 이미지/비디오 생성: 어댑터 기반 확장 가능 (현재 무료 Hugging Face Space 어댑터 제공)
+- AI 이미지·비디오·오디오 생성: 통합 화면에서 매체와 모델 선택, 모델별 입력과 결과 제공
+- Spaces: 노드 기반 워크플로우 구성 및 개별 노드 실행
 - 모델 카탈로그 관리: DB 기반 모델 등록/수정, 동적 UI 렌더링
 - 모니터링 대시보드: 생성 요청 현황 및 상태 모니터링
-- 생성 히스토리 관리: 모든 생성 요청 DB 저장
+- 생성 히스토리 관리: 생성 결과와 프롬프트·설정을 함께 저장하고 조회·재사용
 - 외부 API 제공: Zod 스키마 기반 OpenAPI 자동 생성
 - Leemage 연동: 생성 결과 자동 업로드
 - i18n 지원: 한국어/영어 제공

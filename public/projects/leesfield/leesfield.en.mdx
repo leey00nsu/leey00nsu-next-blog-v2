@@ -1,11 +1,11 @@
 ---
 slug: leesfield
 title: Leesfield
-summary: AI image/video generation platform
+summary: An AI generation platform for using and managing image, video, and audio models in one place
 keyFeatures:
-  - Adapter-pattern-based image/video generation (currently includes Hugging Face Space adapter)
-  - Monitoring dashboard
-  - External API
+  - A unified generation environment for running multiple AI models through one interface
+  - History and monitoring that keep generated results together with prompts and settings
+  - Extensible AI generation through node-based workflows and a unified API
 links:
   github: https://github.com/leey00nsu/leesfield
   demo: https://leesfield.leey00nsu.com/
@@ -38,7 +38,7 @@ deployment:
 
 ![leesfield landing page](/public/projects/leesfield/landing.png)
 
-![leesfield image generation page](/public/projects/leesfield/image-generation.png)
+![Leesfield AI generation screen](/public/projects/leesfield/image-generation.png)
 
 ## Project Overview
 
@@ -48,15 +48,16 @@ Demo : [https://leesfield.leey00nsu.com/](https://leesfield.leey00nsu.com/)
 When adding AI image/video generation to side projects, I wanted to build my **own pipeline**.
 Most image/video generation APIs are paid, but **Hugging Face Zero GPU** offers limited free usage, allowing me to start without cost concerns.
 
-Currently only the Hugging Face adapter is implemented, but the **adapter pattern design** allows easy integration with other AI APIs (OpenAI, Replicate, etc.) in the future.
-It provides various AI models (FLUX, etc.) through a unified UI/API and automatically saves generated results to storage via Leemage integration.
+Users select and run image, video, and audio models from one generation screen and manage results alongside their prompts and settings in the history. A model catalog manages inputs and defaults, while provider-specific adapters handle generation requests.
+**Spaces**, a node-based workspace, connects inputs, generation, editing, and outputs and lets users run individual nodes. External APIs and Leemage storage integration make generation features and results available to other services.
 
 ## Key Features
 
-- AI image/video generation: Adapter-based extensible architecture (currently provides free Hugging Face Space adapter)
+- AI image, video, and audio generation: A unified screen for selecting media and models with model-specific inputs and results
+- Spaces: Node-based workflow composition and individual node execution
 - Model catalog management: DB-based model registration/editing, dynamic UI rendering
 - Monitoring dashboard: Generation request status and monitoring
-- Generation history management: All generation requests saved to DB
+- Generation history management: Save, browse, and reuse results with their prompts and settings
 - External API: OpenAPI auto-generation based on Zod schemas
 - Leemage integration: Automatic upload of generated results
 - i18n support: Korean/English

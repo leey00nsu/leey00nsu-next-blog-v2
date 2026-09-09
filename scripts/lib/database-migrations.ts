@@ -11,6 +11,16 @@ const DATABASE_MIGRATIONS = {
   },
 } as const
 
+// Both versions were deployed before 0001 was restored in ec4353b.
+// Never extend this into a general checksum bypass.
+const EVIDENCE_TIME_MIGRATION_REPAIR = {
+  ID: '0001_add_chat_rag_evidence_time.sql',
+  PREVIOUS_CHECKSUM:
+    '36b88e2e03c2cb59566192710d452a648af4eba9f06c7263bf7c5db92436d2ab',
+  CURRENT_CHECKSUM:
+    '4b1c95896725556fa4707bbdeb0b2ee1fadb6887f80e6b3edf45e8979e607f1f',
+} as const
+
 interface DatabaseQueryResult {
   rows: Array<Record<string, unknown>>
 }
@@ -147,6 +157,73 @@ function assertMigrationChecksumMatches(
   }
 }
 
+async function reconcileEvidenceTimeMigration(
+  databaseClient: DatabaseMigrationClient,
+  migration: DatabaseMigration,
+  appliedChecksum: string,
+): Promise<string> {
+  if (
+    migration.id !== EVIDENCE_TIME_MIGRATION_REPAIR.ID ||
+    migration.checksum !== EVIDENCE_TIME_MIGRATION_REPAIR.CURRENT_CHECKSUM ||
+    appliedChecksum !== EVIDENCE_TIME_MIGRATION_REPAIR.PREVIOUS_CHECKSUM
+  ) {
+    return appliedChecksum
+  }
+
+  await databaseClient.query('BEGIN')
+
+  try {
+    // Prevent schema changes between verification and the history update.
+    await databaseClient.query(
+      'LOCK TABLE public.chat_rag_chunks IN ACCESS SHARE MODE',
+    )
+    const verification = await databaseClient.query(`
+      SELECT (
+        to_regclass('chat_rag_chunks') = to_regclass('public.chat_rag_chunks')
+        AND EXISTS (
+          SELECT 1 FROM pg_attribute
+          WHERE attrelid = 'public.chat_rag_chunks'::regclass
+            AND attname = 'evidence_time_kind'
+            AND atttypid = 'text'::regtype AND NOT attisdropped
+        )
+        AND EXISTS (
+          SELECT 1 FROM pg_attribute
+          WHERE attrelid = 'public.chat_rag_chunks'::regclass
+            AND attname = 'evidence_time_value'
+            AND atttypid = 'timestamptz'::regtype AND NOT attisdropped
+        )
+      ) AS compatible
+    `)
+
+    if (verification.rows[0]?.compatible !== true) {
+      throw new Error(
+        'Cannot reconcile evidence time migration: database schema does not match the verified public schema.',
+      )
+    }
+
+    const updateResult = await databaseClient.query(
+      `UPDATE ${DATABASE_MIGRATIONS.TABLE_NAME}
+       SET checksum = $2
+       WHERE migration_id = $1 AND checksum = $3
+       RETURNING checksum`,
+      [migration.id, migration.checksum, appliedChecksum],
+    )
+
+    if (updateResult.rows[0]?.checksum !== migration.checksum) {
+      throw new Error(
+        'Cannot reconcile evidence time migration: migration history changed.',
+      )
+    }
+
+    await databaseClient.query('COMMIT')
+    console.info(`Reconciled verified legacy checksum for "${migration.id}".`)
+    return migration.checksum
+  } catch (error) {
+    await databaseClient.query('ROLLBACK')
+    throw error
+  }
+}
+
 async function applyDatabaseMigration(
   databaseClient: DatabaseMigrationClient,
   migration: DatabaseMigration,
@@ -190,7 +267,12 @@ export async function runDatabaseMigrations(params: {
       )
 
       if (appliedChecksum) {
-        assertMigrationChecksumMatches(migration, appliedChecksum)
+        const verifiedChecksum = await reconcileEvidenceTimeMigration(
+          params.databaseClient,
+          migration,
+          appliedChecksum,
+        )
+        assertMigrationChecksumMatches(migration, verifiedChecksum)
         skippedMigrationIds.push(migration.id)
         continue
       }

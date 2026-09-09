@@ -422,3 +422,15 @@ pnpm exec playwright install --with-deps
 [MIT License](./LICENSE)
 
 ---
+
+### 기존 마이그레이션 이력 보정
+
+`0001_add_chat_rag_evidence_time.sql`은 배포 시점에 따라 두 버전이 적용되었습니다.
+시작 시 마이그레이션 실행기는 알려진 이전 SHA-256(`36b88e2e…`)과 현재 파일의
+SHA-256(`4b1c9589…`)이 정확히 일치하는 조합에 한해 보정을 시도합니다.
+검색 경로의 `chat_rag_chunks`가 `public.chat_rag_chunks`와 같고,
+`evidence_time_kind`가 `text`, `evidence_time_value`가 `timestamptz`인 경우에만
+트랜잭션 안에서 체크섬을 갱신합니다. 적용 시각과 테이블 데이터는 유지하며,
+이후 `0004`를 포함한 미적용 마이그레이션을 실행합니다.
+알 수 없는 체크섬이나 다른 스키마는 자동 보정하지 않습니다.
+이미 적용한 SQL 파일은 수정하지 않고 새 번호의 마이그레이션을 추가해야 합니다.

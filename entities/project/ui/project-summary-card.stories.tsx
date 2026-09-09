@@ -8,13 +8,13 @@ const PROJECT_SUMMARY_CARD_LABELS = {
   techStackLabel: '기술 스택',
   typeLabel: '프로젝트 유형',
   projectTypeLabel: '개인 프로젝트',
-  githubAriaLabel: 'Leesfield GitHub로 이동',
-  detailAriaLabel: 'Leesfield 상세 페이지로 이동',
+  githubAriaLabel: 'leesfield GitHub로 이동',
+  detailAriaLabel: 'leesfield 상세 페이지로 이동',
 } as const
 
 const PROJECT: Project = {
   slug: 'leesfield',
-  title: 'Leesfield',
+  title: 'leesfield',
   summary:
     'AI 기반 작문 피드백을 통해 영어 학습자가 글을 반복적으로 개선할 수 있도록 돕는 서비스입니다.',
   keyFeatures: [
@@ -40,7 +40,7 @@ const PROJECT: Project = {
   thumbnail: '/public/projects/leesfield/logo.webp',
   draft: false,
   type: 'solo',
-  content: 'Leesfield project content',
+  content: 'leesfield project content',
   width: 512,
   height: 512,
 }

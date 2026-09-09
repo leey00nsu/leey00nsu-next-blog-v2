@@ -1,11 +1,11 @@
 ---
 slug: copysinger
-title: Copysinger
+title: copysinger
 summary: A vocal service that analyzes your voice, recommends matching songs and keys, and connects them to AI mixing
 keyFeatures:
-  - Vocal profiles that analyze range, center pitch, and pitch contours from a short recording
-  - Song and key recommendations based on vocal profile and catalog comparisons
-  - AI mixing that separates vocals, shifts pitch, and recombines the accompaniment
+  - Observed and core range, center pitch, and pitch contour analysis
+  - Song fit, recommended keys, and reasons from vocal and song ranges
+  - Vocal separation, voice conversion, and accompaniment mixing
 links:
   github: https://github.com/leey00nsu/copy-singer
   demo: https://copysinger.leey00nsu.com/
@@ -35,49 +35,37 @@ deployment:
   coverImage: /public/projects/copysinger/copysinger-home.png
 ---
 
-![Copysinger home screen](/public/projects/copysinger/copysinger-home.png)
+![copysinger home screen](/public/projects/copysinger/copysinger-home.png)
 
-![Copysinger vocal analysis results](/public/projects/copysinger/vocal-profile-result.png)
+![copysinger vocal analysis results](/public/projects/copysinger/vocal-profile-result.png)
 
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/copy-singer](https://github.com/leey00nsu/copy-singer)
 Demo : [https://copysinger.leey00nsu.com/](https://copysinger.leey00nsu.com/)
 
-I have long been interested in TTS and voice cloning and wanted to build a service around them. However, the approaches I initially explored required training separate `.pth` model weights for each voice, making GPU cost and preparation time a significant barrier.
+I have long been interested in TTS and voice cloning and wanted to build a service using them.
 
-I then discovered `SoulX-Singer`, an open-source zero-shot system that can transform a singing voice from a short reference without training a model for each user. It made it possible to turn voice cloning into a product without repeating an expensive training process, which became the starting point for `Copysinger`.
+The approaches I explored required training a separate model for each user, with GPU costs and preparation time. Using the pretrained SoulX-Singer model, I turned singing voice conversion from a short reference recording into a product without additional per-user training.
 
-Rather than stopping at a voice-conversion demo, I expanded it into a service that analyzes a short recording, recommends songs and keys that fit the user's voice, and continues into AI mixing for a selected song.
+I expanded the service beyond voice conversion to analyze the user’s voice, recommend suitable songs and keys, and create an AI mix of the selected song.
 
 ## Key Features
 
-- Voice analysis: measures observed range, core range, center pitch, and pitch contours from a browser recording or audio file
-- Song and key recommendations: compares a vocal profile with each song's range and original key to explain fit and suggest a key
-- AI mixing: separates vocals, applies automatic pitch shifting, and recombines the accompaniment for selected songs
-- Library: manages vocal profiles, reference audio, mixing results, and processing history
-- Admin tools: operates the recommendation catalog, source audio, analysis readiness, publication state, and catalog snapshots
+- **Voice analysis**: Analyzes observed range, core range, center pitch, and pitch contours from recorded audio
+- **Song and key recommendations**: Compares vocal profiles with song ranges to provide fit scores, recommended keys, and reasons
+- **AI mixing**: Separates vocals from a selected song, converts them to the user’s voice, and recombines them with the accompaniment
 
-## Problem
+## Key Challenges and Solutions
 
-- **High entry cost of voice cloning**: approaches that require per-user model training are difficult to scale because of GPU cost and preparation time
-- **Unclear song-selection criteria**: lowest and highest notes alone do not reveal which songs fit or how far their keys should move
-- **Limited recommendation evidence**: simple range overlap can mix recording quality with actual song fit, making rankings difficult to trust
-- **Different goals for analysis and synthesis**: natural range analysis and clean AI mixing require different parts of a recording
-- **Reliability of long-running audio jobs**: analysis and mixing can be lost if they remain tied to a web request when users leave or servers restart
+### Per-user voice cloning training costs
 
-## Solution
+The approaches I explored required training separate model weights for each user, with GPU costs and preparation time. I used the pretrained SoulX-Singer model’s zero-shot approach to generate AI vocals from a short reference recording without additional per-user training.
 
-- **Zero-shot voice cloning**: use `SoulX-Singer` and a short reference to transform singing voices without per-user model training
-- **Vocal profile analysis**: use `librosa`/pYIN to extract observed range, core range, center pitch, and pitch contours
-- **Explainable recommendations**: calculate range overlap, high/low burden, and transposition cost to provide scores, recommended keys, and reasons across the full catalog
-- **Midrange-focused references**: separate analysis audio from synthesis references and select high-quality midrange phrases for AI mixing
-- **Durable job queues**: process analysis, vocal separation, and AI mixing in the background with Modal CPU/GPU and PostgreSQL queues
-- **User and operations data**: isolate users with Google OAuth and provide Leemage media storage, a ticket ledger, and administrator catalog tools
+### Song and key recommendations beyond simple range comparisons
 
-## Impact
+Lowest and highest notes alone do not establish a song’s fit or the key adjustment it needs. I extracted vocal profiles with librosa/pYIN and calculated range overlap, high- and low-note burden, and transposition cost to provide recommendation scores, keys, and reasons together.
 
-- **No per-user training step**: AI mixes can be created from a reference recording without training separate `.pth` model weights
-- **Connected song-selection journey**: voice analysis, full-catalog comparison, key recommendations, and user-selected AI mixing work as one flow
-- **More trustworthy recommendations**: range fit and key-change reasons remain explainable and deterministic for the same inputs
-- **Operational reliability**: reconnectable job queues, user libraries, and administrator tools provide a foundation for running the service
+### Handling long-running AI jobs
+
+Running lengthy tasks such as analysis, vocal separation, and AI mixing within a web request can leave jobs lost when users leave the page or the server restarts. I used Modal CPU/GPU and a PostgreSQL job queue to process jobs in the background and let users retrieve their status and results later.

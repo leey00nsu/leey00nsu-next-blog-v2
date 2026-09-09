@@ -1,12 +1,11 @@
 ---
 slug: blog
 title: Blog
-summary: A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit, and grounded Q&A chatbot
+summary: A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit, and grounded chatbot
 keyFeatures:
-  - Author MDX in Studio and auto-commit to GitHub
-  - Multilingual MDX with OpenAI-powered translation
-  - Blog Q&A chatbot powered by lexical search and PostgreSQL RAG
-  - Automatic image metadata injection and portfolio PDF generation
+  - Publishing automation connecting Studio, AI translation, and GitHub commits
+  - Grounded chatbot with Graph-RAG and citation URL validation
+  - Multilingual MDX, image processing, and portfolio PDF generation
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
   demo: https://blog2.leey00nsu.com
@@ -41,45 +40,28 @@ type: solo
 GitHub : [https://github.com/leey00nsu/leey00nsu-next-blog-v2](https://github.com/leey00nsu/leey00nsu-next-blog-v2)
 Demo : [https://blog2.leey00nsu.com](https://blog2.leey00nsu.com)
 
-This is a technology blog built with Next.js. Articles written in the built-in web editor are automatically translated between Korean and English by AI, and are committed directly to a branch via the GitHub API to automate deployment.
-Recently, I added a grounded Q&A chatbot that answers from blog posts, profile content, and project documents, so visitors can ask for context instead of manually browsing every article.
-**An automated blog pipeline from writing and deployment to content discovery** is a key feature.
+This is a technology blog I built and operate with Next.js.
+
+I use AI to translate original posts written in Studio and maintain Korean and English documents, then commit them directly to a branch through the GitHub API, automating the flow from writing through translation and commits.
+
+As the content grew and became harder for visitors to navigate, I added a Q&A chatbot that answers using blog posts, profile content, and project documents as evidence.
 
 ## Key Features
 
-- MDX-based blog (syntax highlighting, image metadata, etc.)
-- Studio editor (Tiptap) for authoring frontmatter/body and uploading images
-- GitHub API (Octokit) auto-commit for MDX/images
-- i18n: next-intl + OpenAI-powered translation
-- AI image generation from selected text (requires a Leesfield API key)
-- Blog Q&A chatbot: Question Planner, lexical/curated search, PostgreSQL(pgvector) Graph-RAG, citation validation
-- Playwright-based portfolio PDF generation
+- **Content authoring and publishing automation**: Connect MDX writing in Studio, AI translation, and GitHub commits
+- **Grounded chatbot**: Apply Graph-RAG and citation URL validation to blog posts and project documents
+- **Content platform features**: Multilingual MDX, image uploads and optimization, and automatic portfolio PDF generation
 
-## Problem
+## Key Challenges and Solutions
 
-- **Overhead of multilingual content**: Manually maintaining Korean and English versions leads to drift and omissions
-- **Friction to deployment**: A manual write → translate → commit → deploy loop is repetitive and error-prone
-- **Content discovery overhead**: As posts and projects grow, visitors need a faster way to find the right context
-- **Image performance issues**: Missing sizing/placeholder metadata can easily degrade LCP/CLS
-- **Access control**: Editing capabilities need protection to prevent abuse
+### Repetitive work in multilingual authoring and commits
 
-## Solution
+Writing Korean and English documents separately and committing them manually can lead to missing translations or inconsistent documents. I connected OpenAI translation of Studio content with direct branch commits through the GitHub API, automating writing, translation, and commits as one flow.
 
-- Standardize the authoring flow with a web-based MDX editor
-- Synchronize Korean/English content with OpenAI-powered translation
-- Automate commits to a branch via GitHub API (Octokit) to streamline deployment
-- Pre-generate image metadata (width/height/LQIP) to stabilize rendering and improve performance
-- Generate lexical search records from MDX at build time, then combine curated sources with PostgreSQL(pgvector) Graph-RAG for grounded Q&A
-- Use a question router to choose direct response, clarification, or lexical/semantic retrieval first, then restrict answers through citation validation
-- Restrict Studio access via GitHub OAuth (NextAuth) with an allowlist approach
-- Automate portfolio PDF output with a Playwright-based pipeline
-- Improve maintainability by structuring the codebase with Feature-Sliced Design (FSD)
+### Finding information as content grows
 
-## Impact
+As posts and projects accumulate, visitors have more context to search through themselves. I introduced an AI-powered chatbot that searches blog posts, profile content, and project documents to answer their questions. I combined lexical and curated search with PostgreSQL (pgvector) Graph-RAG and used a question router to choose retrieval paths based on the question type. I checked that citation URLs belonged to the search results and withheld generated answers without validated sources.
 
-- **Lower ops cost**: Less repetitive work thanks to automated translation and deployment
-- **Better consistency**: Tighter coupling between docs, code, and deployment reduces missed updates
-- **Better discovery**: Visitors can quickly ask about blog posts, profile content, and projects in natural language
-- **Improved web performance**: More stable image rendering contributes to better LCP/CLS
-- **Automated deliverables**: Portfolio PDFs are generated automatically for easy sharing
+### Image-related rendering performance issues
 
+Rendering images without knowing their dimensions or placeholder data can cause layout shifts and initial image loading issues. I pre-generated width, height, and LQIP metadata for uploaded images and used it during rendering.

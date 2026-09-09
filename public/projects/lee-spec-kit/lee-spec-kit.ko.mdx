@@ -1,11 +1,11 @@
 ---
 slug: lee-spec-kit
 title: lee-spec-kit
-summary: AI 에이전트 기반 개발을 위한 프로젝트 문서 구조 생성 CLI
+summary: Feature 기반 문서·개발 절차와 OpenWiki 온보딩을 관리하는 CLI
 keyFeatures:
-  - Spec-driven development 워크플로우 템플릿화
-  - Feature 단위 문서 구조화로 진행/리뷰/히스토리 추적 단순화
-  - 에이전트 컨텍스트·문서 검증과 OpenWiki 기반 온보딩 문서 동기화
+  - Feature별 spec → plan → tasks → decisions 흐름 표준화
+  - 기능별 문서·진행 상태·다음 액션 관리
+  - OpenWiki 기반 현재 코드 문서 생성·동기화·근거 검증
 links:
   github: https://github.com/leey00nsu/lee-spec-kit
   npm: https://www.npmjs.com/package/lee-spec-kit
@@ -29,48 +29,35 @@ deployment:
 
 ![lee-spec-kit 문서 워크플로우](/public/projects/lee-spec-kit/spec-workflow.png)
 
-![OpenWiki로 생성한 Copysinger 온보딩 문서와 지식 그래프](/public/projects/lee-spec-kit/openwiki-onboarding.png)
+![OpenWiki로 생성한 copysinger 온보딩 문서와 지식 그래프](/public/projects/lee-spec-kit/openwiki-onboarding.png)
 
 ## 프로젝트 소개
 
 GitHub : [https://github.com/leey00nsu/lee-spec-kit](https://github.com/leey00nsu/lee-spec-kit)  
 npm : [https://www.npmjs.com/package/lee-spec-kit](https://www.npmjs.com/package/lee-spec-kit)
 
-AI 에이전트(코드 어시스턴트)와 함께 개발할 때, 문서 구조/규칙/진행 상태가 팀·레포마다 달라지면 컨텍스트 전달 비용이 크게 늘어납니다.
+AI 에이전트와 함께 개발할 때 프로젝트마다 문서 구조와 작업 규칙이 다르면 매번 컨텍스트를 다시 전달해야 하는 문제가 있었습니다.
 
-`lee-spec-kit`은 **AI 보조 개발을 위한 문서 구조를 빠르게 생성하고, Feature 단위 워크플로우를 일관되게 유지**하기 위해 만든 CLI입니다.
-spec-kit의 문서 구조와 워크플로우를 참고하여, Spec-driven development(스펙 기반 개발)를 프로젝트에 쉽게 적용할 수 있도록 설계했습니다.
+이를 줄이기 위해 Feature 단위로 스펙, 구현 계획, 태스크, 결정 기록을 남기는 Spec-driven Development 워크플로우를 프로젝트에 빠르게 적용할 수 있는 CLI를 만들었습니다.
 
-Feature 단위로 스펙과 구현 계획, 결정 기록을 남기다 보니 변경의 의도와 이력은 추적하기 쉬워졌지만, 시간이 지나면서 프로젝트 전체의 현재 모습을 파악하려면 여러 Feature 문서와 코드를 오가며 읽어야 했습니다.
+이후 Feature 문서가 쌓이면서 과거 변경 기록만으로 현재 코드베이스의 모습을 파악하기 어려워지는 문제를 보완하기 위해 OpenWiki를 연동하고, 현재 구현을 기준으로 프로젝트 구조와 주요 흐름을 설명하는 문서를 함께 관리하도록 확장했습니다.
 
-이를 보완하기 위해 OpenWiki를 연동해 현재 코드베이스를 중심으로 구조와 주요 흐름을 설명하는 온보딩 자료를 생성하도록 했습니다. 필요한 경우 기존 스펙과 결정 기록도 함께 참고해 현재 구현의 배경을 이해할 수 있도록 합니다.
+## 주요 기능
 
-기능이 변경되면 OpenWiki 문서도 함께 동기화하고 근거를 검증해, 과거의 변경 기록과 현재의 구현 상태가 뒤섞이지 않도록 합니다. 이렇게 생성된 문서는 새로운 개발자와 에이전트가 현재 프로젝트를 이해하고 필요한 코드와 문서를 탐색하기 위한 출발점으로 활용할 수 있습니다.
+- **Spec-driven Development**: Feature마다 spec → plan → tasks → decisions 흐름을 표준화
+- **Feature 중심 문서 관리**: 기능별 문서와 진행 상태, 다음 액션을 일관된 구조로 관리
+- **OpenWiki 연동**: 현재 코드베이스 기반 기술 문서를 생성·동기화하고 문서 상태와 근거를 검증
 
-## 핵심 기능
+## 핵심 문제와 해결
 
-- Spec-driven development 워크플로우 고정: Feature마다 스펙 → 플랜 → 태스크 → 결정 기록 흐름을 표준화하여 “무엇/왜/어떻게/무엇을 했는지”가 문서로 남습니다.
-- 문서 구조 표준화: 프로젝트 문서 루트의 기본 골격(agents/prd/features 등)과 공용 템플릿을 제공해 문서의 형태와 품질을 일정하게 유지합니다.
-- Feature 중심 문서 관리: 기능 단위 폴더 단위로 진행 상황을 한눈에 파악하고, 리뷰·우선순위·히스토리 추적을 쉽게 만듭니다.
-- 에이전트 친화적 컨텍스트: 현재 작업 중인 Feature의 핵심 정보와 다음 액션을 출력하여, 사람·에이전트가 동일한 프로세스를 따르게 합니다.
-- 템플릿 업데이트: 문서 템플릿/가이드(agents, skills 등)를 최신 상태로 유지할 수 있도록 업데이트 경로를 제공합니다.
-- OpenWiki 연동: `knowledge doctor`, `sync`, `audit`로 준비 상태·문서 동기화·검증을 수행합니다. 활성화 시 Feature 리뷰 전에 동기화와 전용 Knowledge 커밋을 요구하며, 내장 기술 문서 작성 스킬로 생성 문서의 작성 기준을 유지합니다.
+### AI 에이전트에 반복적으로 필요한 컨텍스트 전달
 
-## Problem
+프로젝트마다 문서 위치와 구조, 작업 규칙이 다르면 AI 에이전트를 사용할 때 동일한 정보를 반복해서 설명해야 합니다. 프로젝트 문서의 기본 골격과 공용 템플릿을 제공해 사람과 에이전트가 동일한 구조와 규칙을 기준으로 작업하도록 만들었습니다.
 
-- **에이전트 컨텍스트 비용**: 문서 구조/규칙이 프로젝트마다 달라 매번 설명이 필요
-- **워크플로우 일관성 부재**: 스펙/플랜/태스크/결정 기록이 흩어져 리뷰·진행 추적이 어려움
-- **문서 품질 관리 어려움**: 누락 파일/상태, 중복 ID, placeholder 등이 누적됨
+### Feature 개발 과정의 일관성 부족
 
-## Solution
+스펙·구현 계획·태스크·결정 기록이 서로 다른 위치에 흩어지면 기능의 진행 상태와 변경 이유를 추적하기 어렵습니다. Feature마다 `spec.md`, `plan.md`, `tasks.md`, `decisions.md`를 생성하고 정해진 흐름으로 관리해 무엇을 왜 어떻게 구현했는지 기능 단위로 추적할 수 있도록 했습니다.
 
-- 프로젝트 문서의 기본 골격과 공용 템플릿을 제공하여 문서 구조를 고정
-- Feature 단위 산출물(`spec.md`, `plan.md`, `tasks.md`, `decisions.md`)을 자동으로 생성해 SDD 흐름을 유지
-- 현재 상태/다음 액션을 요약 출력하고 JSON 출력으로 자동화 파이프라인에 연동
-- 구조·메타데이터를 검증하고 템플릿을 최신화하여 문서 품질을 지속적으로 유지
+### 과거 문서와 현재 코드베이스의 정보 차이
 
-## Impact
-
-- **온보딩/커뮤니케이션 비용 감소**: 문서 구조가 통일되어 컨텍스트 전달이 단순화
-- **Feature 단위 진행 가시성 확보**: 워크플로우가 템플릿화되어 상태 파악/리뷰가 쉬워짐
-- **문서 품질 유지**: 구조/메타데이터 검증으로 오류를 빠르게 차단
+Feature 문서는 변경의 배경을 기록하는 데 유용하지만, 시간이 지나면 여러 문서를 읽어야 현재 프로젝트 구조를 파악할 수 있습니다. OpenWiki를 연동해 코드·테스트·설정에 근거한 온보딩 문서를 생성하고, 연동 활성화 시 기능 리뷰 전에 문서 동기화와 인용 근거 검증을 거치도록 했습니다. 변경 배경은 Feature 문서에서, 현재 구조와 주요 흐름은 온보딩 문서에서 찾아볼 수 있도록 역할을 구분했습니다.

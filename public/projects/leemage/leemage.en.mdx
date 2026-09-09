@@ -1,11 +1,11 @@
 ---
 slug: leemage
-title: Leemage
+title: leemage
 summary: Multi-storage based file and image management platform
 keyFeatures:
-  - Project-based file upload/management (images, videos, documents, and more)
-  - Multi-storage adapters (OCI / Cloudflare R2)
-  - External API and TypeScript SDK
+  - Project-based uploads and management of images, videos, and documents
+  - Image resizing and conversion to formats such as WebP and AVIF
+  - REST API, TypeScript SDK, and OCI/Cloudflare R2 integration
 links:
   github: https://github.com/leey00nsu/leemage
   demo: https://leemage.leey00nsu.com/
@@ -35,46 +35,37 @@ deployment:
   coverImage: /public/projects/leemage/project-detail-grid.png
 ---
 
-![Leemage project detail](/public/projects/leemage/project-detail-grid.png)
+![leemage project detail](/public/projects/leemage/project-detail-grid.png)
 
-![Leemage monitoring dashboard](/public/projects/leemage/monitoring-30d.png)
+![leemage monitoring dashboard](/public/projects/leemage/monitoring-30d.png)
 
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
 Demo : [https://leemage.leey00nsu.com/](https://leemage.leey00nsu.com/)
 
-When adding file upload features to side projects, cost became an issue.
-Since **OCI Object Storage / Cloudflare R2** offer free tiers with a certain amount of storage, I built a **self-hosted file management platform for cost savings** instead of using paid services like Cloudinary.
-Files can be organized by project and quickly integrated into other projects through external APIs and SDKs.
+Storage costs became a concern when adding file uploads to side projects, so I built a self-hosted file management platform using the free tiers of OCI Object Storage and Cloudflare R2.
+
+The platform organizes images, videos, documents, and other files by project, with a REST API and TypeScript SDK so other projects can use the same upload capabilities.
+
+I also designed a common interface to avoid coupling the service to a particular storage provider and expanded it to include image transformation and optimization.
 
 ## Key Features
 
-- Project-based file upload/management: Supports all file extensions including images, videos, and documents
-- Image transformation options: Resize/format conversion
-- External API/SDK: RESTful API and TypeScript SDK
-- OpenAPI documentation automation: Auto-generate OpenAPI spec from Zod schemas
-- Multi-storage support: Choose between OCI Object Storage / Cloudflare R2
-- i18n support: Korean/English
+- **File management**: Uploads and manages images, videos, documents, and other files by project
+- **Image processing**: Resizes images and converts them to formats such as WebP and AVIF
+- **External integration**: Supports a REST API, TypeScript SDK, OCI Object Storage, and Cloudflare R2
 
-## Problem
+## Key Challenges and Solutions
 
-- **Server load on large file uploads**: Memory/network load spikes when files go through the server
-- **Multi-storage API differences**: OCI Object Storage and Cloudflare R2 have different API interfaces, requiring full code modification when switching providers
-- **Image size optimization**: Heavy image resizing/format conversion needed
-- **API documentation mismatch**: When managing API docs separately, inconsistencies between code and documentation can occur
+### Server load from large file uploads
 
-## Solution
+Relaying files through the application server increases memory and network load with file size. I used presigned URLs to send the initial upload body directly from the client to Object Storage, while the server handles upload verification and file registration. When image validation and transformation are needed, the server reads and processes the original.
 
-- **Presigned URL direct upload**: Clients upload directly to storage, eliminating server load
-- **Storage Adapter pattern**: Write provider-independent code with common interfaces, implement only adapters for new providers (OCP compliant)
-- **Sharp-based image transformation**: Parallel processing to generate multiple variants simultaneously, supporting lightweight next-gen formats like WebP/AVIF
-- **TypeScript SDK**: Abstract complex 3-step upload flow (presign → upload → confirm) into a single method
-- **OpenAPI auto-generation**: Auto-generate OpenAPI spec from Zod schemas for API documentation and type synchronization
+### Different APIs across storage providers
 
-## Impact
+OCI Object Storage and Cloudflare R2 use different APIs, so changing storage providers can require changes to service code. I separated service logic from provider implementations using a common storage interface and adapters, allowing OCI or R2 to be selected within the same file management flow.
 
-- **Server load**: 0% server load for file transfers with Presigned URL
-- **Image size optimization**: 50-60% reduction compared to original with WebP/AVIF conversion
-- **Cost savings**: Utilizing OCI, Cloudflare R2 Free Tier
-- **Integration ease**: Quick integration into external projects with TypeScript SDK
+### Image size and transformation costs
+
+Storing and transferring original images as-is can result in large files and higher network costs. I used Sharp to generate requested image sizes, formats, and thumbnails sequentially, and manage the URLs, sizes, and formats of both originals and variants together.

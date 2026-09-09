@@ -5,7 +5,7 @@ import { ProjectSectionView } from '@/widgets/about/ui/project-section'
 const PROJECTS: Project[] = [
   {
     slug: 'leesfield',
-    title: 'Leesfield',
+    title: 'leesfield',
     summary:
       'AI 기반 작문 피드백을 통해 영어 학습자가 글을 반복적으로 개선할 수 있도록 돕는 서비스입니다.',
     keyFeatures: ['AI 피드백', '학습 기록', '사용자별 대시보드'],
@@ -20,7 +20,7 @@ const PROJECTS: Project[] = [
     thumbnail: '/public/projects/leesfield/logo.webp',
     draft: false,
     type: 'solo',
-    content: 'Leesfield project content',
+    content: 'leesfield project content',
     width: 512,
     height: 512,
   },

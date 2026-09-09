@@ -19,7 +19,7 @@ export default async function PortfolioPrintPage() {
   const projects = await getAllProjects(locale)
 
   return (
-    <div className="portfolio-print-root mx-auto max-w-3xl space-y-12 bg-white p-6 text-black">
+    <div className="portfolio-print-root space-y-12 bg-white px-0.5 text-black">
       <PortfolioPrintCover about={about} locale={locale} />
 
       {projects.map((project) => (

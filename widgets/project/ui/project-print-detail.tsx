@@ -27,7 +27,9 @@ export async function ProjectPrintDetail({
     project.content,
     PRINT_SPLIT_LEADING_MDX_IMAGES_OPTIONS,
   )
-  const featuresHeading = /^## (?:핵심 기능|Key Features)\s*$/mu.exec(remainingContent)
+  const featuresHeading = /^## (?:주요 기능|핵심 기능|Key Features)\s*$/mu.exec(
+    remainingContent,
+  )
   const introductionContent = featuresHeading
     ? remainingContent.slice(0, featuresHeading.index)
     : remainingContent
@@ -65,7 +67,7 @@ export async function ProjectPrintDetail({
         />
       </div>
       {detailContent ? (
-        <div className="break-before-page [page-break-before:always]">
+        <div className="break-before-page text-base leading-6 [page-break-before:always] [&_h2]:mt-6 [&_h3]:mt-5 [&_p]:my-3">
           <MdxRenderer
             content={detailContent}
             components={{ img: PrintMdxImage }}

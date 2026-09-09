@@ -1,11 +1,11 @@
 ---
 slug: lee-spec-kit
 title: lee-spec-kit
-summary: CLI to generate a project docs structure for AI-assisted development
+summary: CLI for feature workflows and code-based OpenWiki onboarding
 keyFeatures:
-  - Spec-driven development workflow templates
-  - Feature-based documentation for simpler progress/review/history tracking
-  - Agent context, document validation, and OpenWiki-based onboarding documentation sync
+  - Standardized spec → plan → tasks → decisions workflow
+  - Feature documents, progress, and next-action management
+  - OpenWiki documentation generation, synchronization, and evidence checks
 links:
   github: https://github.com/leey00nsu/lee-spec-kit
   npm: https://www.npmjs.com/package/lee-spec-kit
@@ -29,47 +29,35 @@ deployment:
 
 ![lee-spec-kit documentation workflow](/public/projects/lee-spec-kit/spec-workflow.png)
 
-![Copysinger onboarding documentation and knowledge graph generated with OpenWiki](/public/projects/lee-spec-kit/openwiki-onboarding.png)
+![copysinger onboarding documentation and knowledge graph generated with OpenWiki](/public/projects/lee-spec-kit/openwiki-onboarding.png)
 
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/lee-spec-kit](https://github.com/leey00nsu/lee-spec-kit)  
 npm : [https://www.npmjs.com/package/lee-spec-kit](https://www.npmjs.com/package/lee-spec-kit)
 
-When working with AI coding assistants, the biggest bottleneck often becomes **inconsistent documentation structure and missing context** across projects.  
-`lee-spec-kit` is a CLI that helps you **bootstrap a predictable docs structure** and keep a consistent feature workflow (`spec → plan → tasks → decisions`) so both humans and agents can collaborate with less friction.
-Based on spec-kit’s docs structure and workflow, it was designed to make Spec-driven development (SDD) easy to adopt in real projects.
+Working with AI coding assistants, I found that different documentation structures and working conventions across projects required repeatedly sharing the same context.
 
-Keeping specifications, implementation plans, and decision records for each Feature made it easier to trace the intent and history of changes. Over time, however, understanding the project as it currently stood required reading across multiple Feature documents and source files.
+I built a CLI to quickly introduce a specification-driven development workflow, with specifications, implementation plans, tasks, and decision records organized by feature.
 
-To address this, I integrated OpenWiki to generate onboarding material that explains the project's structure and main flows, with the current codebase as its foundation. Existing specifications and decision records are also referenced where needed to explain the background behind the current implementation.
-
-When features change, the OpenWiki documentation is synchronized and its supporting evidence is verified so that historical change records are not confused with the current implementation. These documents give new developers and agents a starting point for understanding the project as it exists today and navigating the relevant code and documentation.
+As feature documents accumulated, past change records alone became insufficient for understanding the current codebase. I integrated OpenWiki to also maintain documents that describe the project’s structure and main flows based on the current implementation.
 
 ## Key Features
 
-- Enforces Spec-driven development workflow: standardizes the “spec → plan → tasks → decisions” flow per feature so intent, design, execution, and decisions stay traceable.
-- Standardized docs structure: provides a consistent docs skeleton (agents/prd/features, shared templates) to keep documentation shape and quality predictable.
-- Feature-centric doc management: organizes artifacts in per-feature folders so progress is visible at a glance and review, prioritization, and history tracking are straightforward.
-- Agent-friendly context: outputs the current feature’s key context and next actions so humans and agents follow the same process.
-- Template updates: provides a maintenance path to keep templates and guides (agents, skills, etc.) up to date.
-- OpenWiki integration: `knowledge doctor`, `sync`, and `audit` check readiness, synchronize documentation, and validate it. When enabled, synchronization and a dedicated Knowledge commit are required before Feature review. A bundled technical-writing skill maintains writing guidelines for generated documentation.
+- **Specification-driven development**: Standardize the spec → plan → tasks → decisions workflow for each feature.
+- **Feature-centered documentation**: Manage feature documents, progress, and next actions in a consistent structure.
+- **OpenWiki integration**: Generate and synchronize documentation from the current codebase and validate its state and supporting evidence.
 
-## Problem
+## Key Challenges and Solutions
 
-- **Context overhead for agents**: documentation structure and conventions vary across projects
-- **Fragmented workflow**: spec/plan/tasks/decisions are scattered, making reviews and progress tracking harder
-- **Doc quality drift**: missing files/status, duplicate IDs, and leftover placeholders accumulate over time
+### Repeated context sharing with AI coding assistants
 
-## Solution
+When document locations, structures, and working conventions differ across projects, the same context must be explained repeatedly to AI coding assistants. I provided a shared documentation skeleton and templates so developers and agents can work from the same structure and conventions.
 
-- Provide a standardized docs skeleton and shared templates to keep documentation structure consistent
-- Automatically scaffold feature artifacts (`spec.md`, `plan.md`, `tasks.md`, `decisions.md`) to preserve the SDD flow
-- Summarize current state/next actions and integrate with automation via JSON output
-- Validate structure/metadata and keep templates up to date to prevent documentation drift
+### Inconsistent feature development records
 
-## Impact
+Scattered specifications, implementation plans, tasks, and decision records make it difficult to trace progress and the reasons for changes. I generated `spec.md`, `plan.md`, `tasks.md`, and `decisions.md` for each feature and managed them through a defined workflow, keeping what was implemented, why, and how traceable at the feature level.
 
-- **Lower onboarding/communication cost**: standardized docs make context sharing simpler
-- **Better feature visibility**: templated workflow keeps progress consistent and reviewable
-- **Sustained doc quality**: automated validation catches structural/metadata issues early
+### The gap between change history and the current codebase
+
+Feature documents explain the background of changes, but understanding the current project structure can require reading across many records. I integrated OpenWiki to generate onboarding documents grounded in code, tests, and configuration. When enabled, the integration requires documentation synchronization and citation evidence checks before feature review. Feature documents explain the background of changes, while onboarding documents describe the current structure and main flows.

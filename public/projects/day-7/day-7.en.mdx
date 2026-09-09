@@ -3,9 +3,9 @@ slug: day-7
 title: Seven Days to Full-Time
 summary: An interactive AI-video office drama where your choices lead to one of three endings
 keyFeatures:
-  - A cinematic story combining AI video, captions, narration, and music
-  - Three endings shaped by decisions remembered throughout the story
-  - Reliable playback through media preloading and a streaming fallback
+  - An AI-video drama with three endings shaped by player choices
+  - Media downloads and scene transitions adapted to playback conditions
+  - A browser ending album and server-side choice and ending statistics
 links:
   github: https://github.com/leey00nsu/day-7
   demo: https://day7.leey00nsu.com/
@@ -43,36 +43,24 @@ The game remembers every decision made from Monday through Thursday. Those accum
 
 ## Key Features
 
-- Seamless scene transitions using alternating video layers
-- JSON-based speakers, dialogue captions, timecodes, and chapter narration
-- Choice feedback and three endings determined by accumulated decisions
-- An ending album that stores unlocked endings and recent choices
-- Controls for master volume, music, sound effects, and caption size
-- First-visit media preloading with a network streaming fallback
-- PostgreSQL reports that accumulate choices and endings per playthrough
-- Letterboxed video that preserves the full frame on mobile screens
+- **A branching drama that remembers choices**: AI video, captions, and narration tell the story, while four decisions lead to feedback, branching videos, and one of three endings.
+- **Scene transitions adapted to playback conditions**: Downloaded videos alternate between two playback layers, with readiness checks for both video and narration. Mobile devices use downloaded playback, while supported environments also offer streaming.
+- **Ending collection and choice reports**: Unlocked endings and recent choices are stored in the browser, while choice and ending events are accumulated on the server to show their overall distribution.
 
 ## Problem
 
-- **Gaps between videos**: Switching sources between multiple scenes can expose loading states or black frames.
-- **Consistent choice state**: Decisions, feedback, and ending evaluation must use the same state across several screens and four in-story days.
-- **Reliable mobile playback**: Network and browser differences make it difficult to guarantee smooth transitions with streaming alone.
-- **Different audio lifecycles**: Dialogue, narration, music, and sound effects must stay synchronized with scene changes and player preferences.
-- **Play history persistence**: Browser-side ending progress and server-side playthrough reports need different storage lifecycles.
+- **Choices and endings**: Choices accumulated over four days needed to drive scene feedback, branching videos, and the final ending using the same rules.
+- **Media transitions**: Video and narration become ready at different times, and network and browser differences can cause delays between scenes or interrupt playback.
+- **Progress and records**: Starting a new game needed to reset progress while retaining preferences and collected endings. Aggregate choice statistics also needed to remain separate from personal records.
 
 ## Solution
 
-- **Alternating video layers**: Prepare the current and next scenes on two video layers and swap them to reduce visible gaps during transitions.
-- **Separate content from state transitions**: Keep scene videos, choices, and feedback in content data while implementing choice accumulation and ending evaluation as pure state rules.
-- **Media manifest and playback fallback**: With player consent, preload about 36 MB of video and audio as session Blob URLs; fall back to streaming when preparation is declined or fails.
-- **Scoped Zustand stores**: Persist volume and caption preferences while keeping one playthrough's story progress in a page-lifetime store.
-- **Separate client and server records**: Store unlocked and recent endings in `localStorage`, while accumulating every playthrough's choices and ending in PostgreSQL.
-- **Responsive video stage**: Preserve the entire video frame with letterboxing on mobile and allow settings to change during playback.
+- **Choices and endings**: Scenes and choices were separated into content data, while progress was handled by state transition functions. Choices accumulate during each playthrough, and the number of choices of a given type determines one of three endings.
+- **Media transitions**: Download mode alternates between two video layers and checks video and narration readiness before playback. Mobile devices require media downloads, while supported environments offer streaming as an alternative.
+- **Progress and records**: Progress lives in a page-lifetime Zustand store, while preferences, endings, and recent choices are stored in localStorage. The server stores and aggregates choice and ending events alongside an anonymous identifier.
 
 ## Impact
 
-- **Continuous story experience**: Video, captions, narration, and music flow from the prologue through Friday's final interview as a cohesive scene.
-- **Visible consequences**: Four accumulated choices lead to three endings and an ending album, encouraging repeat playthroughs.
-- **Playback across environments**: Preloading and streaming fallback support different desktop and mobile network conditions.
-- **Maintainable content model**: Separating story data, state transitions, and media control makes scenes and choices easier to update.
-- **Playthrough analytics foundation**: Anonymous browser identifiers allow repeated choices and endings to be accumulated for later analysis.
+- **Choices and endings**: The game connects immediate reactions to the final outcome through a single choice history.
+- **Media transitions**: Playback behavior adapts to the browser environment, with controls that prevent the next scene from playing before its media is ready.
+- **Progress and records**: Each new playthrough starts from the beginning while keeping previous preferences and unlocked endings. Players can view their own records and the overall choice distribution separately.

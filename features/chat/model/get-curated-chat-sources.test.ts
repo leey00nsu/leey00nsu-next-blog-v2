@@ -24,7 +24,7 @@ describe('getCuratedChatSources', () => {
       return (
         source.sourceCategory === 'project' &&
         source.slug === 'leesfield' &&
-        source.sectionTitle === '핵심 기능'
+        source.sectionTitle === '주요 기능'
       )
     })
     const assistantSectionSource = curatedChatSources.find((source) => {

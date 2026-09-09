@@ -1,11 +1,11 @@
 ---
 slug: leemage
-title: Leemage
+title: leemage
 summary: 멀티 스토리지 기반 파일·이미지 관리 플랫폼
 keyFeatures:
-  - 프로젝트 단위 파일 업로드/관리 (이미지·비디오·문서 등 모든 확장자 지원)
-  - 멀티 스토리지(OCI / Cloudflare R2) 어댑터
-  - 외부 API/TypeScript SDK 제공
+  - 프로젝트 단위 이미지·비디오·문서 업로드 및 관리
+  - 이미지 리사이즈와 WebP·AVIF 등 포맷 변환
+  - REST API·TypeScript SDK와 OCI·Cloudflare R2 연동
 links:
   github: https://github.com/leey00nsu/leemage
   demo: https://leemage.leey00nsu.com/
@@ -35,47 +35,37 @@ deployment:
   coverImage: /public/projects/leemage/project-detail-grid.png
 ---
 
-![Leemage project detail](/public/projects/leemage/project-detail-grid.png)
+![leemage project detail](/public/projects/leemage/project-detail-grid.png)
 
-![Leemage monitoring dashboard](/public/projects/leemage/monitoring-30d.png)
+![leemage monitoring dashboard](/public/projects/leemage/monitoring-30d.png)
 
 ## 프로젝트 소개
 
 GitHub : [https://github.com/leey00nsu/leemage](https://github.com/leey00nsu/leemage)
 Demo : [https://leemage.leey00nsu.com/](https://leemage.leey00nsu.com/)
 
-사이드 프로젝트에 파일 업로드 기능을 추가할 때 비용 문제가 발생했습니다.
-**OCI Object Storage / Cloudflare R2**는 Free Tier로 일정 용량을 무료로 제공하기 때문에, Cloudinary 같은 유료 서비스 대신 **비용 절감을 위한 자체 호스팅 파일 관리 플랫폼**을 구축했습니다.
+사이드 프로젝트에 파일 업로드 기능을 추가하면서 스토리지 비용 문제가 발생해, OCI Object Storage와 Cloudflare R2의 Free Tier를 활용하는 자체 파일 관리 플랫폼을 구축했습니다.
 
-프로젝트 단위로 파일을 정리하고, 외부 API와 SDK를 통해 다른 프로젝트에 빠르게 통합할 수 있습니다.
+프로젝트 단위로 이미지·비디오·문서 등의 파일을 관리하고, REST API와 TypeScript SDK를 통해 다른 프로젝트에서도 동일한 업로드 기능을 쉽게 사용할 수 있도록 구성했습니다.
 
-## 핵심 기능
+또한 특정 스토리지에 종속되지 않도록 공통 인터페이스를 설계하고, 이미지 변환과 최적화 기능까지 함께 제공하도록 확장했습니다.
 
-- 프로젝트 단위 파일 업로드/관리: 이미지·비디오·문서 등 모든 확장자 지원
-- 이미지 변환 옵션 제공: 리사이즈/포맷 변환
-- 외부 API/SDK 제공: RESTful API 및 TypeScript SDK 제공
-- OpenAPI 문서 자동화: Zod 스키마에서 OpenAPI 스펙 자동 생성
-- 멀티 스토리지 지원: OCI Object Storage / Cloudflare R2 선택 가능
-- i18n 지원: 한국어/영어 제공
+## 주요 기능
 
-## Problem
+- **파일 관리**: 프로젝트 단위로 이미지·비디오·문서 등 다양한 파일 업로드 및 관리
+- **이미지 처리**: 이미지 리사이즈 및 WebP·AVIF 등의 포맷 변환
+- **외부 연동**: REST API와 TypeScript SDK, OCI Object Storage·Cloudflare R2 지원
 
-- **대용량 파일 업로드 시 서버 부하**: 파일이 서버를 거치면 메모리/네트워크 부하 급증
-- **멀티 스토리지 API 차이**: OCI Object Storage와 Cloudflare R2는 API 인터페이스가 상이하여 프로바이더 변경 시 코드 전체 수정 부담
-- **이미지 용량 최적화**: 무거운 이미지 리사이징/포맷 변환 필요
-- **API 문서 불일치**: API 문서를 별도 관리할 경우 코드와 문서 간 불일치 발생 가능
+## 핵심 문제와 해결
 
-## Solution
+### 대용량 파일 업로드로 인한 서버 부하
 
-- **Presigned URL 직접 업로드**: 클라이언트가 스토리지에 직접 업로드하여 서버 부하 제거
-- **Storage Adapter 패턴**: 공통 인터페이스로 프로바이더 독립적인 코드 작성, 새 프로바이더 추가 시 어댑터만 구현 (OCP 준수)
-- **Sharp 기반 이미지 변환**: 병렬 처리로 여러 variant 동시 생성, WebP/AVIF의 가벼운 차세대 포맷 지원
-- **TypeScript SDK**: 복잡한 3단계 업로드 플로우(presign → upload → confirm)를 단일 메서드로 추상화
-- **OpenAPI 자동 생성**: Zod 스키마에서 OpenAPI 스펙 자동 생성으로 API 문서와 타입 동기화
+파일을 애플리케이션 서버를 통해 전달하면 파일 크기에 따라 서버의 메모리와 네트워크 부하가 증가합니다. Presigned URL을 이용해 최초 업로드 본문은 클라이언트에서 Object Storage로 직접 전송하고, 서버는 업로드 확인과 파일 등록을 담당하도록 분리했습니다. 이미지 검증과 변환이 필요한 경우에는 서버에서 원본을 읽어 처리합니다.
 
-## Impact
+### 스토리지마다 다른 API 인터페이스
 
-- **서버 부하**: Presigned URL로 파일 전송 서버 부하 0%
-- **이미지 용량 최적화**: WebP/AVIF 변환으로 원본 대비 50-60% 감소
-- **비용 절감**: OCI, Cloudflare R2 Free Tier 활용
-- **통합 용이성**: TypeScript SDK로 외부 프로젝트에 빠른 통합 가능
+OCI Object Storage와 Cloudflare R2는 서로 다른 API 인터페이스를 사용하기 때문에 스토리지를 변경하면 서비스 코드까지 수정해야 할 수 있습니다. 공통 Storage 인터페이스와 Adapter 패턴을 적용해 서비스 로직과 프로바이더 구현을 분리하고, 동일한 파일 관리 흐름에서 OCI와 R2를 선택해 사용할 수 있도록 했습니다.
+
+### 이미지 용량과 변환 비용
+
+원본 이미지를 그대로 저장·전송하면 파일 용량이 커지고 네트워크 비용도 증가합니다. Sharp를 이용해 요청한 크기·포맷의 파생 이미지와 썸네일을 순차 생성하고, 원본과 파생본의 URL·크기·포맷을 함께 관리하도록 했습니다.

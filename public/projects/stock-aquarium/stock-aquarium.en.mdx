@@ -3,9 +3,9 @@ slug: stock-aquarium
 title: Stock Aquarium
 summary: A data visualization service that turns real-time stock trades into fish swimming through a 3D aquarium
 keyFeatures:
-  - Trade direction and volume represented through fish color and scale
-  - KIS WebSocket data fanned out from one server connection over SSE
-  - Stable high-frequency 3D rendering through object pooling
+  - Fish visualization of aggregated trade direction and relative volume
+  - Movement speed and storm effects driven by volume and price changes
+  - Korean and U.S. stock search with shared real-time data connections
 links:
   github: https://github.com/leey00nsu/stock-aquarium
   demo: https://aquarium.leey00nsu.com/
@@ -43,36 +43,24 @@ Instead of another price screen made of numbers and charts, the aquarium communi
 
 ## Key Features
 
-- Trade direction and scale visualized through fish movement, color, and size
-- Volume spikes, volatility, and trading halts represented as environmental changes
-- Search and real-time quotes for 40 major Korean and U.S. stocks
-- One KIS WebSocket connection fanned out to multiple browsers over SSE
-- Trade aggregation every 100ms and controlled fish creation every 250ms
-- A fixed pool of 80 fish updated through one frame loop
-- Two-level stock-master caching across server memory and disk
-- Mock market data with switches for live and virtual KIS environments
+- **Trade visualization**: Represents aggregated trade direction and relative volume through fish color, movement, and size (U.S. trade direction is inferred from quotes and the previous trade price).
+- **Market changes**: Adjusts fish speed and aquarium storm effects based on volume and price changes.
+- **Real-time stock lookup**: Searches Korean and U.S. stocks and receives real-time KIS data through shared connections.
 
 ## Problem
 
-- **High-frequency trades**: Opening a WebSocket per browser or creating a new 3D object for every trade would increase both server and rendering load.
-- **Different liquidity by stock**: Absolute volume makes it difficult to compare fish sizes consistently between highly liquid and less active stocks.
-- **Shared real-time connections**: More viewers of the same stock should not multiply KIS subscriptions and JSON serialization work.
-- **3D object lifecycle cost**: Repeatedly creating and removing fish models, skeleton animations, and movement state can cause frame drops and memory pressure.
-- **Operational security and recovery**: KIS credentials must remain server-side while the service handles connection limits, reconnects, and stock-data failures.
+- **Trade visualization**: Sizing fish from absolute volume alone made it difficult to represent trading changes across stocks with different liquidity.
+- **Shared connections**: Opening a KIS connection and processing the same stock separately for every browser duplicates subscription resources.
+- **Rendering resources**: Creating a fish model and animation for every trade makes 3D object counts grow with incoming volume.
 
 ## Solution
 
-- **Server-only KIS gateway**: Keep the KIS App Key and Secret on the server, then redistribute trades from one WebSocket connection through a Next.js Route Handler using SSE.
-- **Per-stock fan-out**: Aggregate and serialize trades once per stock, allowing every browser subscribed to that stock to reuse the same SSE bytes.
-- **Relative trade-size calculation**: Map each trade against the percentile distribution of the stock's latest 40 trades, keeping fish between 0.6 and 2.5 times their base scale.
-- **Fixed object pool**: Prepare and reuse 80 fish. When creation capacity is full, combine queued volume and trade counts by direction instead of discarding the data.
-- **Connection protection and recovery**: Apply global and per-IP limits, reconnect to KIS with exponential backoff, and restore only stocks that are still in use.
-- **Two-level cache and fallback**: Keep the stock master in server memory for 24 hours and on disk, with a built-in representative U.S. stock list when ranking requests fail.
+- **Trade visualization**: Set fish size from volume percentiles in each stock’s recent received data, and mapped volume and price changes to movement speed and storm effects.
+- **Shared connections**: Shared the KIS connection within a server process, aggregated and serialized trades per stock, and distributed the same SSE data to subscribed browsers.
+- **Rendering resources**: Reused a pool of 80 fish and combined events beyond the creation limit by direction until a free slot became available.
 
 ## Impact
 
-- **Intuitive real-time data**: Direction, trade size, and market conditions can be understood through aquarium movement without reading every number.
-- **Lower subscription cost**: Even when 100 people watch the same stock, the server keeps only one corresponding KIS real-time subscription.
-- **Stable rendering ceiling**: Reusing at most 80 fish prevents 3D object counts from growing without bound during trade spikes.
-- **Reduced data loss**: Trades beyond the visual creation rate are combined by direction so fewer events are rendered without losing their volume signal.
-- **Production-ready streaming foundation**: Reconnects, keep-alives, request limits, security headers, and cache fallbacks support long-lived real-time sessions.
+- **Trade visualization**: Enabled relative trade volume within a stock and recent price changes to be viewed in one aquarium.
+- **Shared connections**: Configured viewers of the same stock within a server process to share its subscription and serialized output.
+- **Rendering resources**: Capped the displayed fish count while combining queued volume by direction into the next fish.

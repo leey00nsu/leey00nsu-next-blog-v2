@@ -1,11 +1,11 @@
 ---
 slug: leesfield
-title: Leesfield
+title: leesfield
 summary: An AI generation platform for using and managing image, video, and audio models in one place
 keyFeatures:
-  - A unified generation environment for running multiple AI models through one interface
-  - History and monitoring that keep generated results together with prompts and settings
-  - Extensible AI generation through node-based workflows and a unified API
+  - Multimodal AI generation for image, video, and audio models
+  - Spaces workflows connecting input, generation, editing, and output nodes
+  - Database model catalog, generation history, and request monitoring
 links:
   github: https://github.com/leey00nsu/leesfield
   demo: https://leesfield.leey00nsu.com/
@@ -38,50 +38,35 @@ deployment:
 
 ![leesfield landing page](/public/projects/leesfield/landing.png)
 
-![Leesfield AI generation screen](/public/projects/leesfield/image-generation.png)
+![leesfield AI generation screen](/public/projects/leesfield/image-generation.png)
 
 ## Project Overview
 
 GitHub : [https://github.com/leey00nsu/leesfield](https://github.com/leey00nsu/leesfield)
 Demo : [https://leesfield.leey00nsu.com/](https://leesfield.leey00nsu.com/)
 
-When adding AI image/video generation to side projects, I wanted to build my **own pipeline**.
-Most image/video generation APIs are paid, but **Hugging Face Zero GPU** offers limited free usage, allowing me to start without cost concerns.
+While adding AI image and video generation to side projects, I wanted to build my own generation platform that could run multiple models through one interface.
 
-Users select and run image, video, and audio models from one generation screen and manage results alongside their prompts and settings in the history. A model catalog manages inputs and defaults, while provider-specific adapters handle generation requests.
-**Spaces**, a node-based workspace, connects inputs, generation, editing, and outputs and lets users run individual nodes. External APIs and Leemage storage integration make generation features and results available to other services.
+I used Hugging Face Zero GPU to limit initial costs and built a flow for selecting and running image, video, and audio models, then reusing the results with their prompts and settings.
+
+I also managed model settings in a catalog and separated provider-specific calling conventions to support adding more models and providers over time.
 
 ## Key Features
 
-- AI image, video, and audio generation: A unified screen for selecting media and models with model-specific inputs and results
-- Spaces: Node-based workflow composition and individual node execution
-- Model catalog management: DB-based model registration/editing, dynamic UI rendering
-- Monitoring dashboard: Generation request status and monitoring
-- Generation history management: Save, browse, and reuse results with their prompts and settings
-- External API: OpenAPI auto-generation based on Zod schemas
-- Leemage integration: Automatic upload of generated results
-- i18n support: Korean/English
+- **Multimodal AI generation**: Select and run image, video, and audio models through one interface
+- **Spaces**: Connect input, generation, editing, and output nodes into AI generation workflows
+- **Model operations**: Manage a database-backed model catalog, generation history, and request monitoring
 
-## Problem
+## Key Challenges and Solutions
 
-- **AI model diversity**: Different API interfaces, parameters, and timeouts for each model
-- **Storage integration**: External storage integration needed for permanent result storage
-- **Model configuration management**: Need to manage model-specific parameters, UI types, and defaults without code modification
-- **API documentation mismatch**: When managing API docs separately, inconsistencies between code and documentation can occur
-- **Difficulty tracking generation requests**: Hard to monitor success/failure rates and processing delays in real-time
+### Different API interfaces across models
 
-## Solution
+AI models differ in input parameters, calling conventions, and timeouts, which can complicate service code as more models are added. I separated provider-specific calls into adapters so service logic and provider implementations could be maintained separately.
 
-- **API call adapter pattern**: Separate adapters per model provider (hf_space, etc.), implement only adapters for new providers
-- **Storage adapter pattern**: Separate external storage integration (Leemage, etc.) into adapters
-- **DB-based model catalog**: Register model settings/parameters via admin UI, add new models without code changes
-- **OpenAPI auto-generation**: Auto-generate OpenAPI spec from Zod schemas for API documentation and type synchronization
-- **Integrated monitoring dashboard**: Real-time view of request status (active/pending/processing), error rates, and avg/P95 latency. Model/API key statistics and daily trend charts
+### Code changes for every new model
 
-## Impact
+Defining model parameters and UI settings directly in code requires application changes whenever a model is added. I stored input schemas, defaults, and UI types in a database catalog and rendered the interface dynamically from that data, allowing models to be added without code changes within supported providers and input contracts.
 
-- **Cost savings**: Utilizing Hugging Face Space free GPU
-- **Model scalability**: Add new models without code modification via DB model catalog
-- **Storage integration**: Permanent generation history preservation via Leemage integration
-- **Operational visibility**: Real-time monitoring for immediate request status and error rate tracking
-- **Multilingual support**: Korean/English i18n
+### Understanding generation request activity
+
+Long-running AI generation requests make it difficult to see the overall state when failures or delays occur. I built a monitoring dashboard with active request counts, pending and processing states, error rates, and average/P95 request processing times, along with request activity by model and API key and daily trends.

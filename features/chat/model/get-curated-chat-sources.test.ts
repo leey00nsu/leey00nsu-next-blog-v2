@@ -71,8 +71,8 @@ describe('getCuratedChatSources', () => {
     expect(profileTechStackSource?.sourceCategory).toBe('profile')
     expect(profileTechStackSource?.url).toBe('/ko/about')
     expect(profileTechStackSource?.sectionTitle).toBe('주력 기술 스택')
-    expect(profileTechStackSource?.content).toContain('Leesfield')
-    expect(profileTechStackSource?.content).toContain('Leemage')
+    expect(profileTechStackSource?.content).toContain('leesfield')
+    expect(profileTechStackSource?.content).toContain('leemage')
     expect(profileTechStackSource?.content).toContain('Next.js')
     expect(profileTechStackSource?.content).toContain('TypeScript')
     expect(profileTechStackSource?.content).toContain(

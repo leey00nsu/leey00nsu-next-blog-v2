@@ -1,4 +1,6 @@
 allowBuilds:
+  '@prisma/engines': true
+  prisma: true
   '@parcel/watcher': true
   '@swc/core': true
   '@tailwindcss/oxide': true

@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client"
+  output = "../shared/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model chat_observability_events {
+  id                               BigInt   @id @default(autoincrement())
+  created_at                       DateTime @default(now()) @db.Timestamptz(6)
+  locale                           String
+  original_question                String
+  resolved_question                String?
+  normalized_question              String?
+  current_post_slug                String?
+  cache_kind                       String
+  reranked                         Boolean  @default(false)
+  planner_reason                   String?
+  planner_action                   String?
+  planner_retrieval_mode           String?
+  planner_deterministic_action     String?
+  preferred_source_categories_json Json
+  additional_keywords_json         Json
+  lexical_matches_json             Json
+  semantic_matches_json            Json
+  final_matches_json               Json
+  citations_json                   Json
+  grounded                         Boolean
+  refusal_reason                   String?
+  duration_milliseconds            Int
+  answer                           String?
+  intent_operation                 String?
+  intent_target_kind               String?
+  intent_evidence_scope            String?
+  intent_temporal_order            String?
+  intent_requested_fields_json     Json     @default("[]")
+  intent_required_concepts_json    Json     @default("[]")
+  intent_optional_concepts_json    Json     @default("[]")
+  planner_failure_kind             String?
+  query_operation                  String?
+  source_strategy                  String?
+  source_categories_json           Json     @default("[]")
+  temporal_strategy                String?
+  temporal_order                   String?
+  execution_kind                   String?
+  graph_path_json                  Json     @default("[]")
+
+  @@index([created_at(sort: Desc)], map: "chat_observability_events_created_at_index")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model chat_rag_active_index {
+  singleton_id            Int                     @id @db.SmallInt
+  active_index_version    String
+  chat_rag_index_versions chat_rag_index_versions @relation(fields: [active_index_version], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model chat_rag_chunk_embeddings {
+  index_version           String
+  chunk_id                String
+  locale                  String
+  embedding               Unsupported("vector")
+  chat_rag_chunks         chat_rag_chunks         @relation(fields: [index_version, chunk_id], references: [index_version, id], onDelete: Cascade, onUpdate: NoAction)
+  chat_rag_index_versions chat_rag_index_versions @relation(fields: [index_version], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([index_version, chunk_id])
+  @@index([index_version, locale], map: "chat_rag_embeddings_locale_index")
+}
+
+model chat_rag_chunks {
+  index_version             String
+  id                        String
+  locale                    String
+  slug                      String
+  title                     String
+  url                       String
+  excerpt                   String
+  content                   String
+  section_title             String?
+  tags_json                 Json
+  search_terms_json         Json
+  published_at              DateTime?                  @db.Timestamptz(6)
+  source_category           String
+  entity_ids_json           Json
+  evidence_time_kind        String?
+  evidence_time_value       DateTime?                  @db.Timestamptz(6)
+  chat_rag_chunk_embeddings chat_rag_chunk_embeddings?
+  chat_rag_index_versions   chat_rag_index_versions    @relation(fields: [index_version], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([index_version, id])
+  @@index([index_version, locale], map: "chat_rag_chunks_locale_index")
+}
+
+model chat_rag_entities {
+  index_version           String
+  id                      String
+  locale                  String
+  name                    String
+  normalized_name         String
+  kind                    String
+  chunk_ids_json          Json
+  chat_rag_index_versions chat_rag_index_versions @relation(fields: [index_version], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([index_version, id])
+  @@index([index_version, locale], map: "chat_rag_entities_locale_index")
+}
+
+model chat_rag_index_versions {
+  id                        String                      @id
+  status                    String
+  commit_sha                String?
+  created_at                DateTime                    @default(now()) @db.Timestamptz(6)
+  activated_at              DateTime?                   @db.Timestamptz(6)
+  embedding_provider        String?
+  embedding_model_id        String?
+  embedding_dimension       Int?
+  chunking_version          String?
+  chat_rag_active_index     chat_rag_active_index[]
+  chat_rag_chunk_embeddings chat_rag_chunk_embeddings[]
+  chat_rag_chunks           chat_rag_chunks[]
+  chat_rag_entities         chat_rag_entities[]
+  chat_rag_relations        chat_rag_relations[]
+}
+
+model chat_rag_relations {
+  index_version           String
+  id                      String
+  locale                  String
+  source_entity_id        String
+  target_entity_id        String
+  type                    String
+  weight                  Float                   @db.Real
+  chat_rag_index_versions chat_rag_index_versions @relation(fields: [index_version], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([index_version, id])
+  @@index([index_version, locale], map: "chat_rag_relations_locale_index")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model engagement_events {
+  event_id                  String   @id @db.Uuid
+  created_at                DateTime @default(now()) @db.Timestamptz(6)
+  event_name                String
+  anonymous_visitor_id_hash String
+  session_id_hash           String
+  locale                    String
+  page_path                 String
+  content_slug              String?
+  document_kind             String?
+  target_kind               String?
+  referrer_host             String?
+  utm_source                String?
+  utm_medium                String?
+  utm_campaign              String?
+  device_category           String
+
+  @@index([content_slug, created_at(sort: Desc)], map: "engagement_events_content_slug_created_at_index", where: raw("(content_slug IS NOT NULL)"))
+  @@index([created_at(sort: Desc)], map: "engagement_events_created_at_index")
+  @@index([event_name, created_at(sort: Desc)], map: "engagement_events_name_created_at_index")
+  @@index([anonymous_visitor_id_hash, created_at(sort: Desc)], map: "engagement_events_visitor_created_at_index")
+}

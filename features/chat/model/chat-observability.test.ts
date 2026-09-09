@@ -1,31 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Pool, PoolClient } from 'pg'
 import {
-  initializeChatObservabilityDatabase,
   insertChatObservabilityEvent,
   selectChatObservabilityLogPage,
 } from '@/features/chat/model/chat-observability'
 
 describe('chat-observability', () => {
-  it('observability 테이블을 생성한다', async () => {
-    const queryMock = vi.fn().mockResolvedValue({ rows: [] })
-    const databaseClient = {
-      query: queryMock,
-    } as unknown as Pool | PoolClient
-
-    await initializeChatObservabilityDatabase(databaseClient)
-
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('ADD COLUMN IF NOT EXISTS answer TEXT'),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('ADD COLUMN IF NOT EXISTS intent_operation TEXT'),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('ADD COLUMN IF NOT EXISTS query_operation TEXT'),
-    )
-  })
-
   it('observability 이벤트를 JSONB payload와 함께 저장한다', async () => {
     const queryMock = vi.fn().mockResolvedValue({ rows: [] })
     const databaseClient = {

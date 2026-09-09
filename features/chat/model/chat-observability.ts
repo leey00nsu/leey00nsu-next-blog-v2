@@ -84,28 +84,6 @@ export interface ChatObservabilityLogPage {
   dateRange: AnalyticsDateRange
 }
 
-let hasInitializedChatObservabilityDatabase = false
-let chatObservabilityDatabaseInitializationPromise: Promise<void> | null = null
-
-export async function ensureChatObservabilityDatabaseInitialized(
-  databaseClient: Pool | PoolClient,
-): Promise<void> {
-  if (hasInitializedChatObservabilityDatabase) {
-    return
-  }
-
-  chatObservabilityDatabaseInitializationPromise ??=
-    initializeChatObservabilityDatabase(databaseClient)
-
-  try {
-    await chatObservabilityDatabaseInitializationPromise
-    hasInitializedChatObservabilityDatabase = true
-  } catch (error) {
-    chatObservabilityDatabaseInitializationPromise = null
-    throw error
-  }
-}
-
 function parseJsonArray<T>(jsonValue: unknown): T[] {
   if (Array.isArray(jsonValue)) {
     return jsonValue as T[]
@@ -231,104 +209,6 @@ function mapChatObservabilityRow(
   }
 }
 
-export async function initializeChatObservabilityDatabase(
-  databaseClient: Pool | PoolClient,
-): Promise<void> {
-  await databaseClient.query(`
-    CREATE TABLE IF NOT EXISTS ${CHAT_OBSERVABILITY.TABLE} (
-      id BIGSERIAL PRIMARY KEY,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      locale TEXT NOT NULL,
-      original_question TEXT NOT NULL,
-      answer TEXT,
-      resolved_question TEXT,
-      normalized_question TEXT,
-      current_post_slug TEXT,
-      cache_kind TEXT NOT NULL,
-      reranked BOOLEAN NOT NULL DEFAULT FALSE,
-      planner_reason TEXT,
-      planner_action TEXT,
-      planner_retrieval_mode TEXT,
-      planner_deterministic_action TEXT,
-      intent_operation TEXT,
-      intent_target_kind TEXT,
-      intent_evidence_scope TEXT,
-      intent_temporal_order TEXT,
-      intent_requested_fields_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-      intent_required_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-      intent_optional_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-      planner_failure_kind TEXT,
-      query_operation TEXT,
-      source_strategy TEXT,
-      source_categories_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-      temporal_strategy TEXT,
-      temporal_order TEXT,
-      execution_kind TEXT,
-      graph_path_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-      preferred_source_categories_json JSONB NOT NULL,
-      additional_keywords_json JSONB NOT NULL,
-      lexical_matches_json JSONB NOT NULL,
-      semantic_matches_json JSONB NOT NULL,
-      final_matches_json JSONB NOT NULL,
-      citations_json JSONB NOT NULL,
-      grounded BOOLEAN NOT NULL,
-      refusal_reason TEXT,
-      duration_milliseconds INTEGER NOT NULL
-    );
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS answer TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_operation TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_target_kind TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_evidence_scope TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_temporal_order TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_requested_fields_json JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_required_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS intent_optional_concepts_json JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS planner_failure_kind TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS query_operation TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS source_strategy TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS source_categories_json JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS temporal_strategy TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS temporal_order TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS execution_kind TEXT;
-
-    ALTER TABLE ${CHAT_OBSERVABILITY.TABLE}
-    ADD COLUMN IF NOT EXISTS graph_path_json JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-    CREATE INDEX IF NOT EXISTS chat_observability_events_created_at_index
-    ON ${CHAT_OBSERVABILITY.TABLE}(created_at DESC);
-  `)
-}
-
 export async function insertChatObservabilityEvent(params: {
   databaseClient: Pool | PoolClient
   event: ChatObservabilityEvent
@@ -427,8 +307,6 @@ export async function recordChatObservabilityEvent(
   }
 
   const databasePool = await getChatRagDatabasePool()
-
-  await ensureChatObservabilityDatabaseInitialized(databasePool)
 
   const limitedEvent = {
     ...event,
@@ -576,8 +454,6 @@ export async function getChatObservabilityLogPage(params: {
   }
 
   const databasePool = await getChatRagDatabasePool()
-
-  await ensureChatObservabilityDatabaseInitialized(databasePool)
 
   return selectChatObservabilityLogPage({
     databaseClient: databasePool,

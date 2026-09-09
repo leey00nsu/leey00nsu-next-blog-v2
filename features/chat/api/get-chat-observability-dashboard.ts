@@ -4,7 +4,6 @@ import {
   getChatRagDatabasePool,
   isChatRagDatabaseConfigured,
 } from '@/features/chat/model/chat-rag-database'
-import { ensureChatObservabilityDatabaseInitialized } from '@/features/chat/model/chat-observability'
 import type { ChatObservabilityDashboard } from '@/features/chat/model/chat-observability-dashboard-types'
 import { toAnalyticsDatabaseRange } from '@/shared/lib/analytics-date-range'
 import type { AnalyticsDateRange } from '@/shared/model/analytics'
@@ -135,7 +134,6 @@ export async function getChatObservabilityDashboard(
   }
 
   const databasePool = await getChatRagDatabasePool()
-  await ensureChatObservabilityDatabaseInitialized(databasePool)
 
   return selectChatObservabilityDashboard({
     databaseClient: databasePool,

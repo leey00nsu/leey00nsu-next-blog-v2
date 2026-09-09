@@ -1,9 +1,6 @@
 import type { Pool, PoolClient } from 'pg'
 import { z } from 'zod'
-import {
-  getEngagementDatabasePool,
-  ensureEngagementDatabaseInitialized,
-} from '@/features/engagement/model/engagement-events'
+import { getEngagementDatabasePool } from '@/features/engagement/model/engagement-events'
 import type { EngagementDashboard } from '@/features/engagement/model/engagement-dashboard-types'
 import {
   ENGAGEMENT,
@@ -106,7 +103,6 @@ export async function getEngagementDashboard(
   dateRange: AnalyticsDateRange,
 ): Promise<EngagementDashboard> {
   const databasePool = getEngagementDatabasePool()
-  await ensureEngagementDatabaseInitialized(databasePool)
 
   return selectEngagementDashboard({
     databaseClient: databasePool,

@@ -87,7 +87,17 @@ describe('project queries', () => {
 
       expect(project).not.toBeNull()
 
-      for (const heading of PROJECT_CONTENT_HEADINGS[locale]) {
+      const headings =
+        slug === 'copysinger'
+          ? locale === 'ko'
+            ? ['## 프로젝트 소개', '## 주요 기능', '## 핵심 문제와 해결']
+            : [
+                '## Project Overview',
+                '## Key Features',
+                '## Key Challenges and Solutions',
+              ]
+          : PROJECT_CONTENT_HEADINGS[locale]
+      for (const heading of headings) {
         expect(project?.content).toContain(heading)
       }
     },

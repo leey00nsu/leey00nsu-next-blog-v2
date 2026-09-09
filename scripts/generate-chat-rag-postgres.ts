@@ -11,7 +11,6 @@ import {
   createChatRagIndexRun,
   failChatRagIndexRun,
   getChatRagDatabasePool,
-  initializeChatRagDatabase,
   isChatRagDatabaseConfigured,
   replaceChatRagLocaleIndex,
   activateChatRagIndexRun,
@@ -130,8 +129,6 @@ async function main(): Promise<void> {
   }
 
   const databasePool = await getChatRagDatabasePool()
-
-  await initializeChatRagDatabase(databasePool)
 
   const indexRun = await createChatRagIndexRun({
     databaseClient: databasePool,

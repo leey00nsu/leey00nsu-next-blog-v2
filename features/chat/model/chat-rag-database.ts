@@ -28,7 +28,6 @@ const CHAT_RAG_DATABASE = {
     STALE: 'stale',
   },
   ACTIVE_INDEX_SINGLETON_ID: 1,
-  ACTIVE_INDEX_SINGLETON_ID_CONSTRAINT: 1,
 } as const
 
 export interface ChatRagSemanticCandidate extends GraphRagChunk {
@@ -266,112 +265,6 @@ export async function getChatRagDatabasePool(): Promise<Pool> {
   chatRagDatabasePoolSingleton = buildChatRagDatabasePool()
 
   return chatRagDatabasePoolSingleton
-}
-
-export async function initializeChatRagDatabase(
-  databaseClient: Pool | PoolClient,
-): Promise<void> {
-  await databaseClient.query(`
-    CREATE EXTENSION IF NOT EXISTS vector;
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS} (
-      id TEXT PRIMARY KEY,
-      status TEXT NOT NULL,
-      commit_sha TEXT,
-      embedding_provider TEXT,
-      embedding_model_id TEXT,
-      embedding_dimension INTEGER,
-      chunking_version TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      activated_at TIMESTAMPTZ
-    );
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.ACTIVE_INDEX} (
-      singleton_id SMALLINT PRIMARY KEY CHECK (singleton_id = ${CHAT_RAG_DATABASE.ACTIVE_INDEX_SINGLETON_ID_CONSTRAINT}),
-      active_index_version TEXT NOT NULL REFERENCES ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.CHUNKS} (
-      index_version TEXT NOT NULL REFERENCES ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}(id) ON DELETE CASCADE,
-      id TEXT NOT NULL,
-      locale TEXT NOT NULL,
-      slug TEXT NOT NULL,
-      title TEXT NOT NULL,
-      url TEXT NOT NULL,
-      excerpt TEXT NOT NULL,
-      content TEXT NOT NULL,
-      section_title TEXT,
-      tags_json JSONB NOT NULL,
-      search_terms_json JSONB NOT NULL,
-      published_at TIMESTAMPTZ,
-      evidence_time_kind TEXT,
-      evidence_time_value TIMESTAMPTZ,
-      source_category TEXT NOT NULL,
-      entity_ids_json JSONB NOT NULL,
-      PRIMARY KEY (index_version, id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.EMBEDDINGS} (
-      index_version TEXT NOT NULL REFERENCES ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}(id) ON DELETE CASCADE,
-      chunk_id TEXT NOT NULL,
-      locale TEXT NOT NULL,
-      embedding VECTOR NOT NULL,
-      PRIMARY KEY (index_version, chunk_id),
-      FOREIGN KEY (index_version, chunk_id) REFERENCES ${CHAT_RAG_DATABASE.TABLES.CHUNKS}(index_version, id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.ENTITIES} (
-      index_version TEXT NOT NULL REFERENCES ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}(id) ON DELETE CASCADE,
-      id TEXT NOT NULL,
-      locale TEXT NOT NULL,
-      name TEXT NOT NULL,
-      normalized_name TEXT NOT NULL,
-      kind TEXT NOT NULL,
-      chunk_ids_json JSONB NOT NULL,
-      PRIMARY KEY (index_version, id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ${CHAT_RAG_DATABASE.TABLES.RELATIONS} (
-      index_version TEXT NOT NULL REFERENCES ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}(id) ON DELETE CASCADE,
-      id TEXT NOT NULL,
-      locale TEXT NOT NULL,
-      source_entity_id TEXT NOT NULL,
-      target_entity_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      weight REAL NOT NULL,
-      PRIMARY KEY (index_version, id)
-    );
-
-    CREATE INDEX IF NOT EXISTS chat_rag_chunks_locale_index
-    ON ${CHAT_RAG_DATABASE.TABLES.CHUNKS}(index_version, locale);
-
-    CREATE INDEX IF NOT EXISTS chat_rag_entities_locale_index
-    ON ${CHAT_RAG_DATABASE.TABLES.ENTITIES}(index_version, locale);
-
-    CREATE INDEX IF NOT EXISTS chat_rag_relations_locale_index
-    ON ${CHAT_RAG_DATABASE.TABLES.RELATIONS}(index_version, locale);
-
-    CREATE INDEX IF NOT EXISTS chat_rag_embeddings_locale_index
-    ON ${CHAT_RAG_DATABASE.TABLES.EMBEDDINGS}(index_version, locale);
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.CHUNKS}
-      ADD COLUMN IF NOT EXISTS evidence_time_kind TEXT;
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.CHUNKS}
-      ADD COLUMN IF NOT EXISTS evidence_time_value TIMESTAMPTZ;
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
-      ADD COLUMN IF NOT EXISTS embedding_provider TEXT;
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
-      ADD COLUMN IF NOT EXISTS embedding_model_id TEXT;
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
-      ADD COLUMN IF NOT EXISTS embedding_dimension INTEGER;
-
-    ALTER TABLE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
-      ADD COLUMN IF NOT EXISTS chunking_version TEXT;
-  `)
 }
 
 export async function createChatRagIndexRun(params: {

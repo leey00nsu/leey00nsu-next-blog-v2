@@ -35,7 +35,10 @@
     "gen:chat-rag-postgres": "tsx scripts/generate-chat-rag-postgres.ts",
     "gen:projects": "tsx scripts/generate-projects-data.ts",
     "gen:resume-pdf": "tsx scripts/generate-resume-pdf.ts",
-    "playwright:install": "pnpm exec playwright install chromium"
+    "playwright:install": "pnpm exec playwright install chromium",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:status": "prisma migrate status",
+    "pregen:chat-rag-postgres": "pnpm run db:migrate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.51",
@@ -99,6 +102,7 @@
     "pg": "^8.20.0",
     "plaiceholder": "^3.0.0",
     "playwright": "^1.57.0",
+    "prisma": "7.10.0",
     "react": "19.1.0",
     "react-day-picker": "^10.0.1",
     "react-dom": "19.1.0",

@@ -64,3 +64,5 @@ next-env.d.ts
 TASKS.md
 .kiro
 /docs/
+
+/shared/generated/prisma/

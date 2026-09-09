@@ -209,6 +209,22 @@ Postgres가 올라온 뒤에만 아래 명령이 동작합니다.
 pnpm run gen:chat-rag-postgres
 ```
 
+### DB 스키마 관리
+
+스키마는 `prisma/schema.prisma`, 변경 이력은 `prisma/migrations`에서 관리합니다.
+`pnpm dev`, `pnpm start`, RAG 인덱스 생성 전에 Prisma Migrate가 미적용 변경을 실행합니다.
+
+```bash
+pnpm run db:migrate                  # 배포용: 저장된 마이그레이션 적용
+pnpm run db:migrate:dev --name change_name  # 개발용: 스키마 변경으로 새 마이그레이션 생성
+pnpm run db:migrate:status           # 적용 상태 확인
+```
+
+기존 DB를 처음 연결할 때는 백업과 스키마 비교 후 기준 마이그레이션을
+`prisma migrate resolve --applied 20260909000000_initial_schema`로 등록합니다.
+빈 DB는 `pnpm run db:migrate`만 실행합니다. 배포 DB에서는 `migrate dev`나 `db push`를 실행하지 않습니다.
+벡터 검색과 기존 SQL 조회는 `pg`를 사용하며, 테이블 생성·변경은 Prisma Migrate에서만 수행합니다.
+
 ### 챗봇 인덱스 생성
 
 - `predev`, `prebuild`, 테스트 단계에서는 `pnpm run gen:content`가 이미지 메타데이터, 게시물, 프로젝트, 챗봇 및 검색 데이터를 생성합니다.
@@ -422,15 +438,3 @@ pnpm exec playwright install --with-deps
 [MIT License](./LICENSE)
 
 ---
-
-### 기존 마이그레이션 이력 보정
-
-`0001_add_chat_rag_evidence_time.sql`은 배포 시점에 따라 두 버전이 적용되었습니다.
-시작 시 마이그레이션 실행기는 알려진 이전 SHA-256(`36b88e2e…`)과 현재 파일의
-SHA-256(`4b1c9589…`)이 정확히 일치하는 조합에 한해 보정을 시도합니다.
-검색 경로의 `chat_rag_chunks`가 `public.chat_rag_chunks`와 같고,
-`evidence_time_kind`가 `text`, `evidence_time_value`가 `timestamptz`인 경우에만
-트랜잭션 안에서 체크섬을 갱신합니다. 적용 시각과 테이블 데이터는 유지하며,
-이후 `0004`를 포함한 미적용 마이그레이션을 실행합니다.
-알 수 없는 체크섬이나 다른 스키마는 자동 보정하지 않습니다.
-이미 적용한 SQL 파일은 수정하지 않고 새 번호의 마이그레이션을 추가해야 합니다.

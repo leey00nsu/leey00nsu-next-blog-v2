@@ -3,7 +3,6 @@ import type { Pool, PoolClient } from 'pg'
 import { ENGAGEMENT } from '@/features/engagement/config/constants'
 import {
   getEngagementDatabaseConfiguration,
-  initializeEngagementDatabase,
   insertEngagementEvent,
   selectEngagementEventPage,
 } from '@/features/engagement/model/engagement-events'
@@ -39,35 +38,6 @@ describe('engagement-events', () => {
       url: 'postgresql://engagement-database/blog',
       ssl: false,
     })
-  })
-
-  it('이벤트 테이블과 조회 인덱스를 생성한다', async () => {
-    const queryMock = vi.fn().mockResolvedValue({ rows: [] })
-    const databaseClient = {
-      query: queryMock,
-    } as unknown as Pool | PoolClient
-
-    await initializeEngagementDatabase(databaseClient)
-
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('CREATE TABLE IF NOT EXISTS engagement_events'),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('engagement_events_visitor_created_at_index'),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining('ADD COLUMN IF NOT EXISTS content_slug TEXT'),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'engagement_events_content_slug_created_at_index',
-      ),
-    )
-    expect(queryMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'DROP CONSTRAINT IF EXISTS engagement_events_event_name_check',
-      ),
-    )
   })
 
   it('중복 이벤트 식별자를 무시하며 익명 해시를 저장한다', async () => {

@@ -27,10 +27,6 @@ const ENGAGEMENT_DATABASE = {
   DEFAULT_MAXIMUM_CONNECTIONS: 5,
 } as const
 
-const ALLOWED_EVENT_NAMES_SQL = Object.values(ENGAGEMENT.EVENT_NAME)
-  .map((eventName) => `'${eventName}'`)
-  .join(', ')
-
 export type EngagementDeviceCategory =
   | 'desktop'
   | 'mobile'
@@ -90,7 +86,6 @@ export interface EngagementDatabaseConfiguration {
 }
 
 let engagementDatabasePoolSingleton: Pool | null = null
-let engagementDatabaseInitializationPromise: Promise<void> | null = null
 
 function getNonEmptyEnvironmentValue(
   environmentValue: string | undefined,
@@ -228,69 +223,6 @@ export function getEngagementDatabasePool(): Pool {
   return engagementDatabasePoolSingleton
 }
 
-export async function initializeEngagementDatabase(
-  databaseClient: Pool | PoolClient,
-): Promise<void> {
-  await databaseClient.query(`
-    CREATE TABLE IF NOT EXISTS ${ENGAGEMENT_DATABASE.TABLE} (
-      event_id UUID PRIMARY KEY,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      event_name TEXT NOT NULL,
-      anonymous_visitor_id_hash TEXT NOT NULL,
-      session_id_hash TEXT NOT NULL,
-      locale TEXT NOT NULL,
-      page_path TEXT NOT NULL,
-      content_slug TEXT,
-      document_kind TEXT,
-      target_kind TEXT,
-      referrer_host TEXT,
-      utm_source TEXT,
-      utm_medium TEXT,
-      utm_campaign TEXT,
-      device_category TEXT NOT NULL
-    );
-
-    ALTER TABLE ${ENGAGEMENT_DATABASE.TABLE}
-    ADD COLUMN IF NOT EXISTS content_slug TEXT;
-
-    ALTER TABLE ${ENGAGEMENT_DATABASE.TABLE}
-    DROP CONSTRAINT IF EXISTS engagement_events_event_name_check;
-
-    ALTER TABLE ${ENGAGEMENT_DATABASE.TABLE}
-    ADD CONSTRAINT engagement_events_event_name_check
-    CHECK (event_name IN (${ALLOWED_EVENT_NAMES_SQL}));
-
-    CREATE INDEX IF NOT EXISTS engagement_events_name_created_at_index
-    ON ${ENGAGEMENT_DATABASE.TABLE}(event_name, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS engagement_events_created_at_index
-    ON ${ENGAGEMENT_DATABASE.TABLE}(created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS engagement_events_visitor_created_at_index
-    ON ${ENGAGEMENT_DATABASE.TABLE}(anonymous_visitor_id_hash, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS engagement_events_content_slug_created_at_index
-    ON ${ENGAGEMENT_DATABASE.TABLE}(content_slug, created_at DESC)
-    WHERE content_slug IS NOT NULL;
-  `)
-}
-
-export async function ensureEngagementDatabaseInitialized(
-  databaseClient: Pool,
-): Promise<void> {
-  if (!engagementDatabaseInitializationPromise) {
-    engagementDatabaseInitializationPromise =
-      initializeEngagementDatabase(databaseClient)
-  }
-
-  try {
-    await engagementDatabaseInitializationPromise
-  } catch (error) {
-    engagementDatabaseInitializationPromise = null
-    throw error
-  }
-}
-
 export async function insertEngagementEvent(params: {
   databaseClient: Pool | PoolClient
   event: StoredEngagementEvent
@@ -343,7 +275,6 @@ export async function recordEngagementEvent(
   event: StoredEngagementEvent,
 ): Promise<void> {
   const databasePool = getEngagementDatabasePool()
-  await ensureEngagementDatabaseInitialized(databasePool)
   await insertEngagementEvent({ databaseClient: databasePool, event })
 }
 
@@ -474,7 +405,6 @@ export async function getEngagementEventPage(params: {
   dateRange?: AnalyticsDateRange
 }): Promise<EngagementEventPage> {
   const databasePool = getEngagementDatabasePool()
-  await ensureEngagementDatabaseInitialized(databasePool)
 
   return selectEngagementEventPage({
     databaseClient: databasePool,

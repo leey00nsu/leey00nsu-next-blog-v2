@@ -30,6 +30,7 @@ const CHAT_RETRIEVAL_EVALUATION = {
 
 interface LiveSemanticObservation {
   retrievalAttempted: boolean
+  retrievalFailed: boolean
   matchUrls: string[]
   rerankAttempted: boolean
   rerankApplied: boolean
@@ -147,6 +148,7 @@ export async function evaluateChatRetrieval(params: {
 
     const liveSemanticObservation: LiveSemanticObservation = {
       retrievalAttempted: false,
+      retrievalFailed: false,
       matchUrls: [],
       rerankAttempted: false,
       rerankApplied: false,
@@ -170,25 +172,31 @@ export async function evaluateChatRetrieval(params: {
       retrieveSemanticMatches: liveSemanticEvaluationEnabled
         ? async ({ plan, locale, embedQuestion }) => {
             liveSemanticObservation.retrievalAttempted = true
-            const semanticResult = await runChatRagWorkflow({
-              indexVersion: params.indexVersion,
-              question: plan.standaloneQuestion,
-              locale,
-              retrievalPlan: plan,
-              embedQuestion,
-            })
+            try {
+              const semanticResult = await runChatRagWorkflow({
+                indexVersion: params.indexVersion,
+                question: plan.standaloneQuestion,
+                locale,
+                retrievalPlan: plan,
+                embedQuestion,
+              })
 
-            if (semanticResult.failureKind) {
-              throw new Error('Live Chat RAG semantic retrieval failed.')
+              if (semanticResult.failureKind) {
+                throw new Error('Live Chat RAG semantic retrieval failed.')
+              }
+
+              liveSemanticObservation.matchUrls = semanticResult.matches.map(
+                (match) => {
+                  return match.url
+                },
+              )
+
+              return semanticResult.matches
+            } catch (error) {
+              // 운영 검색기는 lexical로 대체할 수 있지만 배포 검사는 실행 오류를 숨기지 않는다.
+              liveSemanticObservation.retrievalFailed = true
+              throw error
             }
-
-            liveSemanticObservation.matchUrls = semanticResult.matches.map(
-              (match) => {
-                return match.url
-              },
-            )
-
-            return semanticResult.matches
           }
         : async () => [],
     })
@@ -253,9 +261,13 @@ export async function evaluateChatRetrieval(params: {
       )
     })
     .map((entry) => entry.result.id)
+  const semanticFailures = entries
+    .filter((entry) => entry.liveSemanticObservation.retrievalFailed)
+    .map((entry) => entry.result.id)
   const evaluationPassed =
     summary.passed &&
     liveSemanticEvaluationPassed &&
+    semanticFailures.length === 0 &&
     rerankFailures.length === 0 &&
     caseReferenceIssues.length === 0
 
@@ -268,6 +280,7 @@ export async function evaluateChatRetrieval(params: {
         skippedCaseIds,
         indexVersion: params.indexVersion ?? 'active',
         rerankFailures,
+        semanticFailures,
         results: entries,
         caseReferenceIssues: caseReferenceIssues.map((issue) => {
           return formatChatRetrievalCaseReferenceIssue(issue)

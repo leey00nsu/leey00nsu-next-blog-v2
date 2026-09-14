@@ -14,6 +14,12 @@ export interface ChatRetrievalCorpusEvaluationCase {
    * 기본 lexical 평가에서는 건너뛰고 live semantic 평가에서만 실행한다.
    */
   requiresLiveSemantic?: boolean
+  /**
+   * LLM 리랭커가 고르는 단계가 있어야만 기대 근거가 최종 근거에 든다.
+   * 결정적 평가는 재현성을 위해 리랭커를 끄므로, 이 케이스는 결정적 검사에서 건너뛰고
+   * live 평가에서 리랭커를 켠 상태로 검사한다.
+   */
+  requiresRerank?: boolean
 }
 
 function buildLookupPlan(params: {
@@ -204,6 +210,7 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
       }),
       expectedMatchUrls: ['/en/projects/leesfield#key-features'],
       requiresLiveSemantic: true,
+      requiresRerank: true,
     },
     {
       id: 'ko-unsupported-kubernetes-experience',

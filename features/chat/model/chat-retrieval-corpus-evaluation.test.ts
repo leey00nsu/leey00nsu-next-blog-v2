@@ -20,7 +20,10 @@ const MAXIMUM_FAILED_CASE_COUNT = 0
 
 const LEXICAL_EVALUATION_CASES = CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES.filter(
   (evaluationCase) => {
-    return !evaluationCase.requiresLiveSemantic
+    // lexical 경로로 도달할 수 없거나 리랭커가 있어야 하는 케이스는 결정적 검사에서 뺀다.
+    return (
+      !evaluationCase.requiresLiveSemantic && !evaluationCase.requiresRerank
+    )
   },
 )
 

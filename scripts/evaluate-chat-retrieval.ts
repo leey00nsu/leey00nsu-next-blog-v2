@@ -1,4 +1,5 @@
 import '@/shared/lib/load-node-environment'
+import { rerankChatEvidence } from '@/features/chat/api/rerank-chat-evidence'
 import { CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES } from '@/features/chat/fixtures/chat-retrieval-corpus-evaluation'
 import {
   evaluateChatRetrievalCase,
@@ -147,10 +148,13 @@ async function evaluateChatRetrieval(): Promise<void> {
       locale: evaluationCase.locale,
       blogRecords: corpusRecords.blogRecords,
       curatedRecords: corpusRecords.curatedRecords,
-      // 순위 지표는 재현 가능해야 하므로 외부 모델을 호출하는 rerank는 평가에서 제외한다.
-      rerankMatches: async ({ matches }) => {
-        return { matches, applied: false }
-      },
+      // 순위 지표는 재현 가능해야 하므로 기본은 rerank를 끈다. 리랭커가 있어야만 기대 근거가
+      // 최종 근거에 드는 케이스만 실제 리랭커로 검사한다.
+      rerankMatches: evaluationCase.requiresRerank
+        ? rerankChatEvidence
+        : async ({ matches }) => {
+            return { matches, applied: false }
+          },
       retrieveSemanticMatches: liveSemanticEvaluationEnabled
         ? async ({ plan, locale, embedQuestion }) => {
             liveSemanticObservation.retrievalAttempted = true

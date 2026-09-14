@@ -226,6 +226,16 @@ pnpm run gen:chat-rag-postgres
 
 The semantic candidate count (`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, default 8) and the similarity floor (`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, default 0.15) depend on corpus size and embedding model, so they are configurable through environment variables. Compare the live semantic metrics above before and after changing them instead of deciding from the lexical-only run.
 
+The retrieval regression check over the real generated corpus is part of the test suite, so `pnpm test` runs it every time. It verifies two things: that the evidence each evaluation case points at still exists in the current corpus (so a documentation change has not invalidated the case), and that lexical retrieval puts that evidence within the top three answer candidates. When it fails, the message says whether the case is outdated or retrieval actually regressed.
+
+To check the hybrid path including the active Postgres index and embedding endpoint, run the following where an active index exists. This mode also inspects whether semantic retrieval was actually attempted and whether it found the expected evidence.
+
+```bash
+BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
+```
+
+Cases that lexical retrieval cannot reach run only in the live semantic evaluation, and the default check reports their ids as skipped.
+
 ### Coolify / CI-CD Notes
 
 - Make sure the Coolify PostgreSQL service has the `pgvector` extension enabled.

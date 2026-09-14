@@ -240,19 +240,22 @@ pnpm run db:migrate:status           # 적용 상태 확인
 - 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 색인 레시피 버전(청크 경계 규칙 + 임베딩 입력 구성)을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
 - 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
 
-실제 생성 코퍼스의 lexical 검색 회귀 평가는 다음 명령으로 실행합니다. 평가 전에 생성 파일을 자동으로 갱신하며 Recall@1, Recall@3, MRR, 거절 정확도를 모두 통과 기준에 포함합니다.
+실제 생성 코퍼스를 대상으로 한 검색 회귀 검사는 테스트 스위트에 포함되어 있어 `pnpm test`가 매번 실행합니다. 이 검사는 두 가지를 확인합니다.
 
-```bash
-pnpm run eval:chat-retrieval
-```
+- 평가 케이스가 가리키는 기대 근거가 현재 코퍼스에 실제로 있는지(문서 개편으로 케이스가 낡지 않았는지)
+- lexical 검색이 각 케이스의 기대 근거를 답변 후보 상위 3건 안에 넣는지
 
-활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색을 평가하려면 다음처럼 실행합니다. 이 모드는 실제 semantic 검색 호출 여부와 기대 근거를 찾은 semantic match 비율도 검사하므로, lexical 결과만으로는 통과하지 않습니다.
+실패하면 기대 근거가 코퍼스에 없는 "케이스 무효"인지, 근거는 있는데 순위가 밀린 "검색 회귀"인지 함께 알려줍니다.
+
+활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색은 활성 인덱스가 있는 환경에서 다음 명령으로 점검합니다. 이 모드는 실제 semantic 검색 호출 여부와 기대 근거를 찾은 semantic match 비율도 검사합니다.
 
 ```bash
 BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
 ```
 
 semantic 후보 수(`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, 기본 8)와 유사도 하한(`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, 기본 0.15)은 코퍼스 규모와 임베딩 모델에 따라 달라지므로 환경변수로 조정합니다. 값을 바꿀 때는 위 live semantic 평가로 조정 전후 지표를 비교하고, lexical 전용 평가만으로 결정하지 않습니다.
+
+lexical 검색만으로 도달할 수 없는 케이스는 live semantic 평가에서만 실행되며, 기본 검사에서는 skip된 케이스 id를 함께 보고합니다.
 
 ### Coolify / CI-CD 운영 메모
 

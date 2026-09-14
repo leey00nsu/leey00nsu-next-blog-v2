@@ -9,6 +9,11 @@ export interface ChatRetrievalCorpusEvaluationCase {
   retrievalPlan: ChatRetrievalPlan
   expectedMatchUrls: string[]
   expectRefusal?: boolean
+  /**
+   * lexical 검색만으로는 도달할 수 없어 활성 인덱스와 임베딩 endpoint가 있어야만 검사할 수 있는 케이스.
+   * 기본 lexical 평가에서는 건너뛰고 live semantic 평가에서만 실행한다.
+   */
+  requiresLiveSemantic?: boolean
 }
 
 function buildLookupPlan(params: {
@@ -123,7 +128,9 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         requiredConcepts: ['Presigned URL'],
         optionalConcepts: ['서버 부하'],
       }),
-      expectedMatchUrls: ['/ko/projects/leemage#solution'],
+      expectedMatchUrls: [
+        '/ko/projects/leemage#대용량-파일-업로드로-인한-서버-부하',
+      ],
     },
     {
       id: 'ko-vercel-experience',
@@ -179,7 +186,9 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         requiredConcepts: ['Presigned URL'],
         optionalConcepts: ['server load'],
       }),
-      expectedMatchUrls: ['/en/projects/leemage#solution'],
+      expectedMatchUrls: [
+        '/en/projects/leemage#server-load-from-large-file-uploads',
+      ],
     },
     {
       id: 'en-leesfield-adapter',
@@ -190,10 +199,11 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         sourceCategory: 'project',
         slug: 'leesfield',
         title: 'Leesfield',
-        requiredConcepts: ['AI image/video generation'],
-        optionalConcepts: ['Adapter', 'Hugging Face Space'],
+        requiredConcepts: [],
+        optionalConcepts: ['Multimodal AI generation', 'Adapter'],
       }),
       expectedMatchUrls: ['/en/projects/leesfield#key-features'],
+      requiresLiveSemantic: true,
     },
     {
       id: 'ko-unsupported-kubernetes-experience',

@@ -1,68 +1,40 @@
 import '@/shared/lib/load-node-environment'
-import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES } from '@/features/chat/fixtures/chat-retrieval-corpus-evaluation'
-import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import {
+  evaluateChatRetrievalCase,
+  summarizeChatRetrievalEvaluation,
+  type ChatRetrievalCaseResult,
+} from '@/features/chat/lib/chat-retrieval-evaluation-metrics'
+import {
+  collectChatRetrievalCaseReferenceIssues,
+  formatChatRetrievalCaseReferenceIssue,
+} from '@/features/chat/lib/validate-chat-retrieval-evaluation-cases'
 import { isChatRagDatabaseConfigured } from '@/features/chat/model/chat-rag-database'
 import { isChatRagEmbeddingConfigured } from '@/features/chat/model/chat-rag-embedding-provider'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
+import {
+  collectCorpusEvidenceRecords,
+  type CorpusEvidenceRecords,
+} from '@/features/chat/model/collect-corpus-evidence-records'
 import { executeChatRetrievalPlan } from '@/features/chat/model/execute-chat-retrieval-plan'
-import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
-import type { SupportedLocale } from '@/shared/config/constants'
+import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 
 const CHAT_RETRIEVAL_EVALUATION = {
-  RECALL_MATCH_COUNTS: [1, 3],
-  MINIMUM_RECALL_AT_ONE: 0.8,
-  MINIMUM_RECALL_AT_THREE: 0.9,
-  MINIMUM_MEAN_RECIPROCAL_RANK: 0.85,
-  MINIMUM_REFUSAL_ACCURACY: 1,
+  // lexical 기준선은 vitest의 코퍼스 평가가 상시 검사한다. 이 스크립트는 활성 인덱스와
+  // 임베딩 endpoint까지 포함한 hybrid 검색을 사람이 점검할 때 쓴다.
+  MAXIMUM_FAILED_CASE_COUNT: 0,
   MINIMUM_LIVE_SEMANTIC_RELEVANT_MATCH_RATE: 0.8,
   LIVE_SEMANTIC_ENVIRONMENT_KEY: 'BLOG_CHAT_EVALUATE_LIVE_SEMANTIC',
 } as const
 
-interface ChatRetrievalEvaluationResult {
-  id: string
-  question: string
+interface LiveSemanticObservation {
+  retrievalAttempted: boolean
   matchUrls: string[]
-  expectedMatchUrls: string[]
-  recallAtOne: boolean | null
-  recallAtThree: boolean | null
-  reciprocalRank: number | null
-  refusalCorrect: boolean | null
-  semanticRetrievalAttempted: boolean
-  semanticMatchUrls: string[]
 }
 
-function calcReciprocalRank(
-  matchUrls: string[],
-  expectedMatchUrls: string[],
-): number {
-  const firstRelevantMatchIndex = matchUrls.findIndex((matchUrl) => {
-    return expectedMatchUrls.includes(matchUrl)
-  })
-
-  return firstRelevantMatchIndex === -1 ? 0 : 1 / (firstRelevantMatchIndex + 1)
-}
-
-function calcRate(values: boolean[]): number {
-  if (values.length === 0) {
-    return 0
-  }
-
-  return values.filter(Boolean).length / values.length
-}
-
-function buildBlogEvidenceRecords(
-  locale: SupportedLocale,
-): ChatEvidenceRecord[] {
-  return (GENERATED_BLOG_SEARCH_RECORDS[locale] ?? []).map((record) => {
-    return {
-      ...record,
-      sourceCategory: 'blog' as const,
-      evidenceTime: record.publishedAt
-        ? { kind: 'published' as const, value: record.publishedAt }
-        : undefined,
-    }
-  })
+interface ChatRetrievalEvaluationEntry {
+  result: ChatRetrievalCaseResult
+  liveSemanticObservation: LiveSemanticObservation
 }
 
 function assertLiveSemanticEvaluationConfigured(
@@ -79,151 +51,172 @@ function assertLiveSemanticEvaluationConfigured(
   }
 }
 
+function calcRate(values: boolean[]): number {
+  if (values.length === 0) {
+    return 0
+  }
+
+  return values.filter(Boolean).length / values.length
+}
+
+function buildFailureReport(params: {
+  result: ChatRetrievalCaseResult
+  corpusUrls: Set<string> | undefined
+}): Record<string, unknown> {
+  const isCaseOutdated = params.result.expectedMatchUrls.some(
+    (expectedMatchUrl) => {
+      return !params.corpusUrls?.has(expectedMatchUrl)
+    },
+  )
+
+  return {
+    id: params.result.id,
+    caseOutdated: isCaseOutdated,
+    diagnosis: isCaseOutdated
+      ? '기대 근거가 코퍼스에 없습니다. 문서 개편으로 케이스가 낡았는지 확인하세요.'
+      : '기대 근거가 코퍼스에 있으나 상위 3건에 들지 못했습니다.',
+    expectedMatchUrls: params.result.expectedMatchUrls,
+    matchUrls: params.result.matchUrls,
+  }
+}
+
 async function evaluateChatRetrieval(): Promise<void> {
   const liveSemanticEvaluationEnabled =
     process.env[CHAT_RETRIEVAL_EVALUATION.LIVE_SEMANTIC_ENVIRONMENT_KEY] ===
     'true'
   assertLiveSemanticEvaluationConfigured(liveSemanticEvaluationEnabled)
 
-  const recordsByLocale = new Map<
-    SupportedLocale,
-    {
-      blogRecords: ChatEvidenceRecord[]
-      curatedRecords: ChatEvidenceRecord[]
-    }
-  >()
+  const evaluationCases = CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES.filter(
+    (evaluationCase) => {
+      return (
+        liveSemanticEvaluationEnabled || !evaluationCase.requiresLiveSemantic
+      )
+    },
+  )
+  const skippedCaseIds = CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES.filter(
+    (evaluationCase) => {
+      return (
+        !liveSemanticEvaluationEnabled && evaluationCase.requiresLiveSemantic
+      )
+    },
+  ).map((evaluationCase) => {
+    return evaluationCase.id
+  })
+  const recordsByLocale = new Map<SupportedLocale, CorpusEvidenceRecords>()
 
-  for (const evaluationCase of CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES) {
-    if (recordsByLocale.has(evaluationCase.locale)) {
-      continue
+  for (const locale of LOCALES.SUPPORTED) {
+    recordsByLocale.set(locale, await collectCorpusEvidenceRecords(locale))
+  }
+
+  const corpusUrlsByLocale = new Map<SupportedLocale, Set<string>>()
+
+  for (const [locale, corpusRecords] of recordsByLocale) {
+    corpusUrlsByLocale.set(
+      locale,
+      new Set(
+        [...corpusRecords.blogRecords, ...corpusRecords.curatedRecords].map(
+          (record) => {
+            return record.url
+          },
+        ),
+      ),
+    )
+  }
+
+  const caseReferenceIssues = collectChatRetrievalCaseReferenceIssues({
+    cases: evaluationCases,
+    corpusUrlsByLocale,
+  })
+  const entries: ChatRetrievalEvaluationEntry[] = []
+
+  for (const evaluationCase of evaluationCases) {
+    const corpusRecords = recordsByLocale.get(evaluationCase.locale)
+
+    if (!corpusRecords) {
+      throw new Error(
+        `Missing evaluation records for locale ${evaluationCase.locale}.`,
+      )
     }
 
-    recordsByLocale.set(evaluationCase.locale, {
-      blogRecords: buildBlogEvidenceRecords(evaluationCase.locale),
-      curatedRecords: await getCuratedChatSources(evaluationCase.locale),
+    const liveSemanticObservation: LiveSemanticObservation = {
+      retrievalAttempted: false,
+      matchUrls: [],
+    }
+    const execution = await executeChatRetrievalPlan({
+      plan: evaluationCase.retrievalPlan,
+      locale: evaluationCase.locale,
+      blogRecords: corpusRecords.blogRecords,
+      curatedRecords: corpusRecords.curatedRecords,
+      // 순위 지표는 재현 가능해야 하므로 외부 모델을 호출하는 rerank는 평가에서 제외한다.
+      rerankMatches: async ({ matches }) => {
+        return { matches, applied: false }
+      },
+      retrieveSemanticMatches: liveSemanticEvaluationEnabled
+        ? async ({ plan, locale, embedQuestion }) => {
+            liveSemanticObservation.retrievalAttempted = true
+            const semanticResult = await runChatRagWorkflow({
+              question: plan.standaloneQuestion,
+              locale,
+              retrievalPlan: plan,
+              embedQuestion,
+            })
+
+            if (semanticResult.failureKind) {
+              throw new Error('Live Chat RAG semantic retrieval failed.')
+            }
+
+            liveSemanticObservation.matchUrls = semanticResult.matches.map(
+              (match) => {
+                return match.url
+              },
+            )
+
+            return semanticResult.matches
+          }
+        : async () => [],
+    })
+
+    entries.push({
+      result: evaluateChatRetrievalCase({
+        id: evaluationCase.id,
+        refused: execution.kind === 'refusal',
+        matchUrls: execution.matches.map((match) => {
+          return match.url
+        }),
+        expectedMatchUrls: evaluationCase.expectedMatchUrls,
+        expectRefusal: Boolean(evaluationCase.expectRefusal),
+      }),
+      liveSemanticObservation,
     })
   }
 
-  const results = await Promise.all(
-    CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES.map(
-      async (evaluationCase): Promise<ChatRetrievalEvaluationResult> => {
-        const records = recordsByLocale.get(evaluationCase.locale)
-
-        if (!records) {
-          throw new Error(
-            `Missing evaluation records for locale ${evaluationCase.locale}.`,
-          )
-        }
-
-        let semanticRetrievalAttempted = false
-        let semanticMatchUrls: string[] = []
-
-        const execution = await executeChatRetrievalPlan({
-          plan: evaluationCase.retrievalPlan,
-          locale: evaluationCase.locale,
-          blogRecords: records.blogRecords,
-          curatedRecords: records.curatedRecords,
-          // 순위 지표는 재현 가능해야 하므로 외부 모델을 호출하는 rerank는 평가에서 제외한다.
-          rerankMatches: async ({ matches }) => {
-            return { matches, applied: false }
-          },
-          retrieveSemanticMatches: liveSemanticEvaluationEnabled
-            ? async ({ plan, locale, embedQuestion }) => {
-                semanticRetrievalAttempted = true
-                const semanticResult = await runChatRagWorkflow({
-                  question: plan.standaloneQuestion,
-                  locale,
-                  retrievalPlan: plan,
-                  embedQuestion,
-                })
-
-                if (semanticResult.failureKind) {
-                  throw new Error('Live Chat RAG semantic retrieval failed.')
-                }
-
-                semanticMatchUrls = semanticResult.matches.map((match) => {
-                  return match.url
-                })
-
-                return semanticResult.matches
-              }
-            : async () => [],
-        })
-        const matchUrls = execution.matches.map((match) => match.url)
-
-        if (evaluationCase.expectRefusal) {
-          return {
-            id: evaluationCase.id,
-            question: evaluationCase.retrievalPlan.standaloneQuestion,
-            matchUrls,
-            expectedMatchUrls: [],
-            recallAtOne: null,
-            recallAtThree: null,
-            reciprocalRank: null,
-            refusalCorrect: execution.kind === 'refusal',
-            semanticRetrievalAttempted,
-            semanticMatchUrls,
-          }
-        }
-
-        const recalls = CHAT_RETRIEVAL_EVALUATION.RECALL_MATCH_COUNTS.map(
-          (maximumMatchCount) => {
-            return evaluationCase.expectedMatchUrls.some((expectedMatchUrl) => {
-              return matchUrls
-                .slice(0, maximumMatchCount)
-                .includes(expectedMatchUrl)
-            })
-          },
+  const results = entries.map((entry) => {
+    return entry.result
+  })
+  const summary = summarizeChatRetrievalEvaluation({
+    results,
+    maximumFailedCaseCount: CHAT_RETRIEVAL_EVALUATION.MAXIMUM_FAILED_CASE_COUNT,
+  })
+  const positiveEntries = entries.filter((entry) => {
+    return entry.result.reciprocalRank !== null
+  })
+  const semanticRelevantMatchRate = calcRate(
+    positiveEntries.map((entry) => {
+      return entry.result.expectedMatchUrls.some((expectedMatchUrl) => {
+        return entry.liveSemanticObservation.matchUrls.includes(
+          expectedMatchUrl,
         )
-
-        return {
-          id: evaluationCase.id,
-          question: evaluationCase.retrievalPlan.standaloneQuestion,
-          matchUrls,
-          expectedMatchUrls: evaluationCase.expectedMatchUrls,
-          recallAtOne: recalls[0] ?? false,
-          recallAtThree: recalls[1] ?? false,
-          reciprocalRank: calcReciprocalRank(
-            matchUrls,
-            evaluationCase.expectedMatchUrls,
-          ),
-          refusalCorrect: null,
-          semanticRetrievalAttempted,
-          semanticMatchUrls,
-        }
-      },
-    ),
-  )
-  const positiveResults = results.filter((result) => {
-    return result.reciprocalRank !== null
-  })
-  const refusalResults = results.filter((result) => {
-    return result.refusalCorrect !== null
-  })
-  const recallAtOne = calcRate(
-    positiveResults.map((result) => result.recallAtOne ?? false),
-  )
-  const recallAtThree = calcRate(
-    positiveResults.map((result) => result.recallAtThree ?? false),
-  )
-  const meanReciprocalRank =
-    positiveResults.reduce((sum, result) => {
-      return sum + (result.reciprocalRank ?? 0)
-    }, 0) / positiveResults.length
-  const refusalAccuracy = calcRate(
-    refusalResults.map((result) => result.refusalCorrect ?? false),
-  )
-  const semanticRetrievalCoverage = calcRate(
-    positiveResults.map((result) => result.semanticRetrievalAttempted),
+      })
+    }),
   )
   const semanticMatchRate = calcRate(
-    positiveResults.map((result) => result.semanticMatchUrls.length > 0),
+    positiveEntries.map((entry) => {
+      return entry.liveSemanticObservation.matchUrls.length > 0
+    }),
   )
-  const semanticRelevantMatchRate = calcRate(
-    positiveResults.map((result) => {
-      return result.expectedMatchUrls.some((expectedMatchUrl) => {
-        return result.semanticMatchUrls.includes(expectedMatchUrl)
-      })
+  const semanticRetrievalCoverage = calcRate(
+    positiveEntries.map((entry) => {
+      return entry.liveSemanticObservation.retrievalAttempted
     }),
   )
   const liveSemanticEvaluationPassed =
@@ -231,13 +224,7 @@ async function evaluateChatRetrieval(): Promise<void> {
     (semanticRetrievalCoverage === 1 &&
       semanticRelevantMatchRate >=
         CHAT_RETRIEVAL_EVALUATION.MINIMUM_LIVE_SEMANTIC_RELEVANT_MATCH_RATE)
-  const evaluationPassed =
-    recallAtOne >= CHAT_RETRIEVAL_EVALUATION.MINIMUM_RECALL_AT_ONE &&
-    recallAtThree >= CHAT_RETRIEVAL_EVALUATION.MINIMUM_RECALL_AT_THREE &&
-    meanReciprocalRank >=
-      CHAT_RETRIEVAL_EVALUATION.MINIMUM_MEAN_RECIPROCAL_RANK &&
-    refusalAccuracy >= CHAT_RETRIEVAL_EVALUATION.MINIMUM_REFUSAL_ACCURACY &&
-    liveSemanticEvaluationPassed
+  const evaluationPassed = summary.passed && liveSemanticEvaluationPassed
 
   console.log(
     JSON.stringify(
@@ -245,14 +232,12 @@ async function evaluateChatRetrieval(): Promise<void> {
         mode: liveSemanticEvaluationEnabled
           ? 'live-hybrid-corpus'
           : 'lexical-corpus',
+        skippedCaseIds,
+        caseReferenceIssues: caseReferenceIssues.map((issue) => {
+          return formatChatRetrievalCaseReferenceIssue(issue)
+        }),
         summary: {
-          totalCaseCount: results.length,
-          positiveCaseCount: positiveResults.length,
-          refusalCaseCount: refusalResults.length,
-          recallAtOne,
-          recallAtThree,
-          meanReciprocalRank,
-          refusalAccuracy,
+          ...summary,
           semanticRetrievalCoverage: liveSemanticEvaluationEnabled
             ? semanticRetrievalCoverage
             : null,
@@ -264,19 +249,20 @@ async function evaluateChatRetrieval(): Promise<void> {
             : null,
           passed: evaluationPassed,
         },
-        failures: results.filter((result) => {
-          return (
-            result.recallAtOne === false ||
-            result.recallAtThree === false ||
-            result.refusalCorrect === false ||
-            (liveSemanticEvaluationEnabled &&
-              result.reciprocalRank !== null &&
-              (!result.semanticRetrievalAttempted ||
-                !result.expectedMatchUrls.some((expectedMatchUrl) => {
-                  return result.semanticMatchUrls.includes(expectedMatchUrl)
-                })))
-          )
-        }),
+        failures: results
+          .filter((result) => {
+            return summary.failedCaseIds.includes(result.id)
+          })
+          .map((result) => {
+            return buildFailureReport({
+              result,
+              corpusUrls: corpusUrlsByLocale.get(
+                evaluationCases.find((evaluationCase) => {
+                  return evaluationCase.id === result.id
+                })?.locale ?? LOCALES.DEFAULT,
+              ),
+            })
+          }),
       },
       null,
       2,

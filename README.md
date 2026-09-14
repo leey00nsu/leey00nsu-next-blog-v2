@@ -232,9 +232,11 @@ pnpm run db:migrate:status           # 적용 상태 확인
 - 원본 MDX와 이미지만 커밋하면 개발·테스트·빌드 시작 전에 필요한 데이터가 자동으로 갱신됩니다.
 - 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
 - 긴 섹션은 문장 경계를 우선한 겹침 하위 청크로 나누므로 섹션 뒷부분의 근거도 인덱스에 남습니다.
+- 임베딩 입력은 모델이 실제로 읽는 앞부분에 제목, 섹션 제목, 청크 전체를 요약한 용어 목록을 두고 남은 예산을 본문으로 채웁니다. 본문 앞부분의 사본인 excerpt는 넣지 않아 토큰 예산을 중복 사용하지 않습니다.
+- 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 이 값을 바꾸면 임베딩이 달라지므로 반드시 재색인해야 합니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
-- 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 청킹 버전을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
+- 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 색인 레시피 버전(청크 경계 규칙 + 임베딩 입력 구성)을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
 - 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
 
 실제 생성 코퍼스의 lexical 검색 회귀 평가는 다음 명령으로 실행합니다. 평가 전에 생성 파일을 자동으로 갱신하며 Recall@1, Recall@3, MRR, 거절 정확도를 모두 통과 기준에 포함합니다.

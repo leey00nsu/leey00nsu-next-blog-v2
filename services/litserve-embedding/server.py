@@ -4,8 +4,9 @@ import litserve as ls
 from litserve.specs import OpenAIEmbeddingSpec
 
 from app.config import (
-    get_embedding_model_id,
     get_embedding_max_batch_size,
+    get_embedding_maximum_sequence_length,
+    get_embedding_model_id,
     get_embedding_port,
 )
 
@@ -20,6 +21,8 @@ class TextEmbeddingAPI(ls.LitAPI):
             self.model_id,
             device=resolved_device,
         )
+        # 모델 기본값(128 토큰)은 청크 본문을 대부분 버린다. 문서 임베딩은 청크를 더 읽도록 늘린다.
+        self.embedding_model.max_seq_length = get_embedding_maximum_sequence_length()
 
     def predict(self, inputs: str | list[str]) -> list[list[float]] | list[float]:
         embeddings = self.embedding_model.encode(

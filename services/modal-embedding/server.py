@@ -6,6 +6,7 @@ from app.config import (
     get_modal_embedding_application_name,
     get_modal_embedding_cache_path,
     get_modal_embedding_cpu_count,
+    get_modal_embedding_maximum_sequence_length,
     get_modal_embedding_model_id,
 )
 from app.request import (
@@ -22,6 +23,7 @@ MODAL_CACHE_VOLUME = modal.Volume.from_name(
     "blog-modal-embedding-cache",
     create_if_missing=True,
 )
+MODAL_MAXIMUM_SEQUENCE_LENGTH = get_modal_embedding_maximum_sequence_length()
 MODAL_IMAGE = modal.Image.debian_slim(python_version="3.13").pip_install(
     "fastapi==0.116.1",
     "pydantic==2.11.7",
@@ -52,6 +54,8 @@ class TextEmbeddingModel:
             self.model_id,
             cache_folder=MODAL_CACHE_PATH,
         )
+        # 모델 기본값(128 토큰)은 청크 본문을 대부분 버린다. 문서 임베딩은 청크를 더 읽도록 늘린다.
+        self.model.max_seq_length = MODAL_MAXIMUM_SEQUENCE_LENGTH
 
     @modal.method()
     def embed_texts(self, texts: list[str]) -> list[list[float]]:

@@ -1,6 +1,7 @@
 import '@/shared/lib/load-node-environment'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
+import { buildChatRagEmbeddingText } from '@/features/chat/lib/build-chat-rag-embedding-text'
 import {
   buildGraphRagChunks,
   buildGraphRagEntities,
@@ -47,19 +48,6 @@ function buildBlogEvidenceRecords(
   })
 }
 
-function buildChunkEmbeddingText(record: ChatEvidenceRecord): string {
-  return [
-    record.title,
-    record.sectionTitle ?? '',
-    record.excerpt,
-    record.content,
-    record.tags.join(' '),
-    (record.searchTerms ?? []).join(' '),
-  ]
-    .filter(Boolean)
-    .join('\n')
-}
-
 async function embedChunkRecords(
   records: ChatEvidenceRecord[],
   expectedEmbeddingDimension?: number,
@@ -77,7 +65,15 @@ async function embedChunkRecords(
       startIndex + CHAT_RAG.EMBEDDING.MAXIMUM_BATCH_SIZE,
     )
     const embeddings = await embedChatRagTexts(
-      currentRecords.map((record) => buildChunkEmbeddingText(record)),
+      currentRecords.map((record) => {
+        return buildChatRagEmbeddingText({
+          title: record.title,
+          sectionTitle: record.sectionTitle,
+          content: record.content,
+          tags: record.tags,
+          searchTerms: record.searchTerms ?? [],
+        })
+      }),
     )
     embeddingDimension = validateChatRagEmbeddingBatch({
       embeddings,

@@ -19,7 +19,9 @@ const CHAT_RAG_DEFAULTS = {
   CURRENT_POST_MATCH_BOOST: 2,
   MAXIMUM_RELATION_HOPS: 12,
   MINIMUM_EMBEDDING_TOKEN_LENGTH: 1,
-  CHUNKING_VERSION: 'heading-window-v2',
+  // 색인 레시피 버전. 청크 경계 규칙이나 임베딩 입력 구성이 바뀌면 반드시 올린다.
+  // 활성 인덱스와 값이 다르면 semantic 검색을 사용하지 않고 재색인을 요구한다.
+  CHUNKING_VERSION: 'heading-window-v3-embedding-input',
 } as const
 
 const DETERMINISTIC_QUERY_PATTERNS = [

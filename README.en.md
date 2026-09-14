@@ -215,8 +215,12 @@ pnpm run gen:chat-rag-postgres
 - Generated `*.generated.ts` files are build artifacts and are not tracked by Git.
 - Commit only the source MDX and images; the required data is refreshed automatically before development, testing, and builds.
 - Instead of crawling `.next` HTML output, this project generates **lexical search records and Postgres RAG input data directly from source MDX**.
+- Long sections are split into overlapping sub-chunks on sentence boundaries, so evidence near the end of a section stays in the index.
+- The embedding input keeps the title, the section title, and a term list summarizing the whole chunk inside the part of the text the model actually reads, then fills the remainder with content. The excerpt, which is a copy of the content prefix, is omitted so the token budget is not spent twice.
+- The embedding service raises the model default token limit (128) to `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default). Changing that value changes the embeddings, so the index must be rebuilt.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
 - `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
+- Each new index records the embedding provider, model ID, vector dimension, and index recipe version (chunk boundary rules plus embedding input composition). If any of them differs from the current configuration, the index is not used for semantic retrieval.
 - If the embedding provider or Postgres connection is not configured, Postgres RAG indexing is skipped and lexical retrieval still works.
 
 ### Coolify / CI-CD Notes

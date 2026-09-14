@@ -5,6 +5,7 @@ MODAL_EMBEDDING_DEFAULTS = {
     "MODEL_ID": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "CPU_COUNT": 2,
     "CACHE_PATH": "/models",
+    "MAXIMUM_SEQUENCE_LENGTH": 256,
 } | {}
 
 
@@ -27,6 +28,15 @@ def get_modal_embedding_cpu_count() -> int:
         os.getenv(
             "MODAL_EMBEDDING_CPU_COUNT",
             str(MODAL_EMBEDDING_DEFAULTS["CPU_COUNT"]),
+        )
+    )
+
+
+def get_modal_embedding_maximum_sequence_length() -> int:
+    return int(
+        os.getenv(
+            "MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH",
+            str(MODAL_EMBEDDING_DEFAULTS["MAXIMUM_SEQUENCE_LENGTH"]),
         )
     )
 

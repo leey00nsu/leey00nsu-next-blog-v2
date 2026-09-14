@@ -21,7 +21,9 @@ import {
 import type { SupportedLocale } from '@/shared/config/constants'
 
 const CHAT_INTENT_PLANNER = {
-  MAXIMUM_ATTEMPT_COUNT: 2,
+  // 한 번의 구조화 출력 실패가 곧바로 사용자 오류로 이어지지 않도록 재계획 여유를 둔다.
+  MAXIMUM_ATTEMPT_COUNT: 3,
+  INVALID_PLAN_LOG_MESSAGE: 'Chat planner produced an invalid intent plan.',
   SYSTEM: `You are an intent planner for a grounded, stateful blog chatbot.
 
 Return only a structured intent plan. Do not answer the question.
@@ -307,6 +309,13 @@ export async function planChatIntent(
         failureKind = 'planner_unavailable'
       }
     }
+  }
+
+  if (hasInvalidIntentPlan && validationFailure) {
+    console.error(CHAT_INTENT_PLANNER.INVALID_PLAN_LOG_MESSAGE, {
+      failureKind,
+      validationFailure,
+    })
   }
 
   return { ok: false, refusalReason: 'model_error', failureKind }

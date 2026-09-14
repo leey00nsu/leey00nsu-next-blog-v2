@@ -76,12 +76,15 @@ describe('planChatIntent', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    // 실패 경로의 진단 로그는 의도된 출력이므로 테스트 로그에서는 감춘다.
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     generateTextMock.mockReset()
     process.env.OPENAI_API_KEY = 'test-key'
     process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL = 'test-router-model'
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     delete process.env.OPENAI_API_KEY
     delete process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL
   })
@@ -147,6 +150,24 @@ describe('planChatIntent', () => {
     expect(generateTextMock.mock.calls[1]?.[0].prompt).toContain(
       'previousValidationFailure=',
     )
+  })
+
+  it('구조화 출력이 연속으로 어긋나도 재계획 예산 안에서 계획을 세운다', async () => {
+    generateTextMock
+      .mockResolvedValueOnce({ output: { operation: 'answer' } })
+      .mockResolvedValueOnce({ output: { operation: 'answer', confidence: 'max' } })
+      .mockResolvedValueOnce({ output: LEEMAGE_PLAN })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
+
+    const result = await planChatIntent({
+      question: LEEMAGE_PLAN.standaloneQuestion,
+      locale: 'ko',
+      conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+      entityCandidates: [LEEMAGE_CANDIDATE],
+    })
+
+    expect(result).toEqual({ ok: true, queryPlan: LEEMAGE_PLAN })
+    expect(generateTextMock).toHaveBeenCalledTimes(3)
   })
 
   it('두 번의 schema 오류를 invalid_intent_plan으로 반환한다', async () => {

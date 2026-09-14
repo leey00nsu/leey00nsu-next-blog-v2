@@ -22,6 +22,53 @@ function buildEvidenceRecord(
 }
 
 describe('buildChatEvidenceContext', () => {
+  it.each(['```', '~~~~'])(
+    '배정 예산보다 큰 %s 코드에서도 관련 원문 행과 생략 안내를 보존한다',
+    (fence) => {
+      const target = 'const prismThreshold = 42;'
+      const codeLines = [
+        ...Array.from(
+          { length: 24 },
+          (_, index) => `const reading${index} = ${index};`,
+        ),
+        '// Calibration for the violet sensor',
+        target,
+        'return prismThreshold;',
+        ...Array.from(
+          { length: 24 },
+          (_, index) => `const sample${index} = ${index};`,
+        ),
+      ]
+      const context = buildChatEvidenceContext({
+        question: 'prismThreshold 값은?',
+        matches: [
+          buildEvidenceRecord(
+            'prism',
+            `짧은 장치 소개입니다.\n\n${fence}js\n${codeLines.join('\n')}\n${fence}`,
+          ),
+          ...Array.from({ length: 5 }, (_, index) =>
+            buildEvidenceRecord(`other-${index}`, '별도 관측 근거입니다.'),
+          ),
+        ],
+        maximumRecordCount: 6,
+        maximumCharacters: 4800,
+      })
+
+      expect(context).toContain(target)
+      expect(context).toContain('[원문 코드 일부: 주변 구간 생략]')
+      expect(context).toContain('…')
+      expect(context.length).toBeLessThanOrEqual(4800)
+      const excerpt = context.split(`${fence}js\n`)[1].split(`\n${fence}`)[0]
+      expect(codeLines.join('\n')).toContain(excerpt)
+      expect(excerpt).toContain(
+        '// Calibration for the violet sensor\n' + target,
+      )
+      for (let index = 0; index < 5; index += 1) {
+        expect(context).toContain(`evidence_id=ko/blog/other-${index}`)
+      }
+    },
+  )
+
   it.each([0, 1, 20, 180, 400, 900])(
     '메타데이터보다 작은 예산을 포함해 %i자 한도를 넘지 않는다',
     (maximumCharacters) => {

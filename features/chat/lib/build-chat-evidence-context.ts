@@ -16,6 +16,8 @@ const CHAT_EVIDENCE_CONTEXT = {
   OMITTED_CONTENT_SEPARATOR: '\n\n…\n\n',
   TRUNCATION_MARKER: '…',
   OMITTED_TABLE_ROW_MARKER: '| … |',
+  CODE_FENCE_PATTERN: /^\s{0,3}(`{3,}|~{3,})/u,
+  CODE_EXCERPT_LABEL: '[원문 코드 일부: 주변 구간 생략]',
   CONTENT_SEGMENT_PATTERN: /(?<=[.!?。！？])\s+/gu,
   TABLE_ROW_START_PATTERN: /^\s*\|/u,
   TABLE_SEPARATOR_PATTERN: /^\s*\|[\s:|-]+\|\s*$/u,
@@ -136,6 +138,68 @@ function countTokenOccurrences(text: string, token: string): number {
   return occurrenceCount
 }
 
+function selectRelevantCodeExcerpt(params: {
+  block: string
+  queryTokens: string[]
+  maximumCharacters: number
+}): string {
+  const lines = params.block.split('\n')
+  const fence = lines[0].match(CHAT_EVIDENCE_CONTEXT.CODE_FENCE_PATTERN)?.[1]
+  if (!fence || !lines.at(-1)?.trim().startsWith(fence)) return params.block
+
+  const bodyLines = lines.slice(1, -1)
+  const rankedLines = bodyLines
+    .map((line, index) => ({
+      index,
+      score: params.queryTokens.filter((token) =>
+        line.toLowerCase().includes(token),
+      ).length,
+    }))
+    .filter((line) => line.score > 0)
+    .toSorted(
+      (left, right) => right.score - left.score || left.index - right.index,
+    )
+  function formatCodeExcerpt(start: number, end: number): string {
+    return [
+      CHAT_EVIDENCE_CONTEXT.CODE_EXCERPT_LABEL,
+      ...(start > 0 ? [CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER] : []),
+      lines[0],
+      ...bodyLines.slice(start, end),
+      lines.at(-1),
+      ...(end < bodyLines.length
+        ? [CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER]
+        : []),
+    ].join('\n')
+  }
+  const anchor = rankedLines.find((line) => {
+    return (
+      formatCodeExcerpt(line.index, line.index + 1).length <=
+      params.maximumCharacters
+    )
+  })
+  if (!anchor) return params.block
+
+  let start = anchor.index
+  let end = start + 1
+  // 원문 행과 인접 문맥만 보존하고, 생략 안내는 코드 펜스 밖에 둔다.
+  while (start > 0 || end < bodyLines.length) {
+    if (
+      start > 0 &&
+      formatCodeExcerpt(start - 1, end).length <= params.maximumCharacters
+    ) {
+      start -= 1
+    } else if (
+      end < bodyLines.length &&
+      formatCodeExcerpt(start, end + 1).length <= params.maximumCharacters
+    ) {
+      end += 1
+    } else {
+      break
+    }
+  }
+  return formatCodeExcerpt(start, end)
+}
+
 function selectRelevantEvidenceContent(params: {
   match: ChatEvidenceRecord
   question: string
@@ -162,6 +226,21 @@ function selectRelevantEvidenceContent(params: {
   })
   const contentSegments = splitMarkdownBlocks(params.match.content)
     .flatMap((block) => {
+      const maximumBlockCharacters =
+        params.maximumCharacters -
+        CHAT_EVIDENCE_CONTEXT.OMITTED_CONTENT_SEPARATOR.length * 2
+      if (
+        CHAT_EVIDENCE_CONTEXT.CODE_FENCE_PATTERN.test(block) &&
+        block.length > maximumBlockCharacters
+      ) {
+        return [
+          selectRelevantCodeExcerpt({
+            block,
+            queryTokens,
+            maximumCharacters: maximumBlockCharacters,
+          }),
+        ]
+      }
       if (
         isMarkdownTableBlock(block) &&
         block.length > params.maximumCharacters

@@ -106,18 +106,18 @@ pnpm dev
 
 ## Tech Stack
 
-| Area              | Technology                                      |
-| ----------------- | ----------------------------------------------- |
-| **Framework**     | Next.js 16.1.1 (App Router), React 19.1.0       |
-| **Styling**       | Tailwind CSS 4, shadcn/ui                       |
-| **MDX**           | next-mdx-remote, remark-gfm, rehype-pretty-code |
-| **i18n**          | next-intl v4                                    |
-| **Editor**        | Tiptap (Notion-style)                           |
-| **Auth**          | next-auth@5 (GitHub Provider)                   |
+| Area              | Technology                                                                |
+| ----------------- | ------------------------------------------------------------------------- |
+| **Framework**     | Next.js 16.1.1 (App Router), React 19.1.0                                 |
+| **Styling**       | Tailwind CSS 4, shadcn/ui                                                 |
+| **MDX**           | next-mdx-remote, remark-gfm, rehype-pretty-code                           |
+| **i18n**          | next-intl v4                                                              |
+| **Editor**        | Tiptap (Notion-style)                                                     |
+| **Auth**          | next-auth@5 (GitHub Provider)                                             |
 | **AI/Automation** | OpenAI API, AI SDK, LangGraph.js, PostgreSQL (`pgvector`), Modal, Octokit |
-| **Image**         | sharp, lqip-modern                              |
-| **Test**          | Vitest, Playwright, Storybook 10                |
-| **DevOps**        | ESLint 9, Prettier, Husky, lint-staged          |
+| **Image**         | sharp, lqip-modern                                                        |
+| **Test**          | Vitest, Playwright, Storybook 10                                          |
+| **DevOps**        | ESLint 9, Prettier, Husky, lint-staged                                    |
 
 ## Installation & Setup
 
@@ -216,25 +216,26 @@ pnpm run gen:chat-rag-postgres
 - Commit only the source MDX and images; the required data is refreshed automatically before development, testing, and builds.
 - Instead of crawling `.next` HTML output, this project generates **lexical search records and Postgres RAG input data directly from source MDX**.
 - Long sections are split into overlapping sub-chunks on sentence boundaries, so evidence near the end of a section stays in the index.
-- The embedding input keeps the title, the section title, and a term list summarizing the whole chunk inside the part of the text the model actually reads, then fills the remainder with content. The excerpt, which is a copy of the content prefix, is omitted so the token budget is not spent twice.
-- The embedding service raises the model default token limit (128) to `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default). Changing that value changes the embeddings, so the index must be rebuilt.
-- The app tracks the same limit as `BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default) and folds it into the index recipe version, so changing both values forces a rebuild instead of reusing the previous index.
-The app and the embedding service share one token limit (`BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` and `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`), and the app folds it into the index recipe version so a changed value forces a rebuild instead of reusing the previous index. The default stays at the model training length of 128: raising it to 256 and re-indexing did not improve retrieval metrics, so the trained length is kept.
+- Embedding input is ordered as title → section title → content → term list. The model truncates the tail at its token limit, giving content priority over the term list. The duplicate excerpt is omitted.
+- The app and service token limits (`BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` and `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`) both default to 128. The app includes its value in the index recipe version. Changing to 256 did not improve the evaluated retrieval metrics.
+- Configure both limits together. Compatibility checks use the app configuration; they do not detect a service-only configuration change.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
 - `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
 - Re-indexing reuses vectors from the previously active index when the provider, model, index recipe, and embedding input are all unchanged, so only changed chunks are embedded again. The run log reports how many embeddings were reused and how many were created.
 - Each new index records the embedding provider, model ID, vector dimension, and index recipe version (chunk boundary rules plus embedding input composition). If any of them differs from the current configuration, the index is not used for semantic retrieval.
-- If the embedding provider or Postgres connection is not configured, Postgres RAG indexing is skipped and lexical retrieval still works.
+- Ordinary `gen:chat-rag-postgres` skips indexing when the embedding provider or Postgres connection is missing. `verify:chat-rag` fails when required configuration is missing.
 
 The semantic candidate count (`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, default 8) and the similarity floor (`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, default 0.15) depend on corpus size and embedding model, so they are configurable through environment variables. Compare the live semantic metrics above before and after changing them instead of deciding from the lexical-only run.
 
-The retrieval regression check over the real generated corpus is part of the test suite, so `pnpm test` runs it every time. It verifies two things: that the evidence each evaluation case points at still exists in the current corpus (so a documentation change has not invalidated the case), and that lexical retrieval puts that evidence within the top three answer candidates. When it fails, the message says whether the case is outdated or retrieval actually regressed.
+The generated-corpus regression check is part of the test suite; use `pnpm run test:run` for a single run. It checks that expected evidence exists, that every case reaches the top three candidates, and that aggregate recall@1 ≥ 0.8 and MRR ≥ 0.85. Failure reports distinguish missing corpus references from retrieval regressions.
 
-To check the hybrid path including the active Postgres index and embedding endpoint, run the following where an active index exists. This mode also inspects whether semantic retrieval was actually attempted and whether it found the expected evidence.
+To check the hybrid path including the active Postgres index and embedding endpoint, run the following. Every case uses production reranker eligibility. The check requires semantic retrieval, an expected-evidence hit rate ≥ 0.8, and successful reranker calls when attempted. An OpenAI API key and reranker model configuration are required.
 
 ```bash
 BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
 ```
+
+Use `pnpm run eval:chat-workflow` to exercise real planning, retrieval and answer generation for three cases: Leemage uploads, the latest post summary and unsupported Kubernetes experience. Response cache reads and writes are disabled. API charges apply. The output includes answers, citations and the evidence sent to the model for manual review. Passing checks routing and citation contracts; it does not guarantee factual correctness or summary completeness.
 
 Cases that lexical retrieval cannot reach run only in the live semantic evaluation, and the default check reports their ids as skipped.
 
@@ -244,12 +245,12 @@ Cases that lexical retrieval cannot reach run only in the live semantic evaluati
 - Do not put `gen:chat-rag-postgres` inside `pnpm build`.
 - The recommended flow is:
   1. Coolify detects the Git push and deploys the new application image
-  2. **Post-deployment Command** runs `pnpm run gen:chat-rag-postgres`
-  3. Only after the full index build succeeds does Postgres switch the active `index_version`
-  2. **Post-deployment Command** runs `pnpm run verify:chat-rag` (re-index, then run the hybrid retrieval regression check automatically)
-  3. The deployment succeeds only when both the re-index and the check pass; a red check marks the deployment as failed
-- This keeps the previous active index intact when re-indexing fails.
-- The check inside `verify:chat-rag` runs after activation, so a red result still leaves the new index active. Treat it as an immediate signal that this deploy lowered retrieval quality rather than as a gate that blocks the switch. Blocking before activation would need shadow reads from the not-yet-active index.
+  2. **Post-deployment Command** runs `pnpm run verify:chat-rag`
+  3. Generate content → build a candidate index → evaluate that candidate with live hybrid retrieval → activate only after passing
+- Indexing failures, failed checks and evaluation errors produce a nonzero exit and preserve the active index. Do not lower thresholds to pass a failing evaluation.
+- Successful activation retains the previous active index as `stale`. Older and failed indexes are pruned at the next activation. This protects the search index; it does not roll back the deployed application image.
+- Standalone `gen:chat-rag-postgres` activates without quality checks. Use `verify:chat-rag` for deployments. `eval:chat-workflow` remains a separate check, not an activation gate.
+- Shared database connection waits are limited to 2 seconds and individual queries to 5 seconds. Cache errors fall back to memory or a cache miss, and memory responses are checked for expiration at read time.
 - In production you should at least provide:
   - `BLOG_CHAT_RAG_DATABASE_URL`
   - `MODAL_EMBEDDING_BASE_URL`

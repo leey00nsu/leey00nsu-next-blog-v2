@@ -232,29 +232,31 @@ pnpm run db:migrate:status           # 적용 상태 확인
 - 원본 MDX와 이미지만 커밋하면 개발·테스트·빌드 시작 전에 필요한 데이터가 자동으로 갱신됩니다.
 - 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
 - 긴 섹션은 문장 경계를 우선한 겹침 하위 청크로 나누므로 섹션 뒷부분의 근거도 인덱스에 남습니다.
-- 임베딩 입력은 모델이 실제로 읽는 앞부분에 제목, 섹션 제목, 청크 전체를 요약한 용어 목록을 두고 남은 예산을 본문으로 채웁니다. 본문 앞부분의 사본인 excerpt는 넣지 않아 토큰 예산을 중복 사용하지 않습니다.
-- 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 이 값을 바꾸면 임베딩이 달라지므로 반드시 재색인해야 합니다.
-- 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 앱은 같은 값을 BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)로 알고 색인 레시피 버전에 포함하므로, 두 값을 함께 바꾸면 이전 인덱스를 재사용하지 않고 재색인을 요구합니다.
+- 임베딩 입력은 제목 → 섹션 제목 → 본문 → 용어 목록 순서입니다. 모델 토큰 한도가 적용되면 뒤쪽 입력이 잘리므로 본문을 용어 목록보다 우선합니다. 본문 앞부분의 사본인 excerpt는 넣지 않습니다.
 - 임베딩 토큰 한도는 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(서비스)와 BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(앱)로 맞춰 두고, 앱은 그 값을 색인 레시피 버전에 포함해 값이 바뀌면 이전 인덱스를 재사용하지 않고 재색인을 요구합니다. 기본값은 모델 학습 길이인 128입니다.
 - 256으로 올려 재색인해도 검색 지표가 좋아지지 않아(오히려 semantic 적중률이 한 케이스 낮아짐) 학습 길이를 유지합니다. 본문을 더 담고 싶다면 긴 문맥으로 학습된 임베딩 모델로 교체하는 편이 맞습니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
 - 재색인은 이전 활성 인덱스와 provider, 모델, 색인 레시피, 임베딩 입력이 모두 같은 chunk의 벡터를 그대로 재사용합니다. 그래서 바뀐 chunk만 다시 임베딩하고, 재사용·신규 임베딩 개수를 실행 로그에 남깁니다.
 - 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 색인 레시피 버전(청크 경계 규칙 + 임베딩 입력 구성)을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
-- 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
+- 일반 `gen:chat-rag-postgres`는 임베딩 provider 또는 Postgres 연결이 없으면 인덱싱을 건너뜁니다. `verify:chat-rag`는 필수 설정이 없으면 실패합니다.
+- 앱과 Modal의 토큰 길이는 함께 설정해야 합니다. 현재 인덱스 호환성 검사는 앱 설정을 기준으로 하므로 서비스 설정만 바꾸지 마세요.
 
-실제 생성 코퍼스를 대상으로 한 검색 회귀 검사는 테스트 스위트에 포함되어 있어 `pnpm test`가 매번 실행합니다. 이 검사는 두 가지를 확인합니다.
+실제 생성 코퍼스를 대상으로 한 검색 회귀 검사는 테스트 스위트에 포함되어 있습니다. 일회성 실행은 `pnpm run test:run`입니다. 이 검사는 다음을 확인합니다.
 
 - 평가 케이스가 가리키는 기대 근거가 현재 코퍼스에 실제로 있는지(문서 개편으로 케이스가 낡지 않았는지)
 - lexical 검색이 각 케이스의 기대 근거를 답변 후보 상위 3건 안에 넣는지
+- 전체 순위 지표가 recall@1 ≥ 0.8, MRR ≥ 0.85를 유지하는지
 
 실패하면 기대 근거가 코퍼스에 없는 "케이스 무효"인지, 근거는 있는데 순위가 밀린 "검색 회귀"인지 함께 알려줍니다.
 
-활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색은 활성 인덱스가 있는 환경에서 다음 명령으로 점검합니다. 이 모드는 실제 semantic 검색 호출 여부와 기대 근거를 찾은 semantic match 비율도 검사합니다.
+활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색은 다음 명령으로 점검합니다. 모든 케이스에 운영과 같은 리랭커 호출 조건을 적용합니다. semantic 호출 여부, 기대 근거 적중률(≥ 0.8), 리랭커 호출 실패도 검사하며 OpenAI API 키와 리랭커 모델 설정이 필요합니다.
 
 ```bash
 BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
 ```
+
+질문 해석부터 실제 검색·답변 생성까지는 `pnpm run eval:chat-workflow`로 검사합니다. Leemage 업로드 이유, 최신 글 요약, 근거 없는 Kubernetes 경험의 세 사례를 실행하며 응답 캐시 읽기·쓰기는 생략합니다. 실행 중 API 비용이 발생합니다. 답변·인용·모델에 전달한 근거를 출력하므로 내용도 함께 검토하세요. 자동 통과는 경로와 인용 조건의 통과이며, 모든 주장의 사실성이나 요약의 완전성을 보장하지 않습니다.
 
 semantic 후보 수(`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, 기본 8)와 유사도 하한(`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, 기본 0.15)은 코퍼스 규모와 임베딩 모델에 따라 달라지므로 환경변수로 조정합니다. 값을 바꿀 때는 위 live semantic 평가로 조정 전후 지표를 비교하고, lexical 전용 평가만으로 결정하지 않습니다.
 
@@ -266,12 +268,12 @@ lexical 검색만으로 도달할 수 없는 케이스는 live semantic 평가�
 - `gen:chat-rag-postgres`는 `pnpm build`에 넣지 않는 것을 권장합니다.
 - 권장 흐름은 다음과 같습니다.
   1. Coolify가 Git push를 감지해 새 이미지를 빌드/배포
-  2. **Post-deployment Command**로 `pnpm run gen:chat-rag-postgres` 실행
-  3. 새 인덱싱이 전부 성공하면 Postgres의 활성 `index_version`만 교체
-  2. **Post-deployment Command**로 `pnpm run verify:chat-rag` 실행(재색인 후 hybrid 검색 회귀 검사를 자동 실행)
-  3. 재색인과 검사가 모두 성공하면 배포 성공, 검사가 red면 배포가 실패로 표시됨
-- 이 방식이면 배포 중 인덱싱이 실패해도 이전 활성 인덱스가 그대로 남습니다.
-- `verify:chat-rag`의 검사는 재색인 이후에 돌기 때문에 red여도 새 인덱스는 이미 활성화되어 있습니다. 검사는 배포를 막는 장치가 아니라 "이 배포가 검색 품질을 떨어뜨렸다"를 즉시 알려주는 장치입니다. 활성화 전에 검사하려면 아직 활성화하지 않은 인덱스를 읽는 shadow 조회가 필요합니다.
+  2. **Post-deployment Command**로 `pnpm run verify:chat-rag` 실행
+  3. 콘텐츠 생성 → 후보 인덱스 생성 → 후보에 대한 live hybrid 평가 → 통과한 경우에만 활성 인덱스 교체
+- 인덱싱 또는 평가가 실패하면 명령은 비정상 종료하고 이전 활성 인덱스를 유지합니다. 평가 오류도 실패로 처리하며 임계값을 낮춰 통과시키지 않습니다.
+- 성공한 뒤에도 직전 활성 인덱스 하나를 `stale` 상태로 보존합니다. 더 오래된 인덱스와 실패한 인덱스는 다음 활성화 때 정리합니다. 이는 검색 인덱스 보호이며 이미 배포된 앱 이미지를 자동으로 되돌리지는 않습니다.
+- `gen:chat-rag-postgres` 단독 실행은 품질 검사 없이 활성화합니다. 배포에는 `verify:chat-rag`를 사용하세요. `eval:chat-workflow`는 별도 실행이며 인덱스 활성화 조건에 포함되지 않습니다.
+- 공유 DB 연결 대기는 2초, 개별 쿼리는 5초로 제한됩니다. 캐시 오류 시 메모리 캐시 또는 캐시 미스로 처리하며 메모리 응답도 조회 시 TTL을 검사합니다.
 - 운영 환경에서는 최소한 아래 값이 필요합니다.
   - `BLOG_CHAT_RAG_DATABASE_URL`
   - `MODAL_EMBEDDING_BASE_URL`

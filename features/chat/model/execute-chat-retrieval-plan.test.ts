@@ -92,6 +92,67 @@ const RECENT_PROJECT_AI_PLAN: ChatRetrievalPlan = {
 }
 
 describe('executeChatRetrievalPlan', () => {
+  it.each(['latest', 'oldest'] as const)(
+    '%s 문서 선택은 리랭커가 섹션 순서를 뒤집어도 유지한다',
+    async (temporalOrder) => {
+      const expectedRecord =
+        temporalOrder === 'latest' ? RECENT_AI_PROJECT : OLDER_AI_PROJECT
+      const extraSection = {
+        ...expectedRecord,
+        id: `${expectedRecord.id}/details`,
+        url: `${expectedRecord.url}#details`,
+      }
+      const rerankMatches = vi.fn(
+        async ({ matches }: { matches: ChatEvidenceRecord[] }) => ({
+          matches: matches.toReversed(),
+          applied: true,
+        }),
+      )
+      const result = await executeChatRetrievalPlan({
+        plan: {
+          ...RECENT_PROJECT_AI_PLAN,
+          temporalStrategy: 'single',
+          temporalOrder,
+        },
+        locale: 'ko',
+        blogRecords: [],
+        curatedRecords: [OLDER_AI_PROJECT, RECENT_AI_PROJECT, extraSection],
+        hasConversationContext: true,
+        retrieveSemanticMatches: async () => [],
+        rerankMatches,
+      })
+      expect(rerankMatches).toHaveBeenCalledOnce()
+      expect(
+        rerankMatches.mock.calls[0][0].matches.every(
+          (match) => match.slug === expectedRecord.slug,
+        ),
+      ).toBe(true)
+      expect(result.matches.map((match) => match.id)).toEqual([
+        extraSection.id,
+        expectedRecord.id,
+      ])
+    },
+  )
+
+  it('리랭커가 순서를 뒤집어도 최신순 나열 조건을 유지한다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: RECENT_PROJECT_AI_PLAN,
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [OLDER_AI_PROJECT, RECENT_AI_PROJECT],
+      hasConversationContext: true,
+      retrieveSemanticMatches: async () => [],
+      rerankMatches: async ({ matches }) => ({
+        matches: matches.toReversed(),
+        applied: true,
+      }),
+    })
+    expect(result.matches.map((match) => match.id)).toEqual([
+      RECENT_AI_PROJECT.id,
+      OLDER_AI_PROJECT.id,
+    ])
+  })
+
   it('최근 근무처 질문은 최신 Career 항목으로 직접 답한다', async () => {
     const careerRecords: ChatEvidenceRecord[] = [
       {

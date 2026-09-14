@@ -206,6 +206,7 @@ function filterRecordsByPlan(
 function sortMatchesByPlan(
   matches: ChatEvidenceRecord[],
   plan: ChatRetrievalPlan,
+  prioritizeRequiredConcepts = true,
 ): ChatEvidenceRecord[] {
   const preferredCategorySet = new Set(
     plan.sourceStrategy === 'prefer' ? plan.sourceCategories : [],
@@ -220,7 +221,7 @@ function sortMatchesByPlan(
         return doesChatEvidenceMatchConcept(leftMatch, requiredConcept)
       }).length
 
-    if (requiredConceptDifference !== 0) {
+    if (prioritizeRequiredConcepts && requiredConceptDifference !== 0) {
       return requiredConceptDifference
     }
 
@@ -690,6 +691,11 @@ export async function executeChatRetrievalPlan({
     locale,
   })
   const sortedMatches = sortMatchesByPlan(coveredMatches, plan)
+  // 날짜로 지정한 문서는 관련도 재정렬 전에 확정한다.
+  const rerankCandidates =
+    plan.temporalStrategy === 'single'
+      ? selectSingleDocumentMatches(sortedMatches, sortedMatches.length)
+      : sortedMatches
   const requiredMatchIds = collectRequiredMatchIds({
     matches: sortedMatches,
     requiredConcepts: plan.requiredConcepts,
@@ -698,23 +704,27 @@ export async function executeChatRetrievalPlan({
   // 이미 잘린 목록의 순서만 바꿀 수 있어, 후보에 있던 근거를 살릴 수 없다.
   const rerankResult = shouldRerankChatEvidence({
     question: plan.standaloneQuestion,
-    matchCount: sortedMatches.length,
+    matchCount: rerankCandidates.length,
     plan,
     hasConversationContext,
   })
     ? await rerankMatches({
         question: plan.standaloneQuestion,
-        matches: sortedMatches,
+        matches: rerankCandidates,
       })
     : null
   const rerankedMatches = rerankResult?.applied
     ? rerankResult.matches
-    : sortedMatches
+    : rerankCandidates
+  const orderedMatches =
+    plan.temporalStrategy === 'rank'
+      ? sortMatchesByPlan(rerankedMatches, plan, false)
+      : rerankedMatches
   const limitedMatches =
     plan.temporalStrategy === 'single'
-      ? selectSingleDocumentMatches(rerankedMatches, plan.maximumEvidenceCount)
+      ? selectSingleDocumentMatches(orderedMatches, plan.maximumEvidenceCount)
       : limitMatchesWithDiversity({
-          matches: rerankedMatches,
+          matches: orderedMatches,
           maximumEvidenceCount: plan.maximumEvidenceCount,
           diversityPolicy,
           requiredMatchIds,

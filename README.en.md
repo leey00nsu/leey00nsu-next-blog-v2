@@ -246,7 +246,10 @@ Cases that lexical retrieval cannot reach run only in the live semantic evaluati
   1. Coolify detects the Git push and deploys the new application image
   2. **Post-deployment Command** runs `pnpm run gen:chat-rag-postgres`
   3. Only after the full index build succeeds does Postgres switch the active `index_version`
+  2. **Post-deployment Command** runs `pnpm run verify:chat-rag` (re-index, then run the hybrid retrieval regression check automatically)
+  3. The deployment succeeds only when both the re-index and the check pass; a red check marks the deployment as failed
 - This keeps the previous active index intact when re-indexing fails.
+- The check inside `verify:chat-rag` runs after activation, so a red result still leaves the new index active. Treat it as an immediate signal that this deploy lowered retrieval quality rather than as a gate that blocks the switch. Blocking before activation would need shadow reads from the not-yet-active index.
 - In production you should at least provide:
   - `BLOG_CHAT_RAG_DATABASE_URL`
   - `MODAL_EMBEDDING_BASE_URL`

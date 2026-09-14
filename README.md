@@ -268,7 +268,10 @@ lexical 검색만으로 도달할 수 없는 케이스는 live semantic 평가�
   1. Coolify가 Git push를 감지해 새 이미지를 빌드/배포
   2. **Post-deployment Command**로 `pnpm run gen:chat-rag-postgres` 실행
   3. 새 인덱싱이 전부 성공하면 Postgres의 활성 `index_version`만 교체
+  2. **Post-deployment Command**로 `pnpm run verify:chat-rag` 실행(재색인 후 hybrid 검색 회귀 검사를 자동 실행)
+  3. 재색인과 검사가 모두 성공하면 배포 성공, 검사가 red면 배포가 실패로 표시됨
 - 이 방식이면 배포 중 인덱싱이 실패해도 이전 활성 인덱스가 그대로 남습니다.
+- `verify:chat-rag`의 검사는 재색인 이후에 돌기 때문에 red여도 새 인덱스는 이미 활성화되어 있습니다. 검사는 배포를 막는 장치가 아니라 "이 배포가 검색 품질을 떨어뜨렸다"를 즉시 알려주는 장치입니다. 활성화 전에 검사하려면 아직 활성화하지 않은 인덱스를 읽는 shadow 조회가 필요합니다.
 - 운영 환경에서는 최소한 아래 값이 필요합니다.
   - `BLOG_CHAT_RAG_DATABASE_URL`
   - `MODAL_EMBEDDING_BASE_URL`

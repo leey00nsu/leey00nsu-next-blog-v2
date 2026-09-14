@@ -115,15 +115,27 @@ function buildMatchedEntityIds(
   )
 }
 
+function sortRelationsByWeight(
+  relations: GraphRagRelation[],
+): GraphRagRelation[] {
+  return [...relations].toSorted((leftRelation, rightRelation) => {
+    return (
+      rightRelation.weight - leftRelation.weight ||
+      leftRelation.id.localeCompare(rightRelation.id)
+    )
+  })
+}
+
 function buildRelatedEntityScoreMap(
   relations: GraphRagRelation[],
   matchedEntityIds: Set<string>,
 ): Map<string, number> {
   const relatedEntityScoreMap = new Map<string, number>()
-  let relationHopCount = 0
+  const sortedRelations = sortRelationsByWeight(relations)
+  let relationMatchCount = 0
 
-  for (const relation of relations) {
-    if (relationHopCount >= CHAT_RAG.SEARCH.MAXIMUM_RELATION_HOPS) {
+  for (const relation of sortedRelations) {
+    if (relationMatchCount >= CHAT_RAG.SEARCH.MAXIMUM_RELATION_MATCH_COUNT) {
       break
     }
 
@@ -133,7 +145,7 @@ function buildRelatedEntityScoreMap(
         (relatedEntityScoreMap.get(relation.targetEntityId) ?? 0) +
           relation.weight * CHAT_RAG.SEARCH.RELATED_ENTITY_MATCH_BOOST,
       )
-      relationHopCount += 1
+      relationMatchCount += 1
     }
 
     if (matchedEntityIds.has(relation.targetEntityId)) {
@@ -142,7 +154,7 @@ function buildRelatedEntityScoreMap(
         (relatedEntityScoreMap.get(relation.sourceEntityId) ?? 0) +
           relation.weight * CHAT_RAG.SEARCH.RELATED_ENTITY_MATCH_BOOST,
       )
-      relationHopCount += 1
+      relationMatchCount += 1
     }
   }
 

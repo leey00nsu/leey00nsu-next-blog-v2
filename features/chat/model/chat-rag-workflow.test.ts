@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import type {
   ChatRagLocaleSearchData,
   ChatRagSemanticCandidate,
@@ -385,5 +386,79 @@ describe('runChatRagWorkflow', () => {
     expect(selectSearchDataMock).toHaveBeenCalledWith(
       expect.objectContaining({ retrievalPlan }),
     )
+  })
+
+  it('relation 확장은 weight가 큰 관계부터 적용해 입력 순서와 무관하게 같은 순위를 만든다', async () => {
+    const relationTargetCount = CHAT_RAG.SEARCH.MAXIMUM_RELATION_MATCH_COUNT + 2
+    const matchedEntity = buildGraphRagEntity({
+      id: 'ko:term:공통',
+      name: '공통',
+      normalizedName: '공통',
+    })
+    const relationTargets = Array.from(
+      { length: relationTargetCount },
+      (_unusedValue, targetIndex) => {
+        const weight = targetIndex + 1
+
+        return {
+          entityId: `ko:term:관계${weight}`,
+          chunkId: `ko/blog/관계-${weight}`,
+          weight,
+        }
+      },
+    )
+    const semanticCandidates = relationTargets.map((relationTarget) => {
+      return buildSemanticCandidate({
+        id: relationTarget.chunkId,
+        slug: `관계-${relationTarget.weight}`,
+        title: `문서 ${relationTarget.weight}`,
+        url: `https://example.com/관계-${relationTarget.weight}`,
+        excerpt: '본문',
+        content: '본문',
+        entityIds: [relationTarget.entityId],
+        semanticSimilarity: 0.8,
+      })
+    })
+    const relations = relationTargets.map((relationTarget) => {
+      return buildGraphRagRelation({
+        id: `ko:co_occurs:${matchedEntity.id}:${relationTarget.entityId}`,
+        sourceEntityId: matchedEntity.id,
+        targetEntityId: relationTarget.entityId,
+        weight: relationTarget.weight,
+      })
+    })
+    const runWithRelationOrder = async (
+      relationOrder: GraphRagRelation[],
+    ): Promise<string[]> => {
+      const result = await runChatRagWorkflow({
+        question: '공통 철학이 뭐야',
+        locale: 'ko',
+        embedQuestion: async () => [1, 0],
+        selectSearchData: async () => {
+          return buildSearchData({
+            semanticCandidates,
+            entities: [matchedEntity],
+            relations: relationOrder,
+          })
+        },
+      })
+
+      return result.matches.map((match) => match.id)
+    }
+
+    const ascendingOrder = await runWithRelationOrder(relations)
+    const descendingOrder = await runWithRelationOrder(relations.toReversed())
+    const rotatedOrder = await runWithRelationOrder([
+      ...relations.slice(5),
+      ...relations.slice(0, 5),
+    ])
+
+    expect(ascendingOrder).toEqual(descendingOrder)
+    expect(ascendingOrder).toEqual(rotatedOrder)
+    expect(ascendingOrder).toEqual([
+      `ko/blog/관계-${relationTargetCount}`,
+      `ko/blog/관계-${relationTargetCount - 1}`,
+      `ko/blog/관계-${relationTargetCount - 2}`,
+    ])
   })
 })

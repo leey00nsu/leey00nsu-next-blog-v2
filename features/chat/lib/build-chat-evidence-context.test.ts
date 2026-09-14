@@ -22,6 +22,17 @@ function buildEvidenceRecord(
 }
 
 describe('buildChatEvidenceContext', () => {
+  it('예산 안의 근거는 질문 단어 빈도와 무관하게 전체 내용을 보존한다', () => {
+    const content =
+      '측정 결과는 다음과 같다.\n\n| 항목 | 값 |\n| --- | --- |\n| 지연 | 7.25 |\n\n제약 때문에 이전했다. 따라서 운영 부담이 줄었다.'
+    const context = buildChatEvidenceContext({
+      question: '측정 결과를 설명해줘',
+      matches: [buildEvidenceRecord('measurement', content)],
+      maximumRecordCount: 1,
+      maximumCharacters: 2000,
+    })
+    expect(context).toContain(content)
+  })
   it('앞선 긴 근거가 있어도 뒤의 핵심 근거를 컨텍스트에 포함한다', () => {
     const context = buildChatEvidenceContext({
       matches: [

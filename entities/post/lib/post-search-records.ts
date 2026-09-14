@@ -8,6 +8,7 @@ import {
 } from '@/shared/config/constants'
 import { getSemanticSearchTerms } from '@/shared/lib/chat-semantic-map'
 import { collectSearchTerms } from '@/shared/lib/search-terms'
+import { splitMarkdownBlocks } from '@/shared/lib/split-markdown-blocks'
 
 interface BuildPostSearchRecordsParams {
   post: Post
@@ -32,8 +33,8 @@ const MARKDOWN_PATTERNS = {
   LINK: /\[([^\]]+)\]\([^)]+\)/g,
   INLINE_CODE: /`([^`]+)`/g,
   HTML_TAG: /<[^>]+>/g,
-  MARKERS: /[*_>#~-]/g,
-  WHITESPACE: /\s+/g,
+  MARKERS: /(?<![\p{L}\p{N}])[*_]+|[*_]+(?![\p{L}\p{N}])/gu,
+  WHITESPACE: /[^\S\n]+/g,
 } as const
 
 const CONTENT_CHUNK_PATTERNS = {
@@ -57,13 +58,26 @@ function isCodeFenceLine(line: string): boolean {
 }
 
 function sanitizeMarkdownToSearchText(markdown: string): string {
+  let isInsideCodeFence = false
+
   return markdown
-    .replaceAll(MARKDOWN_PATTERNS.IMAGE, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.LINK, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.INLINE_CODE, '$1')
-    .replaceAll(MARKDOWN_PATTERNS.HTML_TAG, ' ')
-    .replaceAll(MARKDOWN_PATTERNS.MARKERS, ' ')
-    .replaceAll(MARKDOWN_PATTERNS.WHITESPACE, ' ')
+    .split('\n')
+    .map((line) => {
+      if (isCodeFenceLine(line)) {
+        isInsideCodeFence = !isInsideCodeFence
+        return line
+      }
+      if (isInsideCodeFence) return line
+      return line
+        .replaceAll(MARKDOWN_PATTERNS.IMAGE, '$1')
+        .replaceAll(MARKDOWN_PATTERNS.LINK, '$1')
+        .replaceAll(MARKDOWN_PATTERNS.INLINE_CODE, '$1')
+        .replaceAll(MARKDOWN_PATTERNS.HTML_TAG, ' ')
+        .replaceAll(MARKDOWN_PATTERNS.MARKERS, ' ')
+        .replaceAll(MARKDOWN_PATTERNS.WHITESPACE, ' ')
+        .trim()
+    })
+    .join('\n')
     .trim()
 }
 
@@ -147,7 +161,7 @@ function resolveNextContentChunkStart(params: {
     : overlapStartIndex + nextBoundaryOffset + 1
 }
 
-function splitSearchContent(text: string, maximumLength: number): string[] {
+function splitOversizedContent(text: string, maximumLength: number): string[] {
   if (text.length <= maximumLength) {
     return [text]
   }
@@ -178,6 +192,28 @@ function splitSearchContent(text: string, maximumLength: number): string[] {
     })
   }
 
+  return chunks
+}
+
+function splitSearchContent(text: string, maximumLength: number): string[] {
+  const chunks: string[] = []
+  let currentChunk = ''
+
+  for (const block of splitMarkdownBlocks(text)) {
+    const combinedChunk = currentChunk ? `${currentChunk}\n\n${block}` : block
+    if (combinedChunk.length <= maximumLength) {
+      currentChunk = combinedChunk
+      continue
+    }
+    if (currentChunk) chunks.push(currentChunk)
+    currentChunk = ''
+    if (block.length > maximumLength) {
+      chunks.push(...splitOversizedContent(block, maximumLength))
+    } else {
+      currentChunk = block
+    }
+  }
+  if (currentChunk) chunks.push(currentChunk)
   return chunks
 }
 
@@ -242,10 +278,12 @@ function buildHeadingSections(content: string): {
   for (const line of lines) {
     if (isCodeFenceLine(line)) {
       isInsideCodeFence = !isInsideCodeFence
+      ;(currentSection ? currentSection.lines : introLines).push(line)
       continue
     }
 
     if (isInsideCodeFence) {
+      ;(currentSection ? currentSection.lines : introLines).push(line)
       continue
     }
 

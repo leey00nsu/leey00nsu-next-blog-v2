@@ -1,9 +1,9 @@
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { SupportedLocale } from '@/shared/config/constants'
+import { normalizeSearchIdentifier } from '@/shared/lib/normalize-search-identifier'
 
 const CHAT_CONCEPT_NORMALIZATION = {
-  WHITESPACE_PATTERN: /\s+/g,
   OPTIONAL_INTENT_TERMS: [
     '경력',
     '커리어',
@@ -111,10 +111,7 @@ interface PartitionChatConceptsByRequirementResult {
 }
 
 function normalizeConceptText(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .replaceAll(CHAT_CONCEPT_NORMALIZATION.WHITESPACE_PATTERN, '')
+  return normalizeSearchIdentifier(text)
 }
 
 function buildCanonicalConceptMap(): Map<string, string> {

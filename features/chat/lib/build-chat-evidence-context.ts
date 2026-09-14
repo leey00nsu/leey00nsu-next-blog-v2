@@ -1,5 +1,6 @@
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
+import { splitMarkdownBlocks } from '@/shared/lib/split-markdown-blocks'
 
 interface BuildChatEvidenceContextParams {
   question?: string
@@ -12,8 +13,7 @@ const CHAT_EVIDENCE_CONTEXT = {
   INTRO_SECTION_LABEL: 'intro',
   ENTRY_SEPARATOR: '\n',
   TRUNCATION_MARKER: '…',
-  CONTENT_SEGMENT_PATTERN: /(?<=[.!?。！？])\s*|\n+/gu,
-  MAXIMUM_RELEVANT_SEGMENT_COUNT: 6,
+  CONTENT_SEGMENT_PATTERN: /(?<=[.!?。！？])\s+/gu,
   KOREAN_PARTICLE_PATTERN:
     /(?:에서|으로|에게|한테|처럼|부터|까지|은|는|이|가|을|를|와|과|로|의)$/u,
 } as const
@@ -62,6 +62,9 @@ function selectRelevantEvidenceContent(params: {
   if (params.maximumCharacters <= 0) {
     return ''
   }
+  if (params.match.content.length <= params.maximumCharacters) {
+    return params.match.content
+  }
 
   const queryTokens = normalizeChatQuery({
     question: params.question,
@@ -75,8 +78,14 @@ function selectRelevantEvidenceContent(params: {
       ? [queryToken.toLowerCase(), normalizedToken]
       : [queryToken.toLowerCase()]
   })
-  const contentSegments = params.match.content
-    .split(CHAT_EVIDENCE_CONTEXT.CONTENT_SEGMENT_PATTERN)
+  const contentSegments = splitMarkdownBlocks(params.match.content)
+    .flatMap((block) => {
+      // Only oversized prose is split; structured blocks retain their boundaries.
+      return block.length > params.maximumCharacters &&
+        !/^(?:```|~~~|\||[-*+]\s|\d+\.\s)/u.test(block)
+        ? block.split(CHAT_EVIDENCE_CONTEXT.CONTENT_SEGMENT_PATTERN)
+        : [block]
+    })
     .map((contentSegment, originalIndex) => {
       const normalizedSegment = contentSegment.toLowerCase().trim()
       const relevanceScore = queryTokens.reduce((score, queryToken) => {
@@ -97,19 +106,37 @@ function selectRelevantEvidenceContent(params: {
     return truncateEvidenceEntry(params.match.content, params.maximumCharacters)
   }
 
-  const relevantSegments = contentSegments
-    .toSorted((leftSegment, rightSegment) => {
-      return (
-        rightSegment.relevanceScore - leftSegment.relevanceScore ||
-        leftSegment.originalIndex - rightSegment.originalIndex
-      )
-    })
-    .slice(0, CHAT_EVIDENCE_CONTEXT.MAXIMUM_RELEVANT_SEGMENT_COUNT)
-    .toSorted((leftSegment, rightSegment) => {
-      return leftSegment.originalIndex - rightSegment.originalIndex
-    })
-    .map((contentSegment) => contentSegment.content)
-    .join(' ')
+  const bestSegment = contentSegments.reduce((best, segment) => {
+    return segment.relevanceScore > best.relevanceScore ? segment : best
+  }, contentSegments[0])
+  let startIndex = contentSegments.indexOf(bestSegment)
+  let endIndex = startIndex + 1
+  let relevantSegments = bestSegment.content
+  // Expand contiguously: never splice unrelated sentences into a new causal claim.
+  while (startIndex > 0 || endIndex < contentSegments.length) {
+    const preceding =
+      startIndex > 0 ? contentSegments[startIndex - 1].content : null
+    const following =
+      endIndex < contentSegments.length
+        ? contentSegments[endIndex].content
+        : null
+    if (
+      preceding &&
+      preceding.length + relevantSegments.length + 2 <= params.maximumCharacters
+    ) {
+      relevantSegments = `${preceding}\n\n${relevantSegments}`
+      startIndex -= 1
+    } else if (
+      following &&
+      following.length + relevantSegments.length + 2 <= params.maximumCharacters
+    ) {
+      relevantSegments = `${relevantSegments}\n\n${following}`
+      endIndex += 1
+    } else {
+      break
+    }
+  }
+  if (startIndex > 0) relevantSegments = `…\n${relevantSegments}`
 
   return truncateEvidenceEntry(
     relevantSegments || params.match.content,

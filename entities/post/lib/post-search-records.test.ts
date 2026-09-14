@@ -25,6 +25,17 @@ function createMockPost(content: string): Post {
 }
 
 describe('buildPostSearchRecords', () => {
+  it('코드 연산자와 식별자 및 표의 수치를 원문대로 보존한다', () => {
+    const code =
+      '```ts\nconst queue_limit = 7.25;\nif (queue_limit < 9) run_job();\n```'
+    const table = '| worker-id | delay |\n| --- | --- |\n| north_01 | 7.25 |'
+    const result = buildPostSearchRecords({
+      post: createMockPost(`## Configuration\n${code}\n\n${table}`),
+      locale: 'en',
+    })
+    expect(result.map((record) => record.content).join('\n')).toContain(code)
+    expect(result.map((record) => record.content).join('\n')).toContain(table)
+  })
   it('서론과 각 섹션을 분리해 anchor URL을 생성한다', () => {
     const post = createMockPost(`
 도입부 문단입니다.
@@ -70,8 +81,10 @@ describe('buildPostSearchRecords', () => {
       locale: 'ko',
     })
 
-    expect(result).toHaveLength(1)
-    expect(result[0].sectionTitle).toBe('실제 섹션')
+    expect(result).toHaveLength(2)
+    expect(result[0].sectionTitle).toBeNull()
+    expect(result[0].content).toContain('## 코드 블록 안의 제목')
+    expect(result[1].sectionTitle).toBe('실제 섹션')
   })
 
   it('긴 섹션을 겹치는 하위 청크로 나누고 뒷부분을 보존한다', () => {

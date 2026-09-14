@@ -91,7 +91,94 @@ const RECENT_PROJECT_AI_PLAN: ChatRetrievalPlan = {
   maximumEvidenceCount: 3,
 }
 
+const SINGLE_METADATA_PLAN: ChatRetrievalPlan = {
+  ...RECENT_PROJECT_AI_PLAN,
+  executionKind: 'direct_metadata',
+  operation: 'lookup',
+  requiredConcepts: [],
+  requestedFields: ['title'],
+  temporalStrategy: 'single',
+  sourceStrategy: 'all',
+  sourceCategories: [],
+}
+
+const UNDATED_INDEX_RECORD: ChatEvidenceRecord = {
+  ...NEWER_AI_BLOG,
+  id: 'curated/ko/project/index',
+  slug: 'index',
+  title: '배포 프로젝트',
+  url: '/ko/projects',
+  publishedAt: null,
+  evidenceTime: null,
+  sourceCategory: 'project',
+}
+
 describe('executeChatRetrievalPlan', () => {
+  it.each(['latest', 'oldest'] as const)(
+    '%s metadata는 날짜가 없는 항목을 고르지 않는다',
+    async (temporalOrder) => {
+      const result = await executeChatRetrievalPlan({
+        plan: { ...SINGLE_METADATA_PLAN, temporalOrder },
+        locale: 'ko',
+        blogRecords: [NEWER_AI_BLOG],
+        curatedRecords: [UNDATED_INDEX_RECORD],
+        retrieveSemanticMatches: async () => [],
+      })
+
+      expect(result).toMatchObject({
+        kind: 'direct',
+        response: { answer: expect.stringContaining('AI 활용 글') },
+        matches: [expect.objectContaining({ slug: 'newer-ai' })],
+      })
+      expect(result).not.toMatchObject({ matches: [{ slug: 'index' }] })
+    },
+  )
+
+  it('metadata 후보에 날짜가 있는 근거가 없으면 답을 만들지 않는다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: { ...SINGLE_METADATA_PLAN, temporalOrder: 'oldest' },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [UNDATED_INDEX_RECORD],
+      retrieveSemanticMatches: async () => [],
+    })
+
+    expect(result).toMatchObject({
+      kind: 'refusal',
+      refusalReason: 'insufficient_search_match',
+      matches: [],
+    })
+  })
+
+  it('진행 중 프로젝트는 게시 글이 아니라 시작 시점 문장으로 답한다', async () => {
+    const ongoingProject: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/project/ongoing',
+      slug: 'ongoing',
+      title: '진행 중 프로젝트',
+      url: '/ko/projects/ongoing',
+      publishedAt: null,
+      evidenceTime: {
+        kind: 'project_started',
+        value: '2026-03-01T00:00:00.000Z',
+      },
+    }
+    const result = await executeChatRetrievalPlan({
+      plan: { ...SINGLE_METADATA_PLAN, temporalOrder: 'latest' },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [ongoingProject],
+      retrieveSemanticMatches: async () => [],
+    })
+
+    expect(result).toMatchObject({
+      kind: 'direct',
+      response: {
+        answer: expect.stringContaining('시작한 프로젝트'),
+      },
+    })
+  })
+
   it('같은 인용 URL을 공유해도 내용이 다른 하위 청크는 유지한다', async () => {
     const records = [
       'The queue stores pending jobs.',

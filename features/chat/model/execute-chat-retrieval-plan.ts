@@ -15,7 +15,10 @@ import {
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
-import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type {
+  ChatEvidenceRecord,
+  ChatEvidenceTimeKind,
+} from '@/features/chat/model/chat-evidence'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
@@ -73,6 +76,11 @@ const DIRECT_METADATA_RESPONSES = {
       latest: '가장 최근 글은 {title}이며, {date}에 게시됐습니다.',
       oldest: '가장 오래된 글은 {title}이며, {date}에 게시됐습니다.',
     },
+    project_started: {
+      latest: '가장 최근에 시작한 프로젝트는 {title}이며, {date}에 시작했습니다.',
+      oldest:
+        '가장 오래전에 시작한 프로젝트는 {title}이며, {date}에 시작했습니다.',
+    },
     project_ended: {
       latest: '가장 최근에 끝난 프로젝트는 {title}이며, {date}에 완료됐습니다.',
       oldest:
@@ -84,6 +92,10 @@ const DIRECT_METADATA_RESPONSES = {
       latest: 'The latest post is {title}, published on {date}.',
       oldest: 'The oldest post is {title}, published on {date}.',
     },
+    project_started: {
+      latest: 'The most recently started project is {title}, started on {date}.',
+      oldest: 'The earliest started project is {title}, started on {date}.',
+    },
     project_ended: {
       latest:
         'The most recently completed project is {title}, completed on {date}.',
@@ -91,6 +103,22 @@ const DIRECT_METADATA_RESPONSES = {
     },
   },
 } as const
+
+type DirectMetadataResponseKind = keyof (typeof DIRECT_METADATA_RESPONSES)['ko']
+
+function resolveDirectMetadataResponseKind(
+  evidenceTimeKind: ChatEvidenceTimeKind | undefined,
+): DirectMetadataResponseKind {
+  if (evidenceTimeKind === 'project_started') {
+    return 'project_started'
+  }
+
+  if (evidenceTimeKind === 'project_ended') {
+    return 'project_ended'
+  }
+
+  return 'published'
+}
 
 const STRUCTURED_PROFILE_RESPONSE = {
   ko: {
@@ -143,16 +171,17 @@ const TECH_STACK_PROFILE_RESPONSE = {
   },
 } as const
 
-function resolveEvidenceTimestamp(record: ChatEvidenceRecord): number {
+/** 날짜가 없는 근거는 시간 정렬에서 제외해야 하므로 null로 구분한다. */
+function resolveEvidenceTimestamp(record: ChatEvidenceRecord): number | null {
   const timestampValue = record.evidenceTime?.value ?? record.publishedAt
 
   if (!timestampValue) {
-    return 0
+    return null
   }
 
   const timestamp = new Date(timestampValue).getTime()
 
-  return Number.isNaN(timestamp) ? 0 : timestamp
+  return Number.isNaN(timestamp) ? null : timestamp
 }
 
 function recordMatchesSourcePlan(
@@ -237,8 +266,15 @@ function sortMatchesByPlan(
       return 0
     }
 
-    const timeDifference =
-      resolveEvidenceTimestamp(rightMatch) - resolveEvidenceTimestamp(leftMatch)
+    const leftTimestamp = resolveEvidenceTimestamp(leftMatch)
+    const rightTimestamp = resolveEvidenceTimestamp(rightMatch)
+
+    // 날짜가 없는 항목은 가장 오래된 항목으로 취급하지 않고 항상 뒤로 보낸다.
+    if (leftTimestamp === null || rightTimestamp === null) {
+      return (leftTimestamp === null ? 1 : 0) - (rightTimestamp === null ? 1 : 0)
+    }
+
+    const timeDifference = rightTimestamp - leftTimestamp
 
     return plan.temporalOrder === 'oldest' ? -timeDifference : timeDifference
   })
@@ -368,10 +404,11 @@ function buildDirectMetadataResult(params: {
     }
   }
 
-  const selectedRecord = sortMatchesByPlan(
-    [...uniqueDocumentMap.values()],
-    params.plan,
-  )[0]
+  // 날짜가 없는 항목은 "가장 최근/오래된" 후보가 될 수 없다. 그대로 고르면 날짜 없는 문장이 나온다.
+  const datedRecords = [...uniqueDocumentMap.values()].filter((record) => {
+    return resolveEvidenceTimestamp(record) !== null
+  })
+  const selectedRecord = sortMatchesByPlan(datedRecords, params.plan)[0]
 
   if (!selectedRecord) {
     return {
@@ -382,10 +419,9 @@ function buildDirectMetadataResult(params: {
   }
 
   const temporalOrder = params.plan.temporalOrder ?? 'latest'
-  const responseKind =
-    selectedRecord.evidenceTime?.kind === 'project_ended'
-      ? 'project_ended'
-      : 'published'
+  const responseKind = resolveDirectMetadataResponseKind(
+    selectedRecord.evidenceTime?.kind,
+  )
   const responseTemplate =
     DIRECT_METADATA_RESPONSES[params.locale][responseKind][temporalOrder]
   const answer = responseTemplate

@@ -92,6 +92,43 @@ const RECENT_PROJECT_AI_PLAN: ChatRetrievalPlan = {
 }
 
 describe('executeChatRetrievalPlan', () => {
+  it('같은 인용 URL을 공유해도 내용이 다른 하위 청크는 유지한다', async () => {
+    const records = [
+      'The queue stores pending jobs.',
+      'The queue recovers interrupted jobs.',
+    ].map((content, index) => ({
+      ...OLDER_AI_PROJECT,
+      id: `en/queue/chunk/${index}`,
+      locale: 'en' as const,
+      slug: 'queue',
+      title: 'Queue',
+      url: '/en/queue#operation',
+      content,
+      excerpt: content,
+      tags: [],
+      searchTerms: [],
+    }))
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion: 'Explain queue operation.',
+        operation: 'summarize',
+        sourceStrategy: 'all',
+        sourceCategories: [],
+        requiredConcepts: [],
+        temporalStrategy: 'none',
+        temporalOrder: null,
+        maximumEvidenceCount: 3,
+      },
+      locale: 'en',
+      blogRecords: [],
+      curatedRecords: records,
+      retrieveSemanticMatches: async () => records,
+    })
+    expect(result.matches.map((record) => record.id)).toEqual(
+      expect.arrayContaining(records.map((record) => record.id)),
+    )
+  })
   it.each(['latest', 'oldest'] as const)(
     '%s 문서 선택은 리랭커가 섹션 순서를 뒤집어도 유지한다',
     async (temporalOrder) => {
@@ -663,7 +700,7 @@ describe('executeChatRetrievalPlan', () => {
     expect(result.matches[0]?.id).toBe(semanticOnlyRecord.id)
   })
 
-  it('같은 섹션(URL)의 청크를 최종 근거에 두 번 넣지 않는다', async () => {
+  it('같은 섹션의 앞뒤 청크는 서로 다른 근거로 보존한다', async () => {
     const sharedSectionRecords: ChatEvidenceRecord[] = [
       {
         ...RECENT_AI_PROJECT,
@@ -709,6 +746,14 @@ describe('executeChatRetrievalPlan', () => {
     })
 
     expect(matchUrls).toContain('/ko/projects/ai-usage#활용-방식')
-    expect(new Set(matchUrls).size).toBe(matchUrls.length)
+    expect(result.matches.map((match) => match.id)).toEqual(
+      expect.arrayContaining([
+        'ko/project/ai-usage-part-1',
+        'ko/project/ai-usage-part-2',
+      ]),
+    )
+    expect(new Set(result.matches.map((match) => match.id)).size).toBe(
+      result.matches.length,
+    )
   })
 })

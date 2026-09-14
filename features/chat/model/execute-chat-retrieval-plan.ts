@@ -252,7 +252,6 @@ function limitMatchesWithDiversity(params: {
 }): ChatEvidenceRecord[] {
   const groupCountMap = new Map<string, number>()
   const selectedMatchIds = new Set(params.requiredMatchIds)
-  const selectedUrlSet = new Set<string>()
 
   if (selectedMatchIds.size > params.maximumEvidenceCount) {
     return []
@@ -266,7 +265,6 @@ function limitMatchesWithDiversity(params: {
     const groupKey = params.diversityPolicy.resolveGroupKey(match)
 
     groupCountMap.set(groupKey, (groupCountMap.get(groupKey) ?? 0) + 1)
-    selectedUrlSet.add(match.url)
   }
 
   for (const match of params.matches) {
@@ -278,11 +276,6 @@ function limitMatchesWithDiversity(params: {
       break
     }
 
-    // 같은 섹션(URL)의 청크를 두 번 넣으면 답변에 중복 근거가 들어간다.
-    if (selectedUrlSet.has(match.url)) {
-      continue
-    }
-
     const groupKey = params.diversityPolicy.resolveGroupKey(match)
     const groupMatchCount = groupCountMap.get(groupKey) ?? 0
 
@@ -291,7 +284,6 @@ function limitMatchesWithDiversity(params: {
     }
 
     groupCountMap.set(groupKey, groupMatchCount + 1)
-    selectedUrlSet.add(match.url)
     selectedMatchIds.add(match.id)
   }
 

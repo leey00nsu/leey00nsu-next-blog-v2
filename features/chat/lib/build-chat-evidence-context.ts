@@ -153,6 +153,7 @@ function buildEvidenceEntry(params: {
   const sectionLabel =
     match.sectionTitle ?? CHAT_EVIDENCE_CONTEXT.INTRO_SECTION_LABEL
   const metadata = [
+    `- evidence_id=${match.id}`,
     `- source=${match.sourceCategory}`,
     `- title=${match.title}`,
     `  section=${sectionLabel}`,

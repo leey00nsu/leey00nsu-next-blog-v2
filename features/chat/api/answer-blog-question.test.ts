@@ -33,6 +33,38 @@ const BLOG_EVIDENCE_RECORD: ChatEvidenceRecord = {
 }
 
 describe('answerBlogQuestion', () => {
+  it('근거 ID를 서버에서 URL로 변환하고 모델이 URL을 작성하지 않게 한다', async () => {
+    const evidence = {
+      ...BLOG_EVIDENCE_RECORD,
+      id: 'en/fictional/measurement',
+      title: 'Measurement',
+      url: '/en/notes/measurement#result',
+      content: 'The measured delay was 7.25 seconds.',
+    }
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        answer: 'The delay was 7.25 seconds.',
+        usedEvidenceIds: [evidence.id],
+        refusalReason: null,
+      },
+    })
+    const { answerBlogQuestion } = await import('./answer-blog-question')
+    const result = await answerBlogQuestion({
+      question: 'What delay was measured?',
+      matches: [evidence],
+    })
+    expect(result).toMatchObject({
+      ok: true,
+      draftAnswer: { usedCitationUrls: [evidence.url] },
+    })
+    expect(
+      generateTextMock.mock.calls[0][0].output.schema.safeParse({
+        answer: 'Unrelated',
+        usedEvidenceIds: ['missing-evidence'],
+        refusalReason: null,
+      }).success,
+    ).toBe(false)
+  })
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
@@ -49,7 +81,7 @@ describe('answerBlogQuestion', () => {
     generateTextMock.mockResolvedValueOnce({
       output: {
         answer: '이윤수는 Vercel을 사용해 본 경험이 있습니다.',
-        usedCitationUrls: ['/ko/blog/why-i-do-not-use-vercel-anymore'],
+        usedEvidenceIds: [BLOG_EVIDENCE_RECORD.id],
         refusalReason: null,
       },
     })
@@ -81,7 +113,7 @@ describe('answerBlogQuestion', () => {
       .mockResolvedValueOnce({
         output: {
           answer: 'Vercel 대신 Coolify를 선택했습니다.',
-          usedCitationUrls: ['/ko/blog/why-i-do-not-use-vercel-anymore'],
+          usedEvidenceIds: [BLOG_EVIDENCE_RECORD.id],
           refusalReason: null,
         },
       })

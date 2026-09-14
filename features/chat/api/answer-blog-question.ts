@@ -1,5 +1,6 @@
 import { generateText, Output } from 'ai'
 import { openai } from '@ai-sdk/openai'
+import { z } from 'zod'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { getBlogChatAnswerModel } from '@/features/chat/config/chat-models'
 import { buildChatEvidenceContext } from '@/features/chat/lib/build-chat-evidence-context'
@@ -33,9 +34,12 @@ Rules:
 - Return plain text only. Do not use Markdown, headings, bullet markers, code fences, or inline links.
 - Never speak as if you are the author. Refer to the author in third person.
 - First-person statements in blog evidence describe the blog author. Use them as author evidence, but answer in third person.
-- If the question is about the author, answer only within the profile, project, or assistant evidence and avoid personality speculation.
+- Questions about the author's experience may use any supplied site evidence, including blog retrospectives. Avoid personality speculation.
+- Preserve the distinction between motivation and outcome, measured results and allocated resources, and separate execution environments. Do not turn a configuration into a recommendation without supporting evidence.
+- Correct a false premise when evidence contradicts it; do not refuse merely because the question is leading.
+- When only part of a question is supported, answer that part and explicitly state what cannot be established. Refuse only when no meaningful answer is supported.
 - If the question is about your identity or relationship to the author, answer as the chatbot using assistant or profile evidence.
-- usedCitationUrls must contain only URLs from TRUSTED_SITE_EVIDENCE that support the answer.`,
+- usedEvidenceIds must select the evidence_id values that support the answer. Never generate or edit citation URLs.`,
   QUESTION_LABEL: 'USER_QUESTION',
   EVIDENCE_LABEL: 'TRUSTED_SITE_EVIDENCE',
 } as const
@@ -64,6 +68,25 @@ export async function answerBlogQuestion({
     maximumCharacters: BLOG_CHAT.PROMPT.MAXIMUM_CONTEXT_CHARACTERS,
   })
 
+  const evidenceIds = matches.map((match) => match.id)
+  if (evidenceIds.length === 0) {
+    return {
+      ok: true,
+      draftAnswer: {
+        answer: '',
+        usedCitationUrls: [],
+        refusalReason: 'insufficient_evidence',
+      },
+    }
+  }
+  const answerSchema = BlogChatModelDraftSchema.omit({
+    usedCitationUrls: true,
+  }).extend({
+    usedEvidenceIds: z
+      .array(z.enum(evidenceIds as [string, ...string[]]))
+      .max(BLOG_CHAT.PROMPT.MAXIMUM_CITATION_COUNT),
+  })
+
   for (
     let attemptCount = 0;
     attemptCount < BLOG_CHAT.PROMPT.MAXIMUM_ATTEMPT_COUNT;
@@ -76,7 +99,7 @@ export async function answerBlogQuestion({
           BLOG_CHAT.PROMPT.MODEL_TIMEOUT_MILLISECONDS,
         ),
         output: Output.object({
-          schema: BlogChatModelDraftSchema,
+          schema: answerSchema,
         }),
         system: BLOG_CHAT_PROMPT.SYSTEM,
         prompt: [
@@ -89,9 +112,21 @@ export async function answerBlogQuestion({
         ].join('\n'),
       })
 
+      const draft = answerSchema.parse(output)
+      const selectedIds = new Set(draft.usedEvidenceIds)
       return {
         ok: true,
-        draftAnswer: output as BlogChatModelDraft,
+        draftAnswer: {
+          answer: draft.answer,
+          refusalReason: draft.refusalReason,
+          usedCitationUrls: [
+            ...new Set(
+              matches
+                .filter((match) => selectedIds.has(match.id))
+                .map((match) => match.url),
+            ),
+          ],
+        },
       }
     } catch {
       continue

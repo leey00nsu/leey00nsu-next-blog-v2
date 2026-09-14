@@ -1,5 +1,7 @@
 export const POST_SEARCH = {
   INTRO_SECTION_SLUG: 'intro',
+  /** CRLF로 저장된 글도 같은 줄 단위로 다루기 위한 줄바꿈 표기. */
+  LINE_ENDING_PATTERN: /\r\n?/g,
   EXCERPT_MAX_LENGTH: 220,
   CONTENT_MAX_LENGTH: 1200,
   CONTENT_CHUNK_OVERLAP_LENGTH: 160,

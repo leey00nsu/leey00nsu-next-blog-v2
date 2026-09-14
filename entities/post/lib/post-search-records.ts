@@ -267,7 +267,9 @@ function buildHeadingSections(content: string): {
   introLines: string[]
   headingSections: HeadingSection[]
 } {
-  const lines = content.split('\n')
+  // CRLF로 저장된 글도 제목을 제목으로 인식해야 한다. 줄 끝 \r이 남으면 제목 정규식이 빗나가
+  // 글 전체가 하나의 서론 덩어리로 잘린다.
+  const lines = content.replaceAll(POST_SEARCH.LINE_ENDING_PATTERN, '\n').split('\n')
   const headingSections: HeadingSection[] = []
   const introLines: string[] = []
   const slugger = new GithubSlugger()

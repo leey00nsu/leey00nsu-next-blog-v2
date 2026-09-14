@@ -170,3 +170,17 @@ ${longSectionBody}
     ).toBe('ko/react-query-guide/intro-part-2')
   })
 })
+  it('CRLF 줄바꿈이어도 제목을 섹션으로 나눈다', () => {
+    const result = buildPostSearchRecords({
+      post: createMockPost(
+        '\n도입부 문단입니다.\r\n\r\n## 플러그인을 통한 해결 방법\r\n오류를 재현하고 대체 구현을 찾습니다.\r\n',
+      ),
+      locale: 'ko',
+    })
+
+    expect(result).toHaveLength(2)
+    expect(result[1].sectionTitle).toBe('플러그인을 통한 해결 방법')
+    expect(result[1].url).toBe(
+      '/ko/blog/react-query-guide#플러그인을-통한-해결-방법',
+    )
+  })

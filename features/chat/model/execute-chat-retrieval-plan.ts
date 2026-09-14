@@ -80,7 +80,8 @@ const DIRECT_METADATA_RESPONSES = {
       oldest: '가장 오래된 글은 {title}이며, {date}에 게시됐습니다.',
     },
     project_started: {
-      latest: '가장 최근에 시작한 프로젝트는 {title}이며, {date}에 시작했습니다.',
+      latest:
+        '가장 최근에 시작한 프로젝트는 {title}이며, {date}에 시작했습니다.',
       oldest:
         '가장 오래전에 시작한 프로젝트는 {title}이며, {date}에 시작했습니다.',
     },
@@ -96,7 +97,8 @@ const DIRECT_METADATA_RESPONSES = {
       oldest: 'The oldest post is {title}, published on {date}.',
     },
     project_started: {
-      latest: 'The most recently started project is {title}, started on {date}.',
+      latest:
+        'The most recently started project is {title}, started on {date}.',
       oldest: 'The earliest started project is {title}, started on {date}.',
     },
     project_ended: {
@@ -125,8 +127,7 @@ function resolveDirectMetadataResponseKind(
 
 const STRUCTURED_PROFILE_RESPONSE = {
   ko: {
-    recentCareerPattern:
-      /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무))/u,
+    recentCareerPattern: /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무))/u,
     recentCareerAnswer:
       '가장 최근 근무처는 {workplace}이며, {startDate}부터 {endDate}까지 근무했습니다.',
     careerSection: '경력',
@@ -274,7 +275,9 @@ function sortMatchesByPlan(
 
     // 날짜가 없는 항목은 가장 오래된 항목으로 취급하지 않고 항상 뒤로 보낸다.
     if (leftTimestamp === null || rightTimestamp === null) {
-      return (leftTimestamp === null ? 1 : 0) - (rightTimestamp === null ? 1 : 0)
+      return (
+        (leftTimestamp === null ? 1 : 0) - (rightTimestamp === null ? 1 : 0)
+      )
     }
 
     const timeDifference = rightTimestamp - leftTimestamp
@@ -668,9 +671,11 @@ export async function executeChatRetrievalPlan({
     concepts: plan.requiredConcepts,
     records: [...blogRecords, ...curatedRecords],
   })
-  const unverifiableRequiredConcepts = plan.requiredConcepts.filter((concept) => {
-    return !enforceableRequiredConcepts.includes(concept)
-  })
+  const unverifiableRequiredConcepts = plan.requiredConcepts.filter(
+    (concept) => {
+      return !enforceableRequiredConcepts.includes(concept)
+    },
+  )
   const evidencePlan: ChatRetrievalPlan = {
     ...plan,
     requiredConcepts: enforceableRequiredConcepts,
@@ -684,7 +689,9 @@ export async function executeChatRetrievalPlan({
     ),
   }
   const preferredSourceCategories =
-    evidencePlan.sourceStrategy === 'prefer' ? evidencePlan.sourceCategories : []
+    evidencePlan.sourceStrategy === 'prefer'
+      ? evidencePlan.sourceCategories
+      : []
   const rankingConcepts = [
     ...evidencePlan.requiredConcepts,
     ...evidencePlan.optionalConcepts,
@@ -754,9 +761,43 @@ export async function executeChatRetrievalPlan({
       locale,
     }).queryTokens,
   })
+  const supportingMatches = requiredConceptMatches.flatMap((requiredMatch) => {
+    return selectChatSearchMatches({
+      question: evidencePlan.standaloneQuestion,
+      locale,
+      records: scopedRecords.filter(
+        (record) =>
+          record.slug === requiredMatch.slug &&
+          record.sourceCategory === requiredMatch.sourceCategory,
+      ),
+      allowBroadMatch: true,
+      maximumMatchCount: evidencePlan.maximumEvidenceCount,
+      diversityPolicy: {
+        resolveGroupKey: (record) => record.url,
+        maximumMatchesPerGroup: evidencePlan.maximumEvidenceCount,
+      },
+    }).matches
+  })
+  const targetMetadataMatches = scopedRecords.filter(
+    (record) =>
+      record.id.endsWith('/metadata') &&
+      evidencePlan.canonicalTargets.some(
+        (target) =>
+          target.slug === record.slug &&
+          target.sourceCategory === record.sourceCategory,
+      ),
+  )
   const seededMatches = [
     ...fusedMatches,
-    ...requiredConceptMatches.filter((requiredMatch) => {
+    ...[
+      ...requiredConceptMatches,
+      ...supportingMatches,
+      ...targetMetadataMatches,
+    ].filter((requiredMatch, index, additions) => {
+      if (
+        additions.findIndex((match) => match.id === requiredMatch.id) !== index
+      )
+        return false
       return !fusedMatches.some((match) => match.id === requiredMatch.id)
     }),
   ]
@@ -771,10 +812,6 @@ export async function executeChatRetrievalPlan({
     evidencePlan.temporalStrategy === 'single'
       ? selectSingleDocumentMatches(sortedMatches, sortedMatches.length)
       : sortedMatches
-  const requiredMatchIds = collectRequiredMatchIds({
-    matches: sortedMatches,
-    requiredConcepts: evidencePlan.requiredConcepts,
-  })
   // 리랭커는 최종 근거 수를 정하기 전에 넓은 후보 풀에서 고른다. 선별 뒤에 호출하면
   // 이미 잘린 목록의 순서만 바꿀 수 있어, 후보에 있던 근거를 살릴 수 없다.
   const rerankResult = shouldRerankChatEvidence({
@@ -795,6 +832,10 @@ export async function executeChatRetrievalPlan({
     evidencePlan.temporalStrategy === 'rank'
       ? sortMatchesByPlan(rerankedMatches, evidencePlan, false)
       : rerankedMatches
+  const requiredMatchIds = collectRequiredMatchIds({
+    matches: orderedMatches,
+    requiredConcepts: evidencePlan.requiredConcepts,
+  })
   const limitedMatches =
     evidencePlan.temporalStrategy === 'single'
       ? selectSingleDocumentMatches(

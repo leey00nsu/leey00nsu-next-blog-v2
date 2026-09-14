@@ -22,6 +22,102 @@ function buildEvidenceRecord(
 }
 
 describe('buildChatEvidenceContext', () => {
+  it.each([0, 1, 20, 180, 400, 900])(
+    '메타데이터보다 작은 예산을 포함해 %i자 한도를 넘지 않는다',
+    (maximumCharacters) => {
+      const context = buildChatEvidenceContext({
+        question: '자주빛 시료 보관 조건',
+        matches: [
+          buildEvidenceRecord(
+            'storage',
+            '자주빛 시료는 밀봉합니다. '.repeat(80),
+          ),
+          buildEvidenceRecord(
+            'transport',
+            '시료 보관 온도는 일정하게 유지합니다.',
+          ),
+        ],
+        maximumRecordCount: 2,
+        maximumCharacters,
+      })
+      expect(context.length).toBeLessThanOrEqual(maximumCharacters)
+    },
+  )
+
+  it('반복되는 제품명과 긴 로그 사이에서도 별도 원인 구간을 보존한다', () => {
+    const introduction = 'Nebula 장치는 Nebula 모듈로 Nebula 기록을 전송합니다.'
+    const cause = '검증기 지원이 중단되어 대형 관측 기록의 검사가 실패했습니다.'
+    const context = buildChatEvidenceContext({
+      question: 'Nebula 장치의 검증기 지원 중단 문제는?',
+      matches: [
+        buildEvidenceRecord(
+          'observatory',
+          [
+            introduction,
+            '```text\n' + 'Nebula transport trace\n'.repeat(80) + '```',
+            cause,
+          ].join('\n\n'),
+        ),
+      ],
+      maximumRecordCount: 1,
+      maximumCharacters: 400,
+    })
+
+    expect(context).toContain(cause)
+    expect(context).toContain(introduction)
+    expect(context.indexOf(introduction)).toBeLessThan(context.indexOf(cause))
+    expect(
+      context.slice(context.indexOf(introduction), context.indexOf(cause)),
+    ).toContain('…')
+    expect(context.length).toBeLessThanOrEqual(400)
+  })
+
+  it('이름이 반복되는 앞부분보다 뒤쪽의 질문 조건을 보존한다', () => {
+    const condition =
+      '시료 보관은 길수록 좋지 않으며 건조한 용기에 6시간 이내로 제한합니다.'
+    const context = buildChatEvidenceContext({
+      question: 'Nebula 시료 보관은 길수록 좋은가?',
+      matches: [
+        buildEvidenceRecord(
+          'specimen',
+          [
+            'Nebula 시료는 Nebula 장치로 Nebula 실험실에서 측정합니다.',
+            '장치 설치와 전원 연결 절차를 설명합니다. '.repeat(80),
+            condition,
+          ].join('\n\n'),
+        ),
+      ],
+      maximumRecordCount: 1,
+      maximumCharacters: 350,
+    })
+
+    expect(context).toContain(condition)
+    expect(context.length).toBeLessThanOrEqual(350)
+  })
+
+  it('단일 표의 뒤쪽 관련 행도 온전히 보존한다', () => {
+    const targetRow = '| 자주빛 시료 | 37시간 |'
+    const content = [
+      '| 시료 | 보관 |',
+      '| --- | --- |',
+      ...Array.from(
+        { length: 60 },
+        (_, index) => `| 무색 시료 ${index} | 2시간 |`,
+      ),
+      targetRow,
+    ].join('\n')
+    const context = buildChatEvidenceContext({
+      question: '자주빛 시료의 보관 시간',
+      matches: [buildEvidenceRecord('samples', content)],
+      maximumRecordCount: 1,
+      maximumCharacters: 400,
+    })
+
+    expect(context).toContain('| 시료 | 보관 |\n| --- | --- |')
+    expect(context).toContain(targetRow)
+    expect(context.length).toBeLessThanOrEqual(400)
+  })
+
   it('예산 안의 근거는 질문 단어 빈도와 무관하게 전체 내용을 보존한다', () => {
     const content =
       '측정 결과는 다음과 같다.\n\n| 항목 | 값 |\n| --- | --- |\n| 지연 | 7.25 |\n\n제약 때문에 이전했다. 따라서 운영 부담이 줄었다.'

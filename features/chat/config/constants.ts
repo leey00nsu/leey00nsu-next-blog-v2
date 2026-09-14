@@ -89,10 +89,6 @@ export const BLOG_CHAT = {
     ),
   },
   RERANK: {
-    MAXIMUM_CANDIDATE_COUNT: parseIntegerEnvironmentValue(
-      process.env.BLOG_CHAT_RERANK_MAXIMUM_CANDIDATE_COUNT,
-      12,
-    ),
     LONG_QUESTION_MINIMUM_LENGTH: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_RERANK_LONG_QUESTION_MINIMUM_LENGTH,
       36,

@@ -12,6 +12,8 @@ interface BuildChatEvidenceContextParams {
 const CHAT_EVIDENCE_CONTEXT = {
   INTRO_SECTION_LABEL: 'intro',
   ENTRY_SEPARATOR: '\n',
+  CONTENT_SEPARATOR: '\n\n',
+  OMITTED_CONTENT_SEPARATOR: '\n\n…\n\n',
   TRUNCATION_MARKER: '…',
   OMITTED_TABLE_ROW_MARKER: '| … |',
   CONTENT_SEGMENT_PATTERN: /(?<=[.!?。！？])\s+/gu,
@@ -61,7 +63,10 @@ function selectMarkdownTableRows(params: {
       leftRow.originalIndex - rightRow.originalIndex
     )
   })) {
-    if (selectedCharacters + scoredRow.row.length + 1 > params.maximumCharacters) {
+    if (
+      selectedCharacters + scoredRow.row.length + 1 >
+      params.maximumCharacters
+    ) {
       continue
     }
 
@@ -165,7 +170,9 @@ function selectRelevantEvidenceContent(params: {
           selectMarkdownTableRows({
             block,
             queryTokens,
-            maximumCharacters: params.maximumCharacters,
+            maximumCharacters:
+              params.maximumCharacters -
+              CHAT_EVIDENCE_CONTEXT.OMITTED_CONTENT_SEPARATOR.length * 2,
           }),
         ]
       }
@@ -178,60 +185,90 @@ function selectRelevantEvidenceContent(params: {
     })
     .map((contentSegment, originalIndex) => {
       const normalizedSegment = contentSegment.toLowerCase().trim()
-      const relevanceScore = queryTokens.reduce((score, queryToken) => {
-        return score + countTokenOccurrences(normalizedSegment, queryToken)
-      }, 0)
-
       return {
         content: contentSegment.trim(),
         originalIndex,
-        relevanceScore,
+        matchedTokens: new Set(
+          queryTokens.filter((queryToken) =>
+            normalizedSegment.includes(queryToken),
+          ),
+        ),
       }
     })
     .filter((contentSegment) => {
       return Boolean(contentSegment.content)
     })
 
-  if (queryTokens.length === 0 || contentSegments.length <= 1) {
+  if (
+    queryTokens.length === 0 ||
+    !contentSegments.some((segment) => segment.matchedTokens.size > 0)
+  ) {
     return truncateEvidenceEntry(params.match.content, params.maximumCharacters)
   }
 
-  const bestSegment = contentSegments.reduce((best, segment) => {
-    return segment.relevanceScore > best.relevanceScore ? segment : best
-  }, contentSegments[0])
-  let startIndex = contentSegments.indexOf(bestSegment)
-  let endIndex = startIndex + 1
-  let relevantSegments = bestSegment.content
-  // Expand contiguously: never splice unrelated sentences into a new causal claim.
-  while (startIndex > 0 || endIndex < contentSegments.length) {
-    const preceding =
-      startIndex > 0 ? contentSegments[startIndex - 1].content : null
-    const following =
-      endIndex < contentSegments.length
-        ? contentSegments[endIndex].content
-        : null
-    if (
-      preceding &&
-      preceding.length + relevantSegments.length + 2 <= params.maximumCharacters
-    ) {
-      relevantSegments = `${preceding}\n\n${relevantSegments}`
-      startIndex -= 1
-    } else if (
-      following &&
-      following.length + relevantSegments.length + 2 <= params.maximumCharacters
-    ) {
-      relevantSegments = `${relevantSegments}\n\n${following}`
-      endIndex += 1
-    } else {
-      break
-    }
-  }
-  if (startIndex > 0) relevantSegments = `…\n${relevantSegments}`
-
-  return truncateEvidenceEntry(
-    relevantSegments || params.match.content,
-    params.maximumCharacters,
+  const selectedIndexes = new Set<number>()
+  const coveredTokens = new Set<string>()
+  const tokenFrequencies = new Map(
+    queryTokens.map((token) => [
+      token,
+      contentSegments.filter((segment) => segment.matchedTokens.has(token))
+        .length,
+    ]),
   )
+  function formatSelectedContent(indexes: Set<number>): string {
+    let previousIndex = -1
+    const parts: string[] = []
+    for (const segment of contentSegments) {
+      if (!indexes.has(segment.originalIndex)) continue
+      if (segment.originalIndex > previousIndex + 1) {
+        parts.push(CHAT_EVIDENCE_CONTEXT.OMITTED_CONTENT_SEPARATOR)
+      } else if (parts.length > 0) {
+        parts.push(CHAT_EVIDENCE_CONTEXT.CONTENT_SEPARATOR)
+      }
+      parts.push(segment.content)
+      previousIndex = segment.originalIndex
+    }
+    if (previousIndex < contentSegments.length - 1) {
+      parts.push(CHAT_EVIDENCE_CONTEXT.OMITTED_CONTENT_SEPARATOR)
+    }
+    return parts.join('').trim()
+  }
+
+  // 반복되는 이름보다 아직 담지 못한 질문 근거를 우선한다.
+  // 떨어진 블록은 원문 순서와 생략 표시를 유지해 인과관계로 이어 붙이지 않는다.
+  while (selectedIndexes.size < contentSegments.length) {
+    const candidates = contentSegments
+      .filter((segment) => !selectedIndexes.has(segment.originalIndex))
+      .map((segment) => ({
+        ...segment,
+        relevanceScore:
+          [...segment.matchedTokens].reduce((score, token) => {
+            return coveredTokens.has(token)
+              ? score
+              : score + 1 / (tokenFrequencies.get(token) ?? 1)
+          }, 0) / segment.content.length,
+      }))
+      .toSorted((left, right) => {
+        return (
+          right.relevanceScore - left.relevanceScore ||
+          left.originalIndex - right.originalIndex
+        )
+      })
+    const selected = candidates.find((segment) => {
+      return (
+        formatSelectedContent(
+          new Set([...selectedIndexes, segment.originalIndex]),
+        ).length <= params.maximumCharacters
+      )
+    })
+    if (!selected) break
+    selectedIndexes.add(selected.originalIndex)
+    for (const token of selected.matchedTokens) coveredTokens.add(token)
+  }
+
+  return selectedIndexes.size > 0
+    ? formatSelectedContent(selectedIndexes)
+    : truncateEvidenceEntry(params.match.content, params.maximumCharacters)
 }
 
 function buildEvidenceEntry(params: {

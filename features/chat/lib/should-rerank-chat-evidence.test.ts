@@ -43,6 +43,17 @@ describe('shouldRerankChatEvidence', () => {
     ).toBe(false)
   })
 
+  it('짧은 질문도 최종 근거보다 후보가 많으면 선별한다', () => {
+    expect(
+      shouldRerankChatEvidence({
+        question: '저장 방법?',
+        matchCount: BASE_PLAN.maximumEvidenceCount + 1,
+        plan: BASE_PLAN,
+        hasConversationContext: false,
+      }),
+    ).toBe(true)
+  })
+
   it('같은 문서 안에서 비교하는 복합 질문은 rerank 대상으로 분류한다', () => {
     expect(
       shouldRerankChatEvidence({

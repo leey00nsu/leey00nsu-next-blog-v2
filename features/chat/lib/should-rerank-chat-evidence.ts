@@ -34,8 +34,8 @@ function hasCompoundQuestion(question: string): boolean {
  * LLM rerank 호출 여부를 정한다.
  *
  * rerank는 외부 모델 호출이므로 근거가 하나뿐이면 재정렬할 여지가 없어 건너뛰고,
- * 짧고 단순한 질문도 휴리스틱 순서로 충분하므로 건너뛴다. 여러 근거를 비교해야 하는
- * 긴 질문, 이어지는 대화, 복합 질문에서만 호출한다.
+ * 후보가 최종 근거 수보다 많으면 질문 길이와 무관하게 선별한다.
+ * 그 밖에는 긴 질문, 이어지는 대화, 복합 질문에서 호출한다.
  */
 export function shouldRerankChatEvidence(
   params: ShouldRerankChatEvidenceParams,
@@ -49,6 +49,7 @@ export function shouldRerankChatEvidence(
   }
 
   return (
+    params.matchCount > params.plan.maximumEvidenceCount ||
     params.question.length >= BLOG_CHAT.RERANK.LONG_QUESTION_MINIMUM_LENGTH ||
     params.hasConversationContext ||
     hasCompoundQuestion(params.question)

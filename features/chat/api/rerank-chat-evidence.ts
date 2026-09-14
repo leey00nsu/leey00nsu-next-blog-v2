@@ -25,17 +25,8 @@ const CHAT_RERANK_PROMPT = {
     'You rerank grounded blog evidence. Prefer evidence that directly answers the user question. Return only evidence IDs from the candidate list in best-first order.',
 } as const
 
-const ChatEvidenceRankingSchema = Output.object({
-  schema: z.object({
-    rankedEvidenceIds: z
-      .array(z.string().trim().min(1))
-      .max(BLOG_CHAT.RERANK.MAXIMUM_CANDIDATE_COUNT),
-  }),
-})
-
 function buildCandidateContext(matches: ChatEvidenceRecord[]): string {
   return matches
-    .slice(0, BLOG_CHAT.RERANK.MAXIMUM_CANDIDATE_COUNT)
     .map((match) => {
       return [
         `id=${match.id}`,
@@ -63,7 +54,13 @@ export const rerankChatEvidence: RerankChatEvidence = async ({
       abortSignal: AbortSignal.timeout(
         BLOG_CHAT.PROMPT.MODEL_TIMEOUT_MILLISECONDS,
       ),
-      output: ChatEvidenceRankingSchema,
+      output: Output.object({
+        schema: z.object({
+          rankedEvidenceIds: z
+            .array(z.string().trim().min(1))
+            .max(matches.length),
+        }),
+      }),
       system: CHAT_RERANK_PROMPT.SYSTEM,
       prompt: [
         `question=${question}`,

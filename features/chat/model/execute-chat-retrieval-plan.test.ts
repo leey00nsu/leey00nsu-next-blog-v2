@@ -277,59 +277,61 @@ describe('executeChatRetrievalPlan', () => {
     ])
   })
 
-  it.each([' ', ' ~ ', ' – '])('최근 근무처의 날짜 구분자 %s를 읽는다', async (separator) => {
-    const careerRecords: ChatEvidenceRecord[] = [
-      {
-        ...RECENT_AI_PROJECT,
-        id: 'ko/about/profile/ecount-erp',
-        slug: 'about',
-        title: 'About Me',
-        url: '/ko/about#ecount-erp',
-        excerpt: 'Ecount ERP 서버 개발자',
-        content:
-          `경력 > Ecount ERP\n2024.07${separator}2025.08 서버 개발자로 ERP 기능 개발 및 유지보수`,
-        sectionTitle: 'Ecount ERP',
-        sourceCategory: 'profile',
-      },
-      {
-        ...RECENT_AI_PROJECT,
-        id: 'ko/about/profile/previous-company',
-        slug: 'about',
-        title: 'About Me',
-        url: '/ko/about#previous-company',
-        excerpt: '이전 회사',
-        content: 'Career > 이전 회사\n2022.01 2023.12 프론트엔드 개발',
-        sectionTitle: '이전 회사',
-        sourceCategory: 'profile',
-      },
-    ]
-    const result = await executeChatRetrievalPlan({
-      plan: {
-        ...RECENT_PROJECT_AI_PLAN,
-        standaloneQuestion: '최근 어디에서 일했어?',
-        operation: 'lookup',
-        sourceCategories: ['profile'],
-        requiredConcepts: [],
-        optionalConcepts: ['career', 'workplace'],
-        temporalStrategy: 'single',
-        temporalOrder: 'latest',
-      },
-      locale: 'ko',
-      blogRecords: [],
-      curatedRecords: careerRecords,
-      retrieveSemanticMatches: async () => [],
-    })
+  it.each([' ', ' ~ ', ' – '])(
+    '최근 근무처의 날짜 구분자 %s를 읽는다',
+    async (separator) => {
+      const careerRecords: ChatEvidenceRecord[] = [
+        {
+          ...RECENT_AI_PROJECT,
+          id: 'ko/about/profile/ecount-erp',
+          slug: 'about',
+          title: 'About Me',
+          url: '/ko/about#ecount-erp',
+          excerpt: 'Ecount ERP 서버 개발자',
+          content: `경력 > Ecount ERP\n2024.07${separator}2025.08 서버 개발자로 ERP 기능 개발 및 유지보수`,
+          sectionTitle: 'Ecount ERP',
+          sourceCategory: 'profile',
+        },
+        {
+          ...RECENT_AI_PROJECT,
+          id: 'ko/about/profile/previous-company',
+          slug: 'about',
+          title: 'About Me',
+          url: '/ko/about#previous-company',
+          excerpt: '이전 회사',
+          content: 'Career > 이전 회사\n2022.01 2023.12 프론트엔드 개발',
+          sectionTitle: '이전 회사',
+          sourceCategory: 'profile',
+        },
+      ]
+      const result = await executeChatRetrievalPlan({
+        plan: {
+          ...RECENT_PROJECT_AI_PLAN,
+          standaloneQuestion: '최근 어디에서 일했어?',
+          operation: 'lookup',
+          sourceCategories: ['profile'],
+          requiredConcepts: [],
+          optionalConcepts: ['career', 'workplace'],
+          temporalStrategy: 'single',
+          temporalOrder: 'latest',
+        },
+        locale: 'ko',
+        blogRecords: [],
+        curatedRecords: careerRecords,
+        retrieveSemanticMatches: async () => [],
+      })
 
-    expect(result).toMatchObject({
-      kind: 'direct',
-      response: {
-        answer:
-          '가장 최근 근무처는 Ecount ERP이며, 2024.07부터 2025.08까지 근무했습니다.',
-        grounded: true,
-      },
-      matches: [expect.objectContaining({ sectionTitle: 'Ecount ERP' })],
-    })
-  })
+      expect(result).toMatchObject({
+        kind: 'direct',
+        response: {
+          answer:
+            '가장 최근 근무처는 Ecount ERP이며, 2024.07부터 2025.08까지 근무했습니다.',
+          grounded: true,
+        },
+        matches: [expect.objectContaining({ sectionTitle: 'Ecount ERP' })],
+      })
+    },
+  )
 
   it('직접 프로필 응답이 없는 요청도 근거 검색을 수행한다', async () => {
     const record: ChatEvidenceRecord = {

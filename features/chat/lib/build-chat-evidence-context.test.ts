@@ -79,4 +79,54 @@ describe('buildChatEvidenceContext', () => {
     expect(context).toContain('Vercel은 높은 트래픽')
     expect(context.length).toBeLessThanOrEqual(500)
   })
+
+  it('예산보다 긴 표에서는 질문과 가까운 행을 남기고 머리글을 유지한다', () => {
+    const tableRows = Array.from({ length: 40 }, (_, index) => {
+      return `| 모델 ${index} | 짧은 입력 ${index}자 | ${index * 10}초 | 0.1${index} |`
+    })
+    const content = [
+      '측정 조건을 설명합니다.',
+      '| 모델 | 입력 | 응답 시간 | RTF |',
+      '| --- | --- | --- | --- |',
+      ...tableRows.slice(0, 38),
+      '| Audio8 | 문단, 400자 | 101.32초 | 4.452 |',
+      '| Supertonic | 문단, 400자 | 13.87초 | 0.452 |',
+    ].join('\n')
+    const context = buildChatEvidenceContext({
+      question: '문단을 생성했을 때 응답 시간은 얼마였어?',
+      matches: [buildEvidenceRecord('measurement', content)],
+      maximumRecordCount: 1,
+      maximumCharacters: 800,
+    })
+
+    expect(context).toContain('| 모델 | 입력 | 응답 시간 | RTF |')
+    expect(context).toContain('| Supertonic | 문단, 400자 | 13.87초 | 0.452 |')
+    expect(context).toContain('| Audio8 | 문단, 400자 | 101.32초 | 4.452 |')
+    expect(context).toContain('| … |')
+    expect(context.length).toBeLessThanOrEqual(800)
+    for (const line of context.split('\n')) {
+      if (line.startsWith('|') && line !== '| … |') {
+        expect(line.endsWith('|')).toBe(true)
+      }
+    }
+  })
+
+  it('쓰지 않은 예산은 뒤 항목이 이어받아 균등 분배보다 많은 내용을 남긴다', () => {
+    const context = buildChatEvidenceContext({
+      question: '운영 비용을 어떻게 줄였어?',
+      matches: [
+        buildEvidenceRecord('short', '짧은 근거입니다.'),
+        buildEvidenceRecord(
+          'long',
+          `운영 비용을 줄인 방법은 다음과 같습니다. ${'자세한 설명입니다. '.repeat(200)}`,
+        ),
+      ],
+      maximumRecordCount: 2,
+      maximumCharacters: 1200,
+    })
+
+    expect(context).toContain('짧은 근거입니다.')
+    expect(context.length).toBeGreaterThan(1100)
+    expect(context.length).toBeLessThanOrEqual(1200)
+  })
 })

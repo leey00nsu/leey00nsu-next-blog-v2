@@ -13,10 +13,75 @@ const CHAT_EVIDENCE_CONTEXT = {
   INTRO_SECTION_LABEL: 'intro',
   ENTRY_SEPARATOR: '\n',
   TRUNCATION_MARKER: '…',
+  OMITTED_TABLE_ROW_MARKER: '| … |',
   CONTENT_SEGMENT_PATTERN: /(?<=[.!?。！？])\s+/gu,
+  TABLE_ROW_START_PATTERN: /^\s*\|/u,
+  TABLE_SEPARATOR_PATTERN: /^\s*\|[\s:|-]+\|\s*$/u,
   KOREAN_PARTICLE_PATTERN:
     /(?:에서|으로|에게|한테|처럼|부터|까지|은|는|이|가|을|를|와|과|로|의)$/u,
 } as const
+
+/** 표는 행이 곧 하나의 사실이므로, 잘라 버리는 대신 질문과 가까운 행을 남긴다. */
+function isMarkdownTableBlock(block: string): boolean {
+  const lines = block.split('\n')
+
+  return (
+    lines.length > 2 &&
+    CHAT_EVIDENCE_CONTEXT.TABLE_ROW_START_PATTERN.test(lines[0]) &&
+    CHAT_EVIDENCE_CONTEXT.TABLE_SEPARATOR_PATTERN.test(lines[1])
+  )
+}
+
+function selectMarkdownTableRows(params: {
+  block: string
+  queryTokens: string[]
+  maximumCharacters: number
+}): string {
+  const lines = params.block.split('\n')
+  const headerLines = lines.slice(0, 2)
+  const scoredRows = lines.slice(2).map((row, originalIndex) => {
+    return {
+      row,
+      originalIndex,
+      relevanceScore: params.queryTokens.reduce((score, queryToken) => {
+        return score + countTokenOccurrences(row.toLowerCase(), queryToken)
+      }, 0),
+    }
+  })
+  const selectedRowIndexes = new Set<number>()
+  // 행을 덜어낼 때 붙일 생략 표시 자리까지 미리 남겨 둔다.
+  let selectedCharacters =
+    headerLines.join('\n').length +
+    CHAT_EVIDENCE_CONTEXT.OMITTED_TABLE_ROW_MARKER.length +
+    1
+
+  for (const scoredRow of scoredRows.toSorted((leftRow, rightRow) => {
+    return (
+      rightRow.relevanceScore - leftRow.relevanceScore ||
+      leftRow.originalIndex - rightRow.originalIndex
+    )
+  })) {
+    if (selectedCharacters + scoredRow.row.length + 1 > params.maximumCharacters) {
+      continue
+    }
+
+    selectedRowIndexes.add(scoredRow.originalIndex)
+    selectedCharacters += scoredRow.row.length + 1
+  }
+
+  const omittedRowMarker =
+    selectedRowIndexes.size < scoredRows.length
+      ? [CHAT_EVIDENCE_CONTEXT.OMITTED_TABLE_ROW_MARKER]
+      : []
+
+  return [
+    ...headerLines,
+    ...scoredRows
+      .filter((scoredRow) => selectedRowIndexes.has(scoredRow.originalIndex))
+      .map((scoredRow) => scoredRow.row),
+    ...omittedRowMarker,
+  ].join('\n')
+}
 
 function truncateEvidenceEntry(
   entry: string,
@@ -30,10 +95,22 @@ function truncateEvidenceEntry(
     return CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER.slice(0, maximumCharacters)
   }
 
-  return `${entry.slice(
-    0,
-    maximumCharacters - CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER.length,
-  )}${CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER}`
+  const markerCharacterCount = CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER.length
+  const candidateLength = maximumCharacters - markerCharacterCount
+  const truncatedText = entry.slice(0, candidateLength)
+  const lineStartIndex = truncatedText.lastIndexOf('\n') + 1
+
+  // 표 행이 중간에서 끊기면 남은 조각이 다른 값처럼 읽힌다. 그 행은 통째로 버린다.
+  if (
+    lineStartIndex > 0 &&
+    CHAT_EVIDENCE_CONTEXT.TABLE_ROW_START_PATTERN.test(
+      truncatedText.slice(lineStartIndex),
+    )
+  ) {
+    return `${entry.slice(0, lineStartIndex - 1)}${CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER}`
+  }
+
+  return `${truncatedText}${CHAT_EVIDENCE_CONTEXT.TRUNCATION_MARKER}`
 }
 
 function countTokenOccurrences(text: string, token: string): number {
@@ -80,6 +157,19 @@ function selectRelevantEvidenceContent(params: {
   })
   const contentSegments = splitMarkdownBlocks(params.match.content)
     .flatMap((block) => {
+      if (
+        isMarkdownTableBlock(block) &&
+        block.length > params.maximumCharacters
+      ) {
+        return [
+          selectMarkdownTableRows({
+            block,
+            queryTokens,
+            maximumCharacters: params.maximumCharacters,
+          }),
+        ]
+      }
+
       // Only oversized prose is split; structured blocks retain their boundaries.
       return block.length > params.maximumCharacters &&
         !/^(?:```|~~~|\||[-*+]\s|\d+\.\s)/u.test(block)
@@ -195,18 +285,31 @@ export function buildChatEvidenceContext({
   const maximumEntryCharacters = Math.floor(
     availableEntryCharacters / selectedMatches.length,
   )
+  let usedEntryCharacters = 0
+  const entries = selectedMatches.map((match, index) => {
+    // 남은 항목의 몫을 보장한 뒤, 앞 항목이 쓰지 않은 예산은 뒤 항목이 이어받는다.
+    const remainingMatchCount = selectedMatches.length - index - 1
+    const availableCharacters = Math.max(
+      maximumEntryCharacters,
+      availableEntryCharacters -
+        usedEntryCharacters -
+        maximumEntryCharacters * remainingMatchCount,
+    )
+    const entry = truncateEvidenceEntry(
+      buildEvidenceEntry({
+        match,
+        question,
+        maximumCharacters: availableCharacters,
+      }),
+      availableCharacters,
+    )
 
-  return selectedMatches
-    .map((match) => {
-      return truncateEvidenceEntry(
-        buildEvidenceEntry({
-          match,
-          question,
-          maximumCharacters: maximumEntryCharacters,
-        }),
-        maximumEntryCharacters,
-      )
-    })
+    usedEntryCharacters += entry.length
+
+    return entry
+  })
+
+  return entries
     .join(CHAT_EVIDENCE_CONTEXT.ENTRY_SEPARATOR)
     .slice(0, maximumCharacters)
 }

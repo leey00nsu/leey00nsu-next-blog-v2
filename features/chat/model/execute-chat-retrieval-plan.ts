@@ -126,10 +126,10 @@ function resolveDirectMetadataResponseKind(
 const STRUCTURED_PROFILE_RESPONSE = {
   ko: {
     recentCareerPattern:
-      /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무)|경력|직장|근무처)/u,
+      /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무))/u,
     recentCareerAnswer:
       '가장 최근 근무처는 {workplace}이며, {startDate}부터 {endDate}까지 근무했습니다.',
-    careerSection: 'Career',
+    careerSection: '경력',
     educationPattern: /학력|학교별/u,
     experiencePattern: /대외\s*활동|동아리/u,
     educationHeading: '학력은 다음과 같습니다.',
@@ -153,7 +153,7 @@ const STRUCTURED_PROFILE_RESPONSE = {
 } as const
 
 const PROFILE_PERIOD = {
-  PATTERN: /(\d{4}\.\d{2})\s+(\d{4}\.\d{2}|present|현재)/iu,
+  PATTERN: /(\d{4}\.\d{2})(?:\s*[~–—-]\s*|\s+)(\d{4}\.\d{2}|present|현재)/iu,
 } as const
 
 const TECH_STACK_PROFILE_RESPONSE = {
@@ -469,7 +469,8 @@ function buildStructuredProfileResult(params: {
     const careerRecords = params.records.filter((record) => {
       return (
         record.sourceCategory === 'profile' &&
-        record.content.startsWith(careerSectionPrefix)
+        (record.content.startsWith(careerSectionPrefix) ||
+          record.content.startsWith('Career > '))
       )
     })
     const careerRecordsByMostRecentEndDate = careerRecords.toSorted(
@@ -652,7 +653,10 @@ export async function executeChatRetrievalPlan({
     return structuredProfileResult
   }
 
-  if (plan.executionKind !== 'retrieve_and_generate') {
+  if (
+    plan.executionKind !== 'retrieve_and_generate' &&
+    plan.executionKind !== 'direct_profile'
+  ) {
     return {
       kind: 'refusal',
       refusalReason: 'insufficient_search_match',

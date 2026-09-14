@@ -277,7 +277,7 @@ describe('executeChatRetrievalPlan', () => {
     ])
   })
 
-  it('최근 근무처 질문은 최신 Career 항목으로 직접 답한다', async () => {
+  it.each([' ', ' ~ ', ' – '])('최근 근무처의 날짜 구분자 %s를 읽는다', async (separator) => {
     const careerRecords: ChatEvidenceRecord[] = [
       {
         ...RECENT_AI_PROJECT,
@@ -287,7 +287,7 @@ describe('executeChatRetrievalPlan', () => {
         url: '/ko/about#ecount-erp',
         excerpt: 'Ecount ERP 서버 개발자',
         content:
-          'Career > Ecount ERP\n2024.07 2025.08 서버 개발자로 ERP 기능 개발 및 유지보수',
+          `경력 > Ecount ERP\n2024.07${separator}2025.08 서버 개발자로 ERP 기능 개발 및 유지보수`,
         sectionTitle: 'Ecount ERP',
         sourceCategory: 'profile',
       },
@@ -329,6 +329,34 @@ describe('executeChatRetrievalPlan', () => {
       },
       matches: [expect.objectContaining({ sectionTitle: 'Ecount ERP' })],
     })
+  })
+
+  it('직접 프로필 응답이 없는 요청도 근거 검색을 수행한다', async () => {
+    const record: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'profile/example',
+      slug: 'about',
+      sourceCategory: 'profile',
+      content: 'Example Labs 계약직으로 근무했다.',
+    }
+    const retrieveSemanticMatches = vi.fn(async () => [record])
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        executionKind: 'direct_profile',
+        standaloneQuestion: 'Example Labs에서 계약 형태는?',
+        sourceCategories: ['profile'],
+        requiredConcepts: [],
+        temporalStrategy: 'none',
+        temporalOrder: null,
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [record],
+      retrieveSemanticMatches,
+    })
+    expect(retrieveSemanticMatches).toHaveBeenCalledOnce()
+    expect(result.kind).toBe('evidence')
   })
 
   it('전체 프로젝트의 주력 기술 스택 질문은 profile 요약 근거로 직접 답한다', async () => {

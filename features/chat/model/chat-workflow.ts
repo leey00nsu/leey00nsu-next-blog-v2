@@ -823,7 +823,11 @@ function buildChatWorkflow(
         ? 'execute-direct'
         : 'retrieve-evidence'
     })
-    .addEdge('execute-direct', 'validate-response')
+    .addConditionalEdges('execute-direct', (state) =>
+      state.execution?.kind === 'evidence'
+        ? 'generate-answer'
+        : 'validate-response',
+    )
     .addConditionalEdges('retrieve-evidence', (state) => {
       return state.execution?.kind === 'evidence'
         ? 'generate-answer'

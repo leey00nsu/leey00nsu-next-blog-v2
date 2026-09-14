@@ -236,6 +236,7 @@ pnpm run db:migrate:status           # 적용 상태 확인
 - 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 이 값을 바꾸면 임베딩이 달라지므로 반드시 재색인해야 합니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
+- 재색인은 이전 활성 인덱스와 provider, 모델, 색인 레시피, 임베딩 입력이 모두 같은 chunk의 벡터를 그대로 재사용합니다. 그래서 바뀐 chunk만 다시 임베딩하고, 재사용·신규 임베딩 개수를 실행 로그에 남깁니다.
 - 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 색인 레시피 버전(청크 경계 규칙 + 임베딩 입력 구성)을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
 - 임베딩 provider 또는 Postgres 연결이 설정되지 않으면 Postgres RAG 인덱싱은 건너뛰고 lexical 검색만 사용합니다.
 

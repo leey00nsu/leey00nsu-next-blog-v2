@@ -50,6 +50,11 @@ export interface ChatRagIndexRun {
   chunkingVersion: string
 }
 
+export interface ChatRagStoredChunkEmbedding {
+  chunk: GraphRagChunk
+  embedding: number[]
+}
+
 interface ChatRagIndexConfigurationCheck {
   name: string
   indexedValue: unknown
@@ -72,6 +77,14 @@ function parseJsonArray<T>(jsonValue: unknown): T[] {
 
 function buildVectorLiteral(embedding: number[]): string {
   return `[${embedding.join(',')}]`
+}
+
+function parseVectorText(vectorText: string): number[] {
+  const normalizedVectorText = vectorText.startsWith('{')
+    ? `[${vectorText.slice(1, -1)}]`
+    : vectorText
+
+  return JSON.parse(normalizedVectorText) as number[]
 }
 
 function normalizeBooleanEnvironmentValue(
@@ -550,10 +563,9 @@ export async function deleteChatRagIndexRunData(params: {
   )
 }
 
-export async function selectActiveChatRagIndexVersion(params: {
+async function selectActiveChatRagIndexRow(params: {
   databaseClient: Pool | PoolClient
-  questionEmbeddingDimension?: number
-}): Promise<string | null> {
+}): Promise<Record<string, unknown> | undefined> {
   const activeIndexResult = await params.databaseClient.query(
     `
       SELECT
@@ -570,7 +582,16 @@ export async function selectActiveChatRagIndexVersion(params: {
     [CHAT_RAG_DATABASE.ACTIVE_INDEX_SINGLETON_ID],
   )
 
-  const activeIndexRow = activeIndexResult.rows[0]
+  return activeIndexResult.rows[0]
+}
+
+export async function selectActiveChatRagIndexVersion(params: {
+  databaseClient: Pool | PoolClient
+  questionEmbeddingDimension?: number
+}): Promise<string | null> {
+  const activeIndexRow = await selectActiveChatRagIndexRow({
+    databaseClient: params.databaseClient,
+  })
 
   if (activeIndexRow && isLegacyChatRagIndex(activeIndexRow)) {
     return null
@@ -586,6 +607,79 @@ export async function selectActiveChatRagIndexVersion(params: {
   return typeof activeIndexRow?.active_index_version === 'string'
     ? activeIndexRow.active_index_version
     : null
+}
+
+/**
+ * 이전 색인에서 임베딩을 재사용할 수 있는 index_version을 찾는다.
+ *
+ * provider, 모델, 색인 레시피가 지금 설정과 다르면 그 벡터를 그대로 쓸 수 없으므로 null을 돌려준다.
+ * 조회 경로와 달리 예외를 던지지 않는다. 색인 생성은 재사용을 못 해도 전량 임베딩으로 계속 진행해야 한다.
+ */
+export async function selectChatRagEmbeddingReuseIndexVersion(params: {
+  databaseClient: Pool | PoolClient
+}): Promise<string | null> {
+  const activeIndexRow = await selectActiveChatRagIndexRow({
+    databaseClient: params.databaseClient,
+  })
+
+  if (!activeIndexRow || isLegacyChatRagIndex(activeIndexRow)) {
+    return null
+  }
+
+  const isReusableIndexConfiguration =
+    activeIndexRow.embedding_provider === CHAT_RAG.EMBEDDING.PROVIDER &&
+    activeIndexRow.embedding_model_id === CHAT_RAG.EMBEDDING.MODEL_ID &&
+    activeIndexRow.chunking_version === CHAT_RAG.INDEX.CHUNKING_VERSION
+
+  if (!isReusableIndexConfiguration) {
+    return null
+  }
+
+  return typeof activeIndexRow.active_index_version === 'string'
+    ? activeIndexRow.active_index_version
+    : null
+}
+
+export async function selectChatRagChunkEmbeddings(params: {
+  databaseClient: Pool | PoolClient
+  indexVersion: string
+  locale: SupportedLocale
+}): Promise<ChatRagStoredChunkEmbedding[]> {
+  const storedEmbeddingResult = await params.databaseClient.query(
+    `
+      SELECT
+        chunks.id,
+        chunks.locale,
+        chunks.slug,
+        chunks.title,
+        chunks.url,
+        chunks.excerpt,
+        chunks.content,
+        chunks.section_title,
+        chunks.tags_json,
+        chunks.search_terms_json,
+        chunks.published_at,
+        chunks.evidence_time_kind,
+        chunks.evidence_time_value,
+        chunks.source_category,
+        chunks.entity_ids_json,
+        embeddings.embedding::text AS embedding_text
+      FROM ${CHAT_RAG_DATABASE.TABLES.CHUNKS} AS chunks
+      INNER JOIN ${CHAT_RAG_DATABASE.TABLES.EMBEDDINGS} AS embeddings
+        ON embeddings.index_version = chunks.index_version
+        AND embeddings.chunk_id = chunks.id
+      WHERE chunks.index_version = $1
+        AND chunks.locale = $2
+    `,
+    [params.indexVersion, params.locale],
+  )
+
+  return storedEmbeddingResult.rows.map((row) => {
+    return {
+      chunk: mapChunkRowToGraphRagChunk(row),
+      embedding: parseVectorText(String(row.embedding_text)),
+    }
+  })
 }
 
 export async function selectChatRagLocaleSearchData(params: {

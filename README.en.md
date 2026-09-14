@@ -220,6 +220,7 @@ pnpm run gen:chat-rag-postgres
 - The embedding service raises the model default token limit (128) to `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default). Changing that value changes the embeddings, so the index must be rebuilt.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
 - `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
+- Re-indexing reuses vectors from the previously active index when the provider, model, index recipe, and embedding input are all unchanged, so only changed chunks are embedded again. The run log reports how many embeddings were reused and how many were created.
 - Each new index records the embedding provider, model ID, vector dimension, and index recipe version (chunk boundary rules plus embedding input composition). If any of them differs from the current configuration, the index is not used for semantic retrieval.
 - If the embedding provider or Postgres connection is not configured, Postgres RAG indexing is skipped and lexical retrieval still works.
 

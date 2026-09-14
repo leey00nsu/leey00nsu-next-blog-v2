@@ -1,7 +1,14 @@
 import '@/shared/lib/load-node-environment'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
-import { buildChatRagEmbeddingText } from '@/features/chat/lib/build-chat-rag-embedding-text'
+import {
+  buildChatRagEmbeddingCacheKey,
+  buildReusableChatRagEmbeddingMap,
+} from '@/features/chat/lib/build-chat-rag-embedding-cache'
+import {
+  buildChatRagEmbeddingText,
+  type ChatRagEmbeddingTextSource,
+} from '@/features/chat/lib/build-chat-rag-embedding-text'
 import {
   buildGraphRagChunks,
   buildGraphRagEntities,
@@ -9,12 +16,14 @@ import {
 import { buildGraphRagRelations } from '@/features/chat/lib/graph-rag-relations'
 import { validateChatRagEmbeddingBatch } from '@/features/chat/lib/validate-chat-rag-embeddings'
 import {
+  activateChatRagIndexRun,
   createChatRagIndexRun,
   failChatRagIndexRun,
   getChatRagDatabasePool,
   isChatRagDatabaseConfigured,
   replaceChatRagLocaleIndex,
-  activateChatRagIndexRun,
+  selectChatRagChunkEmbeddings,
+  selectChatRagEmbeddingReuseIndexVersion,
 } from '@/features/chat/model/chat-rag-database'
 import {
   embedChatRagTexts,
@@ -32,6 +41,27 @@ interface ChatRagChunkEmbedding {
 interface EmbeddedChatRagChunkRecords {
   embeddings: ChatRagChunkEmbedding[]
   embeddingDimension: number
+  reusedEmbeddingCount: number
+}
+
+function toEmbeddingTextSource(
+  record: ChatEvidenceRecord,
+): ChatRagEmbeddingTextSource {
+  return {
+    title: record.title,
+    sectionTitle: record.sectionTitle,
+    content: record.content,
+    tags: record.tags,
+    searchTerms: record.searchTerms ?? [],
+  }
+}
+
+function buildEmbeddingCacheKey(record: ChatEvidenceRecord): string {
+  return buildChatRagEmbeddingCacheKey({
+    embeddingProvider: CHAT_RAG.EMBEDDING.PROVIDER,
+    embeddingModelId: CHAT_RAG.EMBEDDING.MODEL_ID,
+    source: toEmbeddingTextSource(record),
+  })
 }
 
 function buildBlogEvidenceRecords(
@@ -50,29 +80,43 @@ function buildBlogEvidenceRecords(
 
 async function embedChunkRecords(
   records: ChatEvidenceRecord[],
+  reusableEmbeddingMap: Map<string, number[]>,
   expectedEmbeddingDimension?: number,
 ): Promise<EmbeddedChatRagChunkRecords> {
-  const chunkEmbeddings: ChatRagChunkEmbedding[] = []
+  const chunkEmbeddingMap = new Map<string, number[]>()
+  const recordsToEmbed: ChatEvidenceRecord[] = []
   let embeddingDimension = expectedEmbeddingDimension
+
+  for (const record of records) {
+    const reusableEmbedding = reusableEmbeddingMap.get(
+      buildEmbeddingCacheKey(record),
+    )
+
+    if (!reusableEmbedding) {
+      recordsToEmbed.push(record)
+      continue
+    }
+
+    embeddingDimension = validateChatRagEmbeddingBatch({
+      embeddings: [reusableEmbedding],
+      expectedEmbeddingCount: 1,
+      expectedEmbeddingDimension: embeddingDimension,
+    })
+    chunkEmbeddingMap.set(record.id, reusableEmbedding)
+  }
 
   for (
     let startIndex = 0;
-    startIndex < records.length;
+    startIndex < recordsToEmbed.length;
     startIndex += CHAT_RAG.EMBEDDING.MAXIMUM_BATCH_SIZE
   ) {
-    const currentRecords = records.slice(
+    const currentRecords = recordsToEmbed.slice(
       startIndex,
       startIndex + CHAT_RAG.EMBEDDING.MAXIMUM_BATCH_SIZE,
     )
     const embeddings = await embedChatRagTexts(
       currentRecords.map((record) => {
-        return buildChatRagEmbeddingText({
-          title: record.title,
-          sectionTitle: record.sectionTitle,
-          content: record.content,
-          tags: record.tags,
-          searchTerms: record.searchTerms ?? [],
-        })
+        return buildChatRagEmbeddingText(toEmbeddingTextSource(record))
       }),
     )
     embeddingDimension = validateChatRagEmbeddingBatch({
@@ -81,20 +125,15 @@ async function embedChunkRecords(
       expectedEmbeddingDimension: embeddingDimension,
     })
 
-    chunkEmbeddings.push(
-      ...currentRecords.map((record, index) => {
-        const embedding = embeddings[index]
+    for (const [index, record] of currentRecords.entries()) {
+      const embedding = embeddings[index]
 
-        if (!embedding) {
-          throw new Error(`Missing embedding for chunk ${record.id}.`)
-        }
+      if (!embedding) {
+        throw new Error(`Missing embedding for chunk ${record.id}.`)
+      }
 
-        return {
-          chunkId: record.id,
-          embedding,
-        }
-      }),
-    )
+      chunkEmbeddingMap.set(record.id, embedding)
+    }
   }
 
   if (embeddingDimension === undefined) {
@@ -102,8 +141,17 @@ async function embedChunkRecords(
   }
 
   return {
-    embeddings: chunkEmbeddings,
+    embeddings: records.map((record) => {
+      const embedding = chunkEmbeddingMap.get(record.id)
+
+      if (!embedding) {
+        throw new Error(`Missing embedding for chunk ${record.id}.`)
+      }
+
+      return { chunkId: record.id, embedding }
+    }),
     embeddingDimension,
+    reusedEmbeddingCount: records.length - recordsToEmbed.length,
   }
 }
 
@@ -130,8 +178,12 @@ async function main(): Promise<void> {
     databaseClient: databasePool,
     commitSha: process.env.GITHUB_SHA,
   })
+  const reusableIndexVersion = await selectChatRagEmbeddingReuseIndexVersion({
+    databaseClient: databasePool,
+  })
 
   let totalChunkCount = 0
+  let totalReusedEmbeddingCount = 0
   let indexEmbeddingDimension: number | undefined
 
   try {
@@ -143,11 +195,30 @@ async function main(): Promise<void> {
       const chunks = buildGraphRagChunks(records)
       const entities = buildGraphRagEntities(records)
       const relations = buildGraphRagRelations(chunks)
+      const storedEmbeddings = reusableIndexVersion
+        ? await selectChatRagChunkEmbeddings({
+            databaseClient: databasePool,
+            indexVersion: reusableIndexVersion,
+            locale,
+          })
+        : []
+      const reusableEmbeddingMap = buildReusableChatRagEmbeddingMap({
+        embeddingProvider: CHAT_RAG.EMBEDDING.PROVIDER,
+        embeddingModelId: CHAT_RAG.EMBEDDING.MODEL_ID,
+        storedEmbeddings: storedEmbeddings.map((storedEmbedding) => {
+          return {
+            source: storedEmbedding.chunk,
+            embedding: storedEmbedding.embedding,
+          }
+        }),
+      })
       const embeddedRecords = await embedChunkRecords(
         records,
+        reusableEmbeddingMap,
         indexEmbeddingDimension,
       )
       indexEmbeddingDimension = embeddedRecords.embeddingDimension
+      totalReusedEmbeddingCount += embeddedRecords.reusedEmbeddingCount
 
       await replaceChatRagLocaleIndex({
         databaseClient: databasePool,
@@ -179,7 +250,7 @@ async function main(): Promise<void> {
     }
 
     console.log(
-      `✅ Indexed ${totalChunkCount} chunk(s) into Postgres Chat RAG. Active version: ${indexRun.indexVersion}`,
+      `✅ Indexed ${totalChunkCount} chunk(s) into Postgres Chat RAG. Reused ${totalReusedEmbeddingCount} embedding(s). Active version: ${indexRun.indexVersion}`,
     )
   } catch (error) {
     await failChatRagIndexRun({

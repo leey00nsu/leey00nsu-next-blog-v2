@@ -204,7 +204,7 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('대상이 생략된 경력·학력 질문은 profile 근거로 제한한다', () => {
+  it('대상이 생략된 경력·학력 질문은 profile을 선호하되 다른 출처를 배제하지 않는다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,
       standaloneQuestion: '대외활동이나 동아리 경험을 알려줘',
@@ -217,16 +217,16 @@ describe('compileChatRetrievalPlan', () => {
     expect(result).toMatchObject({
       ok: true,
       queryPlan: {
-        sourceSelection: { mode: 'only', categories: ['profile'] },
+        sourceSelection: { mode: 'prefer', categories: ['profile'] },
       },
       retrievalPlan: {
-        sourceStrategy: 'only',
+        sourceStrategy: 'prefer',
         sourceCategories: ['profile'],
       },
     })
   })
 
-  it('프로필 대상의 전체 기술 스택 질문은 profile 근거로 정규화한다', () => {
+  it('명시적 출처와 모순되는 프로필 대상은 출처를 덮어쓰지 않고 거부한다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,
       standaloneQuestion: '이윤수가 프로젝트에서 주로 쓰는 기술 스택은 뭐야?',
@@ -241,15 +241,8 @@ describe('compileChatRetrievalPlan', () => {
     })
 
     expect(result).toMatchObject({
-      ok: true,
-      queryPlan: {
-        sourceSelection: { mode: 'only', categories: ['profile'] },
-      },
-      retrievalPlan: {
-        executionKind: 'direct_profile',
-        canonicalTargets: [{ sourceCategory: 'profile', slug: 'about' }],
-        sourceCategories: ['profile'],
-      },
+      ok: false,
+      failureKind: 'invalid_query_plan',
     })
   })
 

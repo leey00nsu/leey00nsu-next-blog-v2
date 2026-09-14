@@ -241,6 +241,7 @@ function normalizeImplicitProfileSourceSelection(
   )
 
   if (
+    queryPlan.sourceSelection.mode !== 'all' ||
     (!hasNoCanonicalTarget && !hasProfileCandidateTarget) ||
     !asksForProfileField
   ) {
@@ -250,7 +251,7 @@ function normalizeImplicitProfileSourceSelection(
   return {
     ...queryPlan,
     sourceSelection: {
-      mode: 'only',
+      mode: 'prefer',
       categories: ['profile'],
     },
   }

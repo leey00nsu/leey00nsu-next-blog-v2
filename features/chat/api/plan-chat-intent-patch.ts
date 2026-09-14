@@ -11,6 +11,7 @@ import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-con
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
 import { getDirectChatQueryPlan } from '@/features/chat/model/get-direct-chat-query-plan'
+import { compileChatRetrievalPlan } from '@/features/chat/model/compile-chat-retrieval-plan'
 import {
   ChatQueryPlanDraftSchema,
   ChatQueryPlanSchema,
@@ -43,8 +44,9 @@ Source rules:
 - only: the question explicitly limits evidence to listed source categories.
 - prefer: listed categories are preferred, but cross-category evidence is allowed.
 - all: no source category restriction is expressed.
-- Explicit words such as project/프로젝트 or post/blog/글/블로그 limit the source with only.
-- A selected candidate uses only that candidate's sourceCategory unless the question explicitly compares or combines source categories.
+- Mentioning a project or its name identifies a topic, not an exclusive evidence source. Its design and history may be documented in blog posts.
+- A candidate is a focus hint. Use prefer for its category unless the user explicitly restricts evidence to that document/category.
+- For questions comparing a named topic with something outside the candidate list, keep all sources and do not constrain the answer to the supplied candidate alone.
 - Example: "recent projects using AI" is only project, not all.
 - Example: "recent uses of AI" without a source noun is all.
 - Use current_source only when the question explicitly refers to the current page.
@@ -56,7 +58,7 @@ Temporal rules:
 - none: time is not part of the request.
 
 Meaning rules:
-- Use identity when the user asks who or what the chatbot itself is.
+- Use identity only for the chatbot's identity. Capability or usage questions should retrieve assistant evidence and explain what it supports.
 - Use contact for public GitHub, LinkedIn, email, or contact-channel requests.
 - Unknown non-pronoun terms should search corpus before clarification.
 - A pronoun such as "이 사람" or "this person" with no focused target and no matching entity candidate requires the target missingSlot and a clarification question. Do not silently assume the blog owner.
@@ -67,7 +69,7 @@ Meaning rules:
 - Use content for career, workplace, role, reason, process, structure, project details, and other factual content questions.
 - Even when missingSlots requires clarification, preserve the suspended question's requestedFields and concepts.
 - Recency words used only for rank/single do not request published_at. Include published_at only when the user explicitly asks for a date or posting time.
-- requiredConcepts may contain only literal proper nouns, technology names, product names, or standards that evidence must mention exactly.
+- requiredConcepts may contain only explicit proper nouns, technology names, product names, or standards essential to the question. Do not invent a combined exact phrase from nearby terms or require exact configuration syntax. Put descriptive phrases and spelling variants in optionalConcepts.
 - Put requested fields and abstract intent phrases such as reason, background, career, workplace, interests, role, tech stack, project summary, process, structure, address, recommendation, or comparison in optionalConcepts, never requiredConcepts.
 - Do not repeat a selected canonical target name in requiredConcepts; the target filter already enforces it.
 - Add missingSlots only when execution is impossible without the information.
@@ -76,7 +78,8 @@ Meaning rules:
 } as const
 
 const CHAT_INTENT_PLAN_NORMALIZATION = {
-  PUBLISHED_AT_PATTERN: /게시(?:일|된\s*날짜)|작성(?:일|된\s*날짜)|published|date/iu,
+  PUBLISHED_AT_PATTERN:
+    /게시(?:일|된\s*날짜)|작성(?:일|된\s*날짜)|published|date/iu,
   TITLE_PATTERN: /제목|title/iu,
   EVIDENCE_OPERATIONS: new Set<ChatQueryPlan['operation']>([
     'lookup',
@@ -124,9 +127,7 @@ function resolveFallbackRequestedFields(
   }
 
   if (
-    !CHAT_INTENT_PLAN_NORMALIZATION.EVIDENCE_OPERATIONS.has(
-      queryPlan.operation,
-    )
+    !CHAT_INTENT_PLAN_NORMALIZATION.EVIDENCE_OPERATIONS.has(queryPlan.operation)
   ) {
     return []
   }
@@ -266,6 +267,19 @@ export async function planChatIntent(
       const parsedQueryPlan = ChatQueryPlanSchema.safeParse(normalizedQueryPlan)
 
       if (parsedQueryPlan.success) {
+        const compiledPlan = compileChatRetrievalPlan({
+          queryPlan: parsedQueryPlan.data,
+          candidates: params.entityCandidates,
+          previousState: params.conversationState,
+          maximumEvidenceCount: BLOG_CHAT.SEARCH.TOP_K,
+          currentPostSlug: params.currentPostSlug,
+        })
+        if (!compiledPlan.ok) {
+          hasInvalidIntentPlan = true
+          failureKind = 'invalid_intent_plan'
+          validationFailure = `${compiledPlan.failureKind}: check target existence, source-category compatibility and conversation transition; preserve explicit user restrictions.`
+          continue
+        }
         return { ok: true, queryPlan: parsedQueryPlan.data }
       }
 
@@ -275,8 +289,7 @@ export async function planChatIntent(
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join('; ')
     } catch (error) {
-      const isInvalidGeneratedObject =
-        NoObjectGeneratedError.isInstance(error)
+      const isInvalidGeneratedObject = NoObjectGeneratedError.isInstance(error)
 
       if (isInvalidGeneratedObject) {
         hasInvalidIntentPlan = true

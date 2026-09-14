@@ -39,6 +39,40 @@ const LEEMAGE_PLAN = {
 } as const
 
 describe('planChatIntent', () => {
+  it('대상과 출처의 모순을 한 번 재계획하고 사용자가 요청한 출처를 유지한다', async () => {
+    const candidate = {
+      entityId: 'profile/editor',
+      kind: 'profile' as const,
+      slug: 'editor',
+      title: 'Editor',
+      aliases: [],
+      searchTerms: [],
+      sourceCategory: 'profile' as const,
+    }
+    const plan = {
+      ...LEEMAGE_PLAN,
+      standaloneQuestion:
+        'Only use project records to find a compiler implementation.',
+      targetSelection: { kind: 'candidate', entityId: candidate.entityId },
+      requiredConcepts: ['compiler'],
+    }
+    const repairedPlan = { ...plan, targetSelection: { kind: 'none' } }
+    generateTextMock
+      .mockResolvedValueOnce({ output: plan })
+      .mockResolvedValueOnce({ output: repairedPlan })
+    const { planChatIntent } = await import('./plan-chat-intent-patch')
+    const result = await planChatIntent({
+      question: plan.standaloneQuestion,
+      locale: 'en',
+      conversationState: EMPTY_CHAT_CONVERSATION_STATE,
+      entityCandidates: [candidate],
+    })
+    expect(result).toEqual({ ok: true, queryPlan: repairedPlan })
+    expect(generateTextMock).toHaveBeenCalledTimes(2)
+    expect(generateTextMock.mock.calls[1][0].prompt).toContain(
+      'invalid_query_plan',
+    )
+  })
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()

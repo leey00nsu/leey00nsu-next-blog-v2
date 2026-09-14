@@ -4,7 +4,8 @@ LITSERVE_EMBEDDING = {
     "default_model_id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "default_port": 8000,
     "default_max_batch_size": 1,
-    "default_maximum_sequence_length": 256,
+    # 이 모델의 학습 길이가 128이라 그 이상으로 늘리면 임베딩이 희석된다.
+    "default_maximum_sequence_length": 128,
 }  # type: ignore[var-annotated]
 
 

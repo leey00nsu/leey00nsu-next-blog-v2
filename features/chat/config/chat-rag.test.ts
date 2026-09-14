@@ -56,13 +56,13 @@ describe('CHAT_RAG search limits', () => {
     )
   })
 
-  it('토큰 한도를 지정하지 않으면 서비스 기본값과 같은 256을 쓴다', async () => {
+  it('토큰 한도를 지정하지 않으면 서비스 기본값과 같은 학습 길이를 쓴다', async () => {
     vi.stubEnv('BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH', '')
     vi.resetModules()
 
     const { CHAT_RAG } = await import('@/features/chat/config/chat-rag')
 
-    expect(CHAT_RAG.EMBEDDING.MAXIMUM_SEQUENCE_LENGTH).toBe(256)
-    expect(CHAT_RAG.INDEX.CHUNKING_VERSION.endsWith('-seq256')).toBe(true)
+    expect(CHAT_RAG.EMBEDDING.MAXIMUM_SEQUENCE_LENGTH).toBe(128)
+    expect(CHAT_RAG.INDEX.CHUNKING_VERSION.endsWith('-seq128')).toBe(true)
   })
 })

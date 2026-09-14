@@ -235,6 +235,8 @@ pnpm run db:migrate:status           # 적용 상태 확인
 - 임베딩 입력은 모델이 실제로 읽는 앞부분에 제목, 섹션 제목, 청크 전체를 요약한 용어 목록을 두고 남은 예산을 본문으로 채웁니다. 본문 앞부분의 사본인 excerpt는 넣지 않아 토큰 예산을 중복 사용하지 않습니다.
 - 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 이 값을 바꾸면 임베딩이 달라지므로 반드시 재색인해야 합니다.
 - 임베딩 서비스는 모델 기본 토큰 한도(128)를 그대로 쓰지 않고 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)까지 읽습니다. 앱은 같은 값을 BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(기본 256)로 알고 색인 레시피 버전에 포함하므로, 두 값을 함께 바꾸면 이전 인덱스를 재사용하지 않고 재색인을 요구합니다.
+- 임베딩 토큰 한도는 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(서비스)와 BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(앱)로 맞춰 두고, 앱은 그 값을 색인 레시피 버전에 포함해 값이 바뀌면 이전 인덱스를 재사용하지 않고 재색인을 요구합니다. 기본값은 모델 학습 길이인 128입니다.
+- 256으로 올려 재색인해도 검색 지표가 좋아지지 않아(오히려 semantic 적중률이 한 케이스 낮아짐) 학습 길이를 유지합니다. 본문을 더 담고 싶다면 긴 문맥으로 학습된 임베딩 모델로 교체하는 편이 맞습니다.
 - `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
 - `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
 - 재색인은 이전 활성 인덱스와 provider, 모델, 색인 레시피, 임베딩 입력이 모두 같은 chunk의 벡터를 그대로 재사용합니다. 그래서 바뀐 chunk만 다시 임베딩하고, 재사용·신규 임베딩 개수를 실행 로그에 남깁니다.

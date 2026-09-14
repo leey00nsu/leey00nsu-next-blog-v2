@@ -5,7 +5,9 @@ MODAL_EMBEDDING_DEFAULTS = {
     "MODEL_ID": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "CPU_COUNT": 2,
     "CACHE_PATH": "/models",
-    "MAXIMUM_SEQUENCE_LENGTH": 256,
+    # 이 모델의 학습 길이가 128이라 그 이상으로 늘리면 임베딩이 희석된다.
+    # 256으로 올려 재색인해도 검색 지표가 좋아지지 않아(오히려 한 케이스 악화) 학습 길이를 유지한다.
+    "MAXIMUM_SEQUENCE_LENGTH": 128,
 } | {}
 
 

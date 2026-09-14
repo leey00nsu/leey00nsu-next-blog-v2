@@ -44,6 +44,24 @@ MODAL_EMBEDDING_BASE_URL=https://your-app-name--embedding-api.modal.run
 
 ## 인증
 
+## 배포 대상 확인
+
+블로그가 쓰는 앱은 `dbstndla1212` 워크스페이스에 있습니다. Modal CLI 프로필이 여러 개면 대상을 명시해야 합니다.
+
+```bash
+MODAL_PROFILE=dbstndla1212 modal deploy server.py
+```
+
+프로필을 지정하지 않으면 다른 워크스페이스의 동명 앱(`dbstndla1212yt--blog-embedding-api-...`)이 갱신되고, 실제 서비스는 예전 코드 그대로 남습니다. 배포 후에는 `/health`로 동작 중인 설정을 확인하세요.
+
+```bash
+curl -H "Modal-Key: $MODAL_EMBEDDING_KEY" -H "Modal-Secret: $MODAL_EMBEDDING_SECRET" \
+  "$MODAL_EMBEDDING_BASE_URL/health"
+# {"status":"ok","maximum_sequence_length":128}
+```
+
+`MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`를 바꾸면 앱의 `BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`도 같이 바꿔야 합니다. 두 값이 다르면 색인 벡터와 질문 벡터의 기준이 어긋납니다.
+
 이 서비스는 `@modal.asgi_app(requires_proxy_auth=True)`를 사용합니다.
 
 즉 Modal에서 발급한 proxy auth token을 앱이 아래 헤더로 보내야 합니다.

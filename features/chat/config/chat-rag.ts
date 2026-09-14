@@ -41,7 +41,8 @@ const CHAT_RAG_DEFAULTS = {
   MINIMUM_EMBEDDING_TOKEN_LENGTH: 1,
   // 임베딩 서비스가 실제로 읽는 최대 토큰 수. 서비스의 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH와
   // 같은 값을 유지해야 하며, 다르면 벡터의 의미가 달라지므로 재색인이 필요하다.
-  MAXIMUM_SEQUENCE_LENGTH: 256,
+  // 256으로 올려도 검색 지표가 좋아지지 않아 모델 학습 길이(128)를 그대로 쓴다.
+  MAXIMUM_SEQUENCE_LENGTH: 128,
   // 색인 레시피 버전. 청크 경계 규칙이나 임베딩 입력 구성이 바뀌면 반드시 올린다.
   // 활성 인덱스와 값이 다르면 semantic 검색을 사용하지 않고 재색인을 요구한다.
   CHUNKING_VERSION: 'heading-window-v3-embedding-input',

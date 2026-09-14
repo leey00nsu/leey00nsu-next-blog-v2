@@ -54,8 +54,18 @@ class TextEmbeddingModel:
             self.model_id,
             cache_folder=MODAL_CACHE_PATH,
         )
-        # 모델 기본값(128 토큰)은 청크 본문을 대부분 버린다. 문서 임베딩은 청크를 더 읽도록 늘린다.
+        # 모델 학습 길이(128)를 기본으로 쓰고, 실험할 때만 설정으로 바꾼다.
         self.model.max_seq_length = MODAL_MAXIMUM_SEQUENCE_LENGTH
+        first_module = self.model[0]
+        print(
+            "[embedding] model ready:"
+            f" model_id={self.model_id}"
+            f" configured_maximum_sequence_length={MODAL_MAXIMUM_SEQUENCE_LENGTH}"
+            f" sentence_transformer_max_seq_length={self.model.max_seq_length}"
+            f" module_max_seq_length={first_module.max_seq_length}"
+            f" tokenizer_model_max_length={first_module.tokenizer.model_max_length}",
+            flush=True,
+        )
 
     @modal.method()
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
@@ -71,8 +81,11 @@ def create_embedding_web_application() -> FastAPI:
     text_embedding_model = TextEmbeddingModel()
 
     @fastapi_application.get("/health")
-    async def get_health() -> dict[str, str]:
-        return {"status": "ok"}
+    async def get_health() -> dict[str, object]:
+        return {
+            "status": "ok",
+            "maximum_sequence_length": MODAL_MAXIMUM_SEQUENCE_LENGTH,
+        }
 
     @fastapi_application.post("/v1/embeddings")
     async def create_embeddings(

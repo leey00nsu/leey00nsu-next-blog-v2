@@ -1,5 +1,9 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { CHAT_QUESTION_RULES } from '@/features/chat/config/question-rules'
+import {
+  DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
+  type ChatEvidenceDiversityPolicy,
+} from '@/features/chat/lib/chat-evidence-diversity'
 import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { SupportedLocale } from '@/shared/config/constants'
@@ -13,6 +17,7 @@ interface SelectChatSearchMatchesParams {
   currentPostSlug?: string
   allowBroadMatch?: boolean
   maximumMatchCount?: number
+  diversityPolicy?: ChatEvidenceDiversityPolicy
 }
 
 interface ScoredChatEvidenceRecord extends ChatEvidenceRecord {
@@ -308,20 +313,22 @@ function scoreRecord(
   }
 }
 
-function limitMatchesPerSlug(
-  matches: ScoredChatEvidenceRecord[],
-): ScoredChatEvidenceRecord[] {
-  const slugCountMap = new Map<string, number>()
+function limitMatchesByGroup(params: {
+  matches: ScoredChatEvidenceRecord[]
+  diversityPolicy: ChatEvidenceDiversityPolicy
+}): ScoredChatEvidenceRecord[] {
+  const groupCountMap = new Map<string, number>()
   const limitedMatches: ScoredChatEvidenceRecord[] = []
 
-  for (const match of matches) {
-    const slugCount = slugCountMap.get(match.slug) ?? 0
+  for (const match of params.matches) {
+    const groupKey = params.diversityPolicy.resolveGroupKey(match)
+    const groupCount = groupCountMap.get(groupKey) ?? 0
 
-    if (slugCount >= BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG) {
+    if (groupCount >= params.diversityPolicy.maximumMatchesPerGroup) {
       continue
     }
 
-    slugCountMap.set(match.slug, slugCount + 1)
+    groupCountMap.set(groupKey, groupCount + 1)
     limitedMatches.push(match)
   }
 
@@ -424,6 +431,7 @@ export function selectChatSearchMatches({
   currentPostSlug,
   allowBroadMatch = false,
   maximumMatchCount = BLOG_CHAT.SEARCH.TOP_K,
+  diversityPolicy = DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
 }: SelectChatSearchMatchesParams): ChatSearchSelectionResult {
   const scopedRecords = records.filter((record) => record.locale === locale)
   const normalizedQuery = normalizeChatQuery({
@@ -477,10 +485,10 @@ export function selectChatSearchMatches({
 
   const limitedMatches = preserveAdditionalKeywordMatches({
     scoredMatches,
-    limitedMatches: limitMatchesPerSlug(scoredMatches).slice(
-      0,
-      maximumMatchCount,
-    ),
+    limitedMatches: limitMatchesByGroup({
+      matches: scoredMatches,
+      diversityPolicy,
+    }).slice(0, maximumMatchCount),
     rankingConceptTokens,
     maximumMatchCount,
   })

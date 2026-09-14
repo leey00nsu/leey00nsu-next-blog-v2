@@ -1,6 +1,11 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
+import {
+  DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
+  resolveChatEvidenceDiversityPolicy,
+  type ChatEvidenceDiversityPolicy,
+} from '@/features/chat/lib/chat-evidence-diversity'
 import { doesChatEvidenceMatchConcept } from '@/features/chat/lib/chat-required-concepts'
 import { matchGraphRagEntityIds } from '@/features/chat/lib/match-graph-rag-entities'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
@@ -206,8 +211,9 @@ function buildRankedChunks(params: {
 function buildSelectedMatches(
   rankedChunks: RankedGraphRagChunk[],
   requiredConcepts: string[],
+  diversityPolicy: ChatEvidenceDiversityPolicy,
 ): ChatEvidenceRecord[] {
-  const slugMatchCountMap = new Map<string, number>()
+  const groupMatchCountMap = new Map<string, number>()
   const selectedChunkIds = new Set<string>()
 
   for (const requiredConcept of requiredConcepts) {
@@ -229,9 +235,11 @@ function buildSelectedMatches(
       continue
     }
 
-    slugMatchCountMap.set(
-      rankedChunk.slug,
-      (slugMatchCountMap.get(rankedChunk.slug) ?? 0) + 1,
+    const groupKey = diversityPolicy.resolveGroupKey(rankedChunk)
+
+    groupMatchCountMap.set(
+      groupKey,
+      (groupMatchCountMap.get(groupKey) ?? 0) + 1,
     )
   }
 
@@ -244,13 +252,14 @@ function buildSelectedMatches(
       break
     }
 
-    const slugMatchCount = slugMatchCountMap.get(rankedChunk.slug) ?? 0
+    const groupKey = diversityPolicy.resolveGroupKey(rankedChunk)
+    const groupMatchCount = groupMatchCountMap.get(groupKey) ?? 0
 
-    if (slugMatchCount >= CHAT_RAG.SEARCH.MAXIMUM_MATCHES_PER_SLUG) {
+    if (groupMatchCount >= diversityPolicy.maximumMatchesPerGroup) {
       continue
     }
 
-    slugMatchCountMap.set(rankedChunk.slug, slugMatchCount + 1)
+    groupMatchCountMap.set(groupKey, groupMatchCount + 1)
     selectedChunkIds.add(rankedChunk.id)
   }
 
@@ -311,6 +320,12 @@ function buildChatRagWorkflow(params: {
       const matches = buildSelectedMatches(
         rankedChunks,
         state.retrievalPlan?.requiredConcepts ?? [],
+        state.retrievalPlan
+          ? resolveChatEvidenceDiversityPolicy({
+              plan: state.retrievalPlan,
+              maximumMatchesPerSlug: CHAT_RAG.SEARCH.MAXIMUM_MATCHES_PER_SLUG,
+            })
+          : DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
       )
 
       return {

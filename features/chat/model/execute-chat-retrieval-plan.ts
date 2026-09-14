@@ -4,6 +4,11 @@ import {
 } from '@/features/chat/api/rerank-chat-evidence'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import {
+  isAggregateChatRetrievalPlan,
+  resolveChatEvidenceDiversityPolicy,
+  type ChatEvidenceDiversityPolicy,
+} from '@/features/chat/lib/chat-evidence-diversity'
+import {
   doesChatEvidenceMatchConcept,
   selectEvidenceCoveringRequiredConcepts,
 } from '@/features/chat/lib/chat-required-concepts'
@@ -238,47 +243,50 @@ function sortMatchesByPlan(
   })
 }
 
-function limitMatchesWithDiversity(
-  matches: ChatEvidenceRecord[],
-  maximumEvidenceCount: number,
-  maximumMatchesPerSlug: number,
-  requiredMatchIds: Set<string>,
-): ChatEvidenceRecord[] {
-  const slugCountMap = new Map<string, number>()
-  const selectedMatchIds = new Set(requiredMatchIds)
+function limitMatchesWithDiversity(params: {
+  matches: ChatEvidenceRecord[]
+  maximumEvidenceCount: number
+  diversityPolicy: ChatEvidenceDiversityPolicy
+  requiredMatchIds: Set<string>
+}): ChatEvidenceRecord[] {
+  const groupCountMap = new Map<string, number>()
+  const selectedMatchIds = new Set(params.requiredMatchIds)
 
-  if (selectedMatchIds.size > maximumEvidenceCount) {
+  if (selectedMatchIds.size > params.maximumEvidenceCount) {
     return []
   }
 
-  for (const match of matches) {
+  for (const match of params.matches) {
     if (!selectedMatchIds.has(match.id)) {
       continue
     }
 
-    slugCountMap.set(match.slug, (slugCountMap.get(match.slug) ?? 0) + 1)
+    const groupKey = params.diversityPolicy.resolveGroupKey(match)
+
+    groupCountMap.set(groupKey, (groupCountMap.get(groupKey) ?? 0) + 1)
   }
 
-  for (const match of matches) {
+  for (const match of params.matches) {
     if (selectedMatchIds.has(match.id)) {
       continue
     }
 
-    if (selectedMatchIds.size >= maximumEvidenceCount) {
+    if (selectedMatchIds.size >= params.maximumEvidenceCount) {
       break
     }
 
-    const slugMatchCount = slugCountMap.get(match.slug) ?? 0
+    const groupKey = params.diversityPolicy.resolveGroupKey(match)
+    const groupMatchCount = groupCountMap.get(groupKey) ?? 0
 
-    if (slugMatchCount >= maximumMatchesPerSlug) {
+    if (groupMatchCount >= params.diversityPolicy.maximumMatchesPerGroup) {
       continue
     }
 
-    slugCountMap.set(match.slug, slugMatchCount + 1)
+    groupCountMap.set(groupKey, groupMatchCount + 1)
     selectedMatchIds.add(match.id)
   }
 
-  return matches.filter((match) => selectedMatchIds.has(match.id))
+  return params.matches.filter((match) => selectedMatchIds.has(match.id))
 }
 
 function collectRequiredMatchIds(params: {
@@ -618,14 +626,17 @@ export async function executeChatRetrievalPlan({
   const currentSourceTarget = plan.canonicalTargets.find((target) => {
     return target.kind === 'current_source'
   })
-  const isAggregateOperation =
-    plan.operation === 'compare' ||
-    plan.operation === 'recommend' ||
-    plan.operation === 'summarize'
-  const shouldUseSingleMatchPerSlug =
+  const isAggregateOperation = isAggregateChatRetrievalPlan(plan)
+  const maximumMatchesPerSlug =
     isAggregateOperation &&
     !plan.sourceCategories.includes('profile') &&
     (plan.canonicalTargets.length === 0 || plan.canonicalTargets.length > 1)
+      ? BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE
+      : BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG
+  const diversityPolicy = resolveChatEvidenceDiversityPolicy({
+    plan,
+    maximumMatchesPerSlug,
+  })
   const lexicalSelection = selectChatSearchMatches({
     question: plan.standaloneQuestion,
     locale,
@@ -638,6 +649,7 @@ export async function executeChatRetrievalPlan({
       plan.temporalStrategy !== 'none' ||
       Boolean(currentSourceTarget),
     maximumMatchCount: plan.maximumEvidenceCount,
+    diversityPolicy,
   })
   let rawSemanticMatches: ChatEvidenceRecord[] = []
   let semanticRetrievalError: unknown = null
@@ -677,14 +689,12 @@ export async function executeChatRetrievalPlan({
   const limitedMatches =
     plan.temporalStrategy === 'single'
       ? selectSingleDocumentMatches(sortedMatches, plan.maximumEvidenceCount)
-      : limitMatchesWithDiversity(
-          sortedMatches,
-          plan.maximumEvidenceCount,
-          shouldUseSingleMatchPerSlug
-            ? BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE
-            : BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG,
+      : limitMatchesWithDiversity({
+          matches: sortedMatches,
+          maximumEvidenceCount: plan.maximumEvidenceCount,
+          diversityPolicy,
           requiredMatchIds,
-        )
+        })
   const matches = doMatchesCoverRequiredConcepts({
     matches: limitedMatches,
     requiredConcepts: plan.requiredConcepts,

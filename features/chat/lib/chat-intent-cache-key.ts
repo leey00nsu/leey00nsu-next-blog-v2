@@ -9,14 +9,16 @@ interface BuildChatRetrievalPlanCacheKeyParams {
   evidenceVersion: string
 }
 
+const CHAT_RESPONSE_CACHE_KEY = {
+  SCHEMA_VERSION: 'grounded-evidence-v2',
+} as const
+
 function normalizeCachePart(value: string): string {
   return value.trim().toLowerCase()
 }
 
 function normalizeCacheParts(values: string[]): string[] {
-  return values
-    .map((value) => normalizeCachePart(value))
-    .sort()
+  return values.map((value) => normalizeCachePart(value)).sort()
 }
 
 export function buildChatRetrievalPlanCacheKey({
@@ -38,6 +40,8 @@ export function buildChatRetrievalPlanCacheKey({
     })
     .sort()
   const cacheParts = [
+    CHAT_RESPONSE_CACHE_KEY.SCHEMA_VERSION,
+    retrievalPlan.standaloneQuestion,
     locale,
     retrievalPlan.executionKind,
     retrievalPlan.operation,

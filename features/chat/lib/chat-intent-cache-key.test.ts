@@ -37,15 +37,31 @@ function buildKey(
 }
 
 describe('buildChatRetrievalPlanCacheKey', () => {
-  it('질문 표현과 배열 순서가 달라도 실행 의미가 같으면 같은 키를 만든다', () => {
+  it('동일 질문에서 개념 배열 순서만 달라지면 같은 키를 만든다', () => {
     const firstKey = buildKey(BASE_RETRIEVAL_PLAN)
     const secondKey = buildKey({
       ...BASE_RETRIEVAL_PLAN,
-      standaloneQuestion: '이 사람 버셀 써봤어?',
       requiredConcepts: ['배포', 'vercel'],
     })
 
     expect(secondKey).toBe(firstKey)
+  })
+
+  it('계획의 분류가 같아도 세부 질문이 다르면 답변 캐시를 공유하지 않는다', () => {
+    const base = {
+      ...BASE_RETRIEVAL_PLAN,
+      canonicalTargets: [],
+      requiredConcepts: ['worker'],
+    }
+    const minimum = buildKey({
+      ...base,
+      standaloneQuestion: 'What is the minimum worker count?',
+    })
+    const maximum = buildKey({
+      ...base,
+      standaloneQuestion: 'What is the maximum worker count?',
+    })
+    expect(minimum).not.toBe(maximum)
   })
 
   it.each([

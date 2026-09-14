@@ -98,7 +98,11 @@ const CHAT_CONCEPT_NORMALIZATION = {
     'deployment',
     'search',
   ],
+  /** 표기가 붙여진 복합 개념을 구성 요소로 확인하기 위한 최소 토큰 길이. */
+  MINIMUM_MATCH_TOKEN_LENGTH: 2,
 } as const
+
+const CHAT_CONCEPT_TOKEN_PATTERN = /[\p{L}\p{N}][\p{L}\p{N}+#.-]*/gu
 
 interface PartitionChatConceptsByRequirementParams {
   requiredConcepts: string[]
@@ -145,19 +149,15 @@ function resolveCanonicalConcept(concept: string): string {
   return CANONICAL_CONCEPT_MAP.get(normalizedConcept) ?? normalizedConcept
 }
 
-function buildConceptAliases(concept: string): string[] {
+/** 표기를 지우기 전의 개념과 alias. 낱말 단위 확인은 붙여 쓴 canonical 표기가 아니라 원문으로 한다. */
+function buildRawConceptAliases(concept: string): string[] {
   const canonicalConcept = resolveCanonicalConcept(concept)
   const configuredAliases =
     CHAT_QUESTION_RULES.TERM_EXPANSIONS[
       canonicalConcept as keyof typeof CHAT_QUESTION_RULES.TERM_EXPANSIONS
     ] ?? []
 
-  return [
-    ...new Set([
-      canonicalConcept,
-      ...configuredAliases.map((alias) => normalizeConceptText(alias)),
-    ]),
-  ]
+  return [...new Set([concept, canonicalConcept, ...configuredAliases])]
 }
 
 function buildEvidenceSearchText(record: ChatEvidenceRecord): string {
@@ -178,9 +178,106 @@ export function doesChatEvidenceMatchConcept(
 ): boolean {
   const evidenceSearchText = buildEvidenceSearchText(record)
 
-  return buildConceptAliases(concept).some((alias) => {
-    return evidenceSearchText.includes(alias)
+  return buildRawConceptAliases(concept).some((alias) => {
+    if (evidenceSearchText.includes(normalizeConceptText(alias))) {
+      return true
+    }
+
+    // "Supertonic Voice Cloning"처럼 여러 낱말을 붙여 만든 개념은 근거가 같은 표현을
+    // 그대로 쓰지 않을 수 있다. 이때는 구성 요소가 모두 있는지까지 확인한다.
+    const aliasTokens = collectMatchTokens(alias)
+
+    return (
+      aliasTokens.length > 1 &&
+      aliasTokens.every((aliasToken) => {
+        return evidenceSearchText.includes(aliasToken)
+      })
+    )
   })
+}
+
+function collectMatchTokens(alias: string): string[] {
+  return [
+    ...new Set(
+      (alias.match(CHAT_CONCEPT_TOKEN_PATTERN) ?? [])
+        .map((token) => normalizeConceptText(token))
+        .filter((token) => {
+          return (
+            token.length >=
+            CHAT_CONCEPT_NORMALIZATION.MINIMUM_MATCH_TOKEN_LENGTH
+          )
+        }),
+    ),
+  ]
+}
+
+const CHAT_CONCEPT_PRESENCE = {
+  MATCHED: 'matched',
+  PARTIAL: 'partial',
+  ABSENT: 'absent',
+} as const
+
+type ChatConceptPresence =
+  (typeof CHAT_CONCEPT_PRESENCE)[keyof typeof CHAT_CONCEPT_PRESENCE]
+
+function resolveChatConceptPresence(params: {
+  concept: string
+  records: ChatEvidenceRecord[]
+}): ChatConceptPresence {
+  if (
+    params.records.some((record) => {
+      return doesChatEvidenceMatchConcept(record, params.concept)
+    })
+  ) {
+    return CHAT_CONCEPT_PRESENCE.MATCHED
+  }
+
+  const conceptTokens = buildRawConceptAliases(params.concept).flatMap(
+    (alias) => {
+      return collectMatchTokens(alias)
+    },
+  )
+  const hasTokenMatch = params.records.some((record) => {
+    const evidenceSearchText = buildEvidenceSearchText(record)
+
+    return conceptTokens.some((conceptToken) => {
+      return evidenceSearchText.includes(conceptToken)
+    })
+  })
+
+  return hasTokenMatch
+    ? CHAT_CONCEPT_PRESENCE.PARTIAL
+    : CHAT_CONCEPT_PRESENCE.ABSENT
+}
+
+/**
+ * 필수 개념마다 근거 충족을 요구하면, 질문에 쓴 표현이 말뭉치 표기와 어긋나기만 해도
+ * 답할 수 있는 질문이 검색 단계에서 거절된다. 말뭉치가 일부만 아는 표현은 선택 개념으로
+ * 내리고, 아무것도 아는 게 없는 표현만 필수로 남겨 근거 없는 답변을 막는다.
+ */
+export function selectEnforceableChatConcepts(params: {
+  concepts: string[]
+  records: ChatEvidenceRecord[]
+}): string[] {
+  const conceptPresences = params.concepts.map((concept) => {
+    return {
+      concept,
+      presence: resolveChatConceptPresence({ concept, records: params.records }),
+    }
+  })
+  const matchedConcepts = conceptPresences.filter((entry) => {
+    return entry.presence === CHAT_CONCEPT_PRESENCE.MATCHED
+  })
+
+  if (matchedConcepts.length > 0) {
+    return matchedConcepts.map((entry) => entry.concept)
+  }
+
+  const hasPartialConcept = conceptPresences.some((entry) => {
+    return entry.presence === CHAT_CONCEPT_PRESENCE.PARTIAL
+  })
+
+  return hasPartialConcept ? [] : params.concepts
 }
 
 export function normalizeChatConcepts(params: {

@@ -10,6 +10,7 @@ import {
 } from '@/features/chat/lib/chat-evidence-diversity'
 import {
   doesChatEvidenceMatchConcept,
+  selectEnforceableChatConcepts,
   selectEvidenceCoveringRequiredConcepts,
 } from '@/features/chat/lib/chat-required-concepts'
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
@@ -657,23 +658,45 @@ export async function executeChatRetrievalPlan({
     }
   }
 
+  const enforceableRequiredConcepts = selectEnforceableChatConcepts({
+    concepts: plan.requiredConcepts,
+    records: [...blogRecords, ...curatedRecords],
+  })
+  const unverifiableRequiredConcepts = plan.requiredConcepts.filter((concept) => {
+    return !enforceableRequiredConcepts.includes(concept)
+  })
+  const evidencePlan: ChatRetrievalPlan = {
+    ...plan,
+    requiredConcepts: enforceableRequiredConcepts,
+    optionalConcepts: [
+      ...new Set([...plan.optionalConcepts, ...unverifiableRequiredConcepts]),
+    ],
+    // 필수 개념은 모두 근거로 덮여야 하므로 최대 근거 수가 그보다 적을 수 없다.
+    maximumEvidenceCount: Math.max(
+      plan.maximumEvidenceCount,
+      enforceableRequiredConcepts.length,
+    ),
+  }
   const preferredSourceCategories =
-    plan.sourceStrategy === 'prefer' ? plan.sourceCategories : []
-  const rankingConcepts = [...plan.requiredConcepts, ...plan.optionalConcepts]
-  const currentSourceTarget = plan.canonicalTargets.find((target) => {
+    evidencePlan.sourceStrategy === 'prefer' ? evidencePlan.sourceCategories : []
+  const rankingConcepts = [
+    ...evidencePlan.requiredConcepts,
+    ...evidencePlan.optionalConcepts,
+  ]
+  const currentSourceTarget = evidencePlan.canonicalTargets.find((target) => {
     return target.kind === 'current_source'
   })
-  const isAggregateOperation = isAggregateChatRetrievalPlan(plan)
+  const isAggregateOperation = isAggregateChatRetrievalPlan(evidencePlan)
   const maximumMatchesPerSlug =
-    plan.operation === 'recommend'
+    evidencePlan.operation === 'recommend'
       ? BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE
       : BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG
   const diversityPolicy = resolveChatEvidenceDiversityPolicy({
-    plan,
+    plan: evidencePlan,
     maximumMatchesPerSlug,
   })
   const lexicalSelection = selectChatSearchMatches({
-    question: plan.standaloneQuestion,
+    question: evidencePlan.standaloneQuestion,
     locale,
     records: scopedRecords,
     rankingConcepts,
@@ -681,9 +704,9 @@ export async function executeChatRetrievalPlan({
     currentPostSlug: currentSourceTarget?.slug ?? undefined,
     allowBroadMatch:
       isAggregateOperation ||
-      plan.temporalStrategy !== 'none' ||
+      evidencePlan.temporalStrategy !== 'none' ||
       Boolean(currentSourceTarget),
-    maximumMatchCount: plan.maximumEvidenceCount,
+    maximumMatchCount: evidencePlan.maximumEvidenceCount,
     diversityPolicy,
   })
   let rawSemanticMatches: ChatEvidenceRecord[] = []
@@ -691,7 +714,7 @@ export async function executeChatRetrievalPlan({
 
   try {
     rawSemanticMatches = await retrieveSemanticMatches({
-      plan,
+      plan: evidencePlan,
       locale,
       embedQuestion,
     })
@@ -713,29 +736,29 @@ export async function executeChatRetrievalPlan({
   })
   const coveredMatches = selectEvidenceCoveringRequiredConcepts({
     matches: fusedMatches,
-    requiredConcepts: plan.requiredConcepts,
+    requiredConcepts: evidencePlan.requiredConcepts,
     locale,
   })
-  const sortedMatches = sortMatchesByPlan(coveredMatches, plan)
+  const sortedMatches = sortMatchesByPlan(coveredMatches, evidencePlan)
   // 날짜로 지정한 문서는 관련도 재정렬 전에 확정한다.
   const rerankCandidates =
-    plan.temporalStrategy === 'single'
+    evidencePlan.temporalStrategy === 'single'
       ? selectSingleDocumentMatches(sortedMatches, sortedMatches.length)
       : sortedMatches
   const requiredMatchIds = collectRequiredMatchIds({
     matches: sortedMatches,
-    requiredConcepts: plan.requiredConcepts,
+    requiredConcepts: evidencePlan.requiredConcepts,
   })
   // 리랭커는 최종 근거 수를 정하기 전에 넓은 후보 풀에서 고른다. 선별 뒤에 호출하면
   // 이미 잘린 목록의 순서만 바꿀 수 있어, 후보에 있던 근거를 살릴 수 없다.
   const rerankResult = shouldRerankChatEvidence({
-    question: plan.standaloneQuestion,
+    question: evidencePlan.standaloneQuestion,
     matchCount: rerankCandidates.length,
-    plan,
+    plan: evidencePlan,
     hasConversationContext,
   })
     ? await rerankMatches({
-        question: plan.standaloneQuestion,
+        question: evidencePlan.standaloneQuestion,
         matches: rerankCandidates,
       })
     : null
@@ -743,21 +766,24 @@ export async function executeChatRetrievalPlan({
     ? rerankResult.matches
     : rerankCandidates
   const orderedMatches =
-    plan.temporalStrategy === 'rank'
-      ? sortMatchesByPlan(rerankedMatches, plan, false)
+    evidencePlan.temporalStrategy === 'rank'
+      ? sortMatchesByPlan(rerankedMatches, evidencePlan, false)
       : rerankedMatches
   const limitedMatches =
-    plan.temporalStrategy === 'single'
-      ? selectSingleDocumentMatches(orderedMatches, plan.maximumEvidenceCount)
+    evidencePlan.temporalStrategy === 'single'
+      ? selectSingleDocumentMatches(
+          orderedMatches,
+          evidencePlan.maximumEvidenceCount,
+        )
       : limitMatchesWithDiversity({
           matches: orderedMatches,
-          maximumEvidenceCount: plan.maximumEvidenceCount,
+          maximumEvidenceCount: evidencePlan.maximumEvidenceCount,
           diversityPolicy,
           requiredMatchIds,
         })
   const matches = doMatchesCoverRequiredConcepts({
     matches: limitedMatches,
-    requiredConcepts: plan.requiredConcepts,
+    requiredConcepts: evidencePlan.requiredConcepts,
   })
     ? limitedMatches
     : []

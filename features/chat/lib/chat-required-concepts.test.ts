@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  doesChatEvidenceMatchConcept,
   normalizeChatConcepts,
   partitionChatConceptsByRequirement,
+  selectEnforceableChatConcepts,
   selectEvidenceCoveringRequiredConcepts,
 } from '@/features/chat/lib/chat-required-concepts'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
@@ -33,6 +35,80 @@ describe('normalizeChatConcepts', () => {
         locale: 'ko',
       }),
     ).toEqual(['vercel'])
+  })
+})
+
+describe('doesChatEvidenceMatchConcept', () => {
+  it('붙여 만든 복합 개념은 구성 요소가 모두 있으면 충족한다', () => {
+    const record = createEvidenceRecord({
+      id: 'supertonic',
+      content: 'Supertonic으로 만든 Voice Cloning 목소리를 등록했습니다.',
+    })
+
+    expect(doesChatEvidenceMatchConcept(record, 'Supertonic Voice Cloning')).toBe(
+      true,
+    )
+  })
+
+  it('구성 요소 일부만 있으면 복합 개념을 충족하지 않는다', () => {
+    const record = createEvidenceRecord({
+      id: 'supabase',
+      content: 'Supabase를 셀프 호스팅으로 옮겼습니다.',
+    })
+
+    expect(doesChatEvidenceMatchConcept(record, 'Supabase Cloud')).toBe(false)
+  })
+})
+
+describe('selectEnforceableChatConcepts', () => {
+  const supertonicRecord = createEvidenceRecord({
+    id: 'supertonic',
+    content: 'Supertonic Voice Cloning 목소리를 등록했습니다.',
+  })
+  const supabaseRecord = createEvidenceRecord({
+    id: 'supabase',
+    content: 'Supabase를 셀프 호스팅으로 옮겼습니다.',
+  })
+
+  it('말뭉치가 아는 개념은 필수로 유지한다', () => {
+    expect(
+      selectEnforceableChatConcepts({
+        concepts: ['Supertonic Voice Cloning', 'Supabase Cloud'],
+        records: [supertonicRecord, supabaseRecord],
+      }),
+    ).toEqual(['Supertonic Voice Cloning'])
+  })
+
+  it('일부만 아는 표현은 다른 개념이 확인될 때만 선택 개념으로 내린다', () => {
+    expect(
+      selectEnforceableChatConcepts({
+        concepts: ['Supabase Cloud'],
+        records: [supabaseRecord],
+      }),
+    ).toEqual([])
+  })
+
+  it('말뭉치가 전혀 모르는 개념은 필수로 남겨 근거 없는 답변을 막는다', () => {
+    expect(
+      selectEnforceableChatConcepts({
+        concepts: ['Kubernetes'],
+        records: [supertonicRecord, supabaseRecord],
+      }),
+    ).toEqual(['Kubernetes'])
+  })
+
+  it('아는 개념과 모르는 개념이 섞이면 모르는 개념만 내린다', () => {
+    expect(
+      selectEnforceableChatConcepts({
+        concepts: ['Vercel', 'Kubernetes'],
+        records: [
+          createEvidenceRecord({
+            id: 'vercel',
+            content: 'Vercel 호스팅을 그만두고 Coolify로 옮겼습니다.',
+          }),
+        ],
+      }),
+    ).toEqual(['Vercel'])
   })
 })
 

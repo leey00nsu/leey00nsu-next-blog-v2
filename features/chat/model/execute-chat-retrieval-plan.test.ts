@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import { executeChatRetrievalPlan } from '@/features/chat/model/execute-chat-retrieval-plan'
+
+// 검색 순서를 검증하는 테스트이므로 외부 모델을 호출하는 기본 rerank는 비활성화한다.
+// rerank 연결 자체는 아래에서 rerankMatches를 주입해 확인한다.
+vi.mock('@/features/chat/api/rerank-chat-evidence', () => {
+  return {
+    rerankChatEvidence: async ({
+      matches,
+    }: {
+      matches: ChatEvidenceRecord[]
+    }) => {
+      return { matches, applied: false }
+    },
+  }
+})
 
 const OLDER_AI_PROJECT: ChatEvidenceRecord = {
   id: 'ko/project/older-ai',
@@ -480,5 +494,57 @@ describe('executeChatRetrievalPlan', () => {
         },
       }),
     ).rejects.toThrow('semantic retrieval failed')
+  })
+
+  it('여러 근거를 비교해야 하는 긴 질문은 rerank 결과 순서를 최종 근거로 쓴다', async () => {
+    const secondaryRecord: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/project/ai-document-automation',
+      slug: 'ai-document-automation',
+      title: 'AI 문서 자동화',
+      url: '/ko/projects/ai-document-automation',
+      content: 'AI로 문서 생성을 자동화한 과정을 정리합니다.',
+      searchTerms: ['AI 활용'],
+    }
+
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion:
+          '프로젝트에서 AI를 어떻게 활용했고 그 과정에서 무엇을 배웠는지 설명해줘',
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [RECENT_AI_PROJECT, secondaryRecord],
+      retrieveSemanticMatches: async () => [],
+      rerankMatches: async ({ matches }) => {
+        return { matches: matches.toReversed(), applied: true }
+      },
+    })
+
+    expect(result).toMatchObject({ kind: 'evidence', reranked: true })
+    expect(result.matches[0]?.id).toBe(secondaryRecord.id)
+  })
+
+  it('짧고 단순한 질문은 rerank를 호출하지 않는다', async () => {
+    let rerankCallCount = 0
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion: 'AI 프로젝트',
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [RECENT_AI_PROJECT],
+      retrieveSemanticMatches: async () => [],
+      rerankMatches: async ({ matches }) => {
+        rerankCallCount += 1
+
+        return { matches, applied: true }
+      },
+    })
+
+    expect(rerankCallCount).toBe(0)
+    expect(result).toMatchObject({ kind: 'evidence', reranked: false })
   })
 })

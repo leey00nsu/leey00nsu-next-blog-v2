@@ -11,6 +11,15 @@ interface RerankChatEvidenceParams {
   matches: ChatEvidenceRecord[]
 }
 
+export interface RerankChatEvidenceResult {
+  matches: ChatEvidenceRecord[]
+  applied: boolean
+}
+
+export type RerankChatEvidence = (
+  params: RerankChatEvidenceParams,
+) => Promise<RerankChatEvidenceResult>
+
 const CHAT_RERANK_PROMPT = {
   SYSTEM:
     'You rerank grounded blog evidence. Prefer evidence that directly answers the user question. Return only evidence IDs from the candidate list in best-first order.',
@@ -40,12 +49,12 @@ function buildCandidateContext(matches: ChatEvidenceRecord[]): string {
     .join('\n---\n')
 }
 
-export async function rerankChatEvidence({
+export const rerankChatEvidence: RerankChatEvidence = async ({
   question,
   matches,
-}: RerankChatEvidenceParams): Promise<ChatEvidenceRecord[]> {
+}) => {
   if (!process.env.OPENAI_API_KEY) {
-    return matches
+    return { matches, applied: false }
   }
 
   try {
@@ -59,12 +68,15 @@ export async function rerankChatEvidence({
       ].join('\n\n'),
     })
 
-    return reorderChatEvidenceMatches({
-      matches,
-      rankedEvidenceIds: (output as { rankedEvidenceIds: string[] })
-        .rankedEvidenceIds,
-    })
+    return {
+      matches: reorderChatEvidenceMatches({
+        matches,
+        rankedEvidenceIds: (output as { rankedEvidenceIds: string[] })
+          .rankedEvidenceIds,
+      }),
+      applied: true,
+    }
   } catch {
-    return matches
+    return { matches, applied: false }
   }
 }

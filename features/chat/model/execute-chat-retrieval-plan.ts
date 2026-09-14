@@ -1,3 +1,7 @@
+import {
+  rerankChatEvidence,
+  type RerankChatEvidence,
+} from '@/features/chat/api/rerank-chat-evidence'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import {
   doesChatEvidenceMatchConcept,
@@ -5,6 +9,7 @@ import {
 } from '@/features/chat/lib/chat-required-concepts'
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
+import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
@@ -26,8 +31,10 @@ interface ExecuteChatRetrievalPlanParams {
   locale: SupportedLocale
   blogRecords: ChatEvidenceRecord[]
   curatedRecords: ChatEvidenceRecord[]
+  hasConversationContext?: boolean
   embedQuestion?: (question: string) => Promise<number[]>
   retrieveSemanticMatches?: RetrieveSemanticMatches
+  rerankMatches?: RerankChatEvidence
 }
 
 interface DirectChatRetrievalPlanResult {
@@ -41,7 +48,7 @@ interface EvidenceChatRetrievalPlanResult {
   matches: ChatEvidenceRecord[]
   lexicalMatches: ChatEvidenceRecord[]
   semanticMatches: ChatEvidenceRecord[]
-  reranked: false
+  reranked: boolean
 }
 
 interface RefusedChatRetrievalPlanResult {
@@ -573,8 +580,10 @@ export async function executeChatRetrievalPlan({
   locale,
   blogRecords,
   curatedRecords,
+  hasConversationContext = false,
   embedQuestion,
   retrieveSemanticMatches = retrieveDefaultSemanticMatches,
+  rerankMatches = rerankChatEvidence,
 }: ExecuteChatRetrievalPlanParams): Promise<ExecuteChatRetrievalPlanResult> {
   const scopedRecords = filterRecordsByPlan(
     [...blogRecords, ...curatedRecords],
@@ -695,11 +704,23 @@ export async function executeChatRetrievalPlan({
     }
   }
 
+  const rerankResult = shouldRerankChatEvidence({
+    question: plan.standaloneQuestion,
+    matchCount: matches.length,
+    plan,
+    hasConversationContext,
+  })
+    ? await rerankMatches({
+        question: plan.standaloneQuestion,
+        matches,
+      })
+    : null
+
   return {
     kind: 'evidence',
-    matches,
+    matches: rerankResult?.applied ? rerankResult.matches : matches,
     lexicalMatches: lexicalSelection.matches,
     semanticMatches,
-    reranked: false,
+    reranked: Boolean(rerankResult?.applied),
   }
 }

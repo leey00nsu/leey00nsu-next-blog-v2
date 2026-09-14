@@ -123,6 +123,10 @@ async function evaluateChatRetrieval(): Promise<void> {
           locale: evaluationCase.locale,
           blogRecords: records.blogRecords,
           curatedRecords: records.curatedRecords,
+          // 순위 지표는 재현 가능해야 하므로 외부 모델을 호출하는 rerank는 평가에서 제외한다.
+          rerankMatches: async ({ matches }) => {
+            return { matches, applied: false }
+          },
           retrieveSemanticMatches: liveSemanticEvaluationEnabled
             ? async ({ plan, locale, embedQuestion }) => {
                 semanticRetrievalAttempted = true

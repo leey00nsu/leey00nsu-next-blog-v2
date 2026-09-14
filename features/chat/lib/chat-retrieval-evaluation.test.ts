@@ -15,6 +15,9 @@ describe('chat retrieval evaluation', () => {
         blogRecords: CHAT_RETRIEVAL_EVALUATION_BLOG_RECORDS,
         curatedRecords: CHAT_RETRIEVAL_EVALUATION_CURATED_RECORDS,
         retrieveSemanticMatches: async () => evaluationCase.semanticMatches,
+        rerankMatches: async ({ matches }) => {
+          return { matches, applied: false }
+        },
       })
       const matches = execution.matches
 

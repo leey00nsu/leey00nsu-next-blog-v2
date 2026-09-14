@@ -72,6 +72,7 @@ interface ChatWorkflowDependencies {
   executeRetrievalPlan: (params: {
     plan: ChatRetrievalPlan
     locale: BlogChatRequest['locale']
+    hasConversationContext?: boolean
     embedQuestion?: (question: string) => Promise<number[]>
   }) => Promise<ExecuteChatRetrievalPlanResult>
   answerQuestion: (params: {
@@ -320,6 +321,7 @@ function buildContactResponse(params: {
 async function executeDefaultRetrievalPlan(params: {
   plan: ChatRetrievalPlan
   locale: BlogChatRequest['locale']
+  hasConversationContext?: boolean
   embedQuestion?: (question: string) => Promise<number[]>
 }): Promise<ExecuteChatRetrievalPlanResult> {
   const blogRecords: ChatEvidenceRecord[] = (
@@ -340,6 +342,7 @@ async function executeDefaultRetrievalPlan(params: {
     locale: params.locale,
     blogRecords,
     curatedRecords,
+    hasConversationContext: params.hasConversationContext,
     embedQuestion: params.embedQuestion,
   })
 }
@@ -615,6 +618,7 @@ function buildChatWorkflow(
       const execution = await dependencies.executeRetrievalPlan({
         plan: retrievalPlan,
         locale: state.request.locale,
+        hasConversationContext: state.request.conversationHistory.length > 0,
         embedQuestion: resolveQuestionEmbedding,
       })
 
@@ -645,6 +649,7 @@ function buildChatWorkflow(
       const execution = await dependencies.executeRetrievalPlan({
         plan: state.retrievalPlan,
         locale: state.request.locale,
+        hasConversationContext: state.request.conversationHistory.length > 0,
         embedQuestion: resolveQuestionEmbedding,
       })
 

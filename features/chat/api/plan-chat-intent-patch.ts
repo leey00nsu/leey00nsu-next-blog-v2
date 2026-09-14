@@ -49,6 +49,8 @@ Source rules:
 - For questions comparing a named topic with something outside the candidate list, keep all sources and do not constrain the answer to the supplied candidate alone.
 - Example: "recent projects using AI" is only project, not all.
 - Example: "recent uses of AI" without a source noun is all.
+- Questions about the blog's own posts (글, 게시글, 포스트, 아티클, post, article) are answered from blog posts. A project candidate named after the blog describes the blog project itself and must not decide the source category for post questions.
+- When the user asks for the newest or oldest post, set the blog source category and keep the post noun in the optional concepts rather than requiring an exact date term.
 - Use current_source only when the question explicitly refers to the current page.
 - Do not infer source categories from target names not supplied in entityCandidates.
 

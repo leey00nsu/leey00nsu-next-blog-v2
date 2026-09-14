@@ -25,6 +25,16 @@ const OWNER_CANDIDATE: ChatEntityCandidate = {
   sourceCategory: 'profile',
 }
 
+const BLOG_PROJECT_CANDIDATE: ChatEntityCandidate = {
+  entityId: 'project/blog',
+  kind: 'project',
+  slug: 'blog',
+  title: '블로그',
+  aliases: ['블로그'],
+  searchTerms: ['Graph-RAG'],
+  sourceCategory: 'project',
+}
+
 const LEESFIELD_CANDIDATE: ChatEntityCandidate = {
   entityId: 'project/leesfield',
   kind: 'project',
@@ -60,7 +70,66 @@ function compile(queryPlan: ChatQueryPlan) {
   })
 }
 
+function compileWithBlogProjectCandidate(queryPlan: ChatQueryPlan) {
+  return compileChatRetrievalPlan({
+    queryPlan,
+    candidates: [
+      LEEMAGE_CANDIDATE,
+      LEESFIELD_CANDIDATE,
+      OWNER_CANDIDATE,
+      BLOG_PROJECT_CANDIDATE,
+    ],
+    previousState: EMPTY_CHAT_CONVERSATION_STATE,
+    maximumEvidenceCount: 3,
+  })
+}
+
 describe('compileChatRetrievalPlan', () => {
+  it('블로그 글 최신 조회는 블로그 프로젝트 후보가 있어도 글을 근거로 삼는다', () => {
+    const result = compileWithBlogProjectCandidate({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '블로그에서 가장 최근에 작성한 글은 뭐야?',
+      operation: 'lookup',
+      targetSelection: { kind: 'candidate', entityId: 'project/blog' },
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'single', order: 'latest' },
+      requestedFields: ['title'],
+      requiredConcepts: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: {
+        executionKind: 'direct_metadata',
+        sourceStrategy: 'prefer',
+        sourceCategories: expect.arrayContaining(['blog']),
+        temporalStrategy: 'single',
+        temporalOrder: 'latest',
+      },
+    })
+  })
+
+  it('최근에 끝난 프로젝트 조회는 블로그 글로 바꾸지 않는다', () => {
+    const result = compileWithBlogProjectCandidate({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '가장 최근에 끝난 프로젝트는 뭐야?',
+      operation: 'lookup',
+      sourceSelection: { mode: 'only', categories: ['project'] },
+      temporalSelection: { mode: 'single', order: 'latest' },
+      requestedFields: ['title'],
+      requiredConcepts: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: {
+        executionKind: 'direct_metadata',
+        sourceStrategy: 'only',
+        sourceCategories: ['project'],
+      },
+    })
+  })
+
   it('최근 프로젝트 content 질문을 시간 우선 검색으로 컴파일한다', () => {
     const result = compile(BASE_QUERY_PLAN)
 

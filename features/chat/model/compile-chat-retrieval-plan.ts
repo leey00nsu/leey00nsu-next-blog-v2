@@ -62,6 +62,7 @@ const CHAT_TARGET_ANSWER = {
 } as const
 const IMPLICIT_PROFILE_QUESTION_PATTERN =
   /경력|커리어|직장|근무|학력|학교|대학교|대학|전공|학점|대외\s*활동|동아리|관심사|주력\s*기술|기술\s*스택|주로\s*쓰는\s*기술/u
+const POST_SCOPED_QUESTION_PATTERN = /글|게시글|포스트|아티클|article|post/iu
 const DIRECT_PROFILE_QUESTION_PATTERN =
   /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무)|경력|직장|근무처)|학력|학교별|대외\s*활동|동아리|주력\s*기술|기술\s*스택|주로\s*쓰는\s*기술|recent|latest|last\s+(?:job|workplace)|education|school|extracurricular|club\s+experience|primary\s+tech|tech(?:nology)?\s+stack/iu
 const AGGREGATE_CHAT_OPERATIONS = new Set<ChatQueryPlan['operation']>([
@@ -253,6 +254,34 @@ function normalizeImplicitProfileSourceSelection(
     sourceSelection: {
       mode: 'prefer',
       categories: ['profile'],
+    },
+  }
+}
+
+/**
+ * 게시글을 묻는 질문은 블로그 글을 근거로 삼는다. 블로그 자체를 가리키는 프로젝트 후보가
+ * 선택되면 그 프로젝트의 완료일이 게시글 날짜처럼 답변에 쓰일 수 있다.
+ */
+function normalizePostScopedSourceSelection(
+  queryPlan: ChatQueryPlan,
+): ChatQueryPlan {
+  const alreadyTargetsBlog =
+    queryPlan.sourceSelection.mode !== 'all' &&
+    queryPlan.sourceSelection.categories.includes('blog')
+
+  if (
+    queryPlan.temporalSelection.mode !== 'single' ||
+    alreadyTargetsBlog ||
+    !POST_SCOPED_QUESTION_PATTERN.test(queryPlan.standaloneQuestion)
+  ) {
+    return queryPlan
+  }
+
+  return {
+    ...queryPlan,
+    sourceSelection: {
+      mode: 'prefer',
+      categories: ['blog'],
     },
   }
 }
@@ -566,11 +595,13 @@ export function compileChatRetrievalPlan(
     }
   }
 
-  const queryPlan = normalizeImplicitProfileSourceSelection(
-    normalizeQueryPlanConceptRequirements(
-      resolveEffectiveQueryPlan(normalizedParams),
+  const queryPlan = normalizePostScopedSourceSelection(
+    normalizeImplicitProfileSourceSelection(
+      normalizeQueryPlanConceptRequirements(
+        resolveEffectiveQueryPlan(normalizedParams),
+      ),
+      params.candidates,
     ),
-    params.candidates,
   )
 
   if (!hasRequiredRequestedFields(queryPlan)) {

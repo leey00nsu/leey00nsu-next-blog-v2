@@ -127,7 +127,7 @@ function resolveDirectMetadataResponseKind(
 
 const STRUCTURED_PROFILE_RESPONSE = {
   ko: {
-    recentCareerPattern: /(?:최근|최신|마지막|어디(?:에서)?\s*(?:일|근무))/u,
+    recentCareerPattern: /(?:(?:최근|최신|마지막).*(?:근무|회사|직장|경력)|어디(?:에서)?\s*(?:일|근무))/u,
     recentCareerAnswer:
       '가장 최근 근무처는 {workplace}이며, {startDate}부터 {endDate}까지 근무했습니다.',
     careerSection: '경력',
@@ -140,7 +140,7 @@ const STRUCTURED_PROFILE_RESPONSE = {
   },
   en: {
     recentCareerPattern:
-      /recent|latest|last\s+(?:job|workplace)|where\s+did.+work/iu,
+      /(?:recent|latest|last)\s+(?:job|workplace|employer)|where\s+did.+work/iu,
     recentCareerAnswer:
       'The most recent workplace was {workplace}, from {startDate} to {endDate}.',
     careerSection: 'Career',

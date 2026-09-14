@@ -150,8 +150,9 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         optionalConcepts: ['사용 경험'],
         scopeToTarget: false,
       }),
-      // CRLF 정리 이후 이 글은 섹션 anchor를 가진다. 글 전체를 가리키는 항목은 더 이상 없다.
+      // 실제 Vercel 배포 경험은 도입부가 아니라 Vercel 절에 기록되어 있다.
       expectedMatchUrls: [
+        '/ko/blog/why-i-do-not-use-vercel-anymore#vercel',
         '/ko/blog/why-i-do-not-use-vercel-anymore#내가-더-이상-vercel-호스팅을-사용하지-않는-이유',
       ],
     },
@@ -211,7 +212,11 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         requiredConcepts: [],
         optionalConcepts: ['Multimodal AI generation', 'Adapter'],
       }),
-      expectedMatchUrls: ['/en/projects/leesfield#key-features'],
+      expectedMatchUrls: [
+        '/en/projects/leesfield#key-features',
+        '/en/projects/leesfield#different-api-interfaces-across-models',
+        '/en/projects/leesfield#code-changes-for-every-new-model',
+      ],
       requiresLiveSemantic: true,
       requiresRerank: true,
     },

@@ -9,6 +9,72 @@ import {
 } from '@/features/chat/model/chat-rag-database'
 
 describe('selectChatRagLocaleSearchData', () => {
+  it('검증 조회는 활성 포인터 대신 지정된 후보 인덱스만 읽는다', async () => {
+    const queries: Array<{ text: string; values: unknown[] }> = []
+    const databaseClient = {
+      query: async (text: string, values: unknown[]) => {
+        queries.push({ text, values })
+        return {
+          rows: text.includes('FROM chat_rag_index_versions')
+            ? [
+                {
+                  id: 'candidate',
+                  status: 'building',
+                  embedding_provider: CHAT_RAG.EMBEDDING.PROVIDER,
+                  embedding_model_id: CHAT_RAG.EMBEDDING.MODEL_ID,
+                  embedding_dimension: 3,
+                  chunking_version: CHAT_RAG.INDEX.CHUNKING_VERSION,
+                },
+              ]
+            : [],
+        }
+      },
+    }
+    await selectChatRagLocaleSearchData({
+      databaseClient: databaseClient as never,
+      indexVersion: 'candidate',
+      locale: 'ko',
+      questionEmbedding: [0.1, 0.2, 0.3],
+      maximumSemanticCandidates: 8,
+    })
+    expect(queries).toHaveLength(4)
+    expect(queries.every((query) => query.values[0] === 'candidate')).toBe(true)
+    expect(
+      queries.some((query) => query.text.includes('chat_rag_active_index')),
+    ).toBe(false)
+  })
+
+  it.each(['missing', 'failed', 'dimension'] as const)(
+    '유효하지 않은 후보 %s 조회를 거부한다',
+    async (failure) => {
+      const databaseClient = {
+        query: async () => ({
+          rows:
+            failure === 'missing'
+              ? []
+              : [
+                  {
+                    status: failure === 'failed' ? 'failed' : 'building',
+                    embedding_provider: CHAT_RAG.EMBEDDING.PROVIDER,
+                    embedding_model_id: CHAT_RAG.EMBEDDING.MODEL_ID,
+                    embedding_dimension: 384,
+                    chunking_version: CHAT_RAG.INDEX.CHUNKING_VERSION,
+                  },
+                ],
+        }),
+      }
+      await expect(
+        selectChatRagLocaleSearchData({
+          databaseClient: databaseClient as never,
+          indexVersion: 'candidate',
+          locale: 'ko',
+          questionEmbedding: [0.1, 0.2, 0.3],
+          maximumSemanticCandidates: 8,
+        }),
+      ).rejects.toThrow()
+    },
+  )
+
   it('Postgres JSONB 배열 응답을 그대로 파싱한다', async () => {
     const queryTexts: string[] = []
     const queryMock = async (queryText: string) => {

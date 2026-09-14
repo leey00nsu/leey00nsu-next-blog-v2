@@ -32,6 +32,10 @@ import {
 import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import { LOCALES } from '@/shared/config/constants'
+import { evaluateChatRetrieval } from '@/features/chat/model/evaluate-chat-retrieval'
+import { validateAndActivateChatRagIndex } from '@/features/chat/model/validate-and-activate-chat-rag-index'
+
+const VERIFY_INDEX_ARGUMENT = '--verify'
 
 interface ChatRagChunkEmbedding {
   chunkId: string
@@ -156,6 +160,15 @@ async function embedChunkRecords(
 }
 
 async function main(): Promise<void> {
+  const verifyIndex = process.argv.includes(VERIFY_INDEX_ARGUMENT)
+  if (
+    verifyIndex &&
+    (!isChatRagEmbeddingConfigured() || !isChatRagDatabaseConfigured())
+  ) {
+    throw new Error(
+      'Verified indexing requires the RAG database and embedding provider.',
+    )
+  }
   if (!isChatRagEmbeddingConfigured()) {
     console.warn(
       'Skipped Chat RAG Postgres indexing because the embedding provider is not configured.',
@@ -237,16 +250,28 @@ async function main(): Promise<void> {
       throw new Error('Cannot activate a Chat RAG index without embeddings.')
     }
 
-    const activationDatabaseClient = await databasePool.connect()
-
-    try {
-      await activateChatRagIndexRun({
-        databaseClient: activationDatabaseClient,
+    if (verifyIndex) {
+      await validateAndActivateChatRagIndex({
+        databasePool,
         indexVersion: indexRun.indexVersion,
         embeddingDimension: indexEmbeddingDimension,
+        validateIndex: (indexVersion) =>
+          evaluateChatRetrieval({
+            liveSemanticEvaluationEnabled: true,
+            indexVersion,
+          }),
       })
-    } finally {
-      activationDatabaseClient.release()
+    } else {
+      const activationDatabaseClient = await databasePool.connect()
+      try {
+        await activateChatRagIndexRun({
+          databaseClient: activationDatabaseClient,
+          indexVersion: indexRun.indexVersion,
+          embeddingDimension: indexEmbeddingDimension,
+        })
+      } finally {
+        activationDatabaseClient.release()
+      }
     }
 
     console.log(

@@ -466,6 +466,25 @@ export async function replaceChatRagLocaleIndex(params: {
   }
 }
 
+export async function prepareChatRagIndexValidation(params: {
+  databaseClient: Pool | PoolClient
+  indexVersion: string
+  embeddingDimension: number
+}): Promise<void> {
+  const result = await params.databaseClient.query(
+    `UPDATE ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+     SET embedding_dimension = $2
+     WHERE id = $1 AND status = $3 RETURNING id`,
+    [
+      params.indexVersion,
+      params.embeddingDimension,
+      CHAT_RAG_DATABASE.INDEX_STATUSES.BUILDING,
+    ],
+  )
+  if (result.rows.length !== 1)
+    throw new Error('Only a building index can be prepared for validation.')
+}
+
 export async function activateChatRagIndexRun(params: {
   databaseClient: PoolClient
   indexVersion: string
@@ -516,6 +535,12 @@ export async function activateChatRagIndexRun(params: {
         DELETE FROM ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
         WHERE status IN ($1, $2)
           AND id <> $3
+          AND id NOT IN (
+            SELECT id FROM ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS}
+            WHERE status = $1
+            ORDER BY activated_at DESC NULLS LAST, id DESC
+            LIMIT 1
+          )
       `,
       [
         CHAT_RAG_DATABASE.INDEX_STATUSES.STALE,
@@ -677,7 +702,29 @@ export async function selectChatRagChunkEmbeddings(params: {
   })
 }
 
+async function selectChatRagValidationIndexVersion(params: {
+  databaseClient: Pool | PoolClient
+  indexVersion: string
+  questionEmbeddingDimension: number
+}): Promise<string> {
+  const result = await params.databaseClient.query(
+    `SELECT id, status, embedding_provider, embedding_model_id, embedding_dimension, chunking_version
+     FROM ${CHAT_RAG_DATABASE.TABLES.INDEX_VERSIONS} WHERE id = $1`,
+    [params.indexVersion],
+  )
+  const row = result.rows[0]
+  if (!row || row.status === CHAT_RAG_DATABASE.INDEX_STATUSES.FAILED) {
+    throw new Error('Requested validation index is missing or failed.')
+  }
+  assertActiveChatRagIndexConfiguration({
+    row,
+    questionEmbeddingDimension: params.questionEmbeddingDimension,
+  })
+  return params.indexVersion
+}
+
 export async function selectChatRagLocaleSearchData(params: {
+  indexVersion?: string
   databaseClient: Pool | PoolClient
   locale: SupportedLocale
   questionEmbedding: number[]
@@ -685,13 +732,19 @@ export async function selectChatRagLocaleSearchData(params: {
   sourceCategory?: ChatSourceCategory | null
   slug?: string | null
 }): Promise<ChatRagLocaleSearchData> {
-  const activeIndexVersion = await selectActiveChatRagIndexVersion({
-    databaseClient: params.databaseClient,
-    questionEmbeddingDimension:
-      params.questionEmbedding.length > 0
-        ? params.questionEmbedding.length
-        : undefined,
-  })
+  const activeIndexVersion = params.indexVersion
+    ? await selectChatRagValidationIndexVersion({
+        databaseClient: params.databaseClient,
+        indexVersion: params.indexVersion,
+        questionEmbeddingDimension: params.questionEmbedding.length,
+      })
+    : await selectActiveChatRagIndexVersion({
+        databaseClient: params.databaseClient,
+        questionEmbeddingDimension:
+          params.questionEmbedding.length > 0
+            ? params.questionEmbedding.length
+            : undefined,
+      })
 
   if (!activeIndexVersion) {
     return {

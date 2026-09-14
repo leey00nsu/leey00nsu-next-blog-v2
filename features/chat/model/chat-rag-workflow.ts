@@ -341,6 +341,7 @@ function buildChatRagWorkflow(params: {
 }
 
 export async function runChatRagWorkflow(params: {
+  indexVersion?: string
   question: string
   locale: SupportedLocale
   currentPostSlug?: string
@@ -382,6 +383,7 @@ export async function runChatRagWorkflow(params: {
               : undefined
 
           return selectChatRagLocaleSearchData({
+            indexVersion: params.indexVersion,
             databaseClient: databasePool,
             locale,
             questionEmbedding,

@@ -2,6 +2,7 @@ import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import { doesChatEvidenceMatchConcept } from '@/features/chat/lib/chat-required-concepts'
+import { matchGraphRagEntityIds } from '@/features/chat/lib/match-graph-rag-entities'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import {
   getChatRagDatabasePool,
@@ -97,24 +98,6 @@ function buildLexicalScore(
   }, 0)
 }
 
-function buildMatchedEntityIds(
-  entities: GraphRagEntity[],
-  questionTerms: string[],
-): Set<string> {
-  return new Set(
-    entities
-      .filter((entity) => {
-        return questionTerms.some((questionTerm) => {
-          return (
-            entity.normalizedName.includes(questionTerm) ||
-            questionTerm.includes(entity.normalizedName)
-          )
-        })
-      })
-      .map((entity) => entity.id),
-  )
-}
-
 function sortRelationsByWeight(
   relations: GraphRagRelation[],
 ): GraphRagRelation[] {
@@ -171,7 +154,10 @@ function buildRankedChunks(params: {
   const questionTerms = collectSearchTerms({
     texts: [params.question],
   }).map((questionTerm) => normalizeText(questionTerm))
-  const matchedEntityIds = buildMatchedEntityIds(params.entities, questionTerms)
+  const matchedEntityIds = matchGraphRagEntityIds({
+    entities: params.entities,
+    questionTerms,
+  })
   const relatedEntityScoreMap = buildRelatedEntityScoreMap(
     params.relations,
     matchedEntityIds,

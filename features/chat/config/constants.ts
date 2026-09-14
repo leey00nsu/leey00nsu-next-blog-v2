@@ -28,6 +28,9 @@ export const BLOG_CHAT = {
       process.env.BLOG_CHAT_SEARCH_AGGREGATE_TOP_K,
       6,
     ),
+    // 한국어는 조사가 앞 낱말에 붙어 있으므로, 토큰 비교 전에 꼬리 조사를 떼어 낸다.
+    KOREAN_PARTICLE_SUFFIX_PATTERN:
+      /(?:에서|으로|에게|한테|처럼|부터|까지|은|는|이|가|을|를|와|과|로|의)$/u,
     MAXIMUM_MATCHES_PER_SLUG: 2,
     MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE: 1,
     MINIMUM_MATCHED_TOKEN_COUNT: 2,

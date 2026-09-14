@@ -251,6 +251,7 @@ function limitMatchesWithDiversity(params: {
 }): ChatEvidenceRecord[] {
   const groupCountMap = new Map<string, number>()
   const selectedMatchIds = new Set(params.requiredMatchIds)
+  const selectedUrlSet = new Set<string>()
 
   if (selectedMatchIds.size > params.maximumEvidenceCount) {
     return []
@@ -264,6 +265,7 @@ function limitMatchesWithDiversity(params: {
     const groupKey = params.diversityPolicy.resolveGroupKey(match)
 
     groupCountMap.set(groupKey, (groupCountMap.get(groupKey) ?? 0) + 1)
+    selectedUrlSet.add(match.url)
   }
 
   for (const match of params.matches) {
@@ -275,6 +277,11 @@ function limitMatchesWithDiversity(params: {
       break
     }
 
+    // 같은 섹션(URL)의 청크를 두 번 넣으면 답변에 중복 근거가 들어간다.
+    if (selectedUrlSet.has(match.url)) {
+      continue
+    }
+
     const groupKey = params.diversityPolicy.resolveGroupKey(match)
     const groupMatchCount = groupCountMap.get(groupKey) ?? 0
 
@@ -283,6 +290,7 @@ function limitMatchesWithDiversity(params: {
     }
 
     groupCountMap.set(groupKey, groupMatchCount + 1)
+    selectedUrlSet.add(match.url)
     selectedMatchIds.add(match.id)
   }
 
@@ -686,11 +694,27 @@ export async function executeChatRetrievalPlan({
     matches: sortedMatches,
     requiredConcepts: plan.requiredConcepts,
   })
+  // 리랭커는 최종 근거 수를 정하기 전에 넓은 후보 풀에서 고른다. 선별 뒤에 호출하면
+  // 이미 잘린 목록의 순서만 바꿀 수 있어, 후보에 있던 근거를 살릴 수 없다.
+  const rerankResult = shouldRerankChatEvidence({
+    question: plan.standaloneQuestion,
+    matchCount: sortedMatches.length,
+    plan,
+    hasConversationContext,
+  })
+    ? await rerankMatches({
+        question: plan.standaloneQuestion,
+        matches: sortedMatches,
+      })
+    : null
+  const rerankedMatches = rerankResult?.applied
+    ? rerankResult.matches
+    : sortedMatches
   const limitedMatches =
     plan.temporalStrategy === 'single'
-      ? selectSingleDocumentMatches(sortedMatches, plan.maximumEvidenceCount)
+      ? selectSingleDocumentMatches(rerankedMatches, plan.maximumEvidenceCount)
       : limitMatchesWithDiversity({
-          matches: sortedMatches,
+          matches: rerankedMatches,
           maximumEvidenceCount: plan.maximumEvidenceCount,
           diversityPolicy,
           requiredMatchIds,
@@ -714,21 +738,9 @@ export async function executeChatRetrievalPlan({
     }
   }
 
-  const rerankResult = shouldRerankChatEvidence({
-    question: plan.standaloneQuestion,
-    matchCount: matches.length,
-    plan,
-    hasConversationContext,
-  })
-    ? await rerankMatches({
-        question: plan.standaloneQuestion,
-        matches,
-      })
-    : null
-
   return {
     kind: 'evidence',
-    matches: rerankResult?.applied ? rerankResult.matches : matches,
+    matches,
     lexicalMatches: lexicalSelection.matches,
     semanticMatches,
     reranked: Boolean(rerankResult?.applied),

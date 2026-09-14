@@ -547,4 +547,107 @@ describe('executeChatRetrievalPlan', () => {
     expect(rerankCallCount).toBe(0)
     expect(result).toMatchObject({ kind: 'evidence', reranked: false })
   })
+
+  it('rerank는 최종 근거 수로 자르기 전의 후보 풀을 받아 4순위 근거도 살릴 수 있다', async () => {
+    const lexicalRecords: ChatEvidenceRecord[] = [
+      'ai-usage',
+      'ai-review',
+      'ai-experiment',
+    ].map((slug) => {
+      return {
+        ...RECENT_AI_PROJECT,
+        id: `ko/project/${slug}`,
+        slug,
+        title: `AI 활용 ${slug}`,
+        url: `/ko/projects/${slug}`,
+        content: 'AI 활용 방식을 정리했습니다.',
+        searchTerms: ['AI 활용'],
+      }
+    })
+    // lexical 목록에는 들지 못하고 semantic 목록으로만 후보에 들어오는 근거.
+    const semanticOnlyRecord: ChatEvidenceRecord = {
+      ...RECENT_AI_PROJECT,
+      id: 'ko/project/ai-automation-playbook',
+      slug: 'ai-automation-playbook',
+      title: '자동화 플레이북',
+      url: '/ko/projects/ai-automation-playbook',
+      content: '자동화 절차를 단계별로 정리한 문서입니다.',
+      tags: ['automation'],
+      searchTerms: ['자동화'],
+    }
+    let rerankCandidateCount = 0
+
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion:
+          '프로젝트에서 AI를 어떻게 활용했고 그 과정에서 무엇을 배웠는지 설명해줘',
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: [...lexicalRecords, semanticOnlyRecord],
+      // 기대 근거를 융합 후보 마지막 순위로만 넣어, 선별 전에 리랭커가 고르는지 확인한다.
+      retrieveSemanticMatches: async () => [semanticOnlyRecord],
+      rerankMatches: async ({ matches }) => {
+        rerankCandidateCount = matches.length
+
+        return { matches: [...matches].toReversed(), applied: true }
+      },
+    })
+
+    expect(rerankCandidateCount).toBeGreaterThan(
+      RECENT_PROJECT_AI_PLAN.maximumEvidenceCount,
+    )
+    expect(result).toMatchObject({ kind: 'evidence', reranked: true })
+    expect(result.matches[0]?.id).toBe(semanticOnlyRecord.id)
+  })
+
+  it('같은 섹션(URL)의 청크를 최종 근거에 두 번 넣지 않는다', async () => {
+    const sharedSectionRecords: ChatEvidenceRecord[] = [
+      {
+        ...RECENT_AI_PROJECT,
+        id: 'ko/project/ai-usage-part-1',
+        slug: 'ai-usage',
+        title: 'AI 활용 정리',
+        url: '/ko/projects/ai-usage#활용-방식',
+        content: 'AI 활용 방식을 정리한 앞부분입니다.',
+        searchTerms: ['AI 활용'],
+      },
+      {
+        ...RECENT_AI_PROJECT,
+        id: 'ko/project/ai-usage-part-2',
+        slug: 'ai-usage',
+        title: 'AI 활용 정리',
+        url: '/ko/projects/ai-usage#활용-방식',
+        content: 'AI 활용 방식을 정리한 뒷부분입니다.',
+        searchTerms: ['AI 활용'],
+      },
+      {
+        ...RECENT_AI_PROJECT,
+        id: 'ko/project/ai-review',
+        slug: 'ai-review',
+        title: 'AI 회고',
+        url: '/ko/projects/ai-review',
+        content: 'AI 활용 회고입니다.',
+        searchTerms: ['AI 활용'],
+      },
+    ]
+
+    const result = await executeChatRetrievalPlan({
+      plan: {
+        ...RECENT_PROJECT_AI_PLAN,
+        standaloneQuestion: 'AI 활용 방식을 정리해줘',
+      },
+      locale: 'ko',
+      blogRecords: [],
+      curatedRecords: sharedSectionRecords,
+      retrieveSemanticMatches: async () => [],
+    })
+    const matchUrls = result.matches.map((match) => {
+      return match.url
+    })
+
+    expect(matchUrls).toContain('/ko/projects/ai-usage#활용-방식')
+    expect(new Set(matchUrls).size).toBe(matchUrls.length)
+  })
 })

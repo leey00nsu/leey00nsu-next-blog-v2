@@ -32,6 +32,13 @@ interface StoreSemanticCachedBlogChatResponseParams
 
 const semanticCacheEntries: SemanticCacheEntry[] = []
 
+const CHAT_SEMANTIC_CACHE_LOG = {
+  READ_FAILURE_MESSAGE:
+    'Failed to read the shared semantic chat response cache.',
+  WRITE_FAILURE_MESSAGE:
+    'Failed to write the shared semantic chat response cache.',
+} as const
+
 async function resolveQuestionEmbeddingSafely(params: {
   question: string
   resolveQuestionEmbedding?: () => Promise<number[]>
@@ -111,15 +118,20 @@ export async function findSemanticCachedBlogChatResponse({
       return undefined
     }
 
-    const sharedResponse = await selectSharedSemanticChatResponse({
-      locale,
-      questionEmbedding,
-      currentPostSlug,
-      intentCacheKey,
-      minimumSimilarityScore: BLOG_CHAT.SEMANTIC_CACHE.MINIMUM_SIMILARITY_SCORE,
-    })
+    try {
+      const sharedResponse = await selectSharedSemanticChatResponse({
+        locale,
+        questionEmbedding,
+        currentPostSlug,
+        intentCacheKey,
+        minimumSimilarityScore:
+          BLOG_CHAT.SEMANTIC_CACHE.MINIMUM_SIMILARITY_SCORE,
+      })
 
-    return sharedResponse ?? undefined
+      return sharedResponse ?? undefined
+    } catch (error) {
+      console.error(CHAT_SEMANTIC_CACHE_LOG.READ_FAILURE_MESSAGE, error)
+    }
   }
 
   cleanupExpiredSemanticCacheEntries()
@@ -183,17 +195,21 @@ export async function storeSemanticCachedBlogChatResponse({
   }
 
   if (isSharedChatResponseCacheConfigured()) {
-    await saveSharedSemanticChatResponse({
-      locale,
-      question,
-      currentPostSlug,
-      intentCacheKey,
-      questionEmbedding,
-      response,
-      ttlMilliseconds: BLOG_CHAT.SEMANTIC_CACHE.TTL_MILLISECONDS,
-    })
+    try {
+      await saveSharedSemanticChatResponse({
+        locale,
+        question,
+        currentPostSlug,
+        intentCacheKey,
+        questionEmbedding,
+        response,
+        ttlMilliseconds: BLOG_CHAT.SEMANTIC_CACHE.TTL_MILLISECONDS,
+      })
 
-    return
+      return
+    } catch (error) {
+      console.error(CHAT_SEMANTIC_CACHE_LOG.WRITE_FAILURE_MESSAGE, error)
+    }
   }
 
   cleanupExpiredSemanticCacheEntries()

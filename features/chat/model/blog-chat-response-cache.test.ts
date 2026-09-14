@@ -6,16 +6,19 @@ import {
   setCachedBlogChatResponse,
 } from '@/features/chat/model/blog-chat-response-cache'
 
-// 프로세스 메모리 경로를 검증하는 테스트이므로 공유 저장소는 사용하지 않는다.
-vi.mock('@/features/chat/model/chat-response-cache-store', () => {
+const { sharedCacheStoreMock } = vi.hoisted(() => {
   return {
-    deleteExpiredSharedChatResponses: vi.fn(),
-    isSharedChatResponseCacheConfigured: () => false,
-    saveSharedExactChatResponse: vi.fn(),
-    saveSharedSemanticChatResponse: vi.fn(),
-    selectSharedChatResponse: vi.fn(),
-    selectSharedSemanticChatResponse: vi.fn(),
+    sharedCacheStoreMock: {
+      deleteExpiredSharedChatResponses: vi.fn(),
+      isSharedChatResponseCacheConfigured: vi.fn(() => false),
+      saveSharedExactChatResponse: vi.fn(),
+      selectSharedChatResponse: vi.fn(),
+    },
   }
+})
+
+vi.mock('@/features/chat/model/chat-response-cache-store', () => {
+  return sharedCacheStoreMock
 })
 
 const RESPONSE: BlogChatResponse = {
@@ -26,6 +29,14 @@ const RESPONSE: BlogChatResponse = {
 
 describe('blog chat response cache', () => {
   beforeEach(async () => {
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReset()
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      false,
+    )
+    sharedCacheStoreMock.selectSharedChatResponse.mockReset()
+    sharedCacheStoreMock.saveSharedExactChatResponse.mockReset()
+    sharedCacheStoreMock.deleteExpiredSharedChatResponses.mockReset()
+
     await cleanupExpiredBlogChatResponseCache({
       now: Number.POSITIVE_INFINITY,
       ttlMilliseconds: 0,
@@ -75,5 +86,54 @@ describe('blog chat response cache', () => {
     })
 
     await expect(getCachedBlogChatResponse('fresh')).resolves.toEqual(RESPONSE)
+  })
+
+  it('공유 저장소 조회가 실패해도 캐시 미스로 처리한다', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      true,
+    )
+    sharedCacheStoreMock.selectSharedChatResponse.mockRejectedValueOnce(
+      new Error('relation "chat_response_cache" does not exist'),
+    )
+
+    await expect(
+      getCachedBlogChatResponse('ko:global:question'),
+    ).resolves.toBeNull()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('공유 저장소 저장이 실패해도 같은 인스턴스의 메모리 캐시에는 남긴다', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      true,
+    )
+    sharedCacheStoreMock.saveSharedExactChatResponse.mockRejectedValueOnce(
+      new Error('relation "chat_response_cache" does not exist'),
+    )
+
+    await setCachedBlogChatResponse({
+      cacheKey: 'memory-fallback',
+      locale: 'ko',
+      responseData: RESPONSE,
+      now: 100,
+    })
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      false,
+    )
+
+    await expect(getCachedBlogChatResponse('memory-fallback')).resolves.toEqual(
+      RESPONSE,
+    )
+
+    consoleErrorSpy.mockRestore()
   })
 })

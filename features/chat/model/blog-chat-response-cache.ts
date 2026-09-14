@@ -15,6 +15,28 @@ interface CachedBlogChatResponse {
 
 const blogChatResponseCache = new Map<string, CachedBlogChatResponse>()
 
+const BLOG_CHAT_RESPONSE_CACHE_LOG = {
+  READ_FAILURE_MESSAGE: 'Failed to read the shared chat response cache.',
+  WRITE_FAILURE_MESSAGE: 'Failed to write the shared chat response cache.',
+  CLEANUP_FAILURE_MESSAGE: 'Failed to delete expired shared chat responses.',
+} as const
+
+/**
+ * 캐시는 답변을 돕는 장치일 뿐이므로, 공유 저장소 장애가 답변 실패로 이어지면 안 된다.
+ * 조회는 undefined(공유 저장소 사용 불가)를 돌려주고 호출부가 메모리 캐시로 이어서 처리한다.
+ */
+async function findSharedCachedBlogChatResponse(
+  cacheKey: string,
+): Promise<BlogChatResponse | null | undefined> {
+  try {
+    return await selectSharedChatResponse({ cacheKey })
+  } catch (error) {
+    console.error(BLOG_CHAT_RESPONSE_CACHE_LOG.READ_FAILURE_MESSAGE, error)
+
+    return undefined
+  }
+}
+
 /**
  * 응답 캐시 키로 캐시된 응답을 찾는다.
  *
@@ -24,7 +46,11 @@ export async function getCachedBlogChatResponse(
   cacheKey: string,
 ): Promise<BlogChatResponse | null> {
   if (isSharedChatResponseCacheConfigured()) {
-    return selectSharedChatResponse({ cacheKey })
+    const sharedResponse = await findSharedCachedBlogChatResponse(cacheKey)
+
+    if (sharedResponse !== undefined) {
+      return sharedResponse
+    }
   }
 
   return blogChatResponseCache.get(cacheKey)?.data ?? null
@@ -37,15 +63,19 @@ export async function setCachedBlogChatResponse(params: {
   now?: number
 }): Promise<void> {
   if (isSharedChatResponseCacheConfigured()) {
-    await saveSharedExactChatResponse({
-      cacheKey: params.cacheKey,
-      locale: params.locale,
-      response: params.responseData,
-      ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
-      now: params.now,
-    })
+    try {
+      await saveSharedExactChatResponse({
+        cacheKey: params.cacheKey,
+        locale: params.locale,
+        response: params.responseData,
+        ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
+        now: params.now,
+      })
 
-    return
+      return
+    } catch (error) {
+      console.error(BLOG_CHAT_RESPONSE_CACHE_LOG.WRITE_FAILURE_MESSAGE, error)
+    }
   }
 
   blogChatResponseCache.set(params.cacheKey, {
@@ -59,9 +89,13 @@ export async function cleanupExpiredBlogChatResponseCache(params: {
   ttlMilliseconds: number
 }): Promise<void> {
   if (isSharedChatResponseCacheConfigured()) {
-    await deleteExpiredSharedChatResponses({ now: params.now })
+    try {
+      await deleteExpiredSharedChatResponses({ now: params.now })
 
-    return
+      return
+    } catch (error) {
+      console.error(BLOG_CHAT_RESPONSE_CACHE_LOG.CLEANUP_FAILURE_MESSAGE, error)
+    }
   }
 
   const now = params.now ?? Date.now()

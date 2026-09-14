@@ -7,6 +7,16 @@ const { embedChatRagQuestionMock } = vi.hoisted(() => {
   }
 })
 
+const { sharedCacheStoreMock } = vi.hoisted(() => {
+  return {
+    sharedCacheStoreMock: {
+      isSharedChatResponseCacheConfigured: vi.fn(() => false),
+      saveSharedSemanticChatResponse: vi.fn(),
+      selectSharedSemanticChatResponse: vi.fn(),
+    },
+  }
+})
+
 vi.mock('@/features/chat/model/chat-rag-embedding-provider', () => {
   return {
     embedChatRagQuestion: embedChatRagQuestionMock,
@@ -14,16 +24,8 @@ vi.mock('@/features/chat/model/chat-rag-embedding-provider', () => {
   }
 })
 
-// 프로세스 메모리 경로를 검증하는 테스트이므로 공유 저장소는 사용하지 않는다.
 vi.mock('@/features/chat/model/chat-response-cache-store', () => {
-  return {
-    deleteExpiredSharedChatResponses: vi.fn(),
-    isSharedChatResponseCacheConfigured: () => false,
-    saveSharedExactChatResponse: vi.fn(),
-    saveSharedSemanticChatResponse: vi.fn(),
-    selectSharedChatResponse: vi.fn(),
-    selectSharedSemanticChatResponse: vi.fn(),
-  }
+  return sharedCacheStoreMock
 })
 
 describe('chat-semantic-cache', () => {
@@ -31,6 +33,9 @@ describe('chat-semantic-cache', () => {
     vi.resetModules()
     vi.clearAllMocks()
 
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      false,
+    )
     embedChatRagQuestionMock.mockReset()
   })
 
@@ -211,5 +216,82 @@ describe('chat-semantic-cache', () => {
         question: '조회 질문',
       }),
     ).resolves.toBeUndefined()
+  })
+
+  it('공유 저장소 조회가 실패해도 요청 실패로 전파하지 않는다', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    const { findSemanticCachedBlogChatResponse } = await import(
+      '@/features/chat/model/chat-semantic-cache'
+    )
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      true,
+    )
+    sharedCacheStoreMock.selectSharedSemanticChatResponse.mockRejectedValueOnce(
+      new Error('relation "chat_response_cache" does not exist'),
+    )
+    embedChatRagQuestionMock.mockResolvedValueOnce([1, 0, 0])
+
+    await expect(
+      findSemanticCachedBlogChatResponse({
+        locale: 'ko',
+        question: '공유 저장소가 없는 시점의 질문',
+      }),
+    ).resolves.toBeUndefined()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('공유 저장소 저장이 실패해도 메모리 캐시에는 남긴다', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    const {
+      findSemanticCachedBlogChatResponse,
+      storeSemanticCachedBlogChatResponse,
+    } = await import('@/features/chat/model/chat-semantic-cache')
+    const groundedResponse: BlogChatResponse = {
+      answer: '메모리 fallback 답변입니다.',
+      grounded: true,
+      citations: [
+        {
+          title: '메모리 fallback 근거',
+          url: '/ko/blog/memory-fallback',
+          sectionTitle: null,
+          sourceCategory: 'blog',
+        },
+      ],
+    }
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      true,
+    )
+    sharedCacheStoreMock.saveSharedSemanticChatResponse.mockRejectedValueOnce(
+      new Error('relation "chat_response_cache" does not exist'),
+    )
+    embedChatRagQuestionMock
+      .mockResolvedValueOnce([1, 0, 0])
+      .mockResolvedValueOnce([1, 0, 0])
+
+    await storeSemanticCachedBlogChatResponse({
+      locale: 'ko',
+      question: '메모리 fallback 질문',
+      response: groundedResponse,
+    })
+
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      false,
+    )
+
+    await expect(
+      findSemanticCachedBlogChatResponse({
+        locale: 'ko',
+        question: '메모리 fallback 질문',
+      }),
+    ).resolves.toEqual(groundedResponse)
+
+    consoleErrorSpy.mockRestore()
   })
 })

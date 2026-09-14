@@ -2,6 +2,7 @@ import GithubSlugger from 'github-slugger'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { collectSearchTerms } from '@/shared/lib/search-terms'
+import { splitBoundedMarkdownContent } from '@/shared/lib/split-bounded-markdown-content'
 
 interface HeadingSection {
   title: string
@@ -37,8 +38,8 @@ const CURATED_SOURCE_RECORDS = {
     LINK: /\[([^\]]+)\]\([^)]+\)/g,
     INLINE_CODE: /`([^`]+)`/g,
     HTML_TAG: /<[^>]+>/g,
-    MARKERS: /[*_>#~-]/g,
-    WHITESPACE: /\s+/g,
+    MARKERS: /(?<![\p{L}\p{N}])[*_]+|[*_]+(?![\p{L}\p{N}])/gu,
+    WHITESPACE: /[^\S\n]+/g,
   },
 } as const
 
@@ -54,13 +55,25 @@ function isCodeFenceLine(line: string): boolean {
 }
 
 function sanitizeMarkdownToSearchText(markdown: string): string {
+  let isInsideCodeFence = false
   return markdown
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.IMAGE, '$1')
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.LINK, '$1')
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.INLINE_CODE, '$1')
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.HTML_TAG, ' ')
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.MARKERS, ' ')
-    .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.WHITESPACE, ' ')
+    .split('\n')
+    .map((line) => {
+      if (isCodeFenceLine(line)) {
+        isInsideCodeFence = !isInsideCodeFence
+        return line
+      }
+      if (isInsideCodeFence) return line
+      return line
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.IMAGE, '$1')
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.LINK, '$1')
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.INLINE_CODE, '$1')
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.HTML_TAG, ' ')
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.MARKERS, ' ')
+        .replaceAll(CURATED_SOURCE_RECORDS.MARKDOWN_PATTERNS.WHITESPACE, ' ')
+        .trim()
+    })
+    .join('\n')
     .trim()
 }
 
@@ -88,10 +101,12 @@ function buildHeadingSections(markdownContent: string): {
   for (const line of lines) {
     if (isCodeFenceLine(line)) {
       isInsideCodeFence = !isInsideCodeFence
+      ;(currentSection ? currentSection.lines : introLines).push(line)
       continue
     }
 
     if (isInsideCodeFence) {
+      ;(currentSection ? currentSection.lines : introLines).push(line)
       continue
     }
 
@@ -175,7 +190,7 @@ function buildIntroRecord(
     title: params.title,
     url: params.baseUrl,
     excerpt: trimText(introText, CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH),
-    content: trimText(introText, CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH),
+    content: introText,
     sectionTitle: null,
     tags: params.tags,
     searchTerms: buildRecordSearchTerms({
@@ -203,10 +218,7 @@ function buildSectionRecord(
     return null
   }
 
-  const content = trimText(
-    `${[...params.section.parentTitles, params.section.title].join(' > ')}\n${sanitizedSectionText}`,
-    CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH,
-  )
+  const content = `${[...params.section.parentTitles, params.section.title].join(' > ')}\n${sanitizedSectionText}`
 
   return {
     id: `${params.idPrefix}/${params.section.anchor}`,
@@ -270,5 +282,15 @@ export function buildCuratedChatSourceRecords(
     records.push(sectionRecord)
   }
 
-  return records
+  return records.flatMap((record) => {
+    return splitBoundedMarkdownContent(
+      record.content,
+      CURATED_SOURCE_RECORDS.MAXIMUM_CONTENT_LENGTH,
+    ).map((content, index) => ({
+      ...record,
+      id: index === 0 ? record.id : `${record.id}/chunk/${index + 1}`,
+      content,
+      excerpt: trimText(content, CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH),
+    }))
+  })
 }

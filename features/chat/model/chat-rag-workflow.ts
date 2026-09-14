@@ -382,7 +382,9 @@ export async function runChatRagWorkflow(params: {
               ? retrievalPlan.sourceCategories[0]
               : undefined
           const planTarget =
-            retrievalPlan?.canonicalTargets.length === 1
+            retrievalPlan?.canonicalTargets.length === 1 &&
+            (retrievalPlan.sourceStrategy === 'only' ||
+              retrievalPlan.canonicalTargets[0].kind === 'current_source')
               ? retrievalPlan.canonicalTargets[0]
               : undefined
 

@@ -60,6 +60,9 @@ export const rerankChatEvidence: RerankChatEvidence = async ({
   try {
     const { output } = await generateText({
       model: openai(getBlogChatRerankModel()),
+      abortSignal: AbortSignal.timeout(
+        BLOG_CHAT.PROMPT.MODEL_TIMEOUT_MILLISECONDS,
+      ),
       output: ChatEvidenceRankingSchema,
       system: CHAT_RERANK_PROMPT.SYSTEM,
       prompt: [

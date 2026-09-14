@@ -1,5 +1,6 @@
 import '@/shared/lib/load-node-environment'
 import { rerankChatEvidence } from '@/features/chat/api/rerank-chat-evidence'
+import { getBlogChatRerankModel } from '@/features/chat/config/chat-models'
 import { CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES } from '@/features/chat/fixtures/chat-retrieval-corpus-evaluation'
 import {
   evaluateChatRetrievalCase,
@@ -31,6 +32,8 @@ const CHAT_RETRIEVAL_EVALUATION = {
 interface LiveSemanticObservation {
   retrievalAttempted: boolean
   matchUrls: string[]
+  rerankAttempted: boolean
+  rerankApplied: boolean
 }
 
 interface ChatRetrievalEvaluationEntry {
@@ -50,6 +53,9 @@ function assertLiveSemanticEvaluationConfigured(
       `${CHAT_RETRIEVAL_EVALUATION.LIVE_SEMANTIC_ENVIRONMENT_KEY}=true requires both the Chat RAG database and embedding provider configuration.`,
     )
   }
+  if (!process.env.OPENAI_API_KEY)
+    throw new Error('Live retrieval evaluation requires OPENAI_API_KEY.')
+  getBlogChatRerankModel()
 }
 
 function calcRate(values: boolean[]): number {
@@ -142,16 +148,22 @@ async function evaluateChatRetrieval(): Promise<void> {
     const liveSemanticObservation: LiveSemanticObservation = {
       retrievalAttempted: false,
       matchUrls: [],
+      rerankAttempted: false,
+      rerankApplied: false,
     }
     const execution = await executeChatRetrievalPlan({
       plan: evaluationCase.retrievalPlan,
       locale: evaluationCase.locale,
       blogRecords: corpusRecords.blogRecords,
       curatedRecords: corpusRecords.curatedRecords,
-      // 순위 지표는 재현 가능해야 하므로 기본은 rerank를 끈다. 리랭커가 있어야만 기대 근거가
-      // 최종 근거에 드는 케이스만 실제 리랭커로 검사한다.
-      rerankMatches: evaluationCase.requiresRerank
-        ? rerankChatEvidence
+      // live 평가는 운영과 같은 호출 조건으로 모든 케이스의 리랭커를 검사한다.
+      rerankMatches: liveSemanticEvaluationEnabled
+        ? async (parameters) => {
+            liveSemanticObservation.rerankAttempted = true
+            const result = await rerankChatEvidence(parameters)
+            liveSemanticObservation.rerankApplied = result.applied
+            return result
+          }
         : async ({ matches }) => {
             return { matches, applied: false }
           },
@@ -228,7 +240,23 @@ async function evaluateChatRetrieval(): Promise<void> {
     (semanticRetrievalCoverage === 1 &&
       semanticRelevantMatchRate >=
         CHAT_RETRIEVAL_EVALUATION.MINIMUM_LIVE_SEMANTIC_RELEVANT_MATCH_RATE)
-  const evaluationPassed = summary.passed && liveSemanticEvaluationPassed
+  const rerankFailures = entries
+    .filter((entry) => {
+      const requiresRerank = evaluationCases.find(
+        (evaluationCase) => evaluationCase.id === entry.result.id,
+      )?.requiresRerank
+      return (
+        liveSemanticEvaluationEnabled &&
+        (requiresRerank || entry.liveSemanticObservation.rerankAttempted) &&
+        !entry.liveSemanticObservation.rerankApplied
+      )
+    })
+    .map((entry) => entry.result.id)
+  const evaluationPassed =
+    summary.passed &&
+    liveSemanticEvaluationPassed &&
+    rerankFailures.length === 0 &&
+    caseReferenceIssues.length === 0
 
   console.log(
     JSON.stringify(
@@ -237,6 +265,8 @@ async function evaluateChatRetrieval(): Promise<void> {
           ? 'live-hybrid-corpus'
           : 'lexical-corpus',
         skippedCaseIds,
+        rerankFailures,
+        results: entries,
         caseReferenceIssues: caseReferenceIssues.map((issue) => {
           return formatChatRetrievalCaseReferenceIssue(issue)
         }),

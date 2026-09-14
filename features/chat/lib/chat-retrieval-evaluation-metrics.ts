@@ -25,8 +25,14 @@ export interface ChatRetrievalEvaluationSummary {
   meanReciprocalRank: number
   refusalAccuracy: number
   failedCaseIds: string[]
+  rankingPassed: boolean
   passed: boolean
 }
+
+const CHAT_RETRIEVAL_RANKING_THRESHOLDS = {
+  MINIMUM_RECALL_AT_ONE: 0.8,
+  MINIMUM_MEAN_RECIPROCAL_RANK: 0.85,
+} as const
 
 export const CHAT_RETRIEVAL_RECALL_WINDOWS = {
   AT_ONE: 1,
@@ -68,7 +74,7 @@ function calcRate(values: boolean[]): number {
 
 function isFailedCase(result: ChatRetrievalCaseResult): boolean {
   // 답변 모델은 상위 3건을 근거 컨텍스트로 받는다. 기대 근거가 그 안에 없으면 근거를 놓친 것으로 본다.
-  // recall@1과 MRR은 순위 품질을 보여주는 지표로만 남기고 통과 여부에는 쓰지 않는다.
+  // 개별 케이스 누락과 전체 순위 품질은 별도로 판정한다.
   return result.recallAtThree === false || result.refusalCorrect === false
 }
 
@@ -125,30 +131,38 @@ export function summarizeChatRetrievalEvaluation(params: {
     })
     .map((result) => result.id)
 
+  const recallAtOne = calcRate(
+    positiveResults.map((result) => result.recallAtOne ?? false),
+  )
+  const meanReciprocalRank =
+    positiveResults.reduce(
+      (totalRank, result) => totalRank + (result.reciprocalRank ?? 0),
+      0,
+    ) / (positiveResults.length || 1)
+  const rankingPassed =
+    recallAtOne >= CHAT_RETRIEVAL_RANKING_THRESHOLDS.MINIMUM_RECALL_AT_ONE &&
+    meanReciprocalRank >=
+      CHAT_RETRIEVAL_RANKING_THRESHOLDS.MINIMUM_MEAN_RECIPROCAL_RANK
+
   return {
     totalCaseCount: params.results.length,
     positiveCaseCount: positiveResults.length,
     refusalCaseCount: refusalResults.length,
-    recallAtOne: calcRate(
-      positiveResults.map((result) => {
-        return result.recallAtOne ?? false
-      }),
-    ),
+    recallAtOne,
     recallAtThree: calcRate(
       positiveResults.map((result) => {
         return result.recallAtThree ?? false
       }),
     ),
-    meanReciprocalRank:
-      positiveResults.reduce((totalRank, result) => {
-        return totalRank + (result.reciprocalRank ?? 0)
-      }, 0) / (positiveResults.length || 1),
+    meanReciprocalRank,
     refusalAccuracy: calcRate(
       refusalResults.map((result) => {
         return result.refusalCorrect ?? false
       }),
     ),
     failedCaseIds,
-    passed: failedCaseIds.length <= params.maximumFailedCaseCount,
+    rankingPassed,
+    passed:
+      rankingPassed && failedCaseIds.length <= params.maximumFailedCaseCount,
   }
 }

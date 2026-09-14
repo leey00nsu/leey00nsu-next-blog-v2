@@ -149,5 +149,6 @@ describe('chat retrieval corpus evaluation', () => {
       })
 
     expect(failedCaseMessages).toEqual([])
+    expect(summary.rankingPassed).toBe(true)
   })
 })

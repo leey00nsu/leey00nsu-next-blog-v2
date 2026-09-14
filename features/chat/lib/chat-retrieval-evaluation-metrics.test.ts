@@ -151,8 +151,11 @@ describe('summarizeChatRetrievalEvaluation', () => {
     expect(summary.meanReciprocalRank).toBeCloseTo((1 + 1 / 3 + 0) / 3)
   })
 
-  it('허용 실패 수 이하면 통과로 본다', () => {
+  it('순위 기준도 만족할 때만 허용 실패 수를 적용한다', () => {
     const results = [
+      ...Array.from({ length: 9 }, (_, index) =>
+        evaluateChatRetrievalCase(buildOutcome({ id: `hit-${index}` })),
+      ),
       evaluateChatRetrievalCase(
         buildOutcome({ id: 'miss', matchUrls: ['/ko/blog/other-1'] }),
       ),
@@ -172,7 +175,7 @@ describe('summarizeChatRetrievalEvaluation', () => {
     ).toBe(true)
   })
 
-  it('3순위 안에 든 케이스는 실패로 보지 않는다', () => {
+  it('모두 3순위 안에 있어도 전체 순위가 나빠지면 실패한다', () => {
     const summary = summarizeChatRetrievalEvaluation({
       results: [
         evaluateChatRetrievalCase(
@@ -190,7 +193,8 @@ describe('summarizeChatRetrievalEvaluation', () => {
     })
 
     expect(summary.failedCaseIds).toEqual([])
-    expect(summary.passed).toBe(true)
+    expect(summary.passed).toBe(false)
+    expect(summary.rankingPassed).toBe(false)
     expect(summary.recallAtOne).toBe(0)
   })
 })

@@ -18,6 +18,7 @@ interface BuildCuratedChatSourceRecordsParams {
   title: string
   baseUrl: string
   introContent?: string
+  metadataContent?: string
   markdownContent: string
   tags: string[]
   baseSearchPhrases: string[]
@@ -260,6 +261,17 @@ export function buildCuratedChatSourceRecords(
     params.markdownContent,
   )
   const records: ChatEvidenceRecord[] = []
+  if (params.metadataContent) {
+    const metadataRecord = buildIntroRecord({
+      ...params,
+      idPrefix: `${params.idPrefix}/metadata`,
+      introContent: params.metadataContent,
+      introLines: [],
+    })
+    if (metadataRecord) {
+      records.push(metadataRecord)
+    }
+  }
   const introRecord = buildIntroRecord({
     ...params,
     introLines,

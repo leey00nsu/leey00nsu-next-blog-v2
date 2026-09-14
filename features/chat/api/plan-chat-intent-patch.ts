@@ -44,6 +44,9 @@ Source rules:
 - only: the question explicitly limits evidence to listed source categories.
 - prefer: listed categories are preferred, but cross-category evidence is allowed.
 - all: no source category restriction is expressed.
+- Preserve every requested source in compound requests. A project introduction and a related article are project and blog sources, not two blog posts. Use prefer with both categories (or all when unrestricted); use only with both only when explicitly restricted to them.
+- Preserve source nouns in standaloneQuestion; do not rewrite a project introduction as an introduction article. A post noun in one clause does not restrict other clauses to blog.
+- Public project demo, repository, package and deployment URLs are project content. Request content for these links; contact_methods alone refers to the owner's contact details. Published URLs do not establish live availability.
 - Mentioning a project or its name identifies a topic, not an exclusive evidence source. Its design and history may be documented in blog posts.
 - A candidate is a focus hint. Use prefer for its category unless the user explicitly restricts evidence to that document/category.
 - For questions comparing a named topic with something outside the candidate list, keep all sources and do not constrain the answer to the supplied candidate alone.

@@ -61,6 +61,47 @@ const BASE_QUERY_PLAN: ChatQueryPlan = {
   reason: 'Cross-project explanation.',
 }
 
+describe('복합 출처 보존 invariant', () => {
+  it.each(['only', 'prefer'] as const)(
+    '%s의 복수 출처를 시간 정규화로 덮어쓰지 않는다',
+    (mode) => {
+      const result = compile({
+        ...BASE_QUERY_PLAN,
+        standaloneQuestion:
+          '최근 프로젝트와 작성자 프로필에서 글 작성 경험을 찾아줘',
+        sourceSelection: { mode, categories: ['project', 'profile'] },
+        temporalSelection: { mode: 'single', order: 'latest' },
+      })
+      expect(result).toMatchObject({
+        ok: true,
+        retrievalPlan: {
+          sourceStrategy: mode,
+          sourceCategories: ['project', 'profile'],
+        },
+      })
+    },
+  )
+
+  it.each(['only', 'prefer'] as const)(
+    '%s의 프로젝트와 글 출처를 함께 유지한다',
+    (mode) => {
+      expect(
+        compile({
+          ...BASE_QUERY_PLAN,
+          standaloneQuestion: '컴파일러 프로젝트 소개와 관련 글을 함께 찾아줘',
+          sourceSelection: { mode, categories: ['project', 'blog'] },
+        }),
+      ).toMatchObject({
+        ok: true,
+        retrievalPlan: {
+          sourceStrategy: mode,
+          sourceCategories: ['project', 'blog'],
+        },
+      })
+    },
+  )
+})
+
 function compile(queryPlan: ChatQueryPlan) {
   return compileChatRetrievalPlan({
     queryPlan,

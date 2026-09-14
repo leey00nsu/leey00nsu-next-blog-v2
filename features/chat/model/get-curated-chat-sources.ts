@@ -527,6 +527,7 @@ export const getCuratedChatSources = cache(
           slug: project.slug,
           title: project.title,
           baseUrl: buildProjectHref(project.slug, locale),
+          metadataContent: [project.title, ...projectMetadataLines].join('\n'),
           introContent: [
             project.summary,
             project.keyFeatures.join(' '),

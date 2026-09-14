@@ -271,6 +271,8 @@ function normalizePostScopedSourceSelection(
 
   if (
     queryPlan.temporalSelection.mode !== 'single' ||
+    (queryPlan.sourceSelection.mode !== 'all' &&
+      queryPlan.sourceSelection.categories.length > 1) ||
     alreadyTargetsBlog ||
     !POST_SCOPED_QUESTION_PATTERN.test(queryPlan.standaloneQuestion)
   ) {

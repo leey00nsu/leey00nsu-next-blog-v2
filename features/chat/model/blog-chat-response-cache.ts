@@ -53,7 +53,13 @@ export async function getCachedBlogChatResponse(
     }
   }
 
-  return blogChatResponseCache.get(cacheKey)?.data ?? null
+  const entry = blogChatResponseCache.get(cacheKey)
+  if (!entry) return null
+  if (Date.now() - entry.createdAt >= BLOG_CHAT.CACHE.TTL_MILLISECONDS) {
+    blogChatResponseCache.delete(cacheKey)
+    return null
+  }
+  return entry.data
 }
 
 export async function setCachedBlogChatResponse(params: {
@@ -91,8 +97,6 @@ export async function cleanupExpiredBlogChatResponseCache(params: {
   if (isSharedChatResponseCacheConfigured()) {
     try {
       await deleteExpiredSharedChatResponses({ now: params.now })
-
-      return
     } catch (error) {
       console.error(BLOG_CHAT_RESPONSE_CACHE_LOG.CLEANUP_FAILURE_MESSAGE, error)
     }
@@ -101,7 +105,7 @@ export async function cleanupExpiredBlogChatResponseCache(params: {
   const now = params.now ?? Date.now()
 
   for (const [cacheKey, cacheEntry] of blogChatResponseCache.entries()) {
-    if (now - cacheEntry.createdAt > params.ttlMilliseconds) {
+    if (now - cacheEntry.createdAt >= params.ttlMilliseconds) {
       blogChatResponseCache.delete(cacheKey)
     }
   }

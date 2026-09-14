@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import {
   cleanupExpiredBlogChatResponseCache,
@@ -29,6 +30,8 @@ const RESPONSE: BlogChatResponse = {
 
 describe('blog chat response cache', () => {
   beforeEach(async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(100)
     sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReset()
     sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
       false,
@@ -41,6 +44,44 @@ describe('blog chat response cache', () => {
       now: Number.POSITIVE_INFINITY,
       ttlMilliseconds: 0,
     })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('별도 정리 없이도 TTL 경계에서 만료 응답을 반환하지 않는다', async () => {
+    await setCachedBlogChatResponse({
+      cacheKey: 'ttl-boundary',
+      locale: 'ko',
+      responseData: RESPONSE,
+    })
+    vi.setSystemTime(100 + BLOG_CHAT.CACHE.TTL_MILLISECONDS)
+    await expect(getCachedBlogChatResponse('ttl-boundary')).resolves.toBeNull()
+  })
+
+  it('공유 정리가 성공한 뒤 조회가 실패해도 만료된 대체 캐시는 반환하지 않는다', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    sharedCacheStoreMock.isSharedChatResponseCacheConfigured.mockReturnValue(
+      true,
+    )
+    sharedCacheStoreMock.saveSharedExactChatResponse.mockRejectedValueOnce(
+      new Error('unavailable'),
+    )
+    await setCachedBlogChatResponse({
+      cacheKey: 'intermittent',
+      locale: 'ko',
+      responseData: RESPONSE,
+    })
+    vi.setSystemTime(100 + BLOG_CHAT.CACHE.TTL_MILLISECONDS)
+    await cleanupExpiredBlogChatResponseCache({
+      ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
+    })
+    sharedCacheStoreMock.selectSharedChatResponse.mockRejectedValueOnce(
+      new Error('unavailable'),
+    )
+    await expect(getCachedBlogChatResponse('intermittent')).resolves.toBeNull()
   })
 
   it('캐시된 응답을 키로 다시 조회한다', async () => {

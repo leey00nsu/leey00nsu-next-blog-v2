@@ -114,6 +114,9 @@ function mapEvidenceTime(
 
 function buildChatRagDatabasePool(): Pool {
   return new Pool({
+    connectionTimeoutMillis: CHAT_RAG.DATABASE.CONNECTION_TIMEOUT_MILLISECONDS,
+    query_timeout: CHAT_RAG.DATABASE.QUERY_TIMEOUT_MILLISECONDS,
+    statement_timeout: CHAT_RAG.DATABASE.QUERY_TIMEOUT_MILLISECONDS,
     connectionString: CHAT_RAG.DATABASE.URL,
     ssl: CHAT_RAG.DATABASE.SSL
       ? {

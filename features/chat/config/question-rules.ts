@@ -11,6 +11,8 @@ export const CHAT_QUESTION_RULES = {
     reactquery: ['react query', 'react-query'],
     nextjs: ['next.js', 'next js'],
     vercel: ['버셀'],
+    캡컷: ['capcut', 'capcut automation'],
+    capcut: ['캡컷', '캡컷 자동화'],
     기술스택: ['기술 스택', '주로 쓰는 기술'],
     동아리: ['experience'],
     대화형: ['인터랙티브', 'interactive'],

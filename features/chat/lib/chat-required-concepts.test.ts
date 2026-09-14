@@ -36,6 +36,29 @@ describe('normalizeChatConcepts', () => {
       }),
     ).toEqual(['vercel'])
   })
+
+  it('한국어 음차로 적은 개념도 canonical 표기로 합친다', () => {
+    expect(
+      normalizeChatConcepts({
+        concepts: ['캡컷', 'CapCut'],
+        locale: 'ko',
+      }),
+    ).toEqual(['capcut'])
+  })
+})
+
+describe('doesChatEvidenceMatchConcept', () => {
+  it('질문이 한국어 음차를 쓰고 근거가 원어 표기를 써도 같은 개념으로 본다', () => {
+    expect(
+      doesChatEvidenceMatchConcept(
+        createEvidenceRecord({
+          id: 'capcut-automation',
+          content: 'capcut-automation으로 CapCut 초안 준비 시간을 줄였습니다.',
+        }),
+        '캡컷',
+      ),
+    ).toBe(true)
+  })
 })
 
 describe('doesChatEvidenceMatchConcept', () => {

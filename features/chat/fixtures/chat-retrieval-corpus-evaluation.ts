@@ -150,7 +150,10 @@ export const CHAT_RETRIEVAL_CORPUS_EVALUATION_CASES: ChatRetrievalCorpusEvaluati
         optionalConcepts: ['사용 경험'],
         scopeToTarget: false,
       }),
-      expectedMatchUrls: ['/ko/blog/why-i-do-not-use-vercel-anymore'],
+      // CRLF 정리 이후 이 글은 섹션 anchor를 가진다. 글 전체를 가리키는 항목은 더 이상 없다.
+      expectedMatchUrls: [
+        '/ko/blog/why-i-do-not-use-vercel-anymore#내가-더-이상-vercel-호스팅을-사용하지-않는-이유',
+      ],
     },
     {
       id: 'en-react-query-shared-cache',

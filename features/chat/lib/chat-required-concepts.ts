@@ -220,6 +220,20 @@ const CHAT_CONCEPT_PRESENCE = {
 type ChatConceptPresence =
   (typeof CHAT_CONCEPT_PRESENCE)[keyof typeof CHAT_CONCEPT_PRESENCE]
 
+function isEveryTokenInCorpus(params: {
+  tokens: string[]
+  recordSearchTexts: string[]
+}): boolean {
+  return (
+    params.tokens.length > 0 &&
+    params.tokens.every((token) => {
+      return params.recordSearchTexts.some((recordSearchText) => {
+        return recordSearchText.includes(token)
+      })
+    })
+  )
+}
+
 function resolveChatConceptPresence(params: {
   concept: string
   records: ChatEvidenceRecord[]
@@ -232,20 +246,21 @@ function resolveChatConceptPresence(params: {
     return CHAT_CONCEPT_PRESENCE.MATCHED
   }
 
-  const conceptTokens = buildRawConceptAliases(params.concept).flatMap(
+  const recordSearchTexts = params.records.map((record) => {
+    return buildEvidenceSearchText(record)
+  })
+  // 낱말이 말뭉치에 하나라도 아예 없으면 모르는 개념이고, 낱말은 있지만 한 근거에 모여 있지
+  // 않으면 표기 차이일 뿐이다.
+  const hasPartiallyKnownAlias = buildRawConceptAliases(params.concept).some(
     (alias) => {
-      return collectMatchTokens(alias)
+      return isEveryTokenInCorpus({
+        tokens: collectMatchTokens(alias),
+        recordSearchTexts,
+      })
     },
   )
-  const hasTokenMatch = params.records.some((record) => {
-    const evidenceSearchText = buildEvidenceSearchText(record)
 
-    return conceptTokens.some((conceptToken) => {
-      return evidenceSearchText.includes(conceptToken)
-    })
-  })
-
-  return hasTokenMatch
+  return hasPartiallyKnownAlias
     ? CHAT_CONCEPT_PRESENCE.PARTIAL
     : CHAT_CONCEPT_PRESENCE.ABSENT
 }
@@ -278,6 +293,65 @@ export function selectEnforceableChatConcepts(params: {
   })
 
   return hasPartialConcept ? [] : params.concepts
+}
+
+/**
+ * 필수 개념을 가진 근거가 후보 단계에서 빠지면 그 개념은 검색으로 확인할 방법이 없다.
+ * 개념마다 질문과 가장 가까운 근거 하나를 골라 후보 풀에 넣는다.
+ */
+export function selectRequiredConceptMatches(params: {
+  concepts: string[]
+  records: ChatEvidenceRecord[]
+  questionTokens: string[]
+}): ChatEvidenceRecord[] {
+  const selectedMatches: ChatEvidenceRecord[] = []
+
+  for (const concept of params.concepts) {
+    const bestMatch = params.records
+      .filter((record) => {
+        return doesChatEvidenceMatchConcept(record, concept)
+      })
+      .reduce<ChatEvidenceRecord | null>((best, record) => {
+        if (!best) {
+          return record
+        }
+
+        return countQuestionTokenMatches({
+          record,
+          questionTokens: params.questionTokens,
+        }) >
+          countQuestionTokenMatches({
+            record: best,
+            questionTokens: params.questionTokens,
+          })
+          ? record
+          : best
+      }, null)
+
+    if (bestMatch && !selectedMatches.some((match) => match.id === bestMatch.id)) {
+      selectedMatches.push(bestMatch)
+    }
+  }
+
+  return selectedMatches
+}
+
+function countQuestionTokenMatches(params: {
+  record: ChatEvidenceRecord
+  questionTokens: string[]
+}): number {
+  const searchText = [
+    params.record.title,
+    params.record.sectionTitle ?? '',
+    params.record.content,
+    params.record.tags.join(' '),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return params.questionTokens.reduce((count, questionToken) => {
+    return searchText.includes(questionToken) ? count + 1 : count
+  }, 0)
 }
 
 export function normalizeChatConcepts(params: {
@@ -346,18 +420,27 @@ export function selectEvidenceCoveringRequiredConcepts(params: {
   requiredConcepts: string[]
   locale: SupportedLocale
 }): ChatEvidenceRecord[] {
-  const requiredConcepts = normalizeChatConcepts({
-    concepts: params.requiredConcepts,
-    locale: params.locale,
-  })
+  // 중복만 canonical 표기로 합치고, 근거 비교에는 질문에 쓴 표현을 그대로 쓴다.
+  const requiredConceptMap = new Map<string, string>()
 
-  if (requiredConcepts.length === 0) {
+  for (const concept of params.requiredConcepts) {
+    const canonicalConcept = normalizeChatConcepts({
+      concepts: [concept],
+      locale: params.locale,
+    })[0]
+
+    if (!requiredConceptMap.has(canonicalConcept)) {
+      requiredConceptMap.set(canonicalConcept, concept)
+    }
+  }
+
+  if (requiredConceptMap.size === 0) {
     return params.matches
   }
 
   const requiredMatchMap = new Map<string, ChatEvidenceRecord>()
 
-  for (const requiredConcept of requiredConcepts) {
+  for (const requiredConcept of requiredConceptMap.values()) {
     const requiredMatch = params.matches.find((match) => {
       return doesChatEvidenceMatchConcept(match, requiredConcept)
     })

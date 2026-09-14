@@ -69,6 +69,10 @@ describe('selectEnforceableChatConcepts', () => {
     id: 'supabase',
     content: 'Supabase를 셀프 호스팅으로 옮겼습니다.',
   })
+  const cloudflareRecord = createEvidenceRecord({
+    id: 'cloudflare',
+    content: '영상은 Cloudflare R2로 옮겼습니다.',
+  })
 
   it('말뭉치가 아는 개념은 필수로 유지한다', () => {
     expect(
@@ -79,20 +83,29 @@ describe('selectEnforceableChatConcepts', () => {
     ).toEqual(['Supertonic Voice Cloning'])
   })
 
-  it('일부만 아는 표현은 다른 개념이 확인될 때만 선택 개념으로 내린다', () => {
+  it('낱말은 있지만 한 근거에 모여 있지 않은 표현은 선택 개념으로 내린다', () => {
+    expect(
+      selectEnforceableChatConcepts({
+        concepts: ['Supabase Cloud'],
+        records: [supabaseRecord, cloudflareRecord],
+      }),
+    ).toEqual([])
+  })
+
+  it('낱말 하나가 말뭉치에 아예 없으면 그 표현은 필수로 남긴다', () => {
     expect(
       selectEnforceableChatConcepts({
         concepts: ['Supabase Cloud'],
         records: [supabaseRecord],
       }),
-    ).toEqual([])
+    ).toEqual(['Supabase Cloud'])
   })
 
   it('말뭉치가 전혀 모르는 개념은 필수로 남겨 근거 없는 답변을 막는다', () => {
     expect(
       selectEnforceableChatConcepts({
         concepts: ['Kubernetes'],
-        records: [supertonicRecord, supabaseRecord],
+        records: [supertonicRecord, supabaseRecord, cloudflareRecord],
       }),
     ).toEqual(['Kubernetes'])
   })
@@ -127,6 +140,26 @@ describe('partitionChatConceptsByRequirement', () => {
 })
 
 describe('selectEvidenceCoveringRequiredConcepts', () => {
+  it('붙여 쓴 복합 개념도 구성 요소를 가진 근거로 확인한다', () => {
+    const voiceBuilderRecord = createEvidenceRecord({
+      id: 'voice-builder',
+      content:
+        'Supertonic Voice Builder 종료 공지 이후 custom voice 생성 경로가 끊겼습니다.',
+    })
+    const otherRecord = createEvidenceRecord({
+      id: 'other',
+      content: '다른 내용입니다.',
+    })
+
+    expect(
+      selectEvidenceCoveringRequiredConcepts({
+        matches: [otherRecord, voiceBuilderRecord],
+        requiredConcepts: ['Supertonic Voice Builder'],
+        locale: 'ko',
+      }),
+    ).toHaveLength(2)
+  })
+
   it('각 필수 개념을 서로 다른 근거가 충족할 수 있다', () => {
     const vercelRecord = createEvidenceRecord({
       id: 'vercel',

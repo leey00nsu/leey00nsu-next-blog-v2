@@ -12,7 +12,9 @@ import {
   doesChatEvidenceMatchConcept,
   selectEnforceableChatConcepts,
   selectEvidenceCoveringRequiredConcepts,
+  selectRequiredConceptMatches,
 } from '@/features/chat/lib/chat-required-concepts'
+import { normalizeChatQuery } from '@/features/chat/lib/chat-query-normalization'
 import { fuseChatRetrievalMatches } from '@/features/chat/lib/chat-retrieval-fusion'
 import { selectChatSearchMatches } from '@/features/chat/lib/chat-search'
 import { shouldRerankChatEvidence } from '@/features/chat/lib/should-rerank-chat-evidence'
@@ -734,8 +736,22 @@ export async function executeChatRetrievalPlan({
     currentPostSlug: currentSourceTarget?.slug ?? undefined,
     maximumMatchCount: lexicalSelection.matches.length + semanticMatches.length,
   })
+  const requiredConceptMatches = selectRequiredConceptMatches({
+    concepts: evidencePlan.requiredConcepts,
+    records: scopedRecords,
+    questionTokens: normalizeChatQuery({
+      question: evidencePlan.standaloneQuestion,
+      locale,
+    }).queryTokens,
+  })
+  const seededMatches = [
+    ...fusedMatches,
+    ...requiredConceptMatches.filter((requiredMatch) => {
+      return !fusedMatches.some((match) => match.id === requiredMatch.id)
+    }),
+  ]
   const coveredMatches = selectEvidenceCoveringRequiredConcepts({
-    matches: fusedMatches,
+    matches: seededMatches,
     requiredConcepts: evidencePlan.requiredConcepts,
     locale,
   })

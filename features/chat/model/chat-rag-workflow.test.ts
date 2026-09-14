@@ -373,9 +373,15 @@ describe('runChatRagWorkflow', () => {
       temporalOrder: null,
       maximumEvidenceCount: 3,
     }
-    const selectSearchDataMock = vi.fn(async () => buildSearchData({}))
+    const candidates = Array.from(
+      { length: CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES },
+      (_, index) => buildSemanticCandidate({ id: `candidate-${index}` }),
+    )
+    const selectSearchDataMock = vi.fn(async () =>
+      buildSearchData({ semanticCandidates: candidates }),
+    )
 
-    await runChatRagWorkflow({
+    const result = await runChatRagWorkflow({
       question: retrievalPlan.standaloneQuestion,
       locale: 'ko',
       retrievalPlan,
@@ -386,6 +392,7 @@ describe('runChatRagWorkflow', () => {
     expect(selectSearchDataMock).toHaveBeenCalledWith(
       expect.objectContaining({ retrievalPlan }),
     )
+    expect(result.matches).toHaveLength(candidates.length)
   })
 
   it('relation 확장은 weight가 큰 관계부터 적용해 입력 순서와 무관하게 같은 순위를 만든다', async () => {

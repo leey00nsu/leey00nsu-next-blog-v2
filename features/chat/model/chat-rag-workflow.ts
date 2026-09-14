@@ -212,6 +212,7 @@ function buildSelectedMatches(
   rankedChunks: RankedGraphRagChunk[],
   requiredConcepts: string[],
   diversityPolicy: ChatEvidenceDiversityPolicy,
+  maximumMatchCount = CHAT_RAG.SEARCH.TOP_K,
 ): ChatEvidenceRecord[] {
   const groupMatchCountMap = new Map<string, number>()
   const selectedChunkIds = new Set<string>()
@@ -226,7 +227,7 @@ function buildSelectedMatches(
     }
   }
 
-  if (selectedChunkIds.size > CHAT_RAG.SEARCH.TOP_K) {
+  if (selectedChunkIds.size > maximumMatchCount) {
     return []
   }
 
@@ -248,7 +249,7 @@ function buildSelectedMatches(
       continue
     }
 
-    if (selectedChunkIds.size >= CHAT_RAG.SEARCH.TOP_K) {
+    if (selectedChunkIds.size >= maximumMatchCount) {
       break
     }
 
@@ -323,9 +324,12 @@ function buildChatRagWorkflow(params: {
         state.retrievalPlan
           ? resolveChatEvidenceDiversityPolicy({
               plan: state.retrievalPlan,
-              maximumMatchesPerSlug: CHAT_RAG.SEARCH.MAXIMUM_MATCHES_PER_SLUG,
+              maximumMatchesPerSlug: CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
             })
           : DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
+        state.retrievalPlan
+          ? CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES
+          : CHAT_RAG.SEARCH.TOP_K,
       )
 
       return {

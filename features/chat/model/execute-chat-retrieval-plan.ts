@@ -708,8 +708,14 @@ export async function executeChatRetrievalPlan({
       isAggregateOperation ||
       evidencePlan.temporalStrategy !== 'none' ||
       Boolean(currentSourceTarget),
-    maximumMatchCount: evidencePlan.maximumEvidenceCount,
-    diversityPolicy,
+    maximumMatchCount: Math.max(
+      BLOG_CHAT.SEARCH.MAXIMUM_CANDIDATE_COUNT,
+      evidencePlan.maximumEvidenceCount,
+    ),
+    diversityPolicy: {
+      ...diversityPolicy,
+      maximumMatchesPerGroup: BLOG_CHAT.SEARCH.MAXIMUM_CANDIDATE_COUNT,
+    },
   })
   let rawSemanticMatches: ChatEvidenceRecord[] = []
   let semanticRetrievalError: unknown = null

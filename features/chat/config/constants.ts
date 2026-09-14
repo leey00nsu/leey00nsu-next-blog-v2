@@ -23,6 +23,10 @@ export const BLOG_CHAT = {
     ),
   },
   SEARCH: {
+    MAXIMUM_CANDIDATE_COUNT: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_SEARCH_MAXIMUM_CANDIDATE_COUNT,
+      12,
+    ),
     TOP_K: parseIntegerEnvironmentValue(process.env.BLOG_CHAT_SEARCH_TOP_K, 3),
     AGGREGATE_TOP_K: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_SEARCH_AGGREGATE_TOP_K,
@@ -87,7 +91,7 @@ export const BLOG_CHAT = {
   RERANK: {
     MAXIMUM_CANDIDATE_COUNT: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_RERANK_MAXIMUM_CANDIDATE_COUNT,
-      5,
+      12,
     ),
     LONG_QUESTION_MINIMUM_LENGTH: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_RERANK_LONG_QUESTION_MINIMUM_LENGTH,

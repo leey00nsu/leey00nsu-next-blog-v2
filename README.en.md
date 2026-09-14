@@ -313,7 +313,7 @@ Scans `public/posts/{slug}` and `public/about` to create missing locale MDX file
 - Curated sources are high-trust evidence for content the chatbot should answer consistently, such as About, project, and assistant-internal documents. They also include aggregated static evidence such as `profile-tech-stack`, which collects `techStacks` across projects.
 - When there are many candidates or the question is compound, an LLM reranker is used. Reranking works by evidence id so section-level evidence under the same URL can still be distinguished.
 - If Postgres RAG indexing is not configured, lexical retrieval and curated-source answers still work.
-- Exact and semantic caches reduce repeated question cost, and observability events record the retrieval/answer path.
+- Exact and semantic caches reduce repeated question cost, and observability events record the retrieval/answer path. When a Postgres connection is configured, both caches live in the `chat_response_cache` table so they are shared across instances; without it they stay in process memory.
 
 ## Project Structure
 

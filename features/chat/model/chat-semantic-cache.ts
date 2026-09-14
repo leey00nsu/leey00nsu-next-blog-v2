@@ -1,5 +1,10 @@
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { embedChatRagQuestion } from '@/features/chat/model/chat-rag-embedding-provider'
+import {
+  isSharedChatResponseCacheConfigured,
+  saveSharedSemanticChatResponse,
+  selectSharedSemanticChatResponse,
+} from '@/features/chat/model/chat-response-cache-store'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 
@@ -26,6 +31,19 @@ interface StoreSemanticCachedBlogChatResponseParams
 }
 
 const semanticCacheEntries: SemanticCacheEntry[] = []
+
+async function resolveQuestionEmbeddingSafely(params: {
+  question: string
+  resolveQuestionEmbedding?: () => Promise<number[]>
+}): Promise<number[] | null> {
+  try {
+    return params.resolveQuestionEmbedding
+      ? await params.resolveQuestionEmbedding()
+      : await embedChatRagQuestion(params.question)
+  } catch {
+    return null
+  }
+}
 
 function calcDotProduct(leftVector: number[], rightVector: number[]): number {
   return leftVector.reduce((sum, leftValue, index) => {
@@ -83,19 +101,39 @@ export async function findSemanticCachedBlogChatResponse({
 }: FindSemanticCachedBlogChatResponseParams): Promise<
   BlogChatResponse | undefined
 > {
+  if (isSharedChatResponseCacheConfigured()) {
+    const questionEmbedding = await resolveQuestionEmbeddingSafely({
+      question,
+      resolveQuestionEmbedding,
+    })
+
+    if (!questionEmbedding) {
+      return undefined
+    }
+
+    const sharedResponse = await selectSharedSemanticChatResponse({
+      locale,
+      questionEmbedding,
+      currentPostSlug,
+      intentCacheKey,
+      minimumSimilarityScore: BLOG_CHAT.SEMANTIC_CACHE.MINIMUM_SIMILARITY_SCORE,
+    })
+
+    return sharedResponse ?? undefined
+  }
+
   cleanupExpiredSemanticCacheEntries()
 
   if (semanticCacheEntries.length === 0) {
     return undefined
   }
 
-  let questionEmbedding: number[]
+  const questionEmbedding = await resolveQuestionEmbeddingSafely({
+    question,
+    resolveQuestionEmbedding,
+  })
 
-  try {
-    questionEmbedding = resolveQuestionEmbedding
-      ? await resolveQuestionEmbedding()
-      : await embedChatRagQuestion(question)
-  } catch {
+  if (!questionEmbedding) {
     return undefined
   }
 
@@ -131,21 +169,34 @@ export async function storeSemanticCachedBlogChatResponse({
   response,
   resolveQuestionEmbedding,
 }: StoreSemanticCachedBlogChatResponseParams): Promise<void> {
-  cleanupExpiredSemanticCacheEntries()
-
   if (!response.grounded) {
     return
   }
 
-  let questionEmbedding: number[]
+  const questionEmbedding = await resolveQuestionEmbeddingSafely({
+    question,
+    resolveQuestionEmbedding,
+  })
 
-  try {
-    questionEmbedding = resolveQuestionEmbedding
-      ? await resolveQuestionEmbedding()
-      : await embedChatRagQuestion(question)
-  } catch {
+  if (!questionEmbedding) {
     return
   }
+
+  if (isSharedChatResponseCacheConfigured()) {
+    await saveSharedSemanticChatResponse({
+      locale,
+      question,
+      currentPostSlug,
+      intentCacheKey,
+      questionEmbedding,
+      response,
+      ttlMilliseconds: BLOG_CHAT.SEMANTIC_CACHE.TTL_MILLISECONDS,
+    })
+
+    return
+  }
+
+  cleanupExpiredSemanticCacheEntries()
 
   semanticCacheEntries.push({
     createdAt: Date.now(),

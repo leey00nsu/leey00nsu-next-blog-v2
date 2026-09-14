@@ -342,7 +342,7 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 - curated source는 소개/프로젝트/assistant 내부 문서처럼 챗봇이 안정적으로 답해야 하는 고신뢰 근거입니다. 특히 프로젝트들의 `techStacks`를 모은 `profile-tech-stack`처럼 여러 정적 데이터를 집계한 근거도 포함합니다.
 - 후보가 많거나 질문이 복합적이면 LLM rerank를 수행하며, rerank는 같은 URL 안의 section 근거를 구분할 수 있도록 evidence id 기준으로 동작합니다.
 - Postgres RAG 인덱싱이 설정되지 않아도 lexical 검색과 curated source 기반 응답은 계속 동작합니다.
-- exact cache와 semantic cache를 사용해 반복 질문 비용을 줄이고, observability 이벤트로 검색/응답 경로를 기록합니다.
+- exact cache와 semantic cache로 반복 질문 비용을 줄이고, observability 이벤트로 검색/응답 경로를 기록합니다. 두 캐시는 Postgres 연결이 설정되어 있으면 `chat_response_cache` 테이블에 저장되어 인스턴스 간에 공유되고, 설정이 없으면 프로세스 메모리로만 동작합니다.
 
 ## 프로젝트 구조
 

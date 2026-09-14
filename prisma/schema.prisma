@@ -139,6 +139,21 @@ model chat_rag_relations {
   @@index([index_version, locale], map: "chat_rag_relations_locale_index")
 }
 
+model chat_response_cache {
+  cache_key          String                    @id
+  cache_kind         String
+  locale             String
+  current_post_slug  String?
+  intent_cache_key   String?
+  question_embedding Unsupported("vector")?
+  response_json      Json
+  created_at         DateTime                  @default(now()) @db.Timestamptz(6)
+  expires_at         DateTime                  @db.Timestamptz(6)
+
+  @@index([cache_kind, locale, expires_at], map: "chat_response_cache_lookup_index")
+  @@index([expires_at], map: "chat_response_cache_expires_at_index")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model engagement_events {
   event_id                  String   @id @db.Uuid

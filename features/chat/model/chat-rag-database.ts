@@ -10,6 +10,10 @@ import type {
   GraphRagEntity,
   GraphRagRelation,
 } from '@/features/chat/model/graph-rag'
+import {
+  buildPgvectorLiteral,
+  parsePgvectorText,
+} from '@/features/chat/lib/pgvector'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 const CHAT_RAG_DATABASE = {
@@ -73,18 +77,6 @@ function parseJsonArray<T>(jsonValue: unknown): T[] {
   }
 
   return JSON.parse(jsonValue) as T[]
-}
-
-function buildVectorLiteral(embedding: number[]): string {
-  return `[${embedding.join(',')}]`
-}
-
-function parseVectorText(vectorText: string): number[] {
-  const normalizedVectorText = vectorText.startsWith('{')
-    ? `[${vectorText.slice(1, -1)}]`
-    : vectorText
-
-  return JSON.parse(normalizedVectorText) as number[]
 }
 
 function normalizeBooleanEnvironmentValue(
@@ -411,7 +403,7 @@ export async function replaceChatRagLocaleIndex(params: {
         params.indexVersion,
         embedding.chunkId,
         params.locale,
-        buildVectorLiteral(embedding.embedding),
+        buildPgvectorLiteral(embedding.embedding),
       ],
     )
   }
@@ -677,7 +669,7 @@ export async function selectChatRagChunkEmbeddings(params: {
   return storedEmbeddingResult.rows.map((row) => {
     return {
       chunk: mapChunkRowToGraphRagChunk(row),
-      embedding: parseVectorText(String(row.embedding_text)),
+      embedding: parsePgvectorText(String(row.embedding_text)),
     }
   })
 }
@@ -739,7 +731,7 @@ export async function selectChatRagLocaleSearchData(params: {
   const semanticFilterValues: Array<string | number> = [
     activeIndexVersion,
     params.locale,
-    buildVectorLiteral(params.questionEmbedding),
+    buildPgvectorLiteral(params.questionEmbedding),
     params.maximumSemanticCandidates,
   ]
 

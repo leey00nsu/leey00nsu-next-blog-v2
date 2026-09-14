@@ -309,7 +309,7 @@ export async function answerBlogChatQuestion({
         }
       }
 
-      cleanupExpiredBlogChatResponseCache({
+      await cleanupExpiredBlogChatResponseCache({
         ttlMilliseconds: BLOG_CHAT.CACHE.TTL_MILLISECONDS,
       })
 

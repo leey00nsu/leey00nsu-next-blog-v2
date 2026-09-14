@@ -79,11 +79,14 @@ interface ChatWorkflowDependencies {
     question: string
     matches: ChatEvidenceRecord[]
   }) => Promise<AnswerQuestionDependencyResult>
-  getCachedResponse: (cacheKey: string) => BlogChatResponse | null
+  getCachedResponse: (
+    cacheKey: string,
+  ) => BlogChatResponse | null | Promise<BlogChatResponse | null>
   setCachedResponse: (params: {
     cacheKey: string
+    locale: BlogChatRequest['locale']
     responseData: BlogChatResponse
-  }) => void
+  }) => void | Promise<void>
   findSemanticResponse: typeof findSemanticCachedBlogChatResponse
   storeSemanticResponse: typeof storeSemanticCachedBlogChatResponse
   embedQuestion: typeof embedChatRagQuestion
@@ -496,7 +499,7 @@ function buildChatWorkflow(
         currentPostSlug: state.request.currentPostSlug,
         evidenceVersion: BLOG_CHAT.EVIDENCE_VERSION,
       })
-      const exactResponse = dependencies.getCachedResponse(cacheKey)
+      const exactResponse = await dependencies.getCachedResponse(cacheKey)
 
       if (exactResponse) {
         return {
@@ -761,8 +764,9 @@ function buildChatWorkflow(
         return { graphPath: ['store-cache'] }
       }
 
-      dependencies.setCachedResponse({
+      await dependencies.setCachedResponse({
         cacheKey: state.cacheKey,
+        locale: state.request.locale,
         responseData: state.response,
       })
       await dependencies.storeSemanticResponse({

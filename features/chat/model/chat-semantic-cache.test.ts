@@ -14,6 +14,18 @@ vi.mock('@/features/chat/model/chat-rag-embedding-provider', () => {
   }
 })
 
+// 프로세스 메모리 경로를 검증하는 테스트이므로 공유 저장소는 사용하지 않는다.
+vi.mock('@/features/chat/model/chat-response-cache-store', () => {
+  return {
+    deleteExpiredSharedChatResponses: vi.fn(),
+    isSharedChatResponseCacheConfigured: () => false,
+    saveSharedExactChatResponse: vi.fn(),
+    saveSharedSemanticChatResponse: vi.fn(),
+    selectSharedChatResponse: vi.fn(),
+    selectSharedSemanticChatResponse: vi.fn(),
+  }
+})
+
 describe('chat-semantic-cache', () => {
   beforeEach(async () => {
     vi.resetModules()

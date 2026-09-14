@@ -113,6 +113,31 @@ function buildDependencies() {
 }
 
 describe('runChatWorkflow', () => {
+  it('프로필 직접 응답이 검색 근거를 반환하면 생성 단계로 이어진다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.getEntityCandidates.mockResolvedValueOnce([{
+      ...LEEMAGE_CANDIDATE,
+      entityId: 'profile/about',
+      kind: 'profile',
+      slug: 'about',
+      sourceCategory: 'profile',
+    }])
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '경력의 계약 형태는?',
+        operation: 'lookup',
+        targetSelection: { kind: 'candidate', entityId: 'profile/about' },
+        sourceSelection: { mode: 'only', categories: ['profile'] },
+      },
+    })
+    const result = await runChatWorkflow({ request: REQUEST, dependencies })
+    expect(result.retrievalPlan?.executionKind).toBe('direct_profile')
+    expect(result.graphPath).toContain('execute-direct')
+    expect(result.graphPath).toContain('generate-answer')
+    expect(dependencies.answerQuestion).toHaveBeenCalledOnce()
+  })
   it('cache hit은 retrieval과 answer model을 건너뛴다', async () => {
     const dependencies = buildDependencies()
     dependencies.getCachedResponse.mockReturnValueOnce(GROUNDED_RESPONSE)

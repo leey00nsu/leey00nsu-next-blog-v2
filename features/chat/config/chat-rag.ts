@@ -39,10 +39,25 @@ const CHAT_RAG_DEFAULTS = {
   // 같은 질의는 DB 반환 순서와 무관하게 같은 근거 순위를 만든다.
   MAXIMUM_RELATION_MATCH_COUNT: 12,
   MINIMUM_EMBEDDING_TOKEN_LENGTH: 1,
+  // 임베딩 서비스가 실제로 읽는 최대 토큰 수. 서비스의 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH와
+  // 같은 값을 유지해야 하며, 다르면 벡터의 의미가 달라지므로 재색인이 필요하다.
+  MAXIMUM_SEQUENCE_LENGTH: 256,
   // 색인 레시피 버전. 청크 경계 규칙이나 임베딩 입력 구성이 바뀌면 반드시 올린다.
   // 활성 인덱스와 값이 다르면 semantic 검색을 사용하지 않고 재색인을 요구한다.
   CHUNKING_VERSION: 'heading-window-v3-embedding-input',
 } as const
+
+const EMBEDDING_MAXIMUM_SEQUENCE_LENGTH = parseIntegerEnvironmentValue(
+  process.env.BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH,
+  CHAT_RAG_DEFAULTS.MAXIMUM_SEQUENCE_LENGTH,
+)
+
+// 같은 레시피라도 서비스가 읽는 토큰 수가 달라지면 벡터가 달라진다.
+// 값에 토큰 수를 포함해 두면 설정을 바꿨을 때 이전 색인을 재사용하지 않고 재색인을 요구한다.
+const CHAT_RAG_CHUNKING_VERSION = [
+  CHAT_RAG_DEFAULTS.CHUNKING_VERSION,
+  `seq${EMBEDDING_MAXIMUM_SEQUENCE_LENGTH}`,
+].join('-')
 
 const DETERMINISTIC_QUERY_PATTERNS = [
   '최신',
@@ -88,9 +103,10 @@ export const CHAT_RAG = {
       process.env.MODAL_EMBEDDING_BASE_URL ?? CHAT_RAG_DEFAULTS.MODAL_BASE_URL,
     ),
     MAXIMUM_BATCH_SIZE: CHAT_RAG_DEFAULTS.MAXIMUM_EMBED_BATCH_SIZE,
+    MAXIMUM_SEQUENCE_LENGTH: EMBEDDING_MAXIMUM_SEQUENCE_LENGTH,
   },
   INDEX: {
-    CHUNKING_VERSION: CHAT_RAG_DEFAULTS.CHUNKING_VERSION,
+    CHUNKING_VERSION: CHAT_RAG_CHUNKING_VERSION,
   },
   SEARCH: {
     TOP_K: BLOG_CHAT.SEARCH.TOP_K,

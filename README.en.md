@@ -218,6 +218,7 @@ pnpm run gen:chat-rag-postgres
 - Long sections are split into overlapping sub-chunks on sentence boundaries, so evidence near the end of a section stays in the index.
 - The embedding input keeps the title, the section title, and a term list summarizing the whole chunk inside the part of the text the model actually reads, then fills the remainder with content. The excerpt, which is a copy of the content prefix, is omitted so the token budget is not spent twice.
 - The embedding service raises the model default token limit (128) to `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default). Changing that value changes the embeddings, so the index must be rebuilt.
+- The app tracks the same limit as `BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` (256 by default) and folds it into the index recipe version, so changing both values forces a rebuild instead of reusing the previous index.
 - `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
 - `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
 - Re-indexing reuses vectors from the previously active index when the provider, model, index recipe, and embedding input are all unchanged, so only changed chunks are embedded again. The run log reports how many embeddings were reused and how many were created.

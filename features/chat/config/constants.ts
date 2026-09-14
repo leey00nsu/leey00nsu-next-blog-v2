@@ -1,4 +1,4 @@
-function parseIntegerEnvironmentValue(
+export function parseIntegerEnvironmentValue(
   environmentValue: string | undefined,
   fallbackValue: number,
 ): number {

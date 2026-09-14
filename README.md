@@ -252,6 +252,8 @@ pnpm run eval:chat-retrieval
 BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
 ```
 
+semantic 후보 수(`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, 기본 8)와 유사도 하한(`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, 기본 0.15)은 코퍼스 규모와 임베딩 모델에 따라 달라지므로 환경변수로 조정합니다. 값을 바꿀 때는 위 live semantic 평가로 조정 전후 지표를 비교하고, lexical 전용 평가만으로 결정하지 않습니다.
+
 ### Coolify / CI-CD 운영 메모
 
 - Coolify PostgreSQL 서비스에 `pgvector` extension이 활성화되어 있어야 합니다.

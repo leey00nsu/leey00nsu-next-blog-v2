@@ -224,6 +224,8 @@ pnpm run gen:chat-rag-postgres
 - Each new index records the embedding provider, model ID, vector dimension, and index recipe version (chunk boundary rules plus embedding input composition). If any of them differs from the current configuration, the index is not used for semantic retrieval.
 - If the embedding provider or Postgres connection is not configured, Postgres RAG indexing is skipped and lexical retrieval still works.
 
+The semantic candidate count (`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, default 8) and the similarity floor (`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, default 0.15) depend on corpus size and embedding model, so they are configurable through environment variables. Compare the live semantic metrics above before and after changing them instead of deciding from the lexical-only run.
+
 ### Coolify / CI-CD Notes
 
 - Make sure the Coolify PostgreSQL service has the `pgvector` extension enabled.

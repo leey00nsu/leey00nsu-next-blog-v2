@@ -1,5 +1,21 @@
-import { BLOG_CHAT } from '@/features/chat/config/constants'
+import {
+  BLOG_CHAT,
+  parseIntegerEnvironmentValue,
+} from '@/features/chat/config/constants'
 import { normalizeOpenAiCompatibleEmbeddingBaseUrl } from '@/features/chat/lib/normalize-openai-compatible-embedding-base-url'
+
+function parseNumberEnvironmentValue(
+  environmentValue: string | undefined,
+  fallbackValue: number,
+): number {
+  if (!environmentValue) {
+    return fallbackValue
+  }
+
+  const parsedValue = Number(environmentValue)
+
+  return Number.isNaN(parsedValue) ? fallbackValue : parsedValue
+}
 
 const CHAT_RAG_DEFAULTS = {
   DATABASE_URL: '',
@@ -9,6 +25,8 @@ const CHAT_RAG_DEFAULTS = {
     'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
   EMBEDDING_PROVIDER: 'modal',
   MODAL_BASE_URL: '',
+  // semantic 후보 수와 유사도 하한은 코퍼스 규모와 임베딩 모델에 따라 달라진다.
+  // 기본값을 그대로 두고, 조정할 때는 BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true 평가로 전후를 비교한다.
   MAXIMUM_SEMANTIC_CANDIDATES: 8,
   MAXIMUM_EMBED_BATCH_SIZE: 20,
   MINIMUM_SIMILARITY_SCORE: 0.15,
@@ -77,8 +95,14 @@ export const CHAT_RAG = {
   SEARCH: {
     TOP_K: BLOG_CHAT.SEARCH.TOP_K,
     MAXIMUM_MATCHES_PER_SLUG: BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG,
-    MAXIMUM_SEMANTIC_CANDIDATES: CHAT_RAG_DEFAULTS.MAXIMUM_SEMANTIC_CANDIDATES,
-    MINIMUM_SIMILARITY_SCORE: CHAT_RAG_DEFAULTS.MINIMUM_SIMILARITY_SCORE,
+    MAXIMUM_SEMANTIC_CANDIDATES: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES,
+      CHAT_RAG_DEFAULTS.MAXIMUM_SEMANTIC_CANDIDATES,
+    ),
+    MINIMUM_SIMILARITY_SCORE: parseNumberEnvironmentValue(
+      process.env.BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE,
+      CHAT_RAG_DEFAULTS.MINIMUM_SIMILARITY_SCORE,
+    ),
     SEMANTIC_SCORE_MULTIPLIER: CHAT_RAG_DEFAULTS.SEMANTIC_SCORE_MULTIPLIER,
     DIRECT_ENTITY_MATCH_BOOST: CHAT_RAG_DEFAULTS.DIRECT_ENTITY_MATCH_BOOST,
     RELATED_ENTITY_MATCH_BOOST: CHAT_RAG_DEFAULTS.RELATED_ENTITY_MATCH_BOOST,

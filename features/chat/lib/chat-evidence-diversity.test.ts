@@ -93,7 +93,7 @@ describe('isDocumentScopedRetrievalPlan', () => {
 })
 
 describe('resolveChatEvidenceDiversityPolicy', () => {
-  it('단일 문서 스코프에서는 섹션(url)당 한 건만 남긴다', () => {
+  it('단일 문서에서도 긴 섹션의 하위 청크를 허용한다', () => {
     const policy = resolveChatEvidenceDiversityPolicy({
       plan: {
         ...BASE_PLAN,
@@ -104,7 +104,7 @@ describe('resolveChatEvidenceDiversityPolicy', () => {
       maximumMatchesPerSlug: 2,
     })
 
-    expect(policy.maximumMatchesPerGroup).toBe(1)
+    expect(policy.maximumMatchesPerGroup).toBe(2)
     expect(
       policy.resolveGroupKey({
         slug: 'leesfield',
@@ -127,6 +127,28 @@ describe('resolveChatEvidenceDiversityPolicy', () => {
       }),
     ).toBe('leesfield')
   })
+
+  it.each(['compare', 'summarize'] as const)(
+    '%s는 한 문서의 서로 다른 절을 독립적으로 취급한다',
+    (operation) => {
+      const policy = resolveChatEvidenceDiversityPolicy({
+        plan: { ...BASE_PLAN, operation },
+        maximumMatchesPerSlug: 2,
+      })
+      expect(
+        policy.resolveGroupKey({
+          slug: 'experiment',
+          url: '/experiment#method',
+        }),
+      ).not.toBe(
+        policy.resolveGroupKey({
+          slug: 'experiment',
+          url: '/experiment#results',
+        }),
+      )
+      expect(policy.maximumMatchesPerGroup).toBe(2)
+    },
+  )
 })
 
 describe('isAggregateChatRetrievalPlan', () => {

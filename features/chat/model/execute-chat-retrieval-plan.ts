@@ -637,9 +637,7 @@ export async function executeChatRetrievalPlan({
   })
   const isAggregateOperation = isAggregateChatRetrievalPlan(plan)
   const maximumMatchesPerSlug =
-    isAggregateOperation &&
-    !plan.sourceCategories.includes('profile') &&
-    (plan.canonicalTargets.length === 0 || plan.canonicalTargets.length > 1)
+    plan.operation === 'recommend'
       ? BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG_FOR_AGGREGATE
       : BLOG_CHAT.SEARCH.MAXIMUM_MATCHES_PER_SLUG
   const diversityPolicy = resolveChatEvidenceDiversityPolicy({

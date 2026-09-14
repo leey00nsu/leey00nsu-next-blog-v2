@@ -54,7 +54,17 @@ export function resolveChatEvidenceDiversityPolicy(params: {
     // 문서가 하나로 고정됐다면 섹션(url) 단위로만 중복을 막고, 그 문서의 다른 섹션도 근거로 쓴다.
     return {
       resolveGroupKey: (candidate) => candidate.url,
-      maximumMatchesPerGroup: 1,
+      maximumMatchesPerGroup: params.maximumMatchesPerSlug,
+    }
+  }
+
+  if (
+    params.plan.operation === 'compare' ||
+    params.plan.operation === 'summarize'
+  ) {
+    return {
+      resolveGroupKey: (candidate) => candidate.url,
+      maximumMatchesPerGroup: params.maximumMatchesPerSlug,
     }
   }
 

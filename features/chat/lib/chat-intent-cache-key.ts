@@ -10,7 +10,7 @@ interface BuildChatRetrievalPlanCacheKeyParams {
 }
 
 const CHAT_RESPONSE_CACHE_KEY = {
-  SCHEMA_VERSION: 'grounded-evidence-v2',
+  SCHEMA_VERSION: 'grounded-evidence-v3',
 } as const
 
 function normalizeCachePart(value: string): string {

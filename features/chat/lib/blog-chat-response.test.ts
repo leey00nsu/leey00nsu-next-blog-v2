@@ -30,6 +30,50 @@ const BLOG_SEARCH_MATCHES: ChatEvidenceRecord[] = [
 ]
 
 describe('finalizeBlogChatResponse', () => {
+  it('내부 근거 ID는 공개 제목으로 바꾸고 출처 URL은 보존한다', () => {
+    const evidence = {
+      ...BLOG_SEARCH_MATCHES[0],
+      id: 'en/example/part.v2',
+      title: 'Example source',
+      url: '/en/example/part.v2',
+    }
+    const result = finalizeBlogChatResponse({
+      locale: 'en',
+      matches: [evidence],
+      draftAnswer: {
+        answer: `The source is [${evidence.id}]. URL: ${evidence.url}. Unrelated: en/example/partXv2.`,
+        usedCitationUrls: [evidence.url],
+        refusalReason: null,
+      },
+    })
+    expect(result.answer).toBe(
+      'The source is [Example source]. URL: /en/example/part.v2. Unrelated: en/example/partXv2.',
+    )
+    expect(result.citations[0].url).toBe(evidence.url)
+  })
+
+  it('겹치는 ID와 마크다운으로 감싼 ID도 공개 제목으로 바꾼다', () => {
+    const evidence = {
+      ...BLOG_SEARCH_MATCHES[0],
+      id: 'curated/example',
+      title: 'Short title',
+    }
+    const detail = {
+      ...evidence,
+      id: 'curated/example/detail',
+      title: 'Detailed title',
+    }
+    const result = finalizeBlogChatResponse({
+      locale: 'ko',
+      matches: [evidence, detail],
+      draftAnswer: {
+        answer: `\`${detail.id}\`와 ${evidence.id}입니다.`,
+        usedCitationUrls: [evidence.url],
+        refusalReason: null,
+      },
+    })
+    expect(result.answer).toBe('Detailed title와 Short title입니다.')
+  })
   it('검색 결과 안에 있는 citation만 통과시킨다', () => {
     const result = finalizeBlogChatResponse({
       locale: 'ko',

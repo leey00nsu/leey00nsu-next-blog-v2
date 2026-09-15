@@ -72,8 +72,29 @@ export function finalizeBlogChatResponse({
   }
 
   return {
-    answer: sanitizeBlogChatAnswerToPlainText(draftAnswer.answer),
+    answer: replaceChatEvidenceIdsWithTitles(
+      sanitizeBlogChatAnswerToPlainText(draftAnswer.answer),
+      matches,
+    ),
     citations,
     grounded: true,
   }
+}
+
+function replaceChatEvidenceIdsWithTitles(
+  answer: string,
+  matches: ChatEvidenceRecord[],
+): string {
+  // Match only this request's IDs, longest first. A public URL containing the
+  // same path is not an internal identifier and must remain intact.
+  return matches
+    .toSorted((left, right) => right.id.length - left.id.length)
+    .reduce((text, match) => {
+      const escapedId = match.id.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+      const identifierPattern = new RegExp(
+        `(?<![\\w/])${escapedId}(?![\\w/#?%-])`,
+        'g',
+      )
+      return text.replaceAll(identifierPattern, () => match.title)
+    }, answer)
 }

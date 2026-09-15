@@ -90,7 +90,10 @@ function replaceChatEvidenceIdsWithTitles(
   return matches
     .toSorted((left, right) => right.id.length - left.id.length)
     .reduce((text, match) => {
-      const escapedId = match.id.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+      const escapedId = match.id.replaceAll(
+        /[.*+?^${}()|[\]\\]/g,
+        String.raw`\$&`,
+      )
       const identifierPattern = new RegExp(
         `(?<![\\w/])${escapedId}(?![\\w/#?%-])`,
         'g',

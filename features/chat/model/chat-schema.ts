@@ -31,8 +31,19 @@ export const BlogChatHistoryItemSchema = z.object({
     .trim()
     .min(1)
     .max(BLOG_CHAT.INPUT.MAXIMUM_QUESTION_CHARACTERS),
-  answer: z.string(),
-  citations: z.array(BlogChatCitationSchema),
+  answer: z.string().max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_ANSWER_CHARACTERS),
+  citations: z
+    .array(
+      BlogChatCitationSchema.extend({
+        title: z.string().max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_TITLE_CHARACTERS),
+        url: z.string().max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_URL_CHARACTERS),
+        sectionTitle: z
+          .string()
+          .max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_TITLE_CHARACTERS)
+          .nullable(),
+      }),
+    )
+    .max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_CITATION_COUNT),
   refusalReason: BlogChatRefusalReasonSchema.optional(),
 })
 
@@ -46,7 +57,25 @@ export const BlogChatRequestSchema = z.object({
   currentPostSlug: z.string().trim().min(1).max(200).optional(),
   conversationHistory: z
     .array(BlogChatHistoryItemSchema)
-    .max(2)
+    .max(BLOG_CHAT.INPUT.MAXIMUM_HISTORY_ITEM_COUNT)
+    .refine((history) => {
+      const characterCount = history.reduce((total, turn) => {
+        return (
+          total +
+          turn.question.length +
+          turn.answer.length +
+          turn.citations.reduce((citationTotal, citation) => {
+            return (
+              citationTotal +
+              citation.title.length +
+              citation.url.length +
+              (citation.sectionTitle?.length ?? 0)
+            )
+          }, 0)
+        )
+      }, 0)
+      return characterCount <= BLOG_CHAT.INPUT.MAXIMUM_HISTORY_CHARACTERS
+    }, 'Conversation history is too large')
     .optional()
     .default([]),
   conversationState: ChatConversationStateSchema.default(
@@ -89,4 +118,5 @@ export interface BlogChatModelDraft
   extends z.infer<typeof BlogChatModelDraftSchema> {}
 export interface BlogChatApplicationResponse
   extends z.infer<typeof BlogChatApplicationResponseSchema> {}
-export interface BlogChatRequest extends z.infer<typeof BlogChatRequestSchema> {}
+export interface BlogChatRequest
+  extends z.infer<typeof BlogChatRequestSchema> {}

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server'
 import { createMockLeeChatRequest } from 'lee-chat-sdk/testing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
 
 const answerBlogChatQuestionMock = vi.fn()
 
@@ -232,6 +233,34 @@ function createLeeChatRequestWithRefusalHistory(): NextRequest {
 }
 
 describe('POST /api/chat route adapter', () => {
+  it.each([undefined, '1', String(BLOG_CHAT.INPUT.MAXIMUM_REQUEST_BYTES + 1)])(
+    '대용량 본문은 Content-Length=%s와 무관하게 application 호출 전에 거절한다',
+    async (declaredLength) => {
+      const { POST } = await import('./route')
+      const request = new Request('http://localhost/api/chat', {
+        method: 'POST',
+        headers: declaredLength ? { 'content-length': declaredLength } : {},
+        body: JSON.stringify({
+          question: 'a'.repeat(BLOG_CHAT.INPUT.MAXIMUM_REQUEST_BYTES),
+        }),
+      }) as NextRequest
+      const response = await POST(request)
+      expect(response.status).toBe(413)
+      expect(answerBlogChatQuestionMock).not.toHaveBeenCalled()
+    },
+  )
+
+  it('잘못된 JSON은 application 호출 전에 400으로 거절한다', async () => {
+    const { POST } = await import('./route')
+    const response = await POST(
+      new Request('http://localhost/api/chat', {
+        method: 'POST',
+        body: '{',
+      }) as NextRequest,
+    )
+    expect(response.status).toBe(400)
+    expect(answerBlogChatQuestionMock).not.toHaveBeenCalled()
+  })
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()

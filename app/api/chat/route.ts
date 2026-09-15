@@ -9,6 +9,11 @@ import {
   isLeeChatRequest,
 } from 'lee-chat-sdk/server'
 import { answerBlogChatQuestion } from '@/features/chat/model/answer-blog-chat-question'
+import { BLOG_CHAT } from '@/features/chat/config/constants'
+import {
+  readChatRequestBody,
+  ChatRequestBodyTooLargeError,
+} from '@/features/chat/api/read-chat-request-body'
 import {
   ChatConversationStateSchema,
   EMPTY_CHAT_CONVERSATION_STATE,
@@ -28,7 +33,11 @@ export const runtime = 'nodejs'
 const CHAT_ROUTE = {
   UNEXPECTED_ERROR_MESSAGE:
     '답변을 준비하는 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.',
-  MAXIMUM_CONVERSATION_HISTORY_ITEM_COUNT: 2,
+  MAXIMUM_CONVERSATION_HISTORY_ITEM_COUNT:
+    BLOG_CHAT.INPUT.MAXIMUM_HISTORY_ITEM_COUNT,
+  REQUEST_TOO_LARGE_MESSAGE:
+    '요청 내용이 너무 큽니다. 대화 내용을 줄여 다시 시도해주세요.',
+  INVALID_REQUEST_MESSAGE: '올바른 JSON 요청을 보내주세요.',
   DEFAULT_RESPONSE_STATUS: 200,
   PROGRESS_STREAM_ACCEPT: 'text/event-stream',
   REQUEST_STREAM_ERROR_CODE: 'blog_chat_request_failed',
@@ -112,7 +121,8 @@ function resolveAssistantBlogChatResponse(
     !historyItem ||
     typeof historyItem !== 'object' ||
     !('metadata' in historyItem) ||
-    typeof historyItem.metadata !== 'object'
+    typeof historyItem.metadata !== 'object' ||
+    historyItem.metadata === null
   ) {
     return null
   }
@@ -333,7 +343,7 @@ function acceptsProgressStream(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const requestBody = await request.json()
+    const requestBody = await readChatRequestBody(request)
 
     if (isLeeChatRequest(requestBody) && acceptsProgressStream(request)) {
       return createBlogChatRequestStreamResponse({
@@ -356,7 +366,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(routeResult.body, {
       status: routeResult.status,
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof ChatRequestBodyTooLargeError) {
+      return NextResponse.json(
+        { error: CHAT_ROUTE.REQUEST_TOO_LARGE_MESSAGE },
+        { status: 413 },
+      )
+    }
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: CHAT_ROUTE.INVALID_REQUEST_MESSAGE },
+        { status: 400 },
+      )
+    }
     return NextResponse.json(
       {
         error: CHAT_ROUTE.UNEXPECTED_ERROR_MESSAGE,

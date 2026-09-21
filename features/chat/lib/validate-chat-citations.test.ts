@@ -15,6 +15,18 @@ const MATCHES: ChatEvidenceRecord[] = [
     tags: ['profile'],
     sourceCategory: 'profile',
   },
+  {
+    id: 'assistant-profile',
+    locale: 'ko',
+    slug: 'assistant-profile',
+    title: '블로그 챗봇 안내',
+    url: 'curated/ko/assistant/profile/응답-원칙',
+    excerpt: '응답 원칙',
+    content: '항상 챗봇으로서 답합니다.',
+    sectionTitle: '응답 원칙',
+    tags: ['assistant'],
+    sourceCategory: 'assistant',
+  },
 ]
 
 describe('validateChatCitations', () => {
@@ -41,5 +53,14 @@ describe('validateChatCitations', () => {
         matches: MATCHES,
       }),
     ).toHaveLength(1)
+  })
+
+  it('내부 assistant 근거는 citation으로 변환하지 않는다', () => {
+    expect(
+      validateChatCitations({
+        usedCitationUrls: ['curated/ko/assistant/profile/응답-원칙'],
+        matches: MATCHES,
+      }),
+    ).toEqual([])
   })
 })

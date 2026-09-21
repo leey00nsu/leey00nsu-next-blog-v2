@@ -396,7 +396,6 @@ export const getCuratedChatSources = cache(
           locale,
           slug: 'assistant-profile',
           title: assistantProfile.title,
-          baseUrl: buildLocalizedRoutePath(ROUTES.ABOUT, locale),
           introContent: [
             assistantProfile.greetingAnswer,
             assistantProfile.identityAnswer,

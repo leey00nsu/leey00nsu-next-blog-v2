@@ -165,4 +165,34 @@ describe('finalizeBlogChatResponse', () => {
     expect(result.answer).toBe('답변을 뒷받침할 근거를 확인할 수 없어요.')
     expect(result.refusalReason).toBe('invalid_citations')
   })
+
+  it('내부 assistant 근거로 생성한 답변은 공개 citation 없이 반환한다', () => {
+    const assistantEvidence: ChatEvidenceRecord = {
+      id: 'curated/ko/assistant/profile/응답-원칙',
+      locale: 'ko',
+      slug: 'assistant-profile',
+      title: '블로그 챗봇 안내',
+      url: 'curated/ko/assistant/profile/응답-원칙',
+      excerpt: '응답 원칙',
+      content: '항상 챗봇으로서 답합니다.',
+      sectionTitle: '응답 원칙',
+      tags: ['assistant'],
+      sourceCategory: 'assistant',
+    }
+    const result = finalizeBlogChatResponse({
+      locale: 'ko',
+      draftAnswer: {
+        answer: '블로그의 공개 콘텐츠를 근거로 답합니다.',
+        usedCitationUrls: [assistantEvidence.url],
+        refusalReason: null,
+      },
+      matches: [assistantEvidence],
+    })
+
+    expect(result).toEqual({
+      answer: '블로그의 공개 콘텐츠를 근거로 답합니다.',
+      citations: [],
+      grounded: true,
+    })
+  })
 })

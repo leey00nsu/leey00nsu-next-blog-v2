@@ -26,6 +26,10 @@ export function validateChatCitations({
       return []
     }
 
+    if (matchedRecord.sourceCategory === 'assistant') {
+      return []
+    }
+
     return [
       {
         title: matchedRecord.title,

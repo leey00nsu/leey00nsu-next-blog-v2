@@ -38,7 +38,10 @@ describe('getCuratedChatSources', () => {
     expect(projectSectionSource).toBeDefined()
     expect(projectSectionSource?.url).toContain('#')
     expect(assistantSectionSource).toBeDefined()
-    expect(assistantSectionSource?.url).toContain('#')
+    expect(assistantSectionSource?.url).toBe(
+      'curated/ko/assistant/profile/답변-근거-범위',
+    )
+    expect(assistantSectionSource?.url).not.toContain('/ko/about')
   })
 
   it('프로젝트 source에 프로젝트 종료 시간을 명시적으로 저장한다', async () => {

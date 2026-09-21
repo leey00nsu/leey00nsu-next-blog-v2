@@ -16,7 +16,7 @@ interface BuildCuratedChatSourceRecordsParams {
   locale: SupportedLocale
   slug: string
   title: string
-  baseUrl: string
+  baseUrl?: string
   introContent?: string
   metadataContent?: string
   markdownContent: string
@@ -189,7 +189,7 @@ function buildIntroRecord(
     locale: params.locale,
     slug: params.slug,
     title: params.title,
-    url: params.baseUrl,
+    url: params.baseUrl ?? params.idPrefix,
     excerpt: trimText(introText, CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH),
     content: introText,
     sectionTitle: null,
@@ -226,7 +226,9 @@ function buildSectionRecord(
     locale: params.locale,
     slug: params.slug,
     title: params.title,
-    url: `${params.baseUrl}#${params.section.anchor}`,
+    url: params.baseUrl
+      ? `${params.baseUrl}#${params.section.anchor}`
+      : `${params.idPrefix}/${params.section.anchor}`,
     excerpt: trimText(
       sanitizedSectionText,
       CURATED_SOURCE_RECORDS.MAXIMUM_EXCERPT_LENGTH,

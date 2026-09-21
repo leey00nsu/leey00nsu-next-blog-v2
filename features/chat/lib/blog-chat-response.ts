@@ -63,8 +63,12 @@ export function finalizeBlogChatResponse({
     usedCitationUrls: draftAnswer.usedCitationUrls,
     matches,
   })
+  const matchedCitationUrls = new Set(matches.map((match) => match.url))
+  const hasSelectedEvidence = draftAnswer.usedCitationUrls.some(
+    (usedCitationUrl) => matchedCitationUrls.has(usedCitationUrl),
+  )
 
-  if (citations.length === 0) {
+  if (!hasSelectedEvidence) {
     return buildChatRefusalResponse({
       locale,
       refusalReason: 'invalid_citations',

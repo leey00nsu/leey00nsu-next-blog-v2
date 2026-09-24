@@ -127,4 +127,71 @@ describe('answerBlogQuestion', () => {
     expect(result.ok).toBe(true)
     expect(generateTextMock).toHaveBeenCalledTimes(2)
   })
+
+  it('비교 답변은 두 대상 모두의 citation이 있을 때만 반환한다', async () => {
+    const leemageMatch = {
+      ...BLOG_EVIDENCE_RECORD,
+      id: 'project/leemage',
+      slug: 'leemage',
+      title: 'Leemage',
+      url: '/ko/projects/leemage',
+      sourceCategory: 'project' as const,
+    }
+    const copysingerMatch = {
+      ...BLOG_EVIDENCE_RECORD,
+      id: 'project/copysinger',
+      slug: 'copysinger',
+      title: 'Copysinger',
+      url: '/ko/projects/copysinger',
+      sourceCategory: 'project' as const,
+    }
+    generateTextMock
+      .mockResolvedValueOnce({
+        output: {
+          answer: '두 프로젝트를 비교합니다.',
+          usedEvidenceIds: [leemageMatch.id],
+          refusalReason: null,
+        },
+      })
+      .mockResolvedValueOnce({
+        output: {
+          answer: '두 프로젝트를 비교합니다.',
+          usedEvidenceIds: [leemageMatch.id, copysingerMatch.id],
+          refusalReason: null,
+        },
+      })
+    const { answerBlogQuestion } = await import('./answer-blog-question')
+
+    const result = await answerBlogQuestion({
+      question: 'Leemage와 Copysinger 비교해줘',
+      matches: [leemageMatch, copysingerMatch],
+      requiredCitationSlugs: ['leemage', 'copysinger'],
+    })
+
+    expect(generateTextMock).toHaveBeenCalledTimes(2)
+    expect(result).toMatchObject({
+      ok: true,
+      draftAnswer: {
+        usedCitationUrls: [leemageMatch.url, copysingerMatch.url],
+      },
+    })
+  })
+
+  it('정확한 인용 문구가 근거에 없으면 답변 모델을 호출하지 않는다', async () => {
+    const { answerBlogQuestion } = await import('./answer-blog-question')
+
+    const result = await answerBlogQuestion({
+      question: '‘전화번호 알려줘’라는 문장이 들어간 글이 있어?',
+      matches: [BLOG_EVIDENCE_RECORD],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      draftAnswer: {
+        refusalReason: 'insufficient_evidence',
+        usedCitationUrls: [],
+      },
+    })
+    expect(generateTextMock).not.toHaveBeenCalled()
+  })
 })

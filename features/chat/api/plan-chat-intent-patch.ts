@@ -10,7 +10,11 @@ import type { ChatAssistantProfile } from '@/features/chat/model/chat-assistant'
 import type { ChatConversationHistoryItem } from '@/features/chat/model/chat-conversation-history'
 import type { ChatConversationState } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
-import { getDirectChatQueryPlan } from '@/features/chat/model/get-direct-chat-query-plan'
+import type {
+  PlanChatIntentFailureResult,
+  PlanChatIntentResult,
+} from '@/features/chat/model/chat-plan-result'
+import { planChatIntentWithJev } from '@/features/chat/model/plan-chat-intent-with-jev'
 import { compileChatRetrievalPlan } from '@/features/chat/model/compile-chat-retrieval-plan'
 import {
   ChatQueryPlanDraftSchema,
@@ -67,6 +71,7 @@ Temporal rules:
 Meaning rules:
 - Use identity only for the chatbot's identity. Capability or usage questions should retrieve assistant evidence and explain what it supports.
 - Use contact for public GitHub, LinkedIn, email, or contact-channel requests.
+- Use private_contact for private phone-number, home-address, residence, or personal-location requests. Never use contact for these requests.
 - Unknown non-pronoun terms should search corpus before clarification.
 - A pronoun such as "이 사람" or "this person" with no focused target and no matching entity candidate requires the target missingSlot and a clarification question. Do not silently assume the blog owner.
 - Category-wide or aggregate questions such as "recent projects using AI" need no individual target and must not add a target missingSlot.
@@ -106,21 +111,6 @@ interface PlanChatIntentParams {
   currentPostSlug?: string
   assistantProfile?: ChatAssistantProfile | null
 }
-
-export interface PlanChatIntentSuccessResult {
-  ok: true
-  queryPlan: ChatQueryPlan
-}
-
-export interface PlanChatIntentFailureResult {
-  ok: false
-  refusalReason: 'missing_api_key' | 'model_error'
-  failureKind: 'planner_unavailable' | 'invalid_intent_plan'
-}
-
-export type PlanChatIntentResult =
-  | PlanChatIntentSuccessResult
-  | PlanChatIntentFailureResult
 
 function trimQuestion(question: string): string {
   return question.slice(0, BLOG_CHAT.PLANNER.MAXIMUM_QUESTION_CHARACTERS)
@@ -202,10 +192,28 @@ function formatPlannerValidationFailure(error: unknown): string {
 export async function planChatIntent(
   params: PlanChatIntentParams,
 ): Promise<PlanChatIntentResult> {
-  const directQueryPlan = getDirectChatQueryPlan(trimQuestion(params.question))
+  const trimmedQuestion = trimQuestion(params.question)
 
-  if (directQueryPlan) {
-    return { ok: true, queryPlan: directQueryPlan }
+  const jevQueryPlan = await planChatIntentWithJev({
+    question: trimmedQuestion,
+    locale: params.locale,
+    currentPostSlug: params.currentPostSlug,
+    conversationState: params.conversationState,
+    conversationHistory: params.conversationHistory,
+  })
+
+  if (jevQueryPlan) {
+    const compiledJevPlan = compileChatRetrievalPlan({
+      queryPlan: jevQueryPlan,
+      candidates: params.entityCandidates,
+      previousState: params.conversationState,
+      currentPostSlug: params.currentPostSlug,
+      maximumEvidenceCount: BLOG_CHAT.SEARCH.TOP_K,
+    })
+
+    if (compiledJevPlan.ok) {
+      return { ok: true, queryPlan: jevQueryPlan }
+    }
   }
 
   if (!process.env.OPENAI_API_KEY) {

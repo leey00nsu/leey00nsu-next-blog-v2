@@ -18,6 +18,7 @@ export const CHAT_QUERY_OPERATIONS = [
   'identity',
   'owner_identity',
   'contact',
+  'private_contact',
 ] as const
 
 export const CHAT_SOURCE_SELECTION_MODES = ['all', 'only', 'prefer'] as const
@@ -25,6 +26,18 @@ export const CHAT_SOURCE_SELECTION_MODES = ['all', 'only', 'prefer'] as const
 export const CHAT_TEMPORAL_SELECTION_MODES = ['none', 'rank', 'single'] as const
 
 export const CHAT_TEMPORAL_ORDERS = ['latest', 'oldest'] as const
+
+export const ChatCatalogRequestSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('none') }).strict(),
+  z.object({ kind: z.literal('latest') }).strict(),
+  z.object({ kind: z.literal('oldest') }).strict(),
+  z.object({ kind: z.literal('year'), year: z.number().int().min(1900).max(2100) }).strict(),
+  z.object({ kind: z.literal('repositories') }).strict(),
+])
+
+export const ChatSocialResponseKindSchema = z.enum(['greeting', 'thanks', 'farewell', 'acknowledgement'])
+export const ChatContactChannelSchema = z.enum(['github', 'linkedin', 'email'])
+export const ChatResponseFacetSchema = z.enum(['owner_identity', 'public_contact'])
 
 const CHAT_QUERY_PLAN_LIMITS = {
   MAXIMUM_QUESTION_CHARACTERS: 300,
@@ -99,6 +112,11 @@ export const ChatQueryPlanDraftSchema = z
     operation: ChatQueryOperationSchema,
     sourceSelection: ChatSourceSelectionSchema,
     temporalSelection: ChatTemporalSelectionSchema,
+    catalogRequest: ChatCatalogRequestSchema.optional(),
+    responseScope: z.enum(['single', 'multiple']).optional(),
+    socialResponseKind: ChatSocialResponseKindSchema.optional(),
+    contactChannels: z.array(ChatContactChannelSchema).optional(),
+    responseFacets: z.array(ChatResponseFacetSchema).optional(),
     requestedFields: z
       .array(ChatRequestedFieldSchema)
       .max(CHAT_QUERY_PLAN_LIMITS.MAXIMUM_REQUESTED_FIELD_COUNT),
@@ -132,7 +150,8 @@ export const ChatQueryPlanSchema = ChatQueryPlanDraftSchema.superRefine(
       queryPlan.operation !== 'social_reply' &&
       queryPlan.operation !== 'identity' &&
       queryPlan.operation !== 'owner_identity' &&
-      queryPlan.operation !== 'contact'
+      queryPlan.operation !== 'contact' &&
+      queryPlan.operation !== 'private_contact'
 
     if (requiresRequestedFields && queryPlan.requestedFields.length === 0) {
       refinementContext.addIssue({

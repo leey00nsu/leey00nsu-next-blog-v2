@@ -11,6 +11,19 @@ export function parseIntegerEnvironmentValue(
   return Number.isNaN(parsedValue) ? fallbackValue : parsedValue
 }
 
+export function parseNumberEnvironmentValue(
+  environmentValue: string | undefined,
+  fallbackValue: number,
+): number {
+  if (!environmentValue) {
+    return fallbackValue
+  }
+
+  const parsedValue = Number(environmentValue)
+
+  return Number.isFinite(parsedValue) ? parsedValue : fallbackValue
+}
+
 export const BLOG_CHAT = {
   EVIDENCE_VERSION:
     process.env.VERCEL_GIT_COMMIT_SHA ??
@@ -20,7 +33,7 @@ export const BLOG_CHAT = {
     MAXIMUM_REQUEST_BYTES: 256 * 1024,
     MAXIMUM_HISTORY_ITEM_COUNT: 2,
     MAXIMUM_HISTORY_ANSWER_CHARACTERS: 8000,
-    MAXIMUM_HISTORY_CITATION_COUNT: 3,
+    MAXIMUM_HISTORY_CITATION_COUNT: 20,
     MAXIMUM_HISTORY_TITLE_CHARACTERS: 300,
     MAXIMUM_HISTORY_URL_CHARACTERS: 2048,
     MAXIMUM_HISTORY_CHARACTERS: 16_000,
@@ -76,6 +89,24 @@ export const BLOG_CHAT = {
       15 * 1000,
     ),
   },
+  JEV_ROUTER: {
+    MODEL_ID: process.env.TYPESAFE_DEFAULT_MODEL ?? 'jev-latest',
+    HIGH_CONFIDENCE: 0.8,
+    MINIMUM_CONFIDENCE: Math.min(
+      1,
+      Math.max(
+        0,
+        parseNumberEnvironmentValue(
+          process.env.BLOG_CHAT_JEV_MINIMUM_CONFIDENCE,
+          0.5,
+        ),
+      ),
+    ),
+    MODEL_TIMEOUT_MILLISECONDS: parseIntegerEnvironmentValue(
+      process.env.BLOG_CHAT_JEV_MODEL_TIMEOUT_MS,
+      15 * 1000,
+    ),
+  },
   CACHE: {
     TTL_MILLISECONDS: parseIntegerEnvironmentValue(
       process.env.BLOG_CHAT_CACHE_TTL_MS,
@@ -93,16 +124,6 @@ export const BLOG_CHAT = {
     ),
     MINIMUM_SIMILARITY_SCORE: Number(
       process.env.BLOG_CHAT_SEMANTIC_CACHE_MINIMUM_SIMILARITY_SCORE ?? 0.92,
-    ),
-  },
-  RERANK: {
-    LONG_QUESTION_MINIMUM_LENGTH: parseIntegerEnvironmentValue(
-      process.env.BLOG_CHAT_RERANK_LONG_QUESTION_MINIMUM_LENGTH,
-      36,
-    ),
-    MINIMUM_MATCH_COUNT: parseIntegerEnvironmentValue(
-      process.env.BLOG_CHAT_RERANK_MINIMUM_MATCH_COUNT,
-      2,
     ),
   },
   FOLLOW_UP: {

@@ -99,6 +99,7 @@ function buildDependencies() {
         refusalReason: null,
       },
     })),
+    verifyEvidence: vi.fn(async () => true),
     getCachedResponse: vi.fn<(cacheKey: string) => BlogChatResponse | null>(
       () => null,
     ),
@@ -113,15 +114,37 @@ function buildDependencies() {
 }
 
 describe('runChatWorkflow', () => {
+  it('lexical 근거가 없는 의미 검색 결과는 Jev 근거 확인을 통과해야 답한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.executeRetrievalPlan.mockResolvedValueOnce({
+      kind: 'evidence',
+      matches: [LEEMAGE_MATCH],
+      lexicalMatches: [],
+      semanticMatches: [LEEMAGE_MATCH],
+      reranked: false,
+    })
+    dependencies.verifyEvidence.mockResolvedValueOnce(false)
+
+    const result = await runChatWorkflow({ request: REQUEST, dependencies })
+
+    expect(dependencies.verifyEvidence).toHaveBeenCalledOnce()
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+    expect(result.applicationResponse.response.refusalReason).toBe(
+      'insufficient_search_match',
+    )
+  })
+
   it('프로필 직접 응답이 검색 근거를 반환하면 생성 단계로 이어진다', async () => {
     const dependencies = buildDependencies()
-    dependencies.getEntityCandidates.mockResolvedValueOnce([{
-      ...LEEMAGE_CANDIDATE,
-      entityId: 'profile/about',
-      kind: 'profile',
-      slug: 'about',
-      sourceCategory: 'profile',
-    }])
+    dependencies.getEntityCandidates.mockResolvedValueOnce([
+      {
+        ...LEEMAGE_CANDIDATE,
+        entityId: 'profile/about',
+        kind: 'profile',
+        slug: 'about',
+        sourceCategory: 'profile',
+      },
+    ])
     dependencies.planQuery.mockResolvedValueOnce({
       ok: true,
       queryPlan: {
@@ -351,6 +374,7 @@ describe('runChatWorkflow', () => {
         sourceSelection: { mode: 'all' },
         requestedFields: ['contact_methods'],
         requiredConcepts: ['GitHub'],
+        contactChannels: ['github'],
       },
     })
 
@@ -384,6 +408,67 @@ describe('runChatWorkflow', () => {
     expect(dependencies.answerQuestion).not.toHaveBeenCalled()
   })
 
+  it('감사 인사에는 소개문이 아니라 감사 답장을 반환한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '고마워!',
+        targetSelection: { kind: 'none' },
+        operation: 'social_reply',
+        requestedFields: [],
+        requiredConcepts: [],
+        socialResponseKind: 'thanks',
+      },
+    })
+    const result = await runChatWorkflow({
+      request: { ...REQUEST, question: '고마워!' },
+      dependencies,
+    })
+    expect(result.applicationResponse.response.answer).toContain('도움이 됐다니')
+    expect(dependencies.answerQuestion).not.toHaveBeenCalled()
+  })
+
+  it('복합 질문의 빠진 운영자 이름과 공개 GitHub 프로필을 보충한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.answerQuestion.mockResolvedValueOnce({
+      ok: true,
+      draftAnswer: {
+        answer: '프로젝트 저장소: https://github.com/leey00nsu/leemage',
+        usedCitationUrls: [LEEMAGE_MATCH.url],
+        refusalReason: null,
+      },
+    })
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: {
+        ...QUERY_PLAN,
+        standaloneQuestion: '블로그 주인 이름과 GitHub 주소, 프로젝트를 알려줘',
+        targetSelection: { kind: 'none' },
+        responseScope: 'multiple',
+        responseFacets: ['owner_identity', 'public_contact'],
+        contactChannels: ['github'],
+      },
+    })
+    const result = await runChatWorkflow({
+      request: { ...REQUEST, question: '블로그 주인 이름과 GitHub 주소, 프로젝트를 알려줘' },
+      assistantProfile: {
+        title: '블로그 챗봇 안내', chatbotName: '블로그 챗봇', ownerName: '이윤수',
+        greetingAnswer: '안녕하세요.', identityAnswer: '저는 챗봇입니다.', aliases: [], content: '',
+      },
+      contactProfile: {
+        title: 'About Me', aboutUrl: '/ko/about',
+        methods: [{ label: 'GitHub', url: 'https://github.com/leey00nsu' }],
+      },
+      dependencies,
+    })
+    const response = result.applicationResponse.response
+    expect(response.answer).toContain('이윤수')
+    expect(response.answer).toContain('https://github.com/leey00nsu')
+    expect(response.citations.map((citation) => citation.url)).toContain('/ko/about')
+  })
+
   it('요청한 연락 채널이 공개되지 않았으면 다른 채널을 대신 반환하지 않는다', async () => {
     const dependencies = buildDependencies()
     dependencies.planQuery.mockResolvedValueOnce({
@@ -396,6 +481,7 @@ describe('runChatWorkflow', () => {
         sourceSelection: { mode: 'all' },
         requestedFields: ['contact_methods'],
         requiredConcepts: ['GitHub'],
+        contactChannels: ['github'],
       },
     })
 
@@ -425,7 +511,7 @@ describe('runChatWorkflow', () => {
     )
   })
 
-  it('전화번호나 주소 요청은 공개 연락 채널을 대신 노출하지 않고 거절한다', async () => {
+  it('Jev가 private contact로 분류한 요청은 공개 연락 채널을 노출하지 않고 거절한다', async () => {
     const dependencies = buildDependencies()
     dependencies.planQuery.mockResolvedValueOnce({
       ok: true,
@@ -433,9 +519,9 @@ describe('runChatWorkflow', () => {
         ...QUERY_PLAN,
         standaloneQuestion: '블로그 주인의 전화번호와 집 주소를 알려줘',
         targetSelection: { kind: 'none' },
-        operation: 'contact',
+        operation: 'private_contact',
         sourceSelection: { mode: 'all' },
-        requestedFields: ['contact_methods'],
+        requestedFields: [],
         requiredConcepts: [],
       },
     })

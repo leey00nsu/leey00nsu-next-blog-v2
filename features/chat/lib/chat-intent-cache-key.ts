@@ -10,7 +10,7 @@ interface BuildChatRetrievalPlanCacheKeyParams {
 }
 
 const CHAT_RESPONSE_CACHE_KEY = {
-  SCHEMA_VERSION: 'grounded-evidence-v3',
+  SCHEMA_VERSION: 'grounded-evidence-v4',
 } as const
 
 function normalizeCachePart(value: string): string {
@@ -45,6 +45,11 @@ export function buildChatRetrievalPlanCacheKey({
     locale,
     retrievalPlan.executionKind,
     retrievalPlan.operation,
+    JSON.stringify(retrievalPlan.catalogRequest ?? null),
+    retrievalPlan.responseScope ?? '',
+    retrievalPlan.socialResponseKind ?? '',
+    normalizeCacheParts(retrievalPlan.contactChannels ?? []).join(','),
+    normalizeCacheParts(retrievalPlan.responseFacets ?? []).join(','),
     normalizedTargets.join(','),
     retrievalPlan.sourceStrategy,
     normalizeCacheParts(retrievalPlan.sourceCategories).join(','),

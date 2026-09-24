@@ -2,6 +2,8 @@ import {
   rerankChatEvidence,
   type RerankChatEvidence,
 } from '@/features/chat/api/rerank-chat-evidence'
+import { getAllPostSummaries } from '@/entities/post/lib/post'
+import { getPublishedAndDeployedProjects } from '@/entities/project/lib/project'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import {
   isAggregateChatRetrievalPlan,
@@ -26,6 +28,7 @@ import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-pla
 import { runChatRagWorkflow } from '@/features/chat/model/chat-rag-workflow'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
+import { buildBlogPostHref, buildProjectHref } from '@/shared/config/constants'
 
 interface RetrieveSemanticMatchesParams {
   plan: ChatRetrievalPlan
@@ -42,7 +45,6 @@ interface ExecuteChatRetrievalPlanParams {
   locale: SupportedLocale
   blogRecords: ChatEvidenceRecord[]
   curatedRecords: ChatEvidenceRecord[]
-  hasConversationContext?: boolean
   embedQuestion?: (question: string) => Promise<number[]>
   retrieveSemanticMatches?: RetrieveSemanticMatches
   rerankMatches?: RerankChatEvidence
@@ -108,6 +110,92 @@ const DIRECT_METADATA_RESPONSES = {
     },
   },
 } as const
+
+const CHAT_CATALOG_RESPONSES = {
+  ko: {
+    year: '{year}년에 게시된 글 {count}편입니다.',
+    repositories: '공개 프로젝트의 GitHub 저장소 {count}개입니다.',
+  },
+  en: {
+    year: '{count} posts published in {year}.',
+    repositories: '{count} GitHub repositories for public projects.',
+  },
+} as const
+
+async function buildDirectCatalogResult(params: {
+  plan: ChatRetrievalPlan
+  locale: SupportedLocale
+}): Promise<DirectChatRetrievalPlanResult | RefusedChatRetrievalPlanResult> {
+  const catalogRequest = params.plan.catalogRequest
+
+  if (!catalogRequest || catalogRequest.kind === 'none') {
+    return { kind: 'refusal', refusalReason: 'insufficient_search_match', matches: [] }
+  }
+
+  if (catalogRequest.kind === 'repositories') {
+    const publishedProjects = await getPublishedAndDeployedProjects(params.locale)
+    const projects = publishedProjects.filter((project) => Boolean(project.links.github))
+    if (projects.length === 0) {
+      return { kind: 'refusal', refusalReason: 'insufficient_search_match', matches: [] }
+    }
+    const answer = [
+      CHAT_CATALOG_RESPONSES[params.locale].repositories.replace('{count}', String(projects.length)),
+      ...projects.map((project) => `${project.title}: ${project.links.github}`),
+    ].join('\n')
+
+    return {
+      kind: 'direct',
+      response: {
+        answer,
+        grounded: true,
+        citations: projects.map((project) => ({
+          title: project.title,
+          url: buildProjectHref(project.slug, params.locale),
+          sectionTitle: null,
+          sourceCategory: 'project' as const,
+        })),
+      },
+      matches: [],
+    }
+  }
+
+  const posts = await getAllPostSummaries(params.locale)
+  const selectedPosts = catalogRequest.kind === 'year'
+    ? posts.filter((post) => post.date.getUTCFullYear() === catalogRequest.year)
+    : catalogRequest.kind === 'oldest'
+      ? posts.slice(-1)
+      : posts.slice(0, 1)
+
+  if (selectedPosts.length === 0) {
+    return { kind: 'refusal', refusalReason: 'insufficient_search_match', matches: [] }
+  }
+
+  const answer = catalogRequest.kind === 'year'
+    ? [
+        CHAT_CATALOG_RESPONSES[params.locale].year
+          .replace('{year}', String(catalogRequest.year))
+          .replace('{count}', String(selectedPosts.length)),
+        ...selectedPosts.map((post) => `${post.title} (${post.date.toISOString().slice(0, 10)})`),
+      ].join('\n')
+    : DIRECT_METADATA_RESPONSES[params.locale].published[catalogRequest.kind]
+        .replace('{title}', selectedPosts[0].title)
+        .replace('{date}', selectedPosts[0].date.toISOString().slice(0, 10))
+
+  return {
+    kind: 'direct',
+    response: {
+      answer,
+      grounded: true,
+      citations: selectedPosts.map((post) => ({
+        title: post.title,
+        url: buildBlogPostHref(post.slug, params.locale),
+        sectionTitle: null,
+        sourceCategory: 'blog' as const,
+      })),
+    },
+    matches: [],
+  }
+}
 
 type DirectMetadataResponseKind = keyof (typeof DIRECT_METADATA_RESPONSES)['ko']
 
@@ -459,7 +547,8 @@ function buildStructuredProfileResult(params: {
 }): DirectChatRetrievalPlanResult | null {
   if (
     params.plan.sourceStrategy !== 'only' ||
-    !params.plan.sourceCategories.includes('profile')
+    params.plan.sourceCategories.length !== 1 ||
+    params.plan.sourceCategories[0] !== 'profile'
   ) {
     return null
   }
@@ -632,7 +721,6 @@ export async function executeChatRetrievalPlan({
   locale,
   blogRecords,
   curatedRecords,
-  hasConversationContext = false,
   embedQuestion,
   retrieveSemanticMatches = retrieveDefaultSemanticMatches,
   rerankMatches = rerankChatEvidence,
@@ -644,6 +732,10 @@ export async function executeChatRetrievalPlan({
 
   if (plan.executionKind === 'direct_metadata') {
     return buildDirectMetadataResult({ plan, locale, records: scopedRecords })
+  }
+
+  if (plan.executionKind === 'direct_catalog') {
+    return buildDirectCatalogResult({ plan, locale })
   }
 
   const structuredProfileResult = buildStructuredProfileResult({
@@ -815,10 +907,8 @@ export async function executeChatRetrievalPlan({
   // 리랭커는 최종 근거 수를 정하기 전에 넓은 후보 풀에서 고른다. 선별 뒤에 호출하면
   // 이미 잘린 목록의 순서만 바꿀 수 있어, 후보에 있던 근거를 살릴 수 없다.
   const rerankResult = shouldRerankChatEvidence({
-    question: evidencePlan.standaloneQuestion,
     matchCount: rerankCandidates.length,
     plan: evidencePlan,
-    hasConversationContext,
   })
     ? await rerankMatches({
         question: evidencePlan.standaloneQuestion,

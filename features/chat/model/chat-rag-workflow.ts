@@ -1,4 +1,3 @@
-import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { Pool } from 'pg'
 import { CHAT_RAG } from '@/features/chat/config/chat-rag'
 import {
@@ -23,37 +22,6 @@ import type {
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import type { SupportedLocale } from '@/shared/config/constants'
 import { collectSearchTerms } from '@/shared/lib/search-terms'
-
-const CHAT_RAG_WORKFLOW_STATE = Annotation.Root({
-  question: Annotation<string>({
-    reducer: (_previousValue, nextValue) => nextValue,
-    default: () => '',
-  }),
-  locale: Annotation<SupportedLocale>({
-    reducer: (_previousValue, nextValue) => nextValue,
-  }),
-  currentPostSlug: Annotation<string | undefined>({
-    reducer: (_previousValue, nextValue) => nextValue,
-  }),
-  retrievalPlan: Annotation<ChatRetrievalPlan | undefined>({
-    reducer: (_previousValue, nextValue) => nextValue,
-  }),
-  questionEmbedding: Annotation<number[]>({
-    reducer: (_previousValue, nextValue) => nextValue,
-    default: () => [],
-  }),
-  searchData: Annotation<ChatRagLocaleSearchData>({
-    reducer: (_previousValue, nextValue) => nextValue,
-  }),
-  matches: Annotation<ChatEvidenceRecord[]>({
-    reducer: (_previousValue, nextValue) => nextValue,
-    default: () => [],
-  }),
-  grounded: Annotation<boolean>({
-    reducer: (_previousValue, nextValue) => nextValue,
-    default: () => false,
-  }),
-})
 
 export interface ChatRagWorkflowResult {
   grounded: boolean
@@ -287,63 +255,6 @@ function buildSelectedMatches(
     })
 }
 
-function buildChatRagWorkflow(params: {
-  embedQuestion: (question: string) => Promise<number[]>
-  selectSearchData: (params: {
-    locale: SupportedLocale
-    questionEmbedding: number[]
-    retrievalPlan?: ChatRetrievalPlan
-  }) => Promise<ChatRagLocaleSearchData>
-}) {
-  return new StateGraph(CHAT_RAG_WORKFLOW_STATE)
-    .addNode('embed-question', async (state) => {
-      return {
-        questionEmbedding: await params.embedQuestion(state.question),
-      }
-    })
-    .addNode('load-search-data', async (state) => {
-      return {
-        searchData: await params.selectSearchData({
-          locale: state.locale,
-          questionEmbedding: state.questionEmbedding,
-          retrievalPlan: state.retrievalPlan,
-        }),
-      }
-    })
-    .addNode('rank-chunks', async (state) => {
-      const rankedChunks = buildRankedChunks({
-        semanticCandidates: state.searchData.semanticCandidates,
-        entities: state.searchData.entities,
-        relations: state.searchData.relations,
-        question: state.question,
-        currentPostSlug: state.currentPostSlug,
-      })
-      const matches = buildSelectedMatches(
-        rankedChunks,
-        state.retrievalPlan?.requiredConcepts ?? [],
-        state.retrievalPlan
-          ? resolveChatEvidenceDiversityPolicy({
-              plan: state.retrievalPlan,
-              maximumMatchesPerSlug: CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
-            })
-          : DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
-        state.retrievalPlan
-          ? CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES
-          : CHAT_RAG.SEARCH.TOP_K,
-      )
-
-      return {
-        grounded: matches.length > 0,
-        matches,
-      }
-    })
-    .addEdge(START, 'embed-question')
-    .addEdge('embed-question', 'load-search-data')
-    .addEdge('load-search-data', 'rank-chunks')
-    .addEdge('rank-chunks', END)
-    .compile()
-}
-
 export async function runChatRagWorkflow(params: {
   indexVersion?: string
   question: string
@@ -363,53 +274,73 @@ export async function runChatRagWorkflow(params: {
       params.selectSearchData || params.databasePool
         ? params.databasePool
         : await getChatRagDatabasePool()
-    const workflow = buildChatRagWorkflow({
-      embedQuestion: params.embedQuestion ?? embedChatRagQuestion,
-      selectSearchData:
-        params.selectSearchData ??
-        (async ({ locale, questionEmbedding, retrievalPlan }) => {
-          if (!databasePool) {
-            return {
-              entities: [],
-              relations: [],
-              semanticCandidates: [],
-            }
-          }
+    const questionEmbedding = await (
+      params.embedQuestion ?? embedChatRagQuestion
+    )(params.question)
+    let searchData: ChatRagLocaleSearchData
 
-          const planSourceCategory =
-            retrievalPlan?.sourceStrategy === 'only' &&
-            retrievalPlan.sourceCategories.length === 1
-              ? retrievalPlan.sourceCategories[0]
-              : undefined
-          const planTarget =
-            retrievalPlan?.canonicalTargets.length === 1 &&
-            (retrievalPlan.sourceStrategy === 'only' ||
-              retrievalPlan.canonicalTargets[0].kind === 'current_source')
-              ? retrievalPlan.canonicalTargets[0]
-              : undefined
+    if (params.selectSearchData) {
+      searchData = await params.selectSearchData({
+        locale: params.locale,
+        questionEmbedding,
+        retrievalPlan: params.retrievalPlan,
+      })
+    } else if (databasePool) {
+      const retrievalPlan = params.retrievalPlan
+      const planSourceCategory =
+        retrievalPlan?.sourceStrategy === 'only' &&
+        retrievalPlan.sourceCategories.length === 1
+          ? retrievalPlan.sourceCategories[0]
+          : undefined
+      const planTarget =
+        retrievalPlan?.canonicalTargets.length === 1 &&
+        (retrievalPlan.sourceStrategy === 'only' ||
+          retrievalPlan.canonicalTargets[0].kind === 'current_source')
+          ? retrievalPlan.canonicalTargets[0]
+          : undefined
 
-          return selectChatRagLocaleSearchData({
-            indexVersion: params.indexVersion,
-            databaseClient: databasePool,
-            locale,
-            questionEmbedding,
-            maximumSemanticCandidates:
-              CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
-            sourceCategory: planSourceCategory,
-            slug: planTarget?.slug,
-          })
-        }),
-    })
-    const result = await workflow.invoke({
+      searchData = await selectChatRagLocaleSearchData({
+        indexVersion: params.indexVersion,
+        databaseClient: databasePool,
+        locale: params.locale,
+        questionEmbedding,
+        maximumSemanticCandidates:
+          CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
+        sourceCategory: planSourceCategory,
+        slug: planTarget?.slug,
+      })
+    } else {
+      searchData = {
+        entities: [],
+        relations: [],
+        semanticCandidates: [],
+      }
+    }
+
+    const rankedChunks = buildRankedChunks({
+      semanticCandidates: searchData.semanticCandidates,
+      entities: searchData.entities,
+      relations: searchData.relations,
       question: params.question,
-      locale: params.locale,
       currentPostSlug: params.currentPostSlug,
-      retrievalPlan: params.retrievalPlan,
     })
+    const matches = buildSelectedMatches(
+      rankedChunks,
+      params.retrievalPlan?.requiredConcepts ?? [],
+      params.retrievalPlan
+        ? resolveChatEvidenceDiversityPolicy({
+            plan: params.retrievalPlan,
+            maximumMatchesPerSlug: CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES,
+          })
+        : DEFAULT_CHAT_EVIDENCE_DIVERSITY_POLICY,
+      params.retrievalPlan
+        ? CHAT_RAG.SEARCH.MAXIMUM_SEMANTIC_CANDIDATES
+        : CHAT_RAG.SEARCH.TOP_K,
+    )
 
     return {
-      grounded: result.grounded,
-      matches: result.matches,
+      grounded: matches.length > 0,
+      matches,
       failureKind: null,
     }
   } catch (error) {

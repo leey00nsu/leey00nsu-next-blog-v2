@@ -71,7 +71,12 @@ export function buildChatQuestionContextSnapshot({
       latestConversationHistory?.citations
         .slice(0, CHAT_QUESTION_CONTEXT.MAXIMUM_CONTEXT_CITATION_COUNT)
         .map((citation) => citation.sourceCategory) ?? [],
-    recentConversationTurns: successfulConversationHistory,
+    recentConversationTurns: successfulConversationHistory.map(
+      (conversationHistoryItem) => ({
+        ...conversationHistoryItem,
+        answer: trimContextAnswer(conversationHistoryItem.answer),
+      }),
+    ),
     hasCurrentPostContext: Boolean(currentPostSlug),
   }
 }

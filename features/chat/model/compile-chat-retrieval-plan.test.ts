@@ -126,13 +126,13 @@ function compileWithBlogProjectCandidate(queryPlan: ChatQueryPlan) {
 }
 
 describe('compileChatRetrievalPlan', () => {
-  it('블로그 글 최신 조회는 블로그 프로젝트 후보가 있어도 글을 근거로 삼는다', () => {
+  it('Jev가 글로 계획한 최신 조회는 블로그 프로젝트 후보와 무관하게 글을 근거로 삼는다', () => {
     const result = compileWithBlogProjectCandidate({
       ...BASE_QUERY_PLAN,
       standaloneQuestion: '블로그에서 가장 최근에 작성한 글은 뭐야?',
       operation: 'lookup',
-      targetSelection: { kind: 'candidate', entityId: 'project/blog' },
-      sourceSelection: { mode: 'all' },
+      targetSelection: { kind: 'none' },
+      sourceSelection: { mode: 'only', categories: ['blog'] },
       temporalSelection: { mode: 'single', order: 'latest' },
       requestedFields: ['title'],
       requiredConcepts: [],
@@ -142,8 +142,8 @@ describe('compileChatRetrievalPlan', () => {
       ok: true,
       retrievalPlan: {
         executionKind: 'direct_metadata',
-        sourceStrategy: 'prefer',
-        sourceCategories: expect.arrayContaining(['blog']),
+        sourceStrategy: 'only',
+        sourceCategories: ['blog'],
         temporalStrategy: 'single',
         temporalOrder: 'latest',
       },
@@ -204,6 +204,27 @@ describe('compileChatRetrievalPlan', () => {
         sourceStrategy: 'only',
         sourceCategories: ['blog'],
         temporalStrategy: 'single',
+      },
+    })
+  })
+
+  it('출처가 확정되지 않은 최신 조회는 직접 답변하지 않는다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '블로그에서 가장 최근에 작성한 글은 뭐야?',
+      operation: 'lookup',
+      sourceSelection: { mode: 'prefer', categories: ['blog', 'profile'] },
+      temporalSelection: { mode: 'single', order: 'latest' },
+      requestedFields: ['title'],
+      requiredConcepts: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: {
+        executionKind: 'retrieve_and_generate',
+        sourceStrategy: 'prefer',
+        sourceCategories: ['blog', 'profile'],
       },
     })
   })
@@ -314,12 +335,12 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('대상이 생략된 경력·학력 질문은 profile을 선호하되 다른 출처를 배제하지 않는다', () => {
+  it('Jev가 선택한 profile 선호를 유지하되 다른 출처를 배제하지 않는다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,
       standaloneQuestion: '대외활동이나 동아리 경험을 알려줘',
       targetSelection: { kind: 'none' },
-      sourceSelection: { mode: 'all' },
+      sourceSelection: { mode: 'prefer', categories: ['profile'] },
       temporalSelection: { mode: 'none' },
       requiredConcepts: ['동아리 경험'],
     })
@@ -333,6 +354,22 @@ describe('compileChatRetrievalPlan', () => {
         sourceStrategy: 'prefer',
         sourceCategories: ['profile'],
       },
+    })
+  })
+
+  it('프로필처럼 보이는 표현만으로 Jev의 전체 출처 선택을 덮어쓰지 않는다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '대외활동이나 동아리 경험을 알려줘',
+      targetSelection: { kind: 'none' },
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      queryPlan: { sourceSelection: { mode: 'all' } },
+      retrievalPlan: { sourceStrategy: 'all', sourceCategories: [] },
     })
   })
 
@@ -378,7 +415,23 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('이전 문맥 없는 continue candidate를 새 주제 reset으로 정규화한다', () => {
+  it('profile 외의 출처도 요구하면 profile 직접 실행으로 단축하지 않는다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '최근 경력과 관련 글을 함께 설명해줘',
+      operation: 'explain',
+      sourceSelection: { mode: 'only', categories: ['profile', 'blog'] },
+      temporalSelection: { mode: 'none' },
+      requiredConcepts: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: { executionKind: 'retrieve_and_generate' },
+    })
+  })
+
+  it('이전 문맥 없는 continue 계획은 의미를 재판단하지 않고 거부한다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,
       contextAction: 'continue',
@@ -388,10 +441,10 @@ describe('compileChatRetrievalPlan', () => {
       },
     })
 
-    expect(result).toMatchObject({
-      ok: true,
-      contextAction: 'reset',
-      queryPlan: { contextAction: 'reset' },
+    expect(result).toEqual({
+      ok: false,
+      failureKind: 'invalid_transition',
+      nextConversationState: EMPTY_CHAT_CONVERSATION_STATE,
     })
   })
 
@@ -441,7 +494,7 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('첫 턴의 clarification 요청은 잘못된 resolve action을 reset으로 정규화한다', () => {
+  it('첫 턴의 잘못된 resolve action은 거부한다', () => {
     const result = compile({
       ...BASE_QUERY_PLAN,
       contextAction: 'resolve_clarification',
@@ -451,11 +504,10 @@ describe('compileChatRetrievalPlan', () => {
       clarificationQuestion: '누구를 가리키는지 알려주세요.',
     })
 
-    expect(result).toMatchObject({
-      ok: true,
-      contextAction: 'reset',
-      queryPlan: { contextAction: 'reset' },
-      retrievalPlan: { executionKind: 'clarification' },
+    expect(result).toEqual({
+      ok: false,
+      failureKind: 'invalid_transition',
+      nextConversationState: EMPTY_CHAT_CONVERSATION_STATE,
     })
   })
 
@@ -516,7 +568,7 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('대상 답변을 reset으로 분류해도 중단된 연락처 요청을 복원한다', () => {
+  it('Jev가 명확화 답변으로 분류하면 중단된 연락처 요청을 복원한다', () => {
     const suspendedQueryPlan: ChatQueryPlan = {
       standaloneQuestion: '이 사람 깃허브 주소 좀 알려줘',
       contextAction: 'reset',
@@ -543,7 +595,7 @@ describe('compileChatRetrievalPlan', () => {
       queryPlan: {
         ...BASE_QUERY_PLAN,
         standaloneQuestion: '블로그 주인',
-        contextAction: 'reset',
+        contextAction: 'resolve_clarification',
         targetSelection: {
           kind: 'candidate',
           entityId: OWNER_CANDIDATE.entityId,
@@ -589,6 +641,23 @@ describe('compileChatRetrievalPlan', () => {
     expect(result).toMatchObject({
       ok: true,
       retrievalPlan: { executionKind: 'contact' },
+    })
+  })
+
+  it('비공개 연락처 요청을 전용 거절 실행 경로로 컴파일한다', () => {
+    const result = compile({
+      ...BASE_QUERY_PLAN,
+      standaloneQuestion: '개인 연락 정보를 알려줘',
+      operation: 'private_contact',
+      sourceSelection: { mode: 'all' },
+      temporalSelection: { mode: 'none' },
+      requestedFields: [],
+      requiredConcepts: [],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      retrievalPlan: { executionKind: 'private_contact' },
     })
   })
 
@@ -648,7 +717,7 @@ describe('compileChatRetrievalPlan', () => {
     })
   })
 
-  it('별도 candidate 질문을 resolve clarification으로 분류해도 새 질문으로 정규화한다', () => {
+  it('Jev가 별도 질문을 reset으로 분류하면 중단된 질문을 덮어쓰지 않는다', () => {
     const suspendedQueryPlan: ChatQueryPlan = {
       standaloneQuestion: '이 사람 깃허브 주소 좀 알려줘',
       contextAction: 'reset',
@@ -675,7 +744,7 @@ describe('compileChatRetrievalPlan', () => {
       queryPlan: {
         ...BASE_QUERY_PLAN,
         standaloneQuestion: 'Leemage는 비용을 어떻게 줄였어?',
-        contextAction: 'resolve_clarification',
+        contextAction: 'reset',
         targetSelection: {
           kind: 'candidate',
           entityId: LEEMAGE_CANDIDATE.entityId,

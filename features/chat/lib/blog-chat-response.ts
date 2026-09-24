@@ -81,7 +81,7 @@ export function finalizeBlogChatResponse({
       matches,
     ),
     citations,
-    grounded: true,
+    grounded: citations.length > 0,
   }
 }
 

@@ -192,7 +192,7 @@ describe('finalizeBlogChatResponse', () => {
     expect(result).toEqual({
       answer: '블로그의 공개 콘텐츠를 근거로 답합니다.',
       citations: [],
-      grounded: true,
+      grounded: false,
     })
   })
 })

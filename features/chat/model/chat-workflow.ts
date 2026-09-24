@@ -2,14 +2,12 @@ import { Annotation, END, START, StateGraph } from '@langchain/langgraph'
 import type { ChatActivityEvent } from 'lee-chat-sdk'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
-import {
-  planChatIntent,
-  type PlanChatIntentResult,
-} from '@/features/chat/api/plan-chat-intent-patch'
+import { verifyChatEvidenceWithJev } from '@/features/chat/api/verify-chat-evidence-with-jev'
+import type { PlanChatIntentResult } from '@/features/chat/model/chat-plan-result'
+import { planChatIntentWithJev } from '@/features/chat/api/plan-chat-intent-with-jev'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
 import { buildChatRefusalResponse } from '@/features/chat/lib/build-chat-refusal-response'
-import { isPrivateChatContactQuestion } from '@/features/chat/lib/chat-contact-question'
 import { buildFollowUpSuggestions } from '@/features/chat/lib/build-follow-up-suggestions'
 import { buildChatRetrievalPlanCacheKey } from '@/features/chat/lib/chat-intent-cache-key'
 import { matchChatEntityCandidates } from '@/features/chat/lib/match-chat-entity-candidates'
@@ -72,13 +70,14 @@ interface ChatWorkflowDependencies {
   executeRetrievalPlan: (params: {
     plan: ChatRetrievalPlan
     locale: BlogChatRequest['locale']
-    hasConversationContext?: boolean
     embedQuestion?: (question: string) => Promise<number[]>
   }) => Promise<ExecuteChatRetrievalPlanResult>
   answerQuestion: (params: {
     question: string
     matches: ChatEvidenceRecord[]
+    requiredCitationSlugs?: string[]
   }) => Promise<AnswerQuestionDependencyResult>
+  verifyEvidence: typeof verifyChatEvidenceWithJev
   getCachedResponse: (
     cacheKey: string,
   ) => BlogChatResponse | null | Promise<BlogChatResponse | null>
@@ -199,6 +198,12 @@ const CHAT_WORKFLOW_RESPONSES = {
     OWNER_IDENTITY: '이 블로그의 주인은 {ownerName}입니다.',
     CONTACT_INTRO: '공개된 연락 채널은 다음과 같습니다.',
     CONTACT_OUTRO: '자세한 정보는 소개 페이지에서 확인할 수 있어요.',
+    SOCIAL: {
+      greeting: '안녕하세요! 무엇이 궁금하세요?',
+      thanks: '도움이 됐다니 기뻐요. 또 궁금한 게 있으면 물어봐 주세요.',
+      farewell: '다음에 또 만나요!',
+      acknowledgement: '고마워요. 필요한 게 있으면 언제든 말씀해 주세요.',
+    },
   },
   en: {
     CLARIFICATION: 'Please specify the target needed to answer the question.',
@@ -206,6 +211,12 @@ const CHAT_WORKFLOW_RESPONSES = {
     OWNER_IDENTITY: 'The owner of this blog is {ownerName}.',
     CONTACT_INTRO: 'The public contact channels are:',
     CONTACT_OUTRO: 'You can find the details on the About page.',
+    SOCIAL: {
+      greeting: 'Hello! What would you like to know?',
+      thanks: 'Glad I could help. Feel free to ask again.',
+      farewell: 'See you next time!',
+      acknowledgement: 'Thank you. Let me know if I can help.',
+    },
   },
 } as const
 
@@ -213,68 +224,20 @@ const DIRECT_CHAT_EXECUTION_KINDS = new Set<ChatRetrievalPlan['executionKind']>(
   [
     'clarification',
     'direct_profile',
+    'direct_catalog',
     'social_reply',
     'identity',
     'owner_identity',
     'contact',
+    'private_contact',
   ],
 )
-
-const CHAT_CONTACT_METHOD_ALIASES = {
-  GitHub: ['github', '깃허브'],
-  LinkedIn: ['linkedin', '링크드인'],
-  Email: ['email', 'e-mail', '이메일', '메일'],
-} as const
-
-interface RequestedContactMethodSelection {
-  hasSpecificRequest: boolean
-  methods: ChatContactProfile['methods']
-}
-
-function selectRequestedContactMethods(params: {
-  question: string
-  methods: ChatContactProfile['methods']
-}): RequestedContactMethodSelection {
-  const normalizedQuestion = params.question.toLowerCase()
-  const requestedMethodLabels = Object.entries(
-    CHAT_CONTACT_METHOD_ALIASES,
-  ).flatMap(([methodLabel, aliases]) => {
-    return aliases.some((alias) => normalizedQuestion.includes(alias))
-      ? [methodLabel.toLowerCase()]
-      : []
-  })
-
-  if (requestedMethodLabels.length === 0) {
-    return {
-      hasSpecificRequest: false,
-      methods: params.methods,
-    }
-  }
-
-  return {
-    hasSpecificRequest: true,
-    methods: params.methods.filter((method) => {
-      const normalizedMethod = `${method.label} ${method.url}`.toLowerCase()
-
-      return requestedMethodLabels.some((requestedMethodLabel) => {
-        return normalizedMethod.includes(requestedMethodLabel)
-      })
-    }),
-  }
-}
 
 function buildContactResponse(params: {
   request: BlogChatRequest
   contactProfile: ChatContactProfile | null
   retrievalPlan: ChatRetrievalPlan
 }): BlogChatResponse {
-  if (isPrivateChatContactQuestion(params.retrievalPlan.standaloneQuestion)) {
-    return buildChatRefusalResponse({
-      locale: params.request.locale,
-      refusalReason: 'insufficient_search_match',
-    })
-  }
-
   const contactProfile = params.contactProfile
 
   if (!contactProfile || contactProfile.methods.length === 0) {
@@ -285,15 +248,17 @@ function buildContactResponse(params: {
   }
 
   const responses = CHAT_WORKFLOW_RESPONSES[params.request.locale]
-  const contactMethodSelection = selectRequestedContactMethods({
-    question: params.retrievalPlan.standaloneQuestion,
-    methods: contactProfile.methods,
-  })
+  const selectedChannels = params.retrievalPlan.contactChannels
+  const selectedMethods = selectedChannels
+    ? contactProfile.methods.filter((method) => {
+        return selectedChannels.some((channel) => {
+          return method.label.toLowerCase() === channel ||
+            (channel === 'email' && method.url.startsWith('mailto:'))
+        })
+      })
+    : contactProfile.methods
 
-  if (
-    contactMethodSelection.hasSpecificRequest &&
-    contactMethodSelection.methods.length === 0
-  ) {
+  if (selectedMethods.length === 0) {
     return buildChatRefusalResponse({
       locale: params.request.locale,
       refusalReason: 'insufficient_search_match',
@@ -303,7 +268,7 @@ function buildContactResponse(params: {
   return {
     answer: [
       responses.CONTACT_INTRO,
-      ...contactMethodSelection.methods.map((method) => {
+      ...selectedMethods.map((method) => {
         return `- ${method.label}: ${method.url}`
       }),
       '',
@@ -321,10 +286,74 @@ function buildContactResponse(params: {
   }
 }
 
+function completeRequestedDirectFacts(params: {
+  response: BlogChatResponse
+  retrievalPlan: ChatRetrievalPlan | null
+  assistantProfile: ChatAssistantProfile | null
+  contactProfile: ChatContactProfile | null
+  locale: BlogChatRequest['locale']
+}): BlogChatResponse {
+  const { response, retrievalPlan, assistantProfile, contactProfile } = params
+
+  if (response.refusalReason || retrievalPlan?.responseScope !== 'multiple') {
+    return response
+  }
+
+  const additions: string[] = []
+  const ownerName = assistantProfile?.ownerName
+
+  if (
+    retrievalPlan.responseFacets?.includes('owner_identity') &&
+    ownerName && !response.answer.includes(ownerName)
+  ) {
+    additions.push(CHAT_WORKFLOW_RESPONSES[params.locale].OWNER_IDENTITY.replace('{ownerName}', ownerName))
+  }
+
+  if (retrievalPlan.responseFacets?.includes('public_contact') && contactProfile) {
+    const requestedChannels = retrievalPlan.contactChannels ?? []
+    const requestedMethods = contactProfile.methods.filter((method) => {
+      return requestedChannels.some((channel) => {
+        return method.label.toLowerCase() === channel ||
+          (channel === 'email' && method.url.startsWith('mailto:'))
+      })
+    })
+
+    for (const method of requestedMethods) {
+      const hasExactContactUrl = response.answer.split(method.url).slice(1).some((suffix) => {
+        return !suffix.startsWith('/')
+      })
+
+      if (!hasExactContactUrl) {
+        additions.push(`${method.label}: ${method.url}`)
+      }
+    }
+  }
+
+  if (additions.length === 0) {
+    return response
+  }
+
+  const profileCitation = contactProfile && {
+    title: contactProfile.title,
+    url: contactProfile.aboutUrl,
+    sectionTitle: null,
+    sourceCategory: 'profile' as const,
+  }
+
+  return {
+    ...response,
+    answer: [...additions, response.answer].join('\n\n'),
+    citations: profileCitation && !response.citations.some((citation) => {
+      return citation.url === profileCitation.url
+    })
+      ? [profileCitation, ...response.citations]
+      : response.citations,
+  }
+}
+
 async function executeDefaultRetrievalPlan(params: {
   plan: ChatRetrievalPlan
   locale: BlogChatRequest['locale']
-  hasConversationContext?: boolean
   embedQuestion?: (question: string) => Promise<number[]>
 }): Promise<ExecuteChatRetrievalPlanResult> {
   const blogRecords: ChatEvidenceRecord[] = (
@@ -345,16 +374,16 @@ async function executeDefaultRetrievalPlan(params: {
     locale: params.locale,
     blogRecords,
     curatedRecords,
-    hasConversationContext: params.hasConversationContext,
     embedQuestion: params.embedQuestion,
   })
 }
 
 const DEFAULT_DEPENDENCIES: ChatWorkflowDependencies = {
   getEntityCandidates: getChatEntityCandidates,
-  planQuery: planChatIntent,
+  planQuery: planChatIntentWithJev,
   executeRetrievalPlan: executeDefaultRetrievalPlan,
   answerQuestion: answerBlogQuestion,
+  verifyEvidence: verifyChatEvidenceWithJev,
   getCachedResponse: getCachedBlogChatResponse,
   setCachedResponse: setCachedBlogChatResponse,
   findSemanticResponse: findSemanticCachedBlogChatResponse,
@@ -411,12 +440,26 @@ function buildChatWorkflow(
       const allCandidates = await dependencies.getEntityCandidates(
         state.request.locale,
       )
+      const currentCandidates = matchChatEntityCandidates({
+        question: state.request.question,
+        candidates: allCandidates,
+      })
+      const previousAnswer = state.request.conversationHistory.at(-1)?.answer
+      const previousAnswerCandidates = previousAnswer
+        ? matchChatEntityCandidates({
+            question: previousAnswer,
+            candidates: allCandidates,
+          })
+        : []
+      const uniqueCandidates = new Map(
+        [...currentCandidates, ...previousAnswerCandidates].map((candidate) => [
+          candidate.entityId,
+          candidate,
+        ]),
+      )
 
       return {
-        entityCandidates: matchChatEntityCandidates({
-          question: state.request.question,
-          candidates: allCandidates,
-        }).filter((candidate) => {
+        entityCandidates: [...uniqueCandidates.values()].filter((candidate) => {
           return candidate.kind !== 'assistant'
         }),
         graphPath: ['resolve-context'],
@@ -564,9 +607,9 @@ function buildChatWorkflow(
       if (retrievalPlan.executionKind === 'social_reply') {
         return {
           response: {
-            answer:
-              state.assistantProfile?.greetingAnswer ??
-              CHAT_WORKFLOW_RESPONSES[state.request.locale].SOCIAL_REPLY,
+            answer: CHAT_WORKFLOW_RESPONSES[state.request.locale].SOCIAL[
+              retrievalPlan.socialResponseKind ?? 'greeting'
+            ],
             citations: [],
             grounded: false,
           },
@@ -618,10 +661,19 @@ function buildChatWorkflow(
         }
       }
 
+      if (retrievalPlan.executionKind === 'private_contact') {
+        return {
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: 'insufficient_search_match',
+          }),
+          graphPath: ['execute-direct'],
+        }
+      }
+
       const execution = await dependencies.executeRetrievalPlan({
         plan: retrievalPlan,
         locale: state.request.locale,
-        hasConversationContext: state.request.conversationHistory.length > 0,
         embedQuestion: resolveQuestionEmbedding,
       })
 
@@ -652,7 +704,6 @@ function buildChatWorkflow(
       const execution = await dependencies.executeRetrievalPlan({
         plan: state.retrievalPlan,
         locale: state.request.locale,
-        hasConversationContext: state.request.conversationHistory.length > 0,
         embedQuestion: resolveQuestionEmbedding,
       })
 
@@ -690,9 +741,33 @@ function buildChatWorkflow(
         return { graphPath: ['generate-answer'] }
       }
 
+      if (
+        state.execution?.kind === 'evidence' &&
+        state.execution.lexicalMatches.length === 0 &&
+        !(await dependencies.verifyEvidence({
+          question: state.retrievalPlan.standaloneQuestion,
+          matches: state.matches,
+        }))
+      ) {
+        return {
+          response: buildChatRefusalResponse({
+            locale: state.request.locale,
+            refusalReason: 'insufficient_search_match',
+          }),
+          graphPath: ['generate-answer'],
+        }
+      }
+
       const answerResult = await dependencies.answerQuestion({
         question: state.retrievalPlan.standaloneQuestion,
         matches: state.matches,
+        ...(state.retrievalPlan.operation === 'compare'
+          ? {
+              requiredCitationSlugs: state.retrievalPlan.canonicalTargets.flatMap(
+                (target) => target.slug ? [target.slug] : [],
+              ),
+            }
+          : {}),
       })
 
       if (!answerResult.ok || !answerResult.draftAnswer) {
@@ -735,7 +810,13 @@ function buildChatWorkflow(
         }
       }
 
-      const response = parsedResponse.data
+      const response = completeRequestedDirectFacts({
+        response: parsedResponse.data,
+        retrievalPlan: state.retrievalPlan,
+        assistantProfile: state.assistantProfile,
+        contactProfile: state.contactProfile,
+        locale: state.request.locale,
+      })
       const validatedResponse =
         response.grounded && response.citations.length > 0
           ? BlogChatResponseSchema.parse({

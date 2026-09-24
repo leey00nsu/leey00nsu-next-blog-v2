@@ -62,25 +62,6 @@ const CHAT_RAG_CHUNKING_VERSION = [
   `seq${EMBEDDING_MAXIMUM_SEQUENCE_LENGTH}`,
 ].join('-')
 
-const DETERMINISTIC_QUERY_PATTERNS = [
-  '최신',
-  '최근',
-  '오래된',
-  '가장 오래된',
-  '첫 글',
-  '처음 글',
-  'latest',
-  'recent',
-  'oldest',
-  'oldest post',
-  'first post',
-  '추천',
-  'recommend',
-  'recommended',
-  '추천해줘',
-  '추천해 줘',
-] as const
-
 export const CHAT_RAG = {
   DATABASE: {
     CONNECTION_TIMEOUT_MILLISECONDS:
@@ -135,8 +116,5 @@ export const CHAT_RAG = {
       CHAT_RAG_DEFAULTS.MAXIMUM_RELATION_MATCH_COUNT,
     MINIMUM_EMBEDDING_TOKEN_LENGTH:
       CHAT_RAG_DEFAULTS.MINIMUM_EMBEDDING_TOKEN_LENGTH,
-  },
-  ROUTING: {
-    DETERMINISTIC_QUERY_PATTERNS,
   },
 } as const

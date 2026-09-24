@@ -362,6 +362,8 @@ function buildEvidenceEntry(params: {
     `- evidence_id=${match.id}`,
     `- source=${match.sourceCategory}`,
     `- title=${match.title}`,
+    `  published_at=${match.publishedAt ?? ''}`,
+    `  evidence_time=${match.evidenceTime?.value ?? ''}`,
     `  section=${sectionLabel}`,
     `  url=${match.url}`,
     `  excerpt=${match.excerpt}`,

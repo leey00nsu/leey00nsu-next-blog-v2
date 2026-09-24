@@ -5,17 +5,19 @@ import {
   ChatRequestedFieldSchema,
   ChatTargetSchema,
 } from '@/features/chat/model/chat-plan-primitives'
-import { ChatQueryOperationSchema } from '@/features/chat/model/chat-query-plan'
+import { ChatCatalogRequestSchema, ChatContactChannelSchema, ChatQueryOperationSchema, ChatResponseFacetSchema, ChatSocialResponseKindSchema } from '@/features/chat/model/chat-query-plan'
 
 export const CHAT_EXECUTION_KINDS = [
   'clarification',
   'direct_metadata',
+  'direct_catalog',
   'direct_profile',
   'retrieve_and_generate',
   'social_reply',
   'identity',
   'owner_identity',
   'contact',
+  'private_contact',
 ] as const
 
 export const CHAT_SOURCE_STRATEGIES = ['all', 'only', 'prefer'] as const
@@ -41,6 +43,11 @@ export const ChatRetrievalPlanSchema = z
       .min(1)
       .max(CHAT_RETRIEVAL_PLAN_LIMITS.MAXIMUM_QUESTION_CHARACTERS),
     operation: ChatQueryOperationSchema,
+    catalogRequest: ChatCatalogRequestSchema.optional(),
+    responseScope: z.enum(['single', 'multiple']).optional(),
+    socialResponseKind: ChatSocialResponseKindSchema.optional(),
+    contactChannels: z.array(ChatContactChannelSchema).optional(),
+    responseFacets: z.array(ChatResponseFacetSchema).optional(),
     canonicalTargets: z
       .array(ChatTargetSchema)
       .max(CHAT_RETRIEVAL_PLAN_LIMITS.MAXIMUM_TARGET_COUNT),

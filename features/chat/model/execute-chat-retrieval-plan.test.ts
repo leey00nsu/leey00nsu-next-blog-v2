@@ -114,6 +114,37 @@ const UNDATED_INDEX_RECORD: ChatEvidenceRecord = {
 }
 
 describe('executeChatRetrievalPlan', () => {
+  it('공개 글 전체에서 가장 오래된 글을 결정적으로 고른다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: { ...SINGLE_METADATA_PLAN, executionKind: 'direct_catalog', catalogRequest: { kind: 'oldest' } },
+      locale: 'ko', blogRecords: [], curatedRecords: [],
+    })
+    expect(result).toMatchObject({
+      kind: 'direct', response: { answer: expect.stringContaining('밥 한끼 하자 회고') },
+    })
+  })
+
+  it('2024년 공개 글을 검색 상위 K와 무관하게 전부 반환한다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: { ...SINGLE_METADATA_PLAN, executionKind: 'direct_catalog', catalogRequest: { kind: 'year', year: 2024 } },
+      locale: 'ko', blogRecords: [], curatedRecords: [],
+    })
+    expect(result).toMatchObject({ kind: 'direct' })
+    if (result.kind !== 'direct') throw new Error('Expected a direct catalog response.')
+    expect(result.response.citations).toHaveLength(8)
+    expect(result.response.answer).toContain('8편')
+  })
+
+  it('공개 프로젝트의 저장소 링크 목록을 모두 반환한다', async () => {
+    const result = await executeChatRetrievalPlan({
+      plan: { ...SINGLE_METADATA_PLAN, executionKind: 'direct_catalog', catalogRequest: { kind: 'repositories' } },
+      locale: 'ko', blogRecords: [], curatedRecords: [],
+    })
+    expect(result).toMatchObject({ kind: 'direct' })
+    if (result.kind !== 'direct') throw new Error('Expected a direct catalog response.')
+    expect(result.response.citations).toHaveLength(8)
+    expect(result.response.answer).toContain('github.com')
+  })
   it.each(['latest', 'oldest'] as const)(
     '%s metadata는 날짜가 없는 항목을 고르지 않는다',
     async (temporalOrder) => {
@@ -217,7 +248,7 @@ describe('executeChatRetrievalPlan', () => {
     )
   })
   it.each(['latest', 'oldest'] as const)(
-    '%s 문서 선택은 리랭커가 섹션 순서를 뒤집어도 유지한다',
+    '%s 문서의 모든 후보가 들어가면 리랭크 없이 문서를 유지한다',
     async (temporalOrder) => {
       const expectedRecord =
         temporalOrder === 'latest' ? RECENT_AI_PROJECT : OLDER_AI_PROJECT
@@ -241,19 +272,13 @@ describe('executeChatRetrievalPlan', () => {
         locale: 'ko',
         blogRecords: [],
         curatedRecords: [OLDER_AI_PROJECT, RECENT_AI_PROJECT, extraSection],
-        hasConversationContext: true,
         retrieveSemanticMatches: async () => [],
         rerankMatches,
       })
-      expect(rerankMatches).toHaveBeenCalledOnce()
-      expect(
-        rerankMatches.mock.calls[0][0].matches.every(
-          (match) => match.slug === expectedRecord.slug,
-        ),
-      ).toBe(true)
+      expect(rerankMatches).not.toHaveBeenCalled()
       expect(result.matches.map((match) => match.id)).toEqual([
-        extraSection.id,
         expectedRecord.id,
+        extraSection.id,
       ])
     },
   )
@@ -264,7 +289,6 @@ describe('executeChatRetrievalPlan', () => {
       locale: 'ko',
       blogRecords: [],
       curatedRecords: [OLDER_AI_PROJECT, RECENT_AI_PROJECT],
-      hasConversationContext: true,
       retrieveSemanticMatches: async () => [],
       rerankMatches: async ({ matches }) => ({
         matches: matches.toReversed(),
@@ -711,7 +735,7 @@ describe('executeChatRetrievalPlan', () => {
     ).rejects.toThrow('semantic retrieval failed')
   })
 
-  it('여러 근거를 비교해야 하는 긴 질문은 rerank 결과 순서를 최종 근거로 쓴다', async () => {
+  it('긴 질문이어도 모든 후보를 사용하면 추가 리랭크를 생략한다', async () => {
     const secondaryRecord: ChatEvidenceRecord = {
       ...RECENT_AI_PROJECT,
       id: 'ko/project/ai-document-automation',
@@ -737,8 +761,8 @@ describe('executeChatRetrievalPlan', () => {
       },
     })
 
-    expect(result).toMatchObject({ kind: 'evidence', reranked: true })
-    expect(result.matches[0]?.id).toBe(secondaryRecord.id)
+    expect(result).toMatchObject({ kind: 'evidence', reranked: false })
+    expect(result.matches.map((match) => match.id)).toContain(secondaryRecord.id)
   })
 
   it('짧고 단순한 질문은 rerank를 호출하지 않는다', async () => {

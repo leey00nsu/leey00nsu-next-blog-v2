@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
 const generateTextMock = vi.fn()
+const planChatIntentWithJevMock = vi.fn()
 
 vi.mock('ai', () => ({
   generateText: generateTextMock,
@@ -11,6 +12,9 @@ vi.mock('ai', () => ({
   Output: { object: ({ schema }: { schema: unknown }) => ({ schema }) },
 }))
 vi.mock('@ai-sdk/openai', () => ({ openai: vi.fn(() => 'mock-model') }))
+vi.mock('@/features/chat/model/plan-chat-intent-with-jev', () => ({
+  planChatIntentWithJev: planChatIntentWithJevMock,
+}))
 
 const LEEMAGE_CANDIDATE = {
   entityId: 'project/leemage',
@@ -79,6 +83,8 @@ describe('planChatIntent', () => {
     // 실패 경로의 진단 로그는 의도된 출력이므로 테스트 로그에서는 감춘다.
     vi.spyOn(console, 'error').mockImplementation(() => {})
     generateTextMock.mockReset()
+    planChatIntentWithJevMock.mockReset()
+    planChatIntentWithJevMock.mockResolvedValue(null)
     process.env.OPENAI_API_KEY = 'test-key'
     process.env.OPENAI_BLOG_CHAT_ROUTER_MODEL = 'test-router-model'
   })
@@ -90,8 +96,23 @@ describe('planChatIntent', () => {
   })
 
   it.each(['넌 누구야?', '넌 누구지?'])(
-    '챗봇 정체성 질문 "%s"을 모델 호출 없이 직접 계획한다',
+    'Jev가 분류한 챗봇 정체성 질문 "%s"을 LLM 호출 없이 직접 계획한다',
     async (question) => {
+      planChatIntentWithJevMock.mockResolvedValueOnce({
+        standaloneQuestion: question,
+        contextAction: 'reset',
+        targetSelection: { kind: 'none' },
+        operation: 'identity',
+        sourceSelection: { mode: 'all' },
+        temporalSelection: { mode: 'none' },
+        requestedFields: [],
+        requiredConcepts: [],
+        optionalConcepts: [],
+        missingSlots: [],
+        clarificationQuestion: null,
+        confidence: 'high',
+        reason: 'Jev selected the identity route.',
+      })
       const { planChatIntent } = await import('./plan-chat-intent-patch')
 
       const result = await planChatIntent({
@@ -155,7 +176,9 @@ describe('planChatIntent', () => {
   it('구조화 출력이 연속으로 어긋나도 재계획 예산 안에서 계획을 세운다', async () => {
     generateTextMock
       .mockResolvedValueOnce({ output: { operation: 'answer' } })
-      .mockResolvedValueOnce({ output: { operation: 'answer', confidence: 'max' } })
+      .mockResolvedValueOnce({
+        output: { operation: 'answer', confidence: 'max' },
+      })
       .mockResolvedValueOnce({ output: LEEMAGE_PLAN })
     const { planChatIntent } = await import('./plan-chat-intent-patch')
 

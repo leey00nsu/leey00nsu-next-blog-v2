@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18.18-brightgreen" alt="Node.js">
+  <img src="https://img.shields.io/badge/node-22.x-brightgreen" alt="Node.js 22">
   <a href="https://blog2.leey00nsu.com"><img src="https://img.shields.io/badge/demo-live-blue" alt="Demo"></a>
 </p>
 
@@ -88,11 +88,8 @@ pnpm dev
 - Select text in editor to generate AI images
 - Adapter pattern for various providers
 - Blog Q&A chatbot
-  - Converts MDX into lexical search records at build time and refreshes a Postgres (`pgvector`) RAG index after deployment
-  - Routes questions first so greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
-  - Uses lexical search and curated sources (profile/project/internal assistant docs) first for normal grounded questions
-  - Uses Postgres embedding RAG first for whole-blog synthesis questions
-  - Validates citations and refuses when evidence is weak
+  - Jev-based question routing, hybrid lexical and Postgres (`pgvector`) retrieval, and evidence validation
+  - See the [chatbot guide](./docs/chatbot.en.md) for architecture and operations
 
 ### 📄 PDF Export
 
@@ -123,7 +120,7 @@ pnpm dev
 
 ### Prerequisites
 
-- Node.js 18.18+ (Recommended: Node.js 20 LTS)
+- Node.js 22.12 or newer, below 23 (per `package.json` engines)
 - pnpm installed
 - GitHub OAuth App, GitHub Personal Access Token, OpenAI API Key
 
@@ -152,7 +149,7 @@ The most important groups are:
 
 - Auth.js / GitHub OAuth
 - GitHub auto-commit token
-- OpenAI translation / chat / router model settings
+- OpenAI translation/chat models and TypeSafe Jev settings
 - Modal embedding endpoint and proxy auth
 - Postgres Chat RAG connection settings
 - Blog chat limits such as top-k, minimum lexical score, input length, short-window rate limit, concurrent request limit, daily quota, and cache TTL
@@ -169,110 +166,21 @@ The most important groups are:
 # Development server
 pnpm dev
 
-# Postgres RAG indexing (optional for local semantic search)
-pnpm run gen:chat-rag-postgres
-
 # Production build/run
 pnpm build
 pnpm start
-
-# Docker/Coolify build command
-pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
 ```
 
 > The `postbuild` step starts a temporary server to auto-generate PDFs.  
 > Playwright Chromium must be installed before building.
 
-### Run Local Postgres (`pgvector`)
-
-To test the full RAG flow locally, start Postgres first.
-
-`docker compose` reads the root `.env` file by default. If you use compose locally, keep `.env.example` mirrored into `.env` or your local environment file.
-
-```bash
-docker compose -f docker-compose.postgres.yml up -d
-```
-
-The defaults match `.env.example`, and you can override them with these keys.
-
-```env
-BLOG_CHAT_RAG_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/leey00nsu_blog
-BLOG_CHAT_RAG_POSTGRES_DB=leey00nsu_blog
-BLOG_CHAT_RAG_POSTGRES_USER=postgres
-BLOG_CHAT_RAG_POSTGRES_PASSWORD=postgres
-BLOG_CHAT_RAG_POSTGRES_PORT=5432
-```
-
-Only after Postgres is running should you run:
-
-```bash
-pnpm run gen:chat-rag-postgres
-```
-
-### Chat Index Generation
-
-- During `predev`, `prebuild`, and test lifecycles, `pnpm run gen:content` generates image metadata, post, project, chat, and search data.
-- Generated `*.generated.ts` files are build artifacts and are not tracked by Git.
-- Commit only the source MDX and images; the required data is refreshed automatically before development, testing, and builds.
-- Instead of crawling `.next` HTML output, this project generates **lexical search records and Postgres RAG input data directly from source MDX**.
-- Long sections are split into overlapping sub-chunks on sentence boundaries, so evidence near the end of a section stays in the index.
-- Embedding input is ordered as title → section title → content → term list. The model truncates the tail at its token limit, giving content priority over the term list. The duplicate excerpt is omitted.
-- The app and service token limits (`BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` and `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`) both default to 128. The app includes its value in the index recipe version. Changing to 256 did not improve the evaluated retrieval metrics.
-- Configure both limits together. Compatibility checks use the app configuration; they do not detect a service-only configuration change.
-- `gen:blog-search` generates `entities/post/config/blog-search-records.generated.ts`.
-- `gen:chat-rag-postgres` writes a new Postgres RAG `index_version` from lexical and curated sources and only activates it at the end.
-- Re-indexing reuses vectors from the previously active index when the provider, model, index recipe, and embedding input are all unchanged, so only changed chunks are embedded again. The run log reports how many embeddings were reused and how many were created.
-- Each new index records the embedding provider, model ID, vector dimension, and index recipe version (chunk boundary rules plus embedding input composition). If any of them differs from the current configuration, the index is not used for semantic retrieval.
-- Ordinary `gen:chat-rag-postgres` skips indexing when the embedding provider or Postgres connection is missing. `verify:chat-rag` fails when required configuration is missing.
-
-The semantic candidate count (`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, default 8) and the similarity floor (`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, default 0.15) depend on corpus size and embedding model, so they are configurable through environment variables. Compare the live semantic metrics above before and after changing them instead of deciding from the lexical-only run.
-
-The generated-corpus regression check is part of the test suite; use `pnpm run test:run` for a single run. It checks that expected evidence exists, that every case reaches the top three candidates, and that aggregate recall@1 ≥ 0.8 and MRR ≥ 0.85. Failure reports distinguish missing corpus references from retrieval regressions.
-
-To check the hybrid path including the active Postgres index and embedding endpoint, run the following. Every case uses production reranker eligibility. The check requires semantic retrieval, an expected-evidence hit rate ≥ 0.8, and successful reranker calls when attempted. An OpenAI API key and reranker model configuration are required.
-
-```bash
-BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
-```
-
-Use `pnpm run eval:chat-workflow` to exercise real planning, retrieval and answer generation for three cases: Leemage uploads, the latest post summary and unsupported Kubernetes experience. Response cache reads and writes are disabled. API charges apply. The output includes answers, citations and the evidence sent to the model for manual review. Passing checks routing and citation contracts; it does not guarantee factual correctness or summary completeness.
-
-Cases that lexical retrieval cannot reach run only in the live semantic evaluation, and the default check reports their ids as skipped.
-
-### Coolify / CI-CD Notes
-
-- Make sure the Coolify PostgreSQL service has the `pgvector` extension enabled.
-- Do not put `gen:chat-rag-postgres` inside `pnpm build`.
-- The recommended flow is:
-  1. Coolify detects the Git push and deploys the new application image
-  2. **Post-deployment Command** runs `pnpm run verify:chat-rag`
-  3. Generate content → build a candidate index → evaluate that candidate with live hybrid retrieval → activate only after passing
-- Indexing failures, failed checks and evaluation errors produce a nonzero exit and preserve the active index. Do not lower thresholds to pass a failing evaluation.
-- Successful activation retains the previous active index as `stale`. Older and failed indexes are pruned at the next activation. This protects the search index; it does not roll back the deployed application image.
-- Standalone `gen:chat-rag-postgres` activates without quality checks. Use `verify:chat-rag` for deployments. `eval:chat-workflow` remains a separate check, not an activation gate.
-- Shared database connection waits are limited to 2 seconds and individual queries to 5 seconds. Cache errors fall back to memory or a cache miss, and memory responses are checked for expiration at read time.
-- In production you should at least provide:
-  - `BLOG_CHAT_RAG_DATABASE_URL`
-  - `MODAL_EMBEDDING_BASE_URL`
-  - `MODAL_EMBEDDING_KEY`
-  - `MODAL_EMBEDDING_SECRET`
+For local Postgres, chatbot indexing/evaluation, and Coolify deployment settings, see the [chatbot guide](./docs/chatbot.en.md).
 
 ## Usage
 
 ### Browse Blog
 
 Open `http://localhost:3000/blog` in your browser
-
-### Use Blog Q&A
-
-- Click the `Blog Q&A` button at the bottom-right of blog list/detail and About pages
-- The server routes the question first
-- Greetings, chatbot identity, contact, latest/oldest post, and current-post questions use a direct path
-- Grounded questions search build-generated lexical records, curated sources (About, projects, and assistant-internal documents), and Postgres (`pgvector`) semantic candidates together
-- Final evidence is selected again using question tokens, section titles, search terms, and the scope chosen by the planner
-- The model cannot browse, search externally, or call tools
-- Cache keys use the normalized question so repeated requests cost less
-- To protect the free API, the default policy limits each question to 200 characters and the whole service to 100 questions per day in KST
 
 ### Write/Commit via Studio
 
@@ -312,26 +220,6 @@ Scans `public/posts/{slug}` and `public/about` to create missing locale MDX file
 
 - Click the `Download PDF` button at the top of `/about` page
 - PDFs are auto-generated at build time (`postbuild`) and saved to `public/pdf/portfolio-{locale}.pdf`
-
-### Blog Q&A Safety Constraints
-
-- Search is fully server-controlled. The model cannot search, browse, edit files, or call tools.
-- The LLM is not called when retrieval quality is weak.
-- Only top-k evidence snippets are sent to reduce token cost.
-- Model output is constrained with a JSON schema.
-- The server validates that returned citation URLs exist in the retrieved result set.
-- If validation fails, the endpoint returns a safe refusal instead of the answer.
-
-### Chat Operations Notes
-
-- The current search flow is a hybrid RAG structure that combines build-generated lexical records, curated sources, and Postgres (`pgvector`) Graph-RAG.
-- The Question Planner first chooses the direct response, clarification, or retrieval route, plus the retrieval scope.
-- For retrieval questions, lexical/curated candidates and semantic candidates are collected together. A final evidence selector then chooses the best evidence using question tokens, section titles, search terms, source category, and current-source scope.
-- This approach is used because vector search alone can miss direct evidence for exact names, technology names, or section titles. Lexical search alone can miss questions phrased differently, so the chatbot combines both.
-- Curated sources are high-trust evidence for content the chatbot should answer consistently, such as About, project, and assistant-internal documents. They also include aggregated static evidence such as `profile-tech-stack`, which collects `techStacks` across projects.
-- When there are many candidates or the question is compound, an LLM reranker is used. Reranking works by evidence id so section-level evidence under the same URL can still be distinguished.
-- If Postgres RAG indexing is not configured, lexical retrieval and curated-source answers still work.
-- Exact and semantic caches reduce repeated question cost, and observability events record the retrieval/answer path. When a Postgres connection is configured, both caches live in the `chat_response_cache` table so they are shared across instances; without it they stay in process memory.
 
 ## Project Structure
 

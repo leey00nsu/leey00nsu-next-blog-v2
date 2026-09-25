@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18.18-brightgreen" alt="Node.js">
+  <img src="https://img.shields.io/badge/node-22.x-brightgreen" alt="Node.js 22">
   <a href="https://blog2.leey00nsu.com"><img src="https://img.shields.io/badge/demo-live-blue" alt="Demo"></a>
 </p>
 
@@ -88,11 +88,8 @@ pnpm dev
 - 에디터에서 텍스트 선택 후 AI 이미지 생성
 - 어댑터 패턴으로 다양한 Provider 지원
 - 블로그 Q&A 챗봇
-  - 빌드 시 MDX를 lexical 검색 레코드로 변환하고, 배포 후 Postgres(`pgvector`) 기반 RAG 인덱스를 갱신
-  - Jev가 대화 문맥과 검색 범위를 한 번에 판단하고, 준비된 응답 또는 근거 검색으로 연결
-  - 일반 질문은 lexical 검색과 curated source(소개/프로젝트/assistant 내부 문서)를 우선 사용
-  - 블로그 전체 주제/공통 철학 같은 질문은 Postgres 기반 임베딩 RAG를 우선 사용
-  - 답변은 항상 citation 검증을 거치고, 근거가 부족하면 거절
+  - Jev 기반 질문 분류와 lexical·Postgres(`pgvector`) 혼합 검색, 근거 검증
+  - 구조와 운영 방법은 [챗봇 안내](./docs/chatbot.md) 참고
 
 ### 📄 PDF 내보내기
 
@@ -123,7 +120,7 @@ pnpm dev
 
 ### 사전 요구사항
 
-- Node.js 18.18+ (권장: Node.js 20 LTS)
+- Node.js 22.12 이상, 23 미만 (`package.json`의 `engines` 기준)
 - pnpm 설치
 - GitHub OAuth App, GitHub Personal Access Token, OpenAI API Key
 
@@ -152,7 +149,7 @@ cp .env.example .env.local
 
 - Auth.js / GitHub OAuth
 - GitHub 자동 커밋용 토큰
-- OpenAI 번역/챗봇 모델 및 TypeSafe Jev 질문 라우터 설정
+- OpenAI 번역/챗봇 모델 및 TypeSafe Jev 설정
 - Modal 기반 임베딩 endpoint 및 proxy auth
 - Postgres 기반 Chat RAG 연결 정보
 - 블로그 챗봇 제한값(top-k, 최소 점수, 길이 제한, short-window rate limit, 동시 요청 제한, 일일 quota, 캐시 TTL)
@@ -169,135 +166,21 @@ cp .env.example .env.local
 # 개발 서버
 pnpm dev
 
-# Postgres RAG 인덱싱 (선택, 로컬에서 RAG까지 확인할 때)
-pnpm run gen:chat-rag-postgres
-
 # 프로덕션 빌드/실행
 pnpm build
 pnpm start
-
-# Docker/Coolify 환경 빌드 명령어
-pnpm install && pnpm exec playwright install --with-deps chromium && pnpm run build
 ```
 
 > `postbuild` 단계에서 임시 서버를 띄워 PDF를 자동 생성합니다.  
 > Playwright Chromium이 필요하므로 빌드 전에 설치해야 합니다.
 
-### 로컬 Postgres (`pgvector`) 실행
-
-로컬에서 RAG까지 확인하려면 Postgres를 먼저 띄워야 합니다.
-
-`docker compose`는 기본적으로 루트 `.env`를 읽습니다. 로컬에서 compose까지 함께 쓰려면 `.env.example`을 `.env` 또는 `.env.local`과 동기화해 두는 편이 좋습니다.
-
-```bash
-docker compose -f docker-compose.postgres.yml up -d
-```
-
-기본 연결 정보는 `.env.example`과 동일하고, 아래 값으로 compose를 오버라이드할 수 있습니다.
-
-```env
-BLOG_CHAT_RAG_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/leey00nsu_blog
-BLOG_CHAT_RAG_POSTGRES_DB=leey00nsu_blog
-BLOG_CHAT_RAG_POSTGRES_USER=postgres
-BLOG_CHAT_RAG_POSTGRES_PASSWORD=postgres
-BLOG_CHAT_RAG_POSTGRES_PORT=5432
-```
-
-Postgres가 올라온 뒤에만 아래 명령이 동작합니다.
-
-```bash
-pnpm run gen:chat-rag-postgres
-```
-
-### DB 스키마 관리
-
-스키마는 `prisma/schema.prisma`, 변경 이력은 `prisma/migrations`에서 관리합니다.
-`pnpm dev`, `pnpm start`, RAG 인덱스 생성 전에 Prisma Migrate가 미적용 변경을 실행합니다.
-
-```bash
-pnpm run db:migrate                  # 배포용: 저장된 마이그레이션 적용
-pnpm run db:migrate:dev --name change_name  # 개발용: 스키마 변경으로 새 마이그레이션 생성
-pnpm run db:migrate:status           # 적용 상태 확인
-```
-
-기존 DB를 처음 연결할 때는 백업과 스키마 비교 후 기준 마이그레이션을
-`prisma migrate resolve --applied 20260909000000_initial_schema`로 등록합니다.
-빈 DB는 `pnpm run db:migrate`만 실행합니다. 배포 DB에서는 `migrate dev`나 `db push`를 실행하지 않습니다.
-벡터 검색과 기존 SQL 조회는 `pg`를 사용하며, 테이블 생성·변경은 Prisma Migrate에서만 수행합니다.
-
-### 챗봇 인덱스 생성
-
-- `predev`, `prebuild`, 테스트 단계에서는 `pnpm run gen:content`가 이미지 메타데이터, 게시물, 프로젝트, 챗봇 및 검색 데이터를 생성합니다.
-- 생성된 `*.generated.ts` 파일은 빌드 산출물이므로 Git에서 추적하지 않습니다.
-- 원본 MDX와 이미지만 커밋하면 개발·테스트·빌드 시작 전에 필요한 데이터가 자동으로 갱신됩니다.
-- 이 프로젝트는 `.next` HTML 산출물을 직접 크롤링하지 않고, **원본 MDX를 섹션 단위 lexical 검색 레코드와 Postgres RAG 인덱스 입력 데이터로 생성**합니다.
-- 긴 섹션은 문장 경계를 우선한 겹침 하위 청크로 나누므로 섹션 뒷부분의 근거도 인덱스에 남습니다.
-- 임베딩 입력은 제목 → 섹션 제목 → 본문 → 용어 목록 순서입니다. 모델 토큰 한도가 적용되면 뒤쪽 입력이 잘리므로 본문을 용어 목록보다 우선합니다. 본문 앞부분의 사본인 excerpt는 넣지 않습니다.
-- 임베딩 토큰 한도는 MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(서비스)와 BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH(앱)로 맞춰 두고, 앱은 그 값을 색인 레시피 버전에 포함해 값이 바뀌면 이전 인덱스를 재사용하지 않고 재색인을 요구합니다. 기본값은 모델 학습 길이인 128입니다.
-- 256으로 올려 재색인해도 검색 지표가 좋아지지 않아(오히려 semantic 적중률이 한 케이스 낮아짐) 학습 길이를 유지합니다. 본문을 더 담고 싶다면 긴 문맥으로 학습된 임베딩 모델로 교체하는 편이 맞습니다.
-- `gen:blog-search`는 `entities/post/config/blog-search-records.generated.ts`를 만듭니다.
-- `gen:chat-rag-postgres`는 lexical/curated source를 바탕으로 Postgres RAG 인덱스를 새 `index_version`으로 생성한 뒤 마지막에만 활성화합니다.
-- 재색인은 이전 활성 인덱스와 provider, 모델, 색인 레시피, 임베딩 입력이 모두 같은 chunk의 벡터를 그대로 재사용합니다. 그래서 바뀐 chunk만 다시 임베딩하고, 재사용·신규 임베딩 개수를 실행 로그에 남깁니다.
-- 새 Postgres 인덱스에는 임베딩 provider, 모델 ID, 벡터 차원, 색인 레시피 버전(청크 경계 규칙 + 임베딩 입력 구성)을 기록하며 현재 설정과 일치하지 않으면 semantic 검색에 사용하지 않습니다. 메타데이터가 없는 기존 활성 인덱스도 semantic 검색에서 제외하고 lexical 검색으로 대체하므로, 마이그레이션 뒤 한 번 재색인해야 합니다.
-- 일반 `gen:chat-rag-postgres`는 임베딩 provider 또는 Postgres 연결이 없으면 인덱싱을 건너뜁니다. `verify:chat-rag`는 필수 설정이 없으면 실패합니다.
-- 앱과 Modal의 토큰 길이는 함께 설정해야 합니다. 현재 인덱스 호환성 검사는 앱 설정을 기준으로 하므로 서비스 설정만 바꾸지 마세요.
-
-실제 생성 코퍼스를 대상으로 한 검색 회귀 검사는 테스트 스위트에 포함되어 있습니다. 일회성 실행은 `pnpm run test:run`입니다. 이 검사는 다음을 확인합니다.
-
-- 평가 케이스가 가리키는 기대 근거가 현재 코퍼스에 실제로 있는지(문서 개편으로 케이스가 낡지 않았는지)
-- lexical 검색이 각 케이스의 기대 근거를 답변 후보 상위 3건 안에 넣는지
-- 전체 순위 지표가 recall@1 ≥ 0.8, MRR ≥ 0.85를 유지하는지
-
-실패하면 기대 근거가 코퍼스에 없는 "케이스 무효"인지, 근거는 있는데 순위가 밀린 "검색 회귀"인지 함께 알려줍니다.
-
-활성 Postgres 인덱스와 임베딩 endpoint까지 포함한 hybrid 검색은 다음 명령으로 점검합니다. 모든 케이스에 운영과 같은 리랭커 호출 조건을 적용합니다. semantic 호출 여부, 기대 근거 적중률(≥ 0.8), 리랭커 호출 실패도 검사하며 OpenAI API 키와 리랭커 모델 설정이 필요합니다.
-
-```bash
-BLOG_CHAT_EVALUATE_LIVE_SEMANTIC=true pnpm run eval:chat-retrieval
-```
-
-질문 해석부터 실제 검색·답변 생성까지는 `pnpm run eval:chat-workflow`로 검사합니다. Leemage 업로드 이유, 최신 글 요약, 근거 없는 Kubernetes 경험의 세 사례를 실행하며 응답 캐시 읽기·쓰기는 생략합니다. 실행 중 API 비용이 발생합니다. 답변·인용·모델에 전달한 근거를 출력하므로 내용도 함께 검토하세요. 자동 통과는 경로와 인용 조건의 통과이며, 모든 주장의 사실성이나 요약의 완전성을 보장하지 않습니다.
-
-semantic 후보 수(`BLOG_CHAT_RAG_MAXIMUM_SEMANTIC_CANDIDATES`, 기본 8)와 유사도 하한(`BLOG_CHAT_RAG_MINIMUM_SIMILARITY_SCORE`, 기본 0.15)은 코퍼스 규모와 임베딩 모델에 따라 달라지므로 환경변수로 조정합니다. 값을 바꿀 때는 위 live semantic 평가로 조정 전후 지표를 비교하고, lexical 전용 평가만으로 결정하지 않습니다.
-
-lexical 검색만으로 도달할 수 없는 케이스는 live semantic 평가에서만 실행되며, 기본 검사에서는 skip된 케이스 id를 함께 보고합니다.
-
-### Coolify / CI-CD 운영 메모
-
-- Coolify PostgreSQL 서비스에 `pgvector` extension이 활성화되어 있어야 합니다.
-- `gen:chat-rag-postgres`는 `pnpm build`에 넣지 않는 것을 권장합니다.
-- 권장 흐름은 다음과 같습니다.
-  1. Coolify가 Git push를 감지해 새 이미지를 빌드/배포
-  2. **Post-deployment Command**로 `pnpm run verify:chat-rag` 실행
-  3. 콘텐츠 생성 → 후보 인덱스 생성 → 후보에 대한 live hybrid 평가 → 통과한 경우에만 활성 인덱스 교체
-- 인덱싱 또는 평가가 실패하면 명령은 비정상 종료하고 이전 활성 인덱스를 유지합니다. 평가 오류도 실패로 처리하며 임계값을 낮춰 통과시키지 않습니다.
-- 성공한 뒤에도 직전 활성 인덱스 하나를 `stale` 상태로 보존합니다. 더 오래된 인덱스와 실패한 인덱스는 다음 활성화 때 정리합니다. 이는 검색 인덱스 보호이며 이미 배포된 앱 이미지를 자동으로 되돌리지는 않습니다.
-- `gen:chat-rag-postgres` 단독 실행은 품질 검사 없이 활성화합니다. 배포에는 `verify:chat-rag`를 사용하세요. `eval:chat-workflow`는 별도 실행이며 인덱스 활성화 조건에 포함되지 않습니다.
-- 공유 DB 연결 대기는 2초, 개별 쿼리는 5초로 제한됩니다. 캐시 오류 시 메모리 캐시 또는 캐시 미스로 처리하며 메모리 응답도 조회 시 TTL을 검사합니다.
-- 운영 환경에서는 최소한 아래 값이 필요합니다.
-  - `BLOG_CHAT_RAG_DATABASE_URL`
-  - `MODAL_EMBEDDING_BASE_URL`
-  - `MODAL_EMBEDDING_KEY`
-  - `MODAL_EMBEDDING_SECRET`
+로컬 Postgres, 챗봇 색인·평가, Coolify 배포 설정은 [챗봇 안내](./docs/chatbot.md)에 정리했습니다.
 
 ## 사용 방법
 
 ### 블로그 보기
 
 브라우저에서 `http://localhost:3000/blog` 접속
-
-### 블로그 Q&A 사용
-
-- 블로그 목록/상세 및 소개 페이지 우하단의 `블로그 Q&A` 버튼을 클릭
-- 질문을 입력하면 서버가 먼저 질문을 라우팅합니다.
-- TypeSafe Jev가 현재 질문과 대화 상태를 함께 보고 준비된 응답 경로와 근거 검색 경로를 선택합니다. 검색 질문의 대상·작업·자료 범위·시간 조건·확인 질문도 같은 Jev 호출에서 판단합니다.
-- 준비된 응답은 코드가 즉시 반환하고, 그 밖의 질문은 근거를 검색한 뒤 답변 모델이 답합니다. TypeSafe API 키가 없거나 Jev 호출에 실패하면 안전하게 답변을 거절합니다.
-- 근거가 필요한 질문은 빌드 시 생성한 lexical 검색 레코드, curated source(소개/프로젝트/assistant 내부 문서), Postgres(`pgvector`) 기반 semantic 검색 후보를 함께 조회합니다.
-- 최종 근거는 질문 토큰, section title, searchTerms, Jev가 정한 scope를 기준으로 다시 선택합니다.
-- lexical 근거 없이 의미 검색만으로 후보가 나온 경우, Jev가 질문과 근거의 직접 관련성을 확인한 뒤 답변합니다.
-- 모델은 외부 브라우징/툴 호출 없이 제공된 근거만 사용합니다.
-- 캐시는 질문 정규화 결과 기준으로 적용되어 같은 질문의 반복 비용을 줄임
-- 무료 운영 보호를 위해 질문 길이는 기본 200자로 제한되고, KST 기준 서비스 전체 일일 질문 수도 기본 100회로 제한됨
 
 ### Studio로 글 작성/커밋
 
@@ -338,27 +221,6 @@ MDX_I18N_SOURCE=ko MDX_I18N_TARGETS=en pnpm gen:mdx-i18n
 - `/about` 페이지 상단의 `PDF 다운로드` 버튼을 클릭
 - PDF는 `pnpm dev` 시작 시와 빌드 후(`postbuild`) 자동 생성됩니다. 한국어·영어 이력서는 `public/pdf/resume-{locale}.pdf`, 포트폴리오는 `public/pdf/portfolio-{locale}.pdf`에 저장됩니다.
 - 개발 모드는 서버가 준비된 뒤 PDF 4개를 재생성하고 서버를 계속 유지합니다. 실행 중 문서 변경은 다음 `pnpm dev` 시작 시 PDF에 반영됩니다. 개발 서버는 기본 3000번 포트를 사용하며, `PORT=3001 pnpm dev`처럼 터미널에서 지정한 값만 반영합니다(`.env`의 `PORT`는 무시). 개발 모드 PDF는 같은 서버를 사용하고, 빌드 후 PDF 생성용 서버는 `PDF_SERVER_PORT`로 설정합니다.
-
-### 블로그 Q&A 안전성 제한
-
-- 검색은 서버가 통제합니다. 모델이 직접 검색/브라우징/파일 수정/툴 호출을 하지 않습니다.
-- 검색 결과가 약하면 LLM을 호출하지 않습니다.
-- 모델에는 top-k 근거만 전달해 비용을 줄입니다.
-- 모델 응답은 JSON 스키마 형식으로 강제합니다.
-- 서버는 모델이 반환한 citation URL이 실제 검색 결과 집합에 포함되는지 검증합니다.
-- 검증 실패 시 답변 대신 안전한 거절 응답을 반환합니다.
-
-### 챗봇 운영 메모
-
-- 현재 검색은 빌드 시 생성한 lexical 검색 레코드, curated source, Postgres(`pgvector`) 기반 Graph-RAG를 함께 사용하는 hybrid RAG 구조입니다.
-- Jev는 한 호출에서 대화 상태, direct response 여부, clarification, 검색 scope를 판단합니다. 근거가 필요한 질문은 별도 LLM Question Planner를 거치지 않습니다.
-- retrieval 질문에서는 lexical/curated 후보와 semantic 후보를 함께 모으고, final evidence selector가 질문 토큰, section title, searchTerms, source category, current source scope를 기준으로 최종 근거를 고릅니다.
-- 이 방식을 선택한 이유는 vector search만으로는 고유명사, 기술명, 섹션 제목처럼 정확한 매칭이 중요한 질문에서 직접 근거를 놓칠 수 있기 때문입니다. 반대로 lexical 검색만 쓰면 표현이 다른 질문을 놓칠 수 있어 두 방식을 같이 사용합니다.
-- curated source는 소개/프로젝트/assistant 내부 문서처럼 챗봇이 안정적으로 답해야 하는 고신뢰 근거입니다. 특히 프로젝트들의 `techStacks`를 모은 `profile-tech-stack`처럼 여러 정적 데이터를 집계한 근거도 포함합니다.
-- 검색 후보가 최종 근거 수보다 많아 일부를 버려야 할 때만 LLM rerank를 수행합니다. 같은 URL 안의 section 근거도 evidence id 기준으로 구분합니다.
-- 의미 검색 후보만 남은 경우에는 Jev 근거 확인을 추가해, 비슷한 이름이나 무관한 문서에 citation을 붙이지 않도록 합니다.
-- Postgres RAG 인덱싱이 설정되지 않아도 lexical 검색과 curated source 기반 응답은 계속 동작합니다.
-- exact cache와 semantic cache로 반복 질문 비용을 줄이고, observability 이벤트로 검색/응답 경로를 기록합니다. 두 캐시는 Postgres 연결이 설정되어 있으면 `chat_response_cache` 테이블에 저장되어 인스턴스 간에 공유되고, 설정이 없으면 프로세스 메모리로만 동작합니다.
 
 ## 프로젝트 구조
 

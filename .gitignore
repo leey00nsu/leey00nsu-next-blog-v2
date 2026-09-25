@@ -63,6 +63,8 @@ next-env.d.ts
 
 TASKS.md
 .kiro
-/docs/
+/docs/*
+!/docs/chatbot.md
+!/docs/chatbot.en.md
 
 /shared/generated/prisma/

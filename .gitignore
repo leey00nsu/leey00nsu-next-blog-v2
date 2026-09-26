@@ -51,6 +51,7 @@ next-env.d.ts
 /entities/post/config/thumbnail-metadata.generated.ts
 /entities/project/config/projects.generated.ts
 /shared/config/chat-semantic-map.generated.ts
+/features/chat/config/chat-build-version.generated.ts
 /public/pdf/
 /public/pagefind/
 /data/*.sqlite

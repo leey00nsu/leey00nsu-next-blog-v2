@@ -103,12 +103,17 @@ function buildDependencies() {
     getCachedResponse: vi.fn<(cacheKey: string) => BlogChatResponse | null>(
       () => null,
     ),
-    setCachedResponse: vi.fn(),
-    findSemanticResponse: vi.fn(
-      async (): Promise<BlogChatResponse | undefined> => {
-        return ([] as BlogChatResponse[]).at(0)
-      },
+    getCacheEvidenceVersion: vi.fn(
+      async (): Promise<string | null> => 'release-a:index-a',
     ),
+    setCachedResponse: vi.fn(),
+    findSemanticResponse: vi.fn<
+      (params: {
+        intentCacheKey?: string
+      }) => Promise<BlogChatResponse | undefined>
+    >(async (): Promise<BlogChatResponse | undefined> => {
+      return ([] as BlogChatResponse[]).at(0)
+    }),
     storeSemanticResponse: vi.fn(() => Promise.resolve()),
   }
 }
@@ -426,7 +431,9 @@ describe('runChatWorkflow', () => {
       request: { ...REQUEST, question: '고마워!' },
       dependencies,
     })
-    expect(result.applicationResponse.response.answer).toContain('도움이 됐다니')
+    expect(result.applicationResponse.response.answer).toContain(
+      '도움이 됐다니',
+    )
     expect(dependencies.answerQuestion).not.toHaveBeenCalled()
   })
 
@@ -452,13 +459,22 @@ describe('runChatWorkflow', () => {
       },
     })
     const result = await runChatWorkflow({
-      request: { ...REQUEST, question: '블로그 주인 이름과 GitHub 주소, 프로젝트를 알려줘' },
+      request: {
+        ...REQUEST,
+        question: '블로그 주인 이름과 GitHub 주소, 프로젝트를 알려줘',
+      },
       assistantProfile: {
-        title: '블로그 챗봇 안내', chatbotName: '블로그 챗봇', ownerName: '이윤수',
-        greetingAnswer: '안녕하세요.', identityAnswer: '저는 챗봇입니다.', aliases: [], content: '',
+        title: '블로그 챗봇 안내',
+        chatbotName: '블로그 챗봇',
+        ownerName: '이윤수',
+        greetingAnswer: '안녕하세요.',
+        identityAnswer: '저는 챗봇입니다.',
+        aliases: [],
+        content: '',
       },
       contactProfile: {
-        title: 'About Me', aboutUrl: '/ko/about',
+        title: 'About Me',
+        aboutUrl: '/ko/about',
         methods: [{ label: 'GitHub', url: 'https://github.com/leey00nsu' }],
       },
       dependencies,
@@ -466,7 +482,9 @@ describe('runChatWorkflow', () => {
     const response = result.applicationResponse.response
     expect(response.answer).toContain('이윤수')
     expect(response.answer).toContain('https://github.com/leey00nsu')
-    expect(response.citations.map((citation) => citation.url)).toContain('/ko/about')
+    expect(response.citations.map((citation) => citation.url)).toContain(
+      '/ko/about',
+    )
   })
 
   it('요청한 연락 채널이 공개되지 않았으면 다른 채널을 대신 반환하지 않는다', async () => {
@@ -651,6 +669,65 @@ describe('runChatWorkflow', () => {
         },
       },
     ])
+  })
+
+  it('활성 색인이 바뀌면 같은 질문도 이전 exact·semantic cache를 재사용하지 않는다', async () => {
+    const dependencies = buildDependencies()
+    const cachedResponses = new Map<string, BlogChatResponse>()
+    let activeIndexVersion = 'release-a:index-a'
+    dependencies.getCacheEvidenceVersion.mockImplementation(
+      async () => activeIndexVersion,
+    )
+    dependencies.getCachedResponse.mockImplementation(
+      (cacheKey) => cachedResponses.get(cacheKey) ?? null,
+    )
+    dependencies.setCachedResponse.mockImplementation(
+      ({ cacheKey, responseData }) => {
+        cachedResponses.set(cacheKey, responseData)
+      },
+    )
+
+    const firstResult = await runChatWorkflow({
+      request: REQUEST,
+      dependencies,
+    })
+    const cachedResult = await runChatWorkflow({
+      request: REQUEST,
+      dependencies,
+    })
+    activeIndexVersion = 'release-a:index-b'
+    const newIndexResult = await runChatWorkflow({
+      request: REQUEST,
+      dependencies,
+    })
+
+    expect(firstResult.cacheKind).toBe('none')
+    expect(cachedResult.cacheKind).toBe('exact')
+    expect(newIndexResult.cacheKind).toBe('none')
+    expect(dependencies.answerQuestion).toHaveBeenCalledTimes(2)
+    expect(dependencies.findSemanticResponse).toHaveBeenCalledTimes(2)
+    expect(dependencies.getCachedResponse.mock.calls[0]?.[0]).not.toBe(
+      dependencies.getCachedResponse.mock.calls[2]?.[0],
+    )
+    expect(
+      dependencies.findSemanticResponse.mock.calls[0]?.[0].intentCacheKey,
+    ).not.toBe(
+      dependencies.findSemanticResponse.mock.calls[1]?.[0].intentCacheKey,
+    )
+  })
+
+  it('활성 색인 확인에 실패하면 캐시를 건너뛰고 근거 검색을 계속한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.getCacheEvidenceVersion.mockResolvedValue(null)
+
+    const result = await runChatWorkflow({ request: REQUEST, dependencies })
+
+    expect(result.applicationResponse.response.grounded).toBe(true)
+    expect(result.graphPath).toContain('retrieve-evidence')
+    expect(dependencies.getCachedResponse).not.toHaveBeenCalled()
+    expect(dependencies.findSemanticResponse).not.toHaveBeenCalled()
+    expect(dependencies.setCachedResponse).not.toHaveBeenCalled()
+    expect(dependencies.storeSemanticResponse).not.toHaveBeenCalled()
   })
 
   it('한 요청의 semantic cache와 retrieval은 질문 임베딩을 한 번만 공유한다', async () => {

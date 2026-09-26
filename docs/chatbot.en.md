@@ -11,7 +11,7 @@ Open Blog Q&A from a blog list/detail page or the About page. The default limit 
 3. Final evidence selection considers question tokens, titles and sections, search terms, and scope. An LLM reranker runs only when candidates exceed the final evidence budget. When only semantic evidence remains, Jev checks its direct relevance to the question.
 4. The answer model uses supplied evidence only and returns evidence IDs in structured output. The server validates the selected evidence and citations and returns a safe response when support is insufficient or validation fails. The answer model has no external browsing, search tool, or file-editing access.
 
-Exact and semantic response caches use the shared Postgres `chat_response_cache` table when configured, otherwise process memory. Their default TTLs are five and ten minutes. The cache evidence version uses `VERCEL_GIT_COMMIT_SHA` or `GIT_COMMIT_SHA`, falling back to `development`. Without either value in Coolify, an answer from before an index switch can remain cached until its TTL expires.
+Exact and semantic response caches use the shared Postgres `chat_response_cache` table when configured, otherwise process memory. Their default TTLs are five and ten minutes. Cache keys include both a generated build version (the Git commit SHA, or a unique build ID when Git metadata is unavailable) and the current active Postgres index version. Reindexing the same commit therefore cannot reuse an earlier answer. If a database is configured but its active index version cannot be read, the chatbot skips the caches and continues through normal retrieval and answering. Coolify does not need a manually configured `GIT_COMMIT_SHA`.
 
 ## Local Postgres and schema
 
@@ -29,7 +29,7 @@ Schema and migrations live in `prisma/schema.prisma` and `prisma/migrations`. `p
 
 ## Content generation and indexing
 
-- `pnpm run gen:content` runs before development, builds, and tests. It derives image metadata, post/project data, and chatbot lexical records from source MDX. Generated `*.generated.ts` files are not tracked. The app does not crawl `.next` HTML.
+- `pnpm run gen:content` runs before development, builds, and tests. It derives image metadata, post/project data, chatbot lexical records, and the build version from source MDX and the build environment. Generated `*.generated.ts` files are not tracked. The app does not crawl `.next` HTML.
 - Indexing chunks lexical records and curated sources, embeds them, and writes a candidate Postgres `index_version`. Embedding input is title → section title → content → search terms, prioritizing early content. Vectors are reused from the active index when provider, model, recipe, and input match.
 - Keep the app's `BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` and Modal's `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH` equal. Both default to 128. The app includes its setting in the index recipe version, but cannot automatically detect a Modal-only setting change.
 - `pnpm run gen:chat-rag-postgres --verify` evaluates live hybrid retrieval on the candidate and activates it only after passing. Failures leave the previous active index in place. Plain `gen:chat-rag-postgres` skips this check and may silently skip indexing if required connections are absent.

@@ -36,6 +36,7 @@ import {
   type ExecuteChatRetrievalPlanResult,
 } from '@/features/chat/model/execute-chat-retrieval-plan'
 import { getChatEntityCandidates } from '@/features/chat/model/get-chat-entity-candidates'
+import { getChatCacheEvidenceVersion } from '@/features/chat/model/get-chat-cache-evidence-version'
 import { getCuratedChatSources } from '@/features/chat/model/get-curated-chat-sources'
 import {
   BlogChatApplicationResponseSchema,
@@ -81,6 +82,7 @@ interface ChatWorkflowDependencies {
   getCachedResponse: (
     cacheKey: string,
   ) => BlogChatResponse | null | Promise<BlogChatResponse | null>
+  getCacheEvidenceVersion: typeof getChatCacheEvidenceVersion
   setCachedResponse: (params: {
     cacheKey: string
     locale: BlogChatRequest['locale']
@@ -252,8 +254,10 @@ function buildContactResponse(params: {
   const selectedMethods = selectedChannels
     ? contactProfile.methods.filter((method) => {
         return selectedChannels.some((channel) => {
-          return method.label.toLowerCase() === channel ||
+          return (
+            method.label.toLowerCase() === channel ||
             (channel === 'email' && method.url.startsWith('mailto:'))
+          )
         })
       })
     : contactProfile.methods
@@ -304,24 +308,38 @@ function completeRequestedDirectFacts(params: {
 
   if (
     retrievalPlan.responseFacets?.includes('owner_identity') &&
-    ownerName && !response.answer.includes(ownerName)
+    ownerName &&
+    !response.answer.includes(ownerName)
   ) {
-    additions.push(CHAT_WORKFLOW_RESPONSES[params.locale].OWNER_IDENTITY.replace('{ownerName}', ownerName))
+    additions.push(
+      CHAT_WORKFLOW_RESPONSES[params.locale].OWNER_IDENTITY.replace(
+        '{ownerName}',
+        ownerName,
+      ),
+    )
   }
 
-  if (retrievalPlan.responseFacets?.includes('public_contact') && contactProfile) {
+  if (
+    retrievalPlan.responseFacets?.includes('public_contact') &&
+    contactProfile
+  ) {
     const requestedChannels = retrievalPlan.contactChannels ?? []
     const requestedMethods = contactProfile.methods.filter((method) => {
       return requestedChannels.some((channel) => {
-        return method.label.toLowerCase() === channel ||
+        return (
+          method.label.toLowerCase() === channel ||
           (channel === 'email' && method.url.startsWith('mailto:'))
+        )
       })
     })
 
     for (const method of requestedMethods) {
-      const hasExactContactUrl = response.answer.split(method.url).slice(1).some((suffix) => {
-        return !suffix.startsWith('/')
-      })
+      const hasExactContactUrl = response.answer
+        .split(method.url)
+        .slice(1)
+        .some((suffix) => {
+          return !suffix.startsWith('/')
+        })
 
       if (!hasExactContactUrl) {
         additions.push(`${method.label}: ${method.url}`)
@@ -343,11 +361,13 @@ function completeRequestedDirectFacts(params: {
   return {
     ...response,
     answer: [...additions, response.answer].join('\n\n'),
-    citations: profileCitation && !response.citations.some((citation) => {
-      return citation.url === profileCitation.url
-    })
-      ? [profileCitation, ...response.citations]
-      : response.citations,
+    citations:
+      profileCitation &&
+      !response.citations.some((citation) => {
+        return citation.url === profileCitation.url
+      })
+        ? [profileCitation, ...response.citations]
+        : response.citations,
   }
 }
 
@@ -385,6 +405,7 @@ const DEFAULT_DEPENDENCIES: ChatWorkflowDependencies = {
   answerQuestion: answerBlogQuestion,
   verifyEvidence: verifyChatEvidenceWithJev,
   getCachedResponse: getCachedBlogChatResponse,
+  getCacheEvidenceVersion: getChatCacheEvidenceVersion,
   setCachedResponse: setCachedBlogChatResponse,
   findSemanticResponse: findSemanticCachedBlogChatResponse,
   storeSemanticResponse: storeSemanticCachedBlogChatResponse,
@@ -535,12 +556,17 @@ function buildChatWorkflow(
         return { graphPath: ['cache-lookup'] }
       }
 
+      const evidenceVersion = await dependencies.getCacheEvidenceVersion()
+      if (!evidenceVersion) {
+        return { graphPath: ['cache-lookup'] }
+      }
+
       const standaloneQuestion = state.retrievalPlan.standaloneQuestion
       const cacheKey = buildChatRetrievalPlanCacheKey({
         locale: state.request.locale,
         retrievalPlan: state.retrievalPlan,
         currentPostSlug: state.request.currentPostSlug,
-        evidenceVersion: BLOG_CHAT.EVIDENCE_VERSION,
+        evidenceVersion,
       })
       const exactResponse = await dependencies.getCachedResponse(cacheKey)
 
@@ -607,9 +633,10 @@ function buildChatWorkflow(
       if (retrievalPlan.executionKind === 'social_reply') {
         return {
           response: {
-            answer: CHAT_WORKFLOW_RESPONSES[state.request.locale].SOCIAL[
-              retrievalPlan.socialResponseKind ?? 'greeting'
-            ],
+            answer:
+              CHAT_WORKFLOW_RESPONSES[state.request.locale].SOCIAL[
+                retrievalPlan.socialResponseKind ?? 'greeting'
+              ],
             citations: [],
             grounded: false,
           },
@@ -763,9 +790,10 @@ function buildChatWorkflow(
         matches: state.matches,
         ...(state.retrievalPlan.operation === 'compare'
           ? {
-              requiredCitationSlugs: state.retrievalPlan.canonicalTargets.flatMap(
-                (target) => target.slug ? [target.slug] : [],
-              ),
+              requiredCitationSlugs:
+                state.retrievalPlan.canonicalTargets.flatMap((target) =>
+                  target.slug ? [target.slug] : [],
+                ),
             }
           : {}),
       })

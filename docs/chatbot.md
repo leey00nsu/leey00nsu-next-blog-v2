@@ -11,7 +11,7 @@
 3. 최종 근거는 질문 토큰, 제목·섹션, 용어, 검색 범위 등을 반영해 선택합니다. 후보가 답변에 넣을 근거 수보다 많을 때만 LLM 리랭커를 호출합니다. 의미 검색 후보만 남으면 Jev로 질문과 근거의 직접 관련성을 추가 확인합니다.
 4. 답변 모델은 제공된 근거만 사용하고, 근거 ID를 구조화된 출력으로 반환합니다. 서버가 선택된 근거와 citation을 검증하며, 근거가 부족하거나 검증이 실패하면 안전한 응답으로 대체합니다. 답변 모델에 외부 브라우징·검색 도구·파일 수정 권한을 주지 않습니다.
 
-응답 비용을 줄이는 exact·semantic 캐시는 Postgres 연결 시 `chat_response_cache`에서 공유되고, 연결이 없으면 프로세스 메모리에 저장됩니다. 기본 TTL은 각각 5분·10분입니다. 캐시 키의 근거 버전은 `VERCEL_GIT_COMMIT_SHA` 또는 `GIT_COMMIT_SHA`를 사용하고, 둘 다 없으면 `development`가 됩니다. Coolify에서 이 값을 제공하지 않으면 색인 교체 직후 이전 답변이 TTL 동안 남을 수 있습니다.
+응답 비용을 줄이는 exact·semantic 캐시는 Postgres 연결 시 `chat_response_cache`에서 공유되고, 연결이 없으면 프로세스 메모리에 저장됩니다. 기본 TTL은 각각 5분·10분입니다. 캐시 키에는 콘텐츠 생성 단계에서 기록한 빌드 버전(Git 커밋 SHA, Git 정보가 없으면 빌드별 임의 ID)과 현재 활성 Postgres 색인 버전을 함께 넣습니다. 따라서 같은 커밋에서 색인을 다시 만들어도 이전 답변을 재사용하지 않습니다. DB가 설정됐지만 색인 버전을 조회할 수 없으면 캐시를 건너뛰고 일반 검색·답변 경로로 진행합니다. `GIT_COMMIT_SHA`를 Coolify에 수동 설정할 필요는 없습니다.
 
 ## 로컬 Postgres와 스키마
 
@@ -29,7 +29,7 @@ pnpm run verify:chat-rag
 
 ## 콘텐츠 생성과 색인
 
-- `predev`, `prebuild`, 테스트 전 단계의 `pnpm run gen:content`는 원본 MDX에서 이미지 메타데이터, 게시물·프로젝트 데이터, 챗봇 lexical 레코드 등을 생성합니다. 생성된 `*.generated.ts`는 Git에 올리지 않습니다. `.next` HTML을 크롤링하지 않습니다.
+- `predev`, `prebuild`, 테스트 전 단계의 `pnpm run gen:content`는 원본 MDX에서 이미지 메타데이터, 게시물·프로젝트 데이터, 챗봇 lexical 레코드와 빌드 버전을 생성합니다. 생성된 `*.generated.ts`는 Git에 올리지 않습니다. `.next` HTML을 크롤링하지 않습니다.
 - 색인 작업은 lexical 레코드와 curated source를 청크로 나누고 임베딩을 생성해 Postgres에 후보 `index_version`으로 저장합니다. 제목 → 섹션 제목 → 본문 → 검색어 순으로 임베딩하므로 본문 앞부분을 우선합니다. 동일한 provider·모델·레시피·입력의 벡터는 이전 활성 색인에서 재사용합니다.
 - 앱의 `BLOG_CHAT_RAG_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`와 Modal의 `MODAL_EMBEDDING_MAXIMUM_SEQUENCE_LENGTH`는 같은 값으로 맞춥니다. 기본값은 128입니다. 앱은 이 값을 색인 레시피 버전에 포함하지만 Modal 서비스 설정만 바뀌는 상황은 자동 검출하지 못합니다.
 - `pnpm run gen:chat-rag-postgres --verify`는 후보 색인을 대상으로 실제 hybrid 검색 평가를 실행하고, 통과한 경우에만 활성 버전을 교체합니다. 실패하면 이전 활성 색인을 유지합니다. 일반 `gen:chat-rag-postgres`는 이 검사를 하지 않고, 필수 연결이 없으면 건너뛸 수도 있습니다.

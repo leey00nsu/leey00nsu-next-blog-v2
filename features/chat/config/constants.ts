@@ -1,3 +1,5 @@
+import { GENERATED_CHAT_BUILD_VERSION } from '@/features/chat/config/chat-build-version.generated'
+
 export function parseIntegerEnvironmentValue(
   environmentValue: string | undefined,
   fallbackValue: number,
@@ -25,10 +27,7 @@ export function parseNumberEnvironmentValue(
 }
 
 export const BLOG_CHAT = {
-  EVIDENCE_VERSION:
-    process.env.VERCEL_GIT_COMMIT_SHA ??
-    process.env.GIT_COMMIT_SHA ??
-    'development',
+  EVIDENCE_VERSION: GENERATED_CHAT_BUILD_VERSION,
   INPUT: {
     MAXIMUM_REQUEST_BYTES: 256 * 1024,
     MAXIMUM_HISTORY_ITEM_COUNT: 2,

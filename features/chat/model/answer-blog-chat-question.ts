@@ -11,6 +11,7 @@ import {
   resolveBlogChatClientKey,
 } from '@/features/chat/model/blog-chat-usage-limiter'
 import type { ChatEvidenceRecord } from '@/features/chat/model/chat-evidence'
+import type { ChatJevRoute } from '@/features/chat/model/chat-plan-result'
 import { recordChatObservabilityEvent } from '@/features/chat/model/chat-observability'
 import { getChatAssistantProfile } from '@/features/chat/model/get-chat-assistant-profile'
 import { getChatContactProfile } from '@/features/chat/model/get-chat-contact-profile'
@@ -34,6 +35,8 @@ interface ChatObservabilityState {
   cacheKind: 'none' | 'exact' | 'semantic'
   reranked: boolean
   plannerReason: string | null
+  jevRoute: ChatJevRoute | null
+  jevRouteConfidence: number | null
   intentOperation: string | null
   intentTargetKind: string | null
   intentEvidenceScope: string | null
@@ -99,6 +102,8 @@ async function recordAnswerObservability(params: {
     cacheKind: params.chatObservabilityState.cacheKind,
     reranked: params.chatObservabilityState.reranked,
     plannerReason: params.chatObservabilityState.plannerReason,
+    jevRoute: params.chatObservabilityState.jevRoute,
+    jevRouteConfidence: params.chatObservabilityState.jevRouteConfidence,
     intentOperation: params.chatObservabilityState.intentOperation,
     intentTargetKind: params.chatObservabilityState.intentTargetKind,
     intentEvidenceScope: params.chatObservabilityState.intentEvidenceScope,
@@ -219,6 +224,8 @@ function buildChatObservabilityState(params: {
     cacheKind: params.workflowResult.cacheKind,
     reranked: evidenceExecution?.reranked ?? false,
     plannerReason: queryPlan?.reason ?? null,
+    jevRoute: params.workflowResult.jevDecision?.route ?? null,
+    jevRouteConfidence: params.workflowResult.jevDecision?.confidence ?? null,
     intentOperation: retrievalPlan?.operation ?? null,
     intentTargetKind: canonicalTarget?.kind ?? null,
     intentEvidenceScope: retrievalPlan?.sourceStrategy ?? null,

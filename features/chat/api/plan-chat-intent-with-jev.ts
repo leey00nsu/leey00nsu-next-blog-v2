@@ -7,7 +7,11 @@ import type { ChatConversationState } from '@/features/chat/model/chat-conversat
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
 import { ChatQueryPlanSchema, type ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
-import type { PlanChatIntentResult } from '@/features/chat/model/chat-plan-result'
+import {
+  CHAT_JEV_ROUTES,
+  type ChatJevRoute,
+  type PlanChatIntentResult,
+} from '@/features/chat/model/chat-plan-result'
 import type { SupportedLocale } from '@/shared/config/constants'
 
 interface PlanChatIntentWithJevParams {
@@ -85,6 +89,10 @@ function selectSourceCategories(sourceScope: string | undefined): ChatSourceCate
   return Object.hasOwn(JEV_SOURCE_SCOPE_CATEGORIES, sourceScope ?? '')
     ? [...JEV_SOURCE_SCOPE_CATEGORIES[sourceScope as keyof typeof JEV_SOURCE_SCOPE_CATEGORIES]]
     : []
+}
+
+function selectJevRoute(route: string | undefined): ChatJevRoute | null {
+  return CHAT_JEV_ROUTES.find((candidateRoute) => candidateRoute === route) ?? null
 }
 
 function selectExplicitComparisonCandidate(params: {
@@ -542,12 +550,22 @@ export async function planChatIntentWithJev(
       },
     }, { retry: { maxRetries: 0 }, timeout: BLOG_CHAT.JEV_ROUTER.MODEL_TIMEOUT_MILLISECONDS })
 
+    const selectedRoute = selectJevRoute(result.answers.route?.choice)
+
     return {
       ok: true,
       queryPlan: buildJevQueryPlan({
         input,
         answers: result.answers,
       }),
+      jevDecision: selectedRoute
+        ? {
+            route: selectedRoute,
+            confidence: Number.isFinite(result.answers.route?.confidence)
+              ? result.answers.route.confidence ?? null
+              : null,
+          }
+        : null,
     }
   } catch {
     return {

@@ -58,7 +58,7 @@
     },
     "logs": {
       "title": "챗봇 로그",
-      "description": "챗봇 요청별 planner, 검색 결과, citation, 처리 시간을 확인합니다.",
+      "description": "기록된 챗봇 답변의 Jev 선택, 실제 실행 경로, 검색 근거와 처리 시간을 확인합니다.",
       "backToStudio": "Studio로 돌아가기",
       "refresh": "새로고침",
       "summary": "전체 {totalCount}개 · {currentPage}/{pageCount} 페이지",
@@ -75,16 +75,16 @@
         "currentMonth": "이번 달"
       },
       "summaryCards": {
-        "totalRequests": "전체 요청",
+        "totalRequests": "기록된 응답",
         "averageDuration": "평균 처리 시간",
-        "groundedRate": "Grounded 비율",
+        "groundedRate": "근거 필요 응답의 근거 충족률",
         "cacheHitRate": "캐시 적중률"
       },
       "chart": {
-        "title": "일별 챗봇 요청 추이",
-        "requests": "챗봇 요청",
-        "accessibilityLabel": "선택한 날짜 범위의 일별 챗봇 요청 수 차트",
-        "empty": "선택한 기간에 표시할 챗봇 요청이 없습니다."
+        "title": "일별 기록된 응답 추이",
+        "requests": "기록된 응답",
+        "accessibilityLabel": "선택한 날짜 범위의 일별 기록된 응답 수 차트",
+        "empty": "선택한 기간에 기록된 응답이 없습니다."
       },
       "pageSize": {
         "label": "페이지 행 수",
@@ -101,7 +101,33 @@
       "duration": "{durationMilliseconds}ms",
       "grounded": {
         "yes": "근거 있음",
-        "no": "근거 없음"
+        "no": "근거 없음",
+        "notApplicable": "대상 아님"
+      },
+      "outcomes": {
+        "completed": "완료",
+        "refused": "답변 거절",
+        "failed": "처리 실패"
+      },
+      "routeValues": {
+        "social_reply": "인사·짧은 대화",
+        "identity": "챗봇 정체성",
+        "owner_identity": "운영자 정체성",
+        "public_contact": "공개 연락처",
+        "private_contact": "비공개 연락처",
+        "llm_planner": "일반 질문"
+      },
+      "executionKinds": {
+        "clarification": "추가 질문",
+        "direct_metadata": "메타데이터 즉답",
+        "direct_catalog": "목록 즉답",
+        "direct_profile": "프로필 즉답",
+        "retrieve_and_generate": "검색 후 답변 생성",
+        "social_reply": "인사·짧은 대화 즉답",
+        "identity": "챗봇 정체성 즉답",
+        "owner_identity": "운영자 정체성 즉답",
+        "contact": "공개 연락처 즉답",
+        "private_contact": "비공개 연락처 거절"
       },
       "columns": {
         "createdAt": "생성 시각",
@@ -109,8 +135,9 @@
         "originalQuestion": "질문",
         "answer": "답변",
         "cacheKind": "캐시",
-        "intentOperation": "Intent 작업",
-        "intentEvidenceScope": "근거 범위",
+        "jevRoute": "Jev 선택",
+        "executionKind": "실제 실행",
+        "outcome": "결과",
         "citations": "Citation",
         "grounded": "Grounded",
         "durationMilliseconds": "처리 시간",
@@ -126,6 +153,17 @@
         "answer": "답변 전문",
         "resolvedQuestion": "Resolved question",
         "normalizedQuestion": "Normalized question",
+        "planReason": "계획 메모",
+        "graphPath": "처리 단계",
+        "jevRouteConfidence": "Jev 선택 신뢰도",
+        "queryOperation": "질문 작업",
+        "compiledOperation": "실행 작업",
+        "sourceSelection": "출처 선택",
+        "temporalSelection": "시간 기준",
+        "requestedFields": "요청 필드",
+        "failureKind": "실패 종류",
+        "lexicalMatches": "키워드 검색 후보",
+        "semanticMatches": "의미 검색 후보",
         "currentPostSlug": "현재 글",
         "refusalReason": "거절 사유",
         "reranked": "Rerank",

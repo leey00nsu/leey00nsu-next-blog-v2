@@ -25,6 +25,8 @@ describe('chat-observability', () => {
         cacheKind: 'semantic',
         reranked: true,
         plannerReason: 'technology experience lookup',
+        jevRoute: 'llm_planner',
+        jevRouteConfidence: 0.84,
         intentOperation: 'answer',
         intentTargetKind: 'profile',
         intentEvidenceScope: 'entity',
@@ -79,6 +81,9 @@ describe('chat-observability', () => {
         expect.any(String),
       ]),
     )
+    expect(queryMock.mock.calls[0][1].slice(-2)).toEqual(['llm_planner', 0.84])
+    expect(queryMock.mock.calls[0][1]).toHaveLength(33)
+    expect(queryMock.mock.calls[0][0]).toContain('$33')
   })
 
   it('observability 이벤트 목록을 최신순 페이지로 조회한다', async () => {
@@ -99,6 +104,8 @@ describe('chat-observability', () => {
             cache_kind: 'none',
             reranked: false,
             planner_reason: 'log inspection',
+            jev_route: 'llm_planner',
+            jev_route_confidence: 0.84,
             query_operation: 'lookup',
             source_strategy: 'only',
             source_categories_json: ['profile'],
@@ -157,6 +164,8 @@ describe('chat-observability', () => {
           originalQuestion: '블로그 챗봇은 어떤 로그를 남기나요?',
           answer: '질문과 답변, 검색 결과, citation, 처리 시간을 저장합니다.',
           queryOperation: 'lookup',
+          jevRoute: 'llm_planner',
+          jevRouteConfidence: 0.84,
           sourceStrategy: 'only',
           sourceCategories: ['profile'],
           temporalStrategy: 'single',
@@ -196,5 +205,37 @@ describe('chat-observability', () => {
       ['2026-05-01T00:00:00+09:00', '2026-06-01T00:00:00+09:00', 20, 0],
     )
     expect(result.sortDirection).toBe('created_at_asc')
+  })
+
+  it('과거 로그에 Jev 결정 필드가 없으면 null로 읽는다', async () => {
+    const databaseClient = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ total_count: 1 }] })
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: '1',
+              created_at: new Date('2026-05-29T03:00:00.000Z'),
+              locale: 'ko',
+              original_question: '안녕',
+              cache_kind: 'none',
+              duration_milliseconds: 10,
+            },
+          ],
+        }),
+    } as unknown as Pool | PoolClient
+
+    const result = await selectChatObservabilityLogPage({
+      databaseClient,
+      page: 1,
+      pageSize: 10,
+      dateRange: { startDate: '2026-05-01', endDate: '2026-05-31' },
+    })
+
+    expect(result.records[0]).toMatchObject({
+      jevRoute: null,
+      jevRouteConfidence: null,
+    })
   })
 })

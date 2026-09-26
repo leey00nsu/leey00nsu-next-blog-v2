@@ -76,6 +76,7 @@ describe('planChatIntentWithJev', () => {
     expect(result).toMatchObject({
       ok: true,
       queryPlan: { operation: 'identity', requestedFields: [] },
+      jevDecision: { route: 'identity', confidence: 0.95 },
     })
     expect(systemOneMock).toHaveBeenCalledTimes(1)
   })
@@ -95,6 +96,7 @@ describe('planChatIntentWithJev', () => {
       entityCandidates: [],
     })).toMatchObject({
       ok: true,
+      jevDecision: { route: 'public_contact', confidence: 0.4 },
       queryPlan: {
         operation: 'contact',
         requestedFields: ['contact_methods'],

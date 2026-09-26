@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 import type { ChatEntityCandidate } from '@/features/chat/model/chat-entity-candidate'
+import type { PlanChatIntentResult } from '@/features/chat/model/chat-plan-result'
 import type { ChatQueryPlan } from '@/features/chat/model/chat-query-plan'
 import type { ChatRetrievalPlan } from '@/features/chat/model/chat-retrieval-plan'
 import type { ExecuteChatRetrievalPlanResult } from '@/features/chat/model/execute-chat-retrieval-plan'
@@ -75,7 +76,7 @@ function buildDependencies() {
     getEntityCandidates: vi.fn<() => Promise<ChatEntityCandidate[]>>(
       async () => [LEEMAGE_CANDIDATE],
     ),
-    planQuery: vi.fn(async () => ({
+    planQuery: vi.fn<() => Promise<PlanChatIntentResult>>(async () => ({
       ok: true as const,
       queryPlan: QUERY_PLAN,
     })),
@@ -119,6 +120,23 @@ function buildDependencies() {
 }
 
 describe('runChatWorkflow', () => {
+  it('Jev 선택과 실제 검색 실행을 구분해 결과에 전달한다', async () => {
+    const dependencies = buildDependencies()
+    dependencies.planQuery.mockResolvedValueOnce({
+      ok: true,
+      queryPlan: QUERY_PLAN,
+      jevDecision: { route: 'llm_planner', confidence: 0.84 },
+    })
+
+    const result = await runChatWorkflow({ request: REQUEST, dependencies })
+
+    expect(result.jevDecision).toEqual({
+      route: 'llm_planner',
+      confidence: 0.84,
+    })
+    expect(result.retrievalPlan?.executionKind).toBe('retrieve_and_generate')
+  })
+
   it('lexical 근거가 없는 의미 검색 결과는 Jev 근거 확인을 통과해야 답한다', async () => {
     const dependencies = buildDependencies()
     dependencies.executeRetrievalPlan.mockResolvedValueOnce({

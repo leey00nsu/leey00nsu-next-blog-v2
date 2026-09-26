@@ -19,6 +19,8 @@ model chat_observability_events {
   cache_kind                       String
   reranked                         Boolean  @default(false)
   planner_reason                   String?
+  jev_route                        String?
+  jev_route_confidence             Float?
   planner_action                   String?
   planner_retrieval_mode           String?
   planner_deterministic_action     String?

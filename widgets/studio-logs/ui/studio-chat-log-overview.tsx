@@ -38,9 +38,12 @@ export function StudioChatLogOverview({
     },
     {
       label: translate('summaryCards.groundedRate'),
-      value: `${dashboard.summary.groundedRate.toFixed(
-        STUDIO_CHAT_LOG_OVERVIEW.PERCENTAGE_DECIMAL_PLACES,
-      )}%`,
+      value:
+        dashboard.summary.groundedEligibleCount > 0
+          ? `${dashboard.summary.groundedRate.toFixed(
+              STUDIO_CHAT_LOG_OVERVIEW.PERCENTAGE_DECIMAL_PLACES,
+            )}%`
+          : '-',
     },
     {
       label: translate('summaryCards.cacheHitRate'),

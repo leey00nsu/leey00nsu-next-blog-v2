@@ -15,6 +15,8 @@ import type {
   ChatObservabilityLogPage,
   ChatObservabilityLogRecord,
 } from '@/features/chat/model/chat-observability'
+import { CHAT_EVIDENCE_EXECUTION_KINDS } from '@/features/chat/model/chat-retrieval-plan'
+import { isPublicChatLogMatchUrl } from '@/widgets/studio-logs/lib/is-public-chat-log-match-url'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
@@ -40,6 +42,21 @@ const STUDIO_CHAT_LOG_TABLE = {
 } as const
 const STUDIO_CHAT_LOG_DETAIL = {
   MAXIMUM_MATCH_PREVIEW_COUNT: 6,
+} as const
+const CHAT_EVIDENCE_EXECUTION_KIND_SET: ReadonlySet<string> = new Set(
+  CHAT_EVIDENCE_EXECUTION_KINDS,
+)
+const CHAT_EXECUTION_LABEL_KEYS = {
+  clarification: 'executionKinds.clarification',
+  direct_metadata: 'executionKinds.direct_metadata',
+  direct_catalog: 'executionKinds.direct_catalog',
+  direct_profile: 'executionKinds.direct_profile',
+  retrieve_and_generate: 'executionKinds.retrieve_and_generate',
+  social_reply: 'executionKinds.social_reply',
+  identity: 'executionKinds.identity',
+  owner_identity: 'executionKinds.owner_identity',
+  contact: 'executionKinds.contact',
+  private_contact: 'executionKinds.private_contact',
 } as const
 
 interface StudioChatLogTableProps {
@@ -72,6 +89,51 @@ function renderNullableText(value: string | null | undefined): string {
   return value && value.trim() ? value : '-'
 }
 
+function useChatLogLabels() {
+  const translate = useTranslations('studio.logs')
+
+  return {
+    route(route: ChatObservabilityLogRecord['jevRoute']) {
+      return route ? translate(`routeValues.${route}`) : '-'
+    },
+    executionKind(executionKind: string | null | undefined) {
+      if (!executionKind) return '-'
+
+      return Object.hasOwn(CHAT_EXECUTION_LABEL_KEYS, executionKind)
+        ? translate(
+            CHAT_EXECUTION_LABEL_KEYS[
+              executionKind as keyof typeof CHAT_EXECUTION_LABEL_KEYS
+            ],
+          )
+        : executionKind
+    },
+    grounded(record: ChatObservabilityLogRecord) {
+      if (!record.executionKind && record.plannerFailureKind) {
+        return translate('grounded.notApplicable')
+      }
+
+      if (!record.executionKind) {
+        return record.grounded
+          ? translate('grounded.yes')
+          : translate('grounded.no')
+      }
+
+      return CHAT_EVIDENCE_EXECUTION_KIND_SET.has(record.executionKind)
+        ? record.grounded
+          ? translate('grounded.yes')
+          : translate('grounded.no')
+        : translate('grounded.notApplicable')
+    },
+    outcome(record: ChatObservabilityLogRecord) {
+      return record.plannerFailureKind
+        ? translate('outcomes.failed')
+        : record.refusalReason
+          ? translate('outcomes.refused')
+          : translate('outcomes.completed')
+    },
+  }
+}
+
 function normalizeSortDirection(sortDirection: string): string {
   return Object.values(STUDIO_CHAT_LOG_TABLE.SORT_DIRECTIONS).includes(
     sortDirection as (typeof STUDIO_CHAT_LOG_TABLE.SORT_DIRECTIONS)[keyof typeof STUDIO_CHAT_LOG_TABLE.SORT_DIRECTIONS],
@@ -86,6 +148,7 @@ export function StudioChatLogTable({
   isDatabaseUnavailable = false,
 }: StudioChatLogTableProps) {
   const t = useTranslations('studio.logs')
+  const labels = useChatLogLabels()
   const router = useRouter()
   const sortDirection = normalizeSortDirection(logPage.sortDirection)
   const pageCount = Math.max(
@@ -160,14 +223,20 @@ export function StudioChatLogTable({
       cell: ({ row: tableRow }) => tableRow.original.cacheKind,
     },
     {
-      accessorKey: 'intentOperation',
-      header: t('columns.intentOperation'),
-      cell: ({ row: tableRow }) => tableRow.original.intentOperation ?? '-',
+      accessorKey: 'jevRoute',
+      header: t('columns.jevRoute'),
+      cell: ({ row: tableRow }) => labels.route(tableRow.original.jevRoute),
     },
     {
-      accessorKey: 'intentEvidenceScope',
-      header: t('columns.intentEvidenceScope'),
-      cell: ({ row: tableRow }) => tableRow.original.intentEvidenceScope ?? '-',
+      accessorKey: 'executionKind',
+      header: t('columns.executionKind'),
+      cell: ({ row: tableRow }) =>
+        labels.executionKind(tableRow.original.executionKind),
+    },
+    {
+      id: 'outcome',
+      header: t('columns.outcome'),
+      cell: ({ row: tableRow }) => labels.outcome(tableRow.original),
     },
     {
       accessorKey: 'citations',
@@ -179,7 +248,7 @@ export function StudioChatLogTable({
       header: t('columns.grounded'),
       cell: ({ row: tableRow }) => (
         <Badge variant={tableRow.original.grounded ? 'default' : 'outline'}>
-          {tableRow.original.grounded ? t('grounded.yes') : t('grounded.no')}
+          {labels.grounded(tableRow.original)}
         </Badge>
       ),
     },
@@ -462,10 +531,30 @@ function StudioChatLogDetailDialog({
                   title={t('detail.normalizedQuestion')}
                   value={renderNullableText(record.normalizedQuestion)}
                 />
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.planReason')}
+                  value={renderNullableText(record.plannerReason)}
+                />
+                <StudioChatLogDetailTextBlock
+                  title={t('detail.graphPath')}
+                  value={
+                    record.graphPath?.length
+                      ? record.graphPath.join(' → ')
+                      : '-'
+                  }
+                />
               </div>
 
               <aside className="space-y-4">
                 <StudioChatLogDetailMetaGrid record={record} locale={locale} />
+                <StudioChatLogMatchSection
+                  title={t('detail.lexicalMatches')}
+                  matches={record.lexicalMatches}
+                />
+                <StudioChatLogMatchSection
+                  title={t('detail.semanticMatches')}
+                  matches={record.semanticMatches}
+                />
                 <StudioChatLogMatchSection
                   title={t('detail.citations')}
                   matches={record.citations}
@@ -508,6 +597,7 @@ function StudioChatLogDetailMetaGrid({
   locale: SupportedLocale
 }) {
   const t = useTranslations('studio.logs')
+  const labels = useChatLogLabels()
   const metaItems = [
     {
       label: t('columns.locale'),
@@ -518,8 +608,31 @@ function StudioChatLogDetailMetaGrid({
       value: record.cacheKind,
     },
     {
+      label: t('columns.jevRoute'),
+      value: labels.route(record.jevRoute),
+    },
+    {
+      label: t('detail.jevRouteConfidence'),
+      value:
+        record.jevRouteConfidence === null ||
+        record.jevRouteConfidence === undefined
+          ? '-'
+          : new Intl.NumberFormat(locale, {
+              style: 'percent',
+              maximumFractionDigits: 1,
+            }).format(record.jevRouteConfidence),
+    },
+    {
+      label: t('columns.executionKind'),
+      value: labels.executionKind(record.executionKind),
+    },
+    {
+      label: t('columns.outcome'),
+      value: labels.outcome(record),
+    },
+    {
       label: t('columns.grounded'),
-      value: record.grounded ? t('grounded.yes') : t('grounded.no'),
+      value: labels.grounded(record),
     },
     {
       label: t('columns.durationMilliseconds'),
@@ -532,12 +645,34 @@ function StudioChatLogDetailMetaGrid({
       value: renderNullableText(record.currentPostSlug),
     },
     {
-      label: t('columns.intentOperation'),
+      label: t('detail.queryOperation'),
+      value: renderNullableText(record.queryOperation),
+    },
+    {
+      label: t('detail.compiledOperation'),
       value: renderNullableText(record.intentOperation),
     },
     {
-      label: t('columns.intentEvidenceScope'),
-      value: renderNullableText(record.intentEvidenceScope),
+      label: t('detail.sourceSelection'),
+      value:
+        [record.sourceStrategy, ...(record.sourceCategories ?? [])]
+          .filter(Boolean)
+          .join(' · ') || '-',
+    },
+    {
+      label: t('detail.temporalSelection'),
+      value:
+        [record.temporalStrategy, record.temporalOrder]
+          .filter(Boolean)
+          .join(' · ') || '-',
+    },
+    {
+      label: t('detail.requestedFields'),
+      value: record.intentRequestedFields?.join(', ') || '-',
+    },
+    {
+      label: t('detail.failureKind'),
+      value: renderNullableText(record.plannerFailureKind),
     },
     {
       label: t('detail.refusalReason'),
@@ -587,12 +722,16 @@ function StudioChatLogMatchSection({
         <ul className="space-y-2">
           {visibleMatches.map((match) => (
             <li key={`${title}-${match.url}`} className="rounded-md border p-3">
-              <a
-                href={match.url}
-                className="hover:text-primary block text-sm font-medium"
-              >
-                {match.title}
-              </a>
+              {isPublicChatLogMatchUrl(match) ? (
+                <a
+                  href={match.url}
+                  className="hover:text-primary block text-sm font-medium"
+                >
+                  {match.title}
+                </a>
+              ) : (
+                <span className="block text-sm font-medium">{match.title}</span>
+              )}
               <p className="text-muted-foreground mt-1 text-xs">
                 {match.sourceCategory}
               </p>

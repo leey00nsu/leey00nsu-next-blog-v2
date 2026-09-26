@@ -58,7 +58,7 @@
     },
     "logs": {
       "title": "Chatbot Logs",
-      "description": "Inspect planner output, retrieval matches, citations, and response time per chatbot request.",
+      "description": "Inspect the Jev route, actual execution path, evidence, and latency of recorded chatbot responses.",
       "backToStudio": "Back to Studio",
       "refresh": "Refresh",
       "summary": "{totalCount} total · page {currentPage}/{pageCount}",
@@ -75,16 +75,16 @@
         "currentMonth": "Current month"
       },
       "summaryCards": {
-        "totalRequests": "Total requests",
+        "totalRequests": "Recorded responses",
         "averageDuration": "Average duration",
-        "groundedRate": "Grounded rate",
+        "groundedRate": "Evidence-required response grounding rate",
         "cacheHitRate": "Cache hit rate"
       },
       "chart": {
-        "title": "Daily chatbot requests",
-        "requests": "Chatbot requests",
-        "accessibilityLabel": "Daily chatbot request count for the selected date range",
-        "empty": "No chatbot requests are available for the selected period."
+        "title": "Daily recorded responses",
+        "requests": "Recorded responses",
+        "accessibilityLabel": "Daily recorded response count for the selected date range",
+        "empty": "No recorded responses are available for the selected period."
       },
       "pageSize": {
         "label": "Rows per page",
@@ -101,7 +101,33 @@
       "duration": "{durationMilliseconds}ms",
       "grounded": {
         "yes": "Grounded",
-        "no": "Ungrounded"
+        "no": "Ungrounded",
+        "notApplicable": "Not applicable"
+      },
+      "outcomes": {
+        "completed": "Completed",
+        "refused": "Refused",
+        "failed": "Failed"
+      },
+      "routeValues": {
+        "social_reply": "Social reply",
+        "identity": "Chatbot identity",
+        "owner_identity": "Owner identity",
+        "public_contact": "Public contact",
+        "private_contact": "Private contact",
+        "llm_planner": "General question"
+      },
+      "executionKinds": {
+        "clarification": "Clarification",
+        "direct_metadata": "Direct metadata",
+        "direct_catalog": "Direct catalog",
+        "direct_profile": "Direct profile",
+        "retrieve_and_generate": "Retrieve and generate",
+        "social_reply": "Direct social reply",
+        "identity": "Direct chatbot identity",
+        "owner_identity": "Direct owner identity",
+        "contact": "Direct public contact",
+        "private_contact": "Private contact refusal"
       },
       "columns": {
         "createdAt": "Created",
@@ -109,8 +135,9 @@
         "originalQuestion": "Question",
         "answer": "Answer",
         "cacheKind": "Cache",
-        "intentOperation": "Intent operation",
-        "intentEvidenceScope": "Evidence scope",
+        "jevRoute": "Jev route",
+        "executionKind": "Actual execution",
+        "outcome": "Outcome",
         "citations": "Citations",
         "grounded": "Grounded",
         "durationMilliseconds": "Duration",
@@ -126,6 +153,17 @@
         "answer": "Full answer",
         "resolvedQuestion": "Resolved question",
         "normalizedQuestion": "Normalized question",
+        "planReason": "Plan note",
+        "graphPath": "Workflow path",
+        "jevRouteConfidence": "Jev route confidence",
+        "queryOperation": "Question operation",
+        "compiledOperation": "Execution operation",
+        "sourceSelection": "Source selection",
+        "temporalSelection": "Temporal selection",
+        "requestedFields": "Requested fields",
+        "failureKind": "Failure kind",
+        "lexicalMatches": "Lexical candidates",
+        "semanticMatches": "Semantic candidates",
         "currentPostSlug": "Current post",
         "refusalReason": "Refusal reason",
         "reranked": "Rerank",

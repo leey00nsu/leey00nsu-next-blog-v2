@@ -3,7 +3,10 @@ import type { ChatActivityEvent } from 'lee-chat-sdk'
 import { GENERATED_BLOG_SEARCH_RECORDS } from '@/entities/post/config/blog-search-records.generated'
 import { answerBlogQuestion } from '@/features/chat/api/answer-blog-question'
 import { verifyChatEvidenceWithJev } from '@/features/chat/api/verify-chat-evidence-with-jev'
-import type { PlanChatIntentResult } from '@/features/chat/model/chat-plan-result'
+import type {
+  ChatJevDecision,
+  PlanChatIntentResult,
+} from '@/features/chat/model/chat-plan-result'
 import { planChatIntentWithJev } from '@/features/chat/api/plan-chat-intent-with-jev'
 import { BLOG_CHAT } from '@/features/chat/config/constants'
 import { finalizeBlogChatResponse } from '@/features/chat/lib/blog-chat-response'
@@ -112,6 +115,7 @@ export type ChatWorkflowFailureKind =
 export interface ChatWorkflowResult {
   applicationResponse: BlogChatApplicationResponse
   queryPlan: ChatQueryPlan | null
+  jevDecision: ChatJevDecision | null
   retrievalPlan: ChatRetrievalPlan | null
   execution: ExecuteChatRetrievalPlanResult | null
   cacheKind: 'none' | 'exact' | 'semantic'
@@ -125,6 +129,7 @@ interface ChatWorkflowState {
   contactProfile: ChatContactProfile | null
   entityCandidates: ChatEntityCandidate[]
   queryPlan: ChatQueryPlan | null
+  jevDecision: ChatJevDecision | null
   retrievalPlan: ChatRetrievalPlan | null
   nextConversationState: ChatConversationState
   execution: ExecuteChatRetrievalPlanResult | null
@@ -147,6 +152,10 @@ const CHAT_WORKFLOW_STATE = Annotation.Root({
     default: () => [],
   }),
   queryPlan: Annotation<ChatQueryPlan | null>({
+    reducer: (_previousValue, nextValue) => nextValue,
+    default: () => null,
+  }),
+  jevDecision: Annotation<ChatJevDecision | null>({
     reducer: (_previousValue, nextValue) => nextValue,
     default: () => null,
   }),
@@ -510,6 +519,7 @@ function buildChatWorkflow(
 
       return {
         queryPlan: plannerResult.queryPlan,
+        jevDecision: plannerResult.jevDecision ?? null,
         graphPath: ['plan-query'],
       }
     })
@@ -963,6 +973,7 @@ function buildWorkflowResult(state: ChatWorkflowState): ChatWorkflowResult {
         conversationState: state.request.conversationState,
       }),
     queryPlan: state.queryPlan,
+    jevDecision: state.jevDecision,
     retrievalPlan: state.retrievalPlan,
     execution: state.execution,
     cacheKind: state.cacheKind,
@@ -1003,6 +1014,7 @@ export async function runChatWorkflow({
         conversationState: request.conversationState,
       }),
       queryPlan: null,
+      jevDecision: null,
       retrievalPlan: null,
       execution: null,
       cacheKind: 'none',

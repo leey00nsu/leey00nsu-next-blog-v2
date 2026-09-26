@@ -20,6 +20,13 @@ export const CHAT_EXECUTION_KINDS = [
   'private_contact',
 ] as const
 
+export const CHAT_EVIDENCE_EXECUTION_KINDS = [
+  'retrieve_and_generate',
+  'direct_metadata',
+  'direct_catalog',
+  'direct_profile',
+] as const
+
 export const CHAT_SOURCE_STRATEGIES = ['all', 'only', 'prefer'] as const
 export const CHAT_TEMPORAL_STRATEGIES = ['none', 'rank', 'single'] as const
 export const CHAT_RETRIEVAL_TEMPORAL_ORDERS = ['latest', 'oldest'] as const

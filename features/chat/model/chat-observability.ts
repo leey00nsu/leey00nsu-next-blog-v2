@@ -5,6 +5,7 @@ import {
   isChatRagDatabaseConfigured,
 } from '@/features/chat/model/chat-rag-database'
 import type { ChatSourceCategory } from '@/features/chat/model/chat-evidence'
+import type { ChatJevRoute } from '@/features/chat/model/chat-plan-result'
 import type { BlogChatResponse } from '@/features/chat/model/chat-schema'
 import type { SupportedLocale } from '@/shared/config/constants'
 import {
@@ -46,6 +47,8 @@ export interface ChatObservabilityEvent {
   cacheKind: 'none' | 'exact' | 'semantic'
   reranked: boolean
   plannerReason: string | null
+  jevRoute?: ChatJevRoute | null
+  jevRouteConfidence?: number | null
   intentOperation?: string | null
   intentTargetKind?: string | null
   intentEvidenceScope?: string | null
@@ -149,6 +152,14 @@ function mapChatObservabilityRow(
     reranked: Boolean(row.reranked),
     plannerReason:
       typeof row.planner_reason === 'string' ? row.planner_reason : null,
+    jevRoute:
+      typeof row.jev_route === 'string'
+        ? (row.jev_route as ChatJevRoute)
+        : null,
+    jevRouteConfidence:
+      typeof row.jev_route_confidence === 'number'
+        ? row.jev_route_confidence
+        : null,
     intentOperation:
       typeof row.intent_operation === 'string' ? row.intent_operation : null,
     intentTargetKind:
@@ -253,14 +264,16 @@ export async function insertChatObservabilityEvent(params: {
         citations_json,
         grounded,
         refusal_reason,
-        duration_milliseconds
+        duration_milliseconds,
+        jev_route,
+        jev_route_confidence
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, NULL,
         $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16::jsonb, $17,
         $18, $19, $20::jsonb, $21, $22, $23, $24::jsonb,
         '[]'::jsonb, '[]'::jsonb, $25::jsonb, $26::jsonb, $27::jsonb,
-        $28::jsonb, $29, $30, $31
+        $28::jsonb, $29, $30, $31, $32, $33
       )
     `,
     [
@@ -295,6 +308,8 @@ export async function insertChatObservabilityEvent(params: {
       event.grounded,
       event.refusalReason,
       event.durationMilliseconds,
+      event.jevRoute ?? null,
+      event.jevRouteConfidence ?? null,
     ],
   )
 }
@@ -376,9 +391,8 @@ export async function selectChatObservabilityLogPage(params: {
         cache_kind,
         reranked,
         planner_reason,
-        planner_action,
-        planner_retrieval_mode,
-        planner_deterministic_action,
+        jev_route,
+        jev_route_confidence,
         intent_operation,
         intent_target_kind,
         intent_evidence_scope,
@@ -394,8 +408,6 @@ export async function selectChatObservabilityLogPage(params: {
         temporal_order,
         execution_kind,
         graph_path_json,
-        preferred_source_categories_json,
-        additional_keywords_json,
         lexical_matches_json,
         semantic_matches_json,
         final_matches_json,

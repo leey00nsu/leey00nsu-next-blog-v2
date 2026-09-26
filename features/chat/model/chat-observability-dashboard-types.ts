@@ -7,6 +7,7 @@ export interface ChatObservabilityDashboardSummary {
   totalRequestCount: number
   averageDurationMilliseconds: number
   groundedRate: number
+  groundedEligibleCount: number
   cacheHitRate: number
 }
 

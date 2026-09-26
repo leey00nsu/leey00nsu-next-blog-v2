@@ -5,6 +5,7 @@ import {
   isChatRagDatabaseConfigured,
 } from '@/features/chat/model/chat-rag-database'
 import type { ChatObservabilityDashboard } from '@/features/chat/model/chat-observability-dashboard-types'
+import { CHAT_EVIDENCE_EXECUTION_KINDS } from '@/features/chat/model/chat-retrieval-plan'
 import { toAnalyticsDatabaseRange } from '@/shared/lib/analytics-date-range'
 import type { AnalyticsDateRange } from '@/shared/model/analytics'
 
@@ -19,6 +20,7 @@ const ChatObservabilitySummaryRowSchema = z.object({
   total_request_count: z.coerce.number().int().nonnegative(),
   average_duration_milliseconds: z.coerce.number().nonnegative(),
   grounded_rate: z.coerce.number().nonnegative(),
+  grounded_eligible_count: z.coerce.number().int().nonnegative(),
   cache_hit_rate: z.coerce.number().nonnegative(),
 })
 
@@ -37,8 +39,10 @@ export async function selectChatObservabilityDashboard(params: {
       SELECT
         COUNT(*)::int AS total_request_count,
         COALESCE(AVG(duration_milliseconds), 0)::float8 AS average_duration_milliseconds,
+        COUNT(*) FILTER (WHERE execution_kind = ANY($4::text[]))::int AS grounded_eligible_count,
         COALESCE(
-          AVG(CASE WHEN grounded THEN 1.0 ELSE 0.0 END) * $3,
+          AVG(CASE WHEN grounded THEN 1.0 ELSE 0.0 END)
+            FILTER (WHERE execution_kind = ANY($4::text[])) * $3,
           0
         )::float8 AS grounded_rate,
         COALESCE(
@@ -53,6 +57,7 @@ export async function selectChatObservabilityDashboard(params: {
       databaseRange.startDateTime,
       databaseRange.endDateTimeExclusive,
       CHAT_OBSERVABILITY_DASHBOARD.PERCENTAGE_MULTIPLIER,
+      CHAT_EVIDENCE_EXECUTION_KINDS,
     ],
   )
   const timeSeriesResult = await params.databaseClient.query(
@@ -91,6 +96,7 @@ export async function selectChatObservabilityDashboard(params: {
       total_request_count: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
       average_duration_milliseconds: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
       grounded_rate: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
+      grounded_eligible_count: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
       cache_hit_rate: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
     },
   )
@@ -100,6 +106,7 @@ export async function selectChatObservabilityDashboard(params: {
       totalRequestCount: summaryRow.total_request_count,
       averageDurationMilliseconds: summaryRow.average_duration_milliseconds,
       groundedRate: summaryRow.grounded_rate,
+      groundedEligibleCount: summaryRow.grounded_eligible_count,
       cacheHitRate: summaryRow.cache_hit_rate,
     },
     timeSeries: timeSeriesResult.rows.map((row) => {
@@ -126,6 +133,7 @@ export async function getChatObservabilityDashboard(
         totalRequestCount: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
         averageDurationMilliseconds: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
         groundedRate: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
+        groundedEligibleCount: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
         cacheHitRate: CHAT_OBSERVABILITY_DASHBOARD.EMPTY_VALUE,
       },
       timeSeries: [],

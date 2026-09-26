@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAT_CONVERSATION_STATE } from '@/features/chat/model/chat-conversation-state'
 
-const { runChatWorkflowMock, recordChatObservabilityEventMock } =
-  vi.hoisted(() => {
+const { runChatWorkflowMock, recordChatObservabilityEventMock } = vi.hoisted(
+  () => {
     return {
       runChatWorkflowMock: vi.fn(),
       recordChatObservabilityEventMock: vi.fn(),
     }
-  })
+  },
+)
 
 vi.mock('@/features/chat/model/chat-workflow', () => {
   return {
@@ -118,6 +119,7 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
         reranked: false,
       },
       cacheKind: 'none',
+      jevDecision: { route: 'llm_planner', confidence: 0.84 },
       failureKind: null,
       graphPath: [
         'resolve-context',
@@ -157,6 +159,8 @@ describe('answerBlogChatQuestion stateful pipeline', () => {
     expect(recordChatObservabilityEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         queryOperation: 'explain',
+        jevRoute: 'llm_planner',
+        jevRouteConfidence: 0.84,
         sourceStrategy: 'only',
         sourceCategories: ['project'],
         temporalStrategy: 'rank',

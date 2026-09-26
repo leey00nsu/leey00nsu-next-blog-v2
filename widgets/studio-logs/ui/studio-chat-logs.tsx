@@ -57,6 +57,7 @@ async function getStudioChatLogPageState(params: {
           totalRequestCount: STUDIO_CHAT_LOGS.EMPTY_TOTAL_COUNT,
           averageDurationMilliseconds: STUDIO_CHAT_LOGS.EMPTY_TOTAL_COUNT,
           groundedRate: STUDIO_CHAT_LOGS.EMPTY_TOTAL_COUNT,
+          groundedEligibleCount: STUDIO_CHAT_LOGS.EMPTY_TOTAL_COUNT,
           cacheHitRate: STUDIO_CHAT_LOGS.EMPTY_TOTAL_COUNT,
         },
         timeSeries: [],

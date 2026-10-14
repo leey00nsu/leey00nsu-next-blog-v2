@@ -4,7 +4,7 @@ title: Blog
 summary: A Next.js blog with multilingual MDX, Studio editor, GitHub auto-commit, and grounded chatbot
 keyFeatures:
   - Publishing automation connecting Studio, AI translation, and GitHub commits
-  - Grounded chatbot with Graph-RAG and citation URL validation
+  - Chatbot with conversation-aware hybrid search and source validation
   - Multilingual MDX, image processing, and portfolio PDF generation
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
@@ -17,6 +17,7 @@ techStacks:
   - TypeScript
   - OpenAI API
   - AI SDK
+  - TypeSafe Jev
   - LangGraph.js
   - PostgreSQL(pgvector)
   - Modal
@@ -29,6 +30,12 @@ techStacks:
 thumbnail: /public/projects/blog/logo.webp
 draft: false
 type: solo
+deployment:
+  status: active
+  kind: service
+  category: interactiveWeb
+  url: https://blog2.leey00nsu.com
+  coverImage: /public/projects/blog/blog-list-screen.png
 ---
 
 ![blog list screen](/public/projects/blog/blog-list-screen.png)
@@ -44,12 +51,12 @@ This is a technology blog I built and operate with Next.js.
 
 I use AI to translate original posts written in Studio and maintain Korean and English documents, then commit them directly to a branch through the GitHub API, automating the flow from writing through translation and commits.
 
-As the content grew and became harder for visitors to navigate, I added a Q&A chatbot that answers using blog posts, profile content, and project documents as evidence.
+As the content grew and became harder for visitors to navigate, I added a Q&A chatbot. It searches blog posts, profile content, and project documents to answer questions and uses the context of earlier turns to handle follow-up questions.
 
 ## Key Features
 
 - **Content authoring and publishing automation**: Connect MDX writing in Studio, AI translation, and GitHub commits
-- **Grounded chatbot**: Apply Graph-RAG and citation URL validation to blog posts and project documents
+- **Grounded chatbot**: Search blog posts, profile content, and project documents using the question and conversation context, with citations to public documents used in the answer
 - **Content platform features**: Multilingual MDX, image uploads and optimization, and automatic portfolio PDF generation
 
 ## Key Challenges and Solutions
@@ -60,7 +67,13 @@ Writing Korean and English documents separately and committing them manually can
 
 ### Finding information as content grows
 
-As posts and projects accumulate, visitors have more context to search through themselves. I introduced an AI-powered chatbot that searches blog posts, profile content, and project documents to answer their questions. I combined lexical and curated search with PostgreSQL (pgvector) Graph-RAG and used a question router to choose retrieval paths based on the question type. I checked that citation URLs belonged to the search results and withheld generated answers without validated sources.
+As posts and projects accumulate, visitors need to read through more documents to find what they need. I built the chatbot so they can ask for information and follow up on earlier answers.
+
+I adopted TypeSafe Jev to identify the intent of a question quickly before retrieval and answer generation. With reported response times as low as [70ms](https://typesafe.ai/blog/introducing-system-one-models-and-jev?render=full), Jev interprets the question and conversation context together to determine the search targets, scope, and time constraints.
+
+I combine keyword search, curated profile and project sources, and PostgreSQL (pgvector) Graph-RAG, with LangGraph managing the flow from question interpretation through retrieval, answering, and validation.
+
+Greetings and requests for public contact details use prepared responses. Questions that need explanations are answered using retrieved evidence. The server checks the evidence IDs selected by the model against the search results and provides citations to public documents. If evidence is insufficient or validation fails, the chatbot explains that it cannot answer.
 
 ### Image-related rendering performance issues
 

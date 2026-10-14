@@ -4,7 +4,7 @@ title: 블로그
 summary: 다국어(MDX), Studio 편집기, GitHub 자동 커밋, 근거 기반 챗봇을 포함한 Next.js 기반 블로그
 keyFeatures:
   - Studio 작성·AI 번역·GitHub 커밋을 연결하는 게시 자동화
-  - Graph-RAG와 인용 URL 검증을 적용한 근거 기반 챗봇
+  - 대화 문맥을 반영한 하이브리드 검색과 출처 검증 기반 챗봇
   - 다국어 MDX·이미지 처리·포트폴리오 PDF 생성
 links:
   github: https://github.com/leey00nsu/leey00nsu-next-blog-v2
@@ -17,6 +17,7 @@ techStacks:
   - TypeScript
   - OpenAI API
   - AI SDK
+  - TypeSafe Jev
   - LangGraph.js
   - PostgreSQL(pgvector)
   - Modal
@@ -29,6 +30,12 @@ techStacks:
 thumbnail: /public/projects/blog/logo.webp
 draft: false
 type: solo
+deployment:
+  status: active
+  kind: service
+  category: interactiveWeb
+  url: https://blog2.leey00nsu.com
+  coverImage: /public/projects/blog/blog-list-screen.png
 ---
 
 ![blog list screen](/public/projects/blog/blog-list-screen.png)
@@ -44,12 +51,12 @@ Next.js 기반으로 직접 운영하는 기술 블로그입니다.
 
 자체 Studio에서 작성한 원문을 AI로 번역해 한국어·영어 문서를 관리하고, GitHub API를 통해 브랜치에 직접 커밋해 작성·번역·커밋까지 이어지는 흐름을 자동화했습니다.
 
-이후 콘텐츠가 늘어나면서 방문자가 원하는 정보를 직접 탐색하기 어려워지는 문제를 해결하기 위해 블로그 글, 소개, 프로젝트 문서를 근거로 답변하는 Q&A 챗봇을 추가했습니다.
+이후 콘텐츠가 늘어나면서 방문자가 원하는 정보를 찾기 어려워져 Q&A 챗봇을 추가했습니다. 블로그 글, 소개, 프로젝트 문서를 검색해 답변하고, 앞선 대화의 문맥을 반영해 후속 질문에도 이어서 답할 수 있도록 구성했습니다.
 
 ## 주요 기능
 
 - **콘텐츠 작성·게시 자동화**: Studio에서 MDX 작성, AI 번역, GitHub 커밋까지 연결
-- **근거 기반 챗봇**: 블로그 글과 프로젝트 문서를 대상으로 Graph-RAG와 인용 URL 검증 적용
+- **근거 기반 챗봇**: 질문과 이전 대화의 문맥을 반영해 블로그 글·소개·프로젝트 문서를 검색하고, 답변에 사용한 공개 문서의 출처 제공
 - **콘텐츠 플랫폼 기능**: 다국어 MDX, 이미지 업로드·최적화 및 포트폴리오 PDF 자동 생성
 
 ## 핵심 문제와 해결
@@ -60,7 +67,13 @@ Next.js 기반으로 직접 운영하는 기술 블로그입니다.
 
 ### 콘텐츠가 늘어날수록 어려워지는 정보 탐색
 
-글과 프로젝트가 늘어나면 방문자가 필요한 맥락을 직접 찾아야 하는 부담도 커집니다. 이를 줄이기 위해 블로그 글과 소개, 프로젝트 문서를 검색해 답변하는 AI 기반 챗봇을 도입했습니다. Lexical·Curated 검색과 PostgreSQL(pgvector) 기반 Graph-RAG를 결합하고, 질문 라우터가 질문 유형에 따라 검색 경로를 결정하도록 구성했습니다. 답변에 사용한 인용 URL이 검색 결과에 포함되는지 검증하고, 검증된 출처가 없는 생성 답변은 제공하지 않도록 했습니다.
+글과 프로젝트가 늘어나면 방문자가 필요한 내용을 찾기 위해 여러 문서를 살펴봐야 합니다. 챗봇에서 질문으로 정보를 찾고, 앞선 답변에 대해 이어서 물어볼 수 있도록 했습니다.
+
+검색과 답변 생성에 앞서 질문의 의도를 빠르게 파악하기 위해 TypeSafe Jev를 도입했습니다. 빠르면 [70ms 수준](https://typesafe.ai/blog/introducing-system-one-models-and-jev?render=full)으로 응답하는 Jev를 활용해 질문과 이전 대화의 문맥을 함께 해석하고, 검색 대상과 범위, 기간 조건을 정하도록 구성했습니다.
+
+키워드 검색과 소개·프로젝트 문서 검색, PostgreSQL(pgvector) 기반 Graph-RAG를 조합하고, LangGraph로 질문 해석부터 검색·답변·검증까지의 흐름을 관리합니다.
+
+인사나 공개 연락처처럼 준비된 정보로 답할 수 있는 질문은 직접 처리합니다. 설명이 필요한 질문은 검색한 근거를 바탕으로 답변하고, 모델이 선택한 근거 ID를 검색 결과와 대조해 공개 문서의 출처를 제공합니다. 근거가 부족하거나 검증에 실패하면 답변하기 어렵다는 안내를 반환합니다.
 
 ### 이미지로 인한 렌더링 성능 저하
 

@@ -20,6 +20,7 @@ const DEPLOYED_PROJECT_SLUGS = [
   'copysinger',
   'day-7',
   'stock-aquarium',
+  'blog',
   'leesfield',
   'lee-spec-kit',
   'leemage',

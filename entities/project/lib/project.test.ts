@@ -11,10 +11,12 @@ const ABOUT_PROJECT_SLUGS = [
   'copysinger',
   'lee-spec-kit',
   'leemage',
+  'leement',
   'leesfield',
 ] as const
 
 const DEPLOYED_PROJECT_SLUGS = [
+  'leement',
   'copysinger',
   'day-7',
   'stock-aquarium',

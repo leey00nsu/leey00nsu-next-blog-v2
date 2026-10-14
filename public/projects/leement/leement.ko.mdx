@@ -1,0 +1,64 @@
+---
+slug: leement
+title: Leement
+summary: 개인 프로젝트에서 자주 쓰는 디자인 패턴을 모아 재사용하는 shadcn·Tailwind 기반 UI 프로젝트
+keyFeatures:
+  - 디자인 토큰 기반 라이트·다크 테마와 Tailwind·shadcn 호환
+  - shadcn registry로 필요한 컴포넌트·블록·차트 예제 소스와 의존성 설치
+  - Foundations 실시간 테마 편집·브라우저 저장·CSS 복사
+links:
+  github: https://github.com/leey00nsu/leement
+  demo: https://leement.leey00nsu.com/
+period:
+  start: 2026-09
+  end: null
+techStacks:
+  - React
+  - TypeScript
+  - Next.js
+  - Tailwind CSS
+  - shadcn/ui
+  - Base UI
+  - Radix UI
+  - Motion
+  - pnpm
+  - Turborepo
+thumbnail: /public/projects/leement/logo.svg
+draft: false
+type: solo
+deployment:
+  status: active
+  kind: service
+  category: developerTool
+  url: https://leement.leey00nsu.com/
+  order: 0
+  coverImage: /public/projects/leement/home-light.png
+---
+
+![Leement 랜딩의 컴포넌트와 화면 구성 예제](/public/projects/leement/home-light.png)
+
+![Leement Foundations의 색상 편집과 실제 UI 미리보기](/public/projects/leement/foundations-color.png)
+
+## 프로젝트 소개
+
+GitHub : [https://github.com/leey00nsu/leement](https://github.com/leey00nsu/leement)  
+Demo : [https://leement.leey00nsu.com/](https://leement.leey00nsu.com/)
+
+프로젝트를 만들 때마다 색상과 간격, 버튼과 카드 같은 UI를 제 취향에 맞춰 디자인해 왔습니다. 새 프로젝트를 시작할 때도 비슷한 스타일과 화면 구성을 다시 만들다 보니, 같은 작업을 반복하고 있다는 생각이 들었습니다.
+
+Leement는 이렇게 자주 쓰는 디자인 패턴을 모아 다음 프로젝트에서도 쉽게 재사용하기 위해 시작했습니다. 익숙하게 사용하던 shadcn과 Tailwind CSS를 바탕으로 컴포넌트와 테마를 정리하고, 필요한 소스를 가져와 프로젝트에 맞게 수정할 수 있도록 구성했습니다.
+
+랜딩에서는 입력·폼·차트 등 여러 UI를 조합한 예제를 직접 살펴볼 수 있습니다. 문서 사이트에서는 컴포넌트와 화면 구성을 위한 블록, 차트 예제를 찾아 필요한 소스를 설치하고, 테마를 조정해 적용할 CSS를 복사할 수 있습니다. 직접 사용하는 패턴을 하나씩 추가하고 다듬으며, 앞으로 만들 프로젝트에서도 활용할 수 있도록 계속 발전시키고 있습니다.
+
+## 주요 기능
+
+- **공통 디자인 토큰과 테마**: 프레임워크에 독립적인 토큰과 CSS 테마를 분리하고, 라이트·다크 모드 및 Tailwind·shadcn 호환 변수 제공
+- **컴포넌트 소스 설치**: 컴포넌트·화면 구성 블록·차트 예제에서 필요한 소스와 하위 의존성을 shadcn registry로 설치
+- **실시간 테마 편집**: Foundations에서 색상·서체·간격·반경·그림자·모션을 조정하고 문서 사이트 전체에 즉시 반영하며, 브라우저 저장·초기화·변경한 CSS 복사 제공
+- **실제 구현을 사용하는 문서**: 배포 소스와 같은 컴포넌트로 미리보기와 예제를 구성하고, 설치 명령·소스 코드·API 및 프리뷰 폭 조절·모션 재생 제공
+
+## 핵심 문제와 해결
+
+### 프로젝트마다 반복되는 UI 디자인
+
+프로젝트마다 선호하는 색상·간격·모서리·상태 표현을 다시 설정하는 작업이 반복됐습니다. 자주 쓰는 값을 토큰과 테마로 모아 새 프로젝트에서도 같은 스타일을 가져다 쓸 수 있도록 했습니다. `@leement/tokens`는 디자인 값을, `@leement/theme`은 CSS 변수·폰트·Tailwind 및 shadcn 호환 매핑을 담당하며, 라이트·다크 테마도 함께 제공합니다.

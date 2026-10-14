@@ -1,0 +1,64 @@
+---
+slug: leement
+title: Leement
+summary: A shadcn and Tailwind UI project for reusing design patterns from my personal projects
+keyFeatures:
+  - Token-based light and dark themes with Tailwind and shadcn compatibility
+  - Component, block, and chart example source installation through a shadcn registry
+  - Live Foundations editing, browser persistence, and CSS export
+links:
+  github: https://github.com/leey00nsu/leement
+  demo: https://leement.leey00nsu.com/
+period:
+  start: 2026-09
+  end: null
+techStacks:
+  - React
+  - TypeScript
+  - Next.js
+  - Tailwind CSS
+  - shadcn/ui
+  - Base UI
+  - Radix UI
+  - Motion
+  - pnpm
+  - Turborepo
+thumbnail: /public/projects/leement/logo.svg
+draft: false
+type: solo
+deployment:
+  status: active
+  kind: service
+  category: developerTool
+  url: https://leement.leey00nsu.com/
+  order: 0
+  coverImage: /public/projects/leement/home-light.png
+---
+
+![Component and layout examples on the Leement landing page](/public/projects/leement/home-light.png)
+
+![Color editing and live UI previews in Leement Foundations](/public/projects/leement/foundations-color.png)
+
+## Project Overview
+
+GitHub : [https://github.com/leey00nsu/leement](https://github.com/leey00nsu/leement)  
+Demo : [https://leement.leey00nsu.com/](https://leement.leey00nsu.com/)
+
+In each project, I have designed colors, spacing, buttons, cards, and other UI to suit my own taste. As I started new projects, I found myself rebuilding similar styles and layouts and repeating much of the same work.
+
+I started Leement to collect those recurring design patterns and make them easy to reuse in future projects. Built on shadcn and Tailwind CSS, which I already use often, it organizes components and themes so I can bring in the source I need and adapt it to each project.
+
+The landing page offers interactive examples combining controls, forms, and charts. The documentation site lets me browse components, layout blocks, and chart examples, install the source I need, adjust the theme, and copy CSS overrides. I continue to add and refine patterns as I use them, gradually improving Leement for the projects I build next.
+
+## Key Features
+
+- **Shared design tokens and themes**: Separate framework-independent tokens from the CSS theme, with light and dark modes and Tailwind and shadcn compatibility variables.
+- **Component source installation**: Install components, layout blocks, and chart examples through a shadcn registry, including their required source dependencies.
+- **Live theme editing**: Adjust color, typography, spacing, radius, shadow, and motion in Foundations, immediately update the documentation site, persist changes in the browser, reset them, and copy CSS overrides.
+- **Documentation using actual implementations**: Use the distributed components for previews and examples, with installation commands, source code, API documentation, resizable previews, and motion replay.
+
+## Key Challenges and Solutions
+
+### Repeating UI design work across projects
+
+I kept configuring my preferred colors, spacing, corner radii, and state styling in each project. I collected those recurring values into tokens and a theme so I could reuse the same styles in new projects. `@leement/tokens` owns the design values, while `@leement/theme` provides CSS variables, fonts, and Tailwind and shadcn compatibility mappings, with both light and dark themes.

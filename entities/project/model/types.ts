@@ -40,7 +40,6 @@ export const ProjectDeploymentSchema = z.object({
   kind: ProjectDeploymentKindSchema,
   category: ProjectDeploymentCategorySchema,
   url: z.string().url(),
-  order: z.number().int().nonnegative(),
   coverImage: z.string().min(1),
 })
 

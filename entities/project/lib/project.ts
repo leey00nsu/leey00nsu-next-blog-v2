@@ -8,6 +8,7 @@ import {
 } from '@/entities/project/model/types'
 import { LOCALES, type SupportedLocale } from '@/shared/config/constants'
 import { GENERATED_PROJECTS } from '@/entities/project/config/projects.generated'
+import { compareProjectsByPeriod } from '@/entities/project/lib/compare-projects-by-period'
 
 const DEFAULT_LOCALE = LOCALES.DEFAULT
 
@@ -66,11 +67,7 @@ export const getAllProjects = cache(
       projects.push(project)
     }
 
-    return projects.sort((a, b) => {
-      const aPeriod = a.period.start ?? ''
-      const bPeriod = b.period.start ?? ''
-      return bPeriod.localeCompare(aPeriod)
-    })
+    return projects.sort(compareProjectsByPeriod)
   },
 )
 
@@ -99,10 +96,7 @@ export const getDeployedProjects = cache(
       projects.push({ ...project, deployment: project.deployment })
     }
 
-    return projects.sort(
-      (firstProject, secondProject) =>
-        firstProject.deployment.order - secondProject.deployment.order,
-    )
+    return projects.sort(compareProjectsByPeriod)
   },
 )
 
@@ -118,6 +112,6 @@ export const getPublishedAndDeployedProjects = cache(
       projectsBySlug.set(project.slug, project)
     }
 
-    return [...projectsBySlug.values()]
+    return [...projectsBySlug.values()].sort(compareProjectsByPeriod)
   },
 )

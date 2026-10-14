@@ -32,7 +32,6 @@ const STOCK_AQUARIUM_PROJECT: DeployedProject = {
     kind: 'service',
     category: 'dataVisualization',
     url: 'https://aquarium.leey00nsu.com/',
-    order: 2,
     coverImage: '/public/projects/stock-aquarium/stock-aquarium-screen.png',
   },
   content: 'Stock Aquarium project content',

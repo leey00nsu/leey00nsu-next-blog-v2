@@ -7,12 +7,12 @@ import {
 } from '@/entities/project/lib/project'
 
 const ABOUT_PROJECT_SLUGS = [
-  'blog',
+  'leement',
   'copysinger',
+  'blog',
+  'leesfield',
   'lee-spec-kit',
   'leemage',
-  'leement',
-  'leesfield',
 ] as const
 
 const DEPLOYED_PROJECT_SLUGS = [
@@ -21,15 +21,20 @@ const DEPLOYED_PROJECT_SLUGS = [
   'day-7',
   'stock-aquarium',
   'leesfield',
-  'leemage',
   'lee-spec-kit',
+  'leemage',
   'syu-character-maker',
 ] as const
 
 const PUBLISHED_AND_DEPLOYED_PROJECT_SLUGS = [
-  ...ABOUT_PROJECT_SLUGS,
+  'leement',
+  'copysinger',
   'day-7',
   'stock-aquarium',
+  'blog',
+  'leesfield',
+  'lee-spec-kit',
+  'leemage',
   'syu-character-maker',
 ] as const
 
@@ -51,29 +56,38 @@ const PROJECT_CONTENT_HEADINGS = {
 } as const
 
 describe('project queries', () => {
-  it('keeps the existing projects used by the about page', async () => {
-    const projects = await getAllProjects('ko')
+  it.each(['ko', 'en'] as const)(
+    '%s 소개 프로젝트를 기간 기준으로 정렬하고 초안을 제외한다',
+    async (locale) => {
+      const projects = await getAllProjects(locale)
 
-    expect(projects.map((project) => project.slug).sort()).toEqual(
-      [...ABOUT_PROJECT_SLUGS].sort(),
-    )
-  })
+      expect(projects.map((project) => project.slug)).toEqual(
+        ABOUT_PROJECT_SLUGS,
+      )
+    },
+  )
 
-  it('returns deployed projects in their configured order', async () => {
-    const projects = await getDeployedProjects('ko')
+  it.each(['ko', 'en'] as const)(
+    '%s 배포 프로젝트를 기간 기준으로 정렬하고 배포된 초안을 포함한다',
+    async (locale) => {
+      const projects = await getDeployedProjects(locale)
 
-    expect(projects.map((project) => project.slug)).toEqual(
-      DEPLOYED_PROJECT_SLUGS,
-    )
-  })
+      expect(projects.map((project) => project.slug)).toEqual(
+        DEPLOYED_PROJECT_SLUGS,
+      )
+    },
+  )
 
-  it('combines published and deployed projects without duplicates', async () => {
-    const projects = await getPublishedAndDeployedProjects('ko')
+  it.each(['ko', 'en'] as const)(
+    '%s 공개·배포 프로젝트를 중복 없이 합쳐 기간 기준으로 정렬한다',
+    async (locale) => {
+      const projects = await getPublishedAndDeployedProjects(locale)
 
-    expect(projects.map((project) => project.slug).sort()).toEqual(
-      [...PUBLISHED_AND_DEPLOYED_PROJECT_SLUGS].sort(),
-    )
-  })
+      expect(projects.map((project) => project.slug)).toEqual(
+        PUBLISHED_AND_DEPLOYED_PROJECT_SLUGS,
+      )
+    },
+  )
 
   it.each([
     ['copysinger', 'ko'],

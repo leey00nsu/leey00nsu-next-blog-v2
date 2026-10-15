@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
+import { buildPdfDownloadFileName } from '@/features/pdf/lib/build-pdf-download-file-name'
 import {
   commitEngagementEvent,
   getDownloadEngagementEventName,
 } from '@/features/engagement/api/commit-engagement-event'
 import { Button } from '@/shared/ui/button'
 import {
-  buildPdfFileName,
   PDF,
   type PdfDocumentKind,
   type SupportedLocale,
@@ -67,7 +67,11 @@ export function DownloadPdfButton({
       const url = globalThis.URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = buildPdfFileName(documentKind, locale)
+      anchor.download = buildPdfDownloadFileName(
+        documentKind,
+        locale,
+        new Date(),
+      )
       document.body.append(anchor)
       anchor.click()
       anchor.remove()

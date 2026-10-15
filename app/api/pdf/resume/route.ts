@@ -12,6 +12,7 @@ import path from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import { buildPdfFileName, PDF } from '@/shared/config/constants'
 import { determineSupportedLocale } from '@/shared/lib/locale/determine-supported-locale'
+import { buildPdfDownloadContentDisposition } from '@/features/pdf/lib/build-pdf-download-file-name'
 
 export const runtime = 'nodejs'
 
@@ -48,8 +49,12 @@ export async function GET(request: NextRequest) {
     return new NextResponse(pdfArrayBuffer as ArrayBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${pdfFileName}"`,
-        'Cache-Control': 'public, max-age=86400',
+        'Content-Disposition': buildPdfDownloadContentDisposition(
+          PDF.DOCUMENT_KIND.RESUME,
+          locale,
+          new Date(),
+        ),
+        'Cache-Control': 'private, no-store',
       },
     })
   } catch (error) {
